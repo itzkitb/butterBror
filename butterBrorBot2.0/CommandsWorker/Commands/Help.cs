@@ -91,7 +91,7 @@ namespace butterBror
                 return new()
                 {
                     Message = result,
-                    IsSafeExecute = false,
+                    IsSafeExecute = true,
                     Description = "",
                     Author = "",
                     ImageURL = "",
