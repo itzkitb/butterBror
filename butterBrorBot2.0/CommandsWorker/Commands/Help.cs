@@ -32,7 +32,7 @@ namespace butterBror
             public static CommandReturn Index(CommandData data)
             {
                 string result = "";
-                if (data.args.Count == 0)
+                if (data.args.Count == 1)
                 {
                     string classToFound = data.args[0];
                     result = TranslationManager.GetTranslation(data.User.Lang, "help:notFound", data.ChannelID);
@@ -78,7 +78,7 @@ namespace butterBror
                         }
                     }
                 }
-                else if (data.args.Count >= 1)
+                else if (data.args.Count > 1)
                 {
                     result = TranslationManager.GetTranslation(data.User.Lang, "aFewArgs", data.ChannelID).Replace("%args%", "(command_name)");
                 }
