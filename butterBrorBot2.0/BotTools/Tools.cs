@@ -1778,22 +1778,25 @@ namespace butterBror
                 replacements.Add(ChatColorPresets.YellowGreen, "yellow_green");
 
                 string colorString = replacements[color];
-
-                HttpClient client = new HttpClient();
-                HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Put, $"https://api.twitch.tv/helix/chat/color?user_id={Bot.UID}&color={colorString}");
-
-                request.Headers.Add("Authorization", $"Bearer {Bot.BotToken}");
-                request.Headers.Add("Client-Id", Bot.ClientID);
-
-                HttpResponseMessage response = await client.SendAsync(request);
-                await Task.Delay(50);
-                if (response.StatusCode == HttpStatusCode.NoContent)
+                if (Bot.nowColor != colorString)
                 {
-                    LOG($"Цвет никнейма установлен на \"{colorString}\"!", ConsoleColor.Cyan);
-                }
-                else
-                {
-                    LOG($"Не удалось установить цвет никнейма на \"{colorString}\"! Ошибка: {response.StatusCode}, Описание: {response.ReasonPhrase} ({response.Content.ReadAsStringAsync()})", ConsoleColor.Red);
+                    Bot.nowColor = colorString;
+                    HttpClient client = new HttpClient();
+                    HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Put, $"https://api.twitch.tv/helix/chat/color?user_id={Bot.UID}&color={colorString}");
+
+                    request.Headers.Add("Authorization", $"Bearer {Bot.BotToken}");
+                    request.Headers.Add("Client-Id", Bot.ClientID);
+
+                    HttpResponseMessage response = await client.SendAsync(request);
+                    await Task.Delay(50);
+                    if (response.StatusCode == HttpStatusCode.NoContent)
+                    {
+                        LOG($"Цвет никнейма установлен на \"{colorString}\"!", ConsoleColor.Cyan);
+                    }
+                    else
+                    {
+                        LOG($"Не удалось установить цвет никнейма на \"{colorString}\"! Ошибка: {response.StatusCode}, Описание: {response.ReasonPhrase} ({response.Content.ReadAsStringAsync()})", ConsoleColor.Red);
+                    }
                 }
             }
         }
@@ -1804,6 +1807,7 @@ namespace butterBror
             private readonly string _clientSecret;
             private readonly string _redirectUri;
             private readonly string _databasePath;
+            private TokenData _tokenData;
 
             public TwitchTokenGetter(string clientId, string clientSecret, string databasePath)
             {
@@ -1811,42 +1815,79 @@ namespace butterBror
                 _clientSecret = clientSecret;
                 _redirectUri = "http://localhost:12121/";
                 _databasePath = databasePath;
+                _tokenData = LoadTokenData();
             }
 
             public async Task<string> GetTokenAsync()
             {
                 try
                 {
-                    // Check if token exists in database
-                    if (File.Exists(_databasePath))
+                    // Check if token exists and is valid
+                    if (_tokenData != null && _tokenData.ExpiresAt > DateTime.Now)
                     {
-                        var tokenData2 = JsonConvert.DeserializeObject<TokenData>(File.ReadAllText(_databasePath));
-                        if (tokenData2.ExpiresAt > DateTime.Now)
-                        {
-                            return tokenData2.AccessToken;
-                        }
+                        return _tokenData.AccessToken;
                     }
 
-                    // Create local web server
-                    using var listener = new HttpListener();
-                    listener.Prefixes.Add(_redirectUri);
-                    listener.Start();
-
-                    // Get authorization code
-                    var authorizationCode = await GetAuthorizationCodeAsync(listener);
-
-                    // Exchange code for token
-                    var token = await ExchangeCodeForTokenAsync(authorizationCode, listener);
-
-                    // Save token to database
-                    var tokenData = new TokenData { AccessToken = token, ExpiresAt = DateTime.Now.AddSeconds(3600) };
-                    File.WriteAllText(_databasePath, JsonConvert.SerializeObject(tokenData));
-
-                    return token;
+                    if (_tokenData == null || _tokenData.RefreshToken == null)
+                    {
+                        // Perform initial authorization flow
+                        return await PerformAuthorizationFlow();
+                    }
+                    else
+                    {
+                        // Use refresh_token to get new access token
+                        return await RefreshAccessToken();
+                    }
                 }
                 catch (Exception ex)
                 {
                     Tools.LOG("Ошибка получения токена: " + ex.Message);
+                    return null;
+                }
+            }
+
+            private async Task<string> PerformAuthorizationFlow()
+            {
+                // Create local web server
+                using var listener = new HttpListener();
+                listener.Prefixes.Add(_redirectUri);
+                listener.Start();
+
+                // Get authorization code
+                var authorizationCode = await GetAuthorizationCodeAsync(listener);
+
+                // Exchange code for token
+                var token = await ExchangeCodeForTokenAsync(authorizationCode);
+
+                // Save token data
+                SaveTokenData(token);
+
+                return token.AccessToken;
+            }
+
+            public async Task<string> RefreshAccessToken()
+            {
+                var httpClient = new HttpClient();
+                Tools.LOG($"Refresh token: {_tokenData.RefreshToken}, Client id: {_clientId}, Client secret: {_clientSecret}");
+                var request = new HttpRequestMessage(HttpMethod.Post, "https://id.twitch.tv/oauth2/token")
+                {
+                    Content = new StringContent($"grant_type=refresh_token&refresh_token={_tokenData.RefreshToken}&client_id={_clientId}&client_secret={_clientSecret}", Encoding.UTF8, "application/x-www-form-urlencoded")
+                };
+
+                var response = await httpClient.SendAsync(request);
+                var responseContent = await response.Content.ReadAsStringAsync();
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var tokenResponse = JsonConvert.DeserializeObject<TokenResponse>(responseContent);
+                    _tokenData.AccessToken = tokenResponse.access_token;
+                    _tokenData.ExpiresAt = DateTime.Now.AddSeconds(tokenResponse.expires_in);
+                    SaveTokenData(_tokenData);
+                    return tokenResponse.access_token;
+                }
+                else
+                {
+                    Tools.LOG($"Ошибка при обновлении токена: {responseContent}", ConsoleColor.Black, ConsoleColor.Red);
                     return null;
                 }
             }
@@ -1864,15 +1905,14 @@ namespace butterBror
                 // Wait for user to authorize and be redirected to localhost
                 var context = await listener.GetContextAsync();
                 var request = context.Request;
-                var response = context.Response;
 
                 // Get authorization code from URL
-                var code = GetCodeFromResponseAsync(request.Url.Query);
+                var code = GetCodeFromResponse(request.Url.Query);
 
                 return code;
             }
 
-            private async Task<string> ExchangeCodeForTokenAsync(string code, HttpListener listener)
+            private async Task<TokenData> ExchangeCodeForTokenAsync(string code)
             {
                 var httpClient = new HttpClient();
                 var request = new HttpRequestMessage(HttpMethod.Post, "https://id.twitch.tv/oauth2/token")
@@ -1886,35 +1926,16 @@ namespace butterBror
                 if (response.IsSuccessStatusCode)
                 {
                     var tokenResponse = JsonConvert.DeserializeObject<TokenResponse>(responseContent);
-                    var context = await listener.GetContextAsync();
-                    var responseListener = context.Response;
-                    responseListener.ContentType = "text/html; charset=utf-8";
-                    responseListener.Headers.Add("Content-Type", "text/html; charset=utf-8");
-                    responseListener.Headers.Add("Cache-Control", "no-cache");
-                    var buffer = Encoding.UTF8.GetBytes("<html><head><title>Твич авторизация</title></head><body><h1>Успешный вход!</h1></body></html>");
-                    responseListener.ContentLength64 = buffer.Length;
-                    var output = responseListener.OutputStream;
-                    output.Write(buffer, 0, buffer.Length);
-                    output.Close();
-                    return tokenResponse.access_token;
+                    return new TokenData { AccessToken = tokenResponse.access_token, ExpiresAt = DateTime.Now.AddSeconds(tokenResponse.expires_in), RefreshToken = tokenResponse.refresh_token };
                 }
                 else
                 {
-                    var context = await listener.GetContextAsync();
-                    var responseListener = context.Response;
-                    responseListener.ContentType = "text/html; charset=utf-8";
-                    responseListener.Headers.Add("Content-Type", "text/html; charset=utf-8");
-                    responseListener.Headers.Add("Cache-Control", "no-cache");
-                    var buffer = Encoding.UTF8.GetBytes($"<html><head><title>Твич авторизация</title></head><body><h1>Ошибка! {responseContent}</h1></body></html>");
-                    responseListener.ContentLength64 = buffer.Length;
-                    var output = responseListener.OutputStream;
-                    output.Write(buffer, 0, buffer.Length);
-                    output.Close();
+                    Tools.LOG($"Ошибка при получении токена: {responseContent}");
                     return null;
                 }
             }
 
-            private string GetCodeFromResponseAsync(string response)
+            private string GetCodeFromResponse(string response)
             {
                 var uri = new Uri($"http://localhost:8080/tauth{response}");
                 var query = uri.Query;
@@ -1930,19 +1951,37 @@ namespace butterBror
                 return null;
             }
 
+            private TokenData LoadTokenData()
+            {
+                if (File.Exists(_databasePath))
+                {
+                    var tokenData = JsonConvert.DeserializeObject<TokenData>(File.ReadAllText(_databasePath));
+                    if (tokenData.ExpiresAt > DateTime.Now)
+                    {
+                        return tokenData;
+                    }
+                }
+                return null;
+            }
+
+            private void SaveTokenData(TokenData tokenData)
+            {
+                File.WriteAllText(_databasePath, JsonConvert.SerializeObject(tokenData));
+                _tokenData = tokenData;
+            }
+
             private class TokenResponse
             {
                 public string access_token { get; set; }
-                public string token_type { get; set; }
                 public int expires_in { get; set; }
                 public string refresh_token { get; set; }
-                public string[] scope { get; set; }
             }
 
             private class TokenData
             {
                 public string AccessToken { get; set; }
                 public DateTime ExpiresAt { get; set; }
+                public string RefreshToken { get; set; }
             }
         }
     }

@@ -45,7 +45,8 @@ namespace butterBror
             typeof(RussianRoullete),
             typeof(ID),
             typeof(RandomCMD),
-            typeof(say)
+            typeof(say),
+            typeof(Help)
         }; // test
         public static void TwitchCommand(object sender, OnChatCommandReceivedArgs args)
         {

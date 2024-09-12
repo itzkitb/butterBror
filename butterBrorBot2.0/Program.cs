@@ -172,7 +172,7 @@ namespace butterBror
         public static readonly string LogsPath = MainPath + "LOGS.log";
         public static readonly string LocationsCachePath = MainPath + "LOC.cache";
         public static readonly string CurrencyPath = MainPath + "CURR.json";
-
+        public static TwitchTokenGetter tokenGetter = new(ClientID, Secret, "database.db");
         public static readonly CultureInfo LOL = new("fr-fr");
         public static readonly string ReserveCopyPath = ProgramPath + "bbRESERVE\\" + DateTime.UtcNow.Year + DateTime.UtcNow.Month + DateTime.UtcNow.Day + "/";
         public static Dictionary<string, string[]> EmotesByChannel = new();
@@ -195,6 +195,7 @@ namespace butterBror
         public static DiscordSocketClient discordClient;
         public static CommandService discordCommands;
         public static IServiceProvider discordServices;
+        public static string nowColor = "";
 
         // #BOT 0A
         public void Start(string[] args, int ThreadID)
@@ -290,7 +291,7 @@ namespace butterBror
                     ClientID = DataManager.GetData<string>(SettingsPath, "ClientID"); p();
                     Secret = DataManager.GetData<string>(SettingsPath, "Secret"); p();
                     Tools.LOG("\n- Генерируем/получаем токен...");
-                    TwitchTokenGetter tokenGetter = new(ClientID, Secret, "database.db");
+                    tokenGetter = new(ClientID, Secret, "database.db");
                     var token = await tokenGetter.GetTokenAsync();
                     if (token != null)
                     {
@@ -301,6 +302,7 @@ namespace butterBror
                     {
                         RestartPlease();
                     }
+                    Tools.ChangeNicknameColorAsync(TwitchLib.Client.Enums.ChatColorPresets.YellowGreen);
                 }
             }
             catch (Exception ex)
@@ -477,6 +479,19 @@ namespace butterBror
                 // Отправка сообщения
                 await Tools.ChangeNicknameColorAsync(TwitchLib.Client.Enums.ChatColorPresets.DodgerBlue);
                 Tools.SendMessage(BotNick, message, "", "", "", true);
+                string newToken = "";
+                try
+                {
+                    newToken = await tokenGetter.RefreshAccessToken();
+                    if (newToken != null)
+                    {
+                        Bot.BotToken = newToken;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Tools.LOG($"Ошибка получения нового токена!!! ({ex.Message})", BG: ConsoleColor.Red, FG: ConsoleColor.Black);
+                }
             }
             catch (Exception ex)
             {
