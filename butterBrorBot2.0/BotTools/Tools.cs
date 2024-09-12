@@ -1868,7 +1868,7 @@ namespace butterBror
             public async Task<string> RefreshAccessToken()
             {
                 var httpClient = new HttpClient();
-                Tools.LOG($"Refresh token: {_tokenData.RefreshToken}, Client id: {_clientId}, Client secret: {_clientSecret}");
+                // Tools.LOG($"Refresh token: {_tokenData.RefreshToken}, Client id: {_clientId}, Client secret: {_clientSecret}");
                 var request = new HttpRequestMessage(HttpMethod.Post, "https://id.twitch.tv/oauth2/token")
                 {
                     Content = new StringContent($"grant_type=refresh_token&refresh_token={_tokenData.RefreshToken}&client_id={_clientId}&client_secret={_clientSecret}", Encoding.UTF8, "application/x-www-form-urlencoded")
