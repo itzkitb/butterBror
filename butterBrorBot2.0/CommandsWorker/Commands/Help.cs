@@ -57,11 +57,11 @@ namespace butterBror
                                 num++;
                                 if (num < numWithoutComma)
                                 {
-                                    aliasesList += $"{alias}, ";
+                                    aliasesList += $"#{alias}, ";
                                 }
                                 else if (num == numWithoutComma)
                                 {
-                                    aliasesList += $"{alias}";
+                                    aliasesList += $"#{alias}";
                                 }
                             }
                             result = TranslationManager.GetTranslation(data.User.Lang, "help:found", data.ChannelID)

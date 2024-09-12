@@ -706,14 +706,14 @@ namespace butterBror
             }
             public static string FilterText(string input)
             {
-                string pattern = @"[^A-Za-zА-Яа-яёЁ\uD800-\uDB7F\uDB80-\uDFFF\u2705☀⛵〽️❄❗🌫️🌨️⚖️⏺️⛈️🗻🌧️🌥️☁️⛅🌤️☀️ ⬛󠀀°.?/\\,·':;}{\][()*+-`~%$#@&№!»—«]";
+                string pattern = @"[^A-Za-zА-Яа-яёЁ\uD800-\uDB7F\uDB80-\uDFFF\u2705☀⛵⚙〽️❄❗🌫️🌨️⚖️⏺️⛈️🗻🌧️🌥️☁️⛅🌤️☀️ ⬛󠀀°.?/\\,·':;}{\][()*+-`~%$#@&№!»—«]";
                 string filteredText = Regex.Replace(input, pattern, "");
 
                 return filteredText;
             }
             public static string FilterTextWithoutSpaces(string input)
             {
-                string pattern = @"[^A-Za-zА-Яа-яёЁ\uD800-\uDB7F\uDB80-\uDFFF\u2705☀⛵⏺️❗⚖️〽️❄°.?/\\,·':;}{\][()*+-`~%$#@&№!»—«]";
+                string pattern = @"[^A-Za-zА-Яа-яёЁ\uD800-\uDB7F\uDB80-\uDFFF\u2705☀⛵⚙⏺️❗⚖️〽️❄°.?/\\,·':;}{\][()*+-`~%$#@&№!»—«]";
                 string filteredText = Regex.Replace(input, pattern, "");
 
                 return filteredText;
