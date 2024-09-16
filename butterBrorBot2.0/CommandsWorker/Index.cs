@@ -76,6 +76,12 @@ namespace butterBror
                     User = user,
                     TWargs = args
                 };
+                if (args.Command.ChatMessage.ChatReply != null)
+                {
+                    string[] trimedReplyText = args.Command.ChatMessage.ChatReply.ParentMsgBody.Split(' ');
+                    data.args.AddRange(trimedReplyText);
+                    data.ArgsAsString = data.ArgsAsString + args.Command.ChatMessage.ChatReply.ParentMsgBody;
+                }
                 Command(data);
             }
             catch (Exception ex) 
@@ -217,42 +223,50 @@ namespace butterBror
                                     var indexMethod = classType.GetMethod("Index", BindingFlags.Static | BindingFlags.Public);
                                     cmdReturn = (CommandReturn)indexMethod.Invoke(null, [data]);
 
-                                    if (data.Platform == Platforms.Twitch)
+                                    if (data != null)
                                     {
-                                        TwitchMessageSendData SendData = new()
+                                        if (data.Platform == Platforms.Twitch)
                                         {
-                                            Message = cmdReturn.Message,
-                                            Channel = data.Channel,
-                                            ChannelID = data.ChannelID,
-                                            AnswerID = data.TWargs.Command.ChatMessage.Id,
-                                            Lang = data.User.Lang,
-                                            Name = data.User.Name,
-                                            IsSafeExecute = cmdReturn.IsSafeExecute,
-                                            NickNameColor = cmdReturn.NickNameColor
-                                        };
-                                        butterBib.Commands.SendCommandReply(SendData);
+                                            TwitchMessageSendData SendData = new()
+                                            {
+                                                Message = cmdReturn.Message,
+                                                Channel = data.Channel,
+                                                ChannelID = data.ChannelID,
+                                                AnswerID = data.TWargs.Command.ChatMessage.Id,
+                                                Lang = data.User.Lang,
+                                                Name = data.User.Name,
+                                                IsSafeExecute = cmdReturn.IsSafeExecute,
+                                                NickNameColor = cmdReturn.NickNameColor
+                                            };
+                                            butterBib.Commands.SendCommandReply(SendData);
+                                        }
+                                        else if (data.Platform == Platforms.Discord)
+                                        {
+                                            DiscordCommandSendData SendData = new()
+                                            {
+                                                Message = cmdReturn.Message,
+                                                Title = cmdReturn.Title,
+                                                Description = cmdReturn.Description,
+                                                Color = cmdReturn.Color,
+                                                IsEmbed = cmdReturn.IsEmbed,
+                                                Ephemeral = cmdReturn.Ephemeral,
+                                                Server = data.Channel,
+                                                ServerID = data.ChannelID,
+                                                Lang = data.User.Lang,
+                                                IsSafeExecute = cmdReturn.IsSafeExecute,
+                                                d = data.d,
+                                                Author = cmdReturn.Author,
+                                                ImageURL = cmdReturn.ImageURL,
+                                                ThumbnailUrl = cmdReturn.ThumbnailUrl,
+                                                Footer = cmdReturn.Footer
+                                            };
+                                            butterBib.Commands.SendCommandReply(SendData);
+                                        }
                                     }
-                                    else if (data.Platform == Platforms.Discord)
+                                    else
                                     {
-                                        DiscordCommandSendData SendData = new()
-                                        {
-                                            Message = cmdReturn.Message,
-                                            Title = cmdReturn.Title,
-                                            Description = cmdReturn.Description,
-                                            Color = cmdReturn.Color,
-                                            IsEmbed = cmdReturn.IsEmbed,
-                                            Ephemeral = cmdReturn.Ephemeral,
-                                            Server = data.Channel,
-                                            ServerID = data.ChannelID,
-                                            Lang = data.User.Lang,
-                                            IsSafeExecute = cmdReturn.IsSafeExecute,
-                                            d = data.d,
-                                            Author = cmdReturn.Author,
-                                            ImageURL = cmdReturn.ImageURL,
-                                            ThumbnailUrl = cmdReturn.ThumbnailUrl,
-                                            Footer = cmdReturn.Footer
-                                        };
-                                        butterBib.Commands.SendCommandReply(SendData);
+                                        ConsoleServer.SendConsoleMessage("commands", "Пустой ответ от комманды");
+                                        LogWorker.LogWarning("Пустой ответ от комманды", $"commands/{info.Name}");
                                     }
                                 }
                                 break;

@@ -37,41 +37,45 @@ namespace butterBror
                 ChatColorPresets resultNicknameColor = ChatColorPresets.YellowGreen;
                 if (NoBanwords.fullCheck(data.ArgsAsString, data.ChannelID))
                 {
-                    // Tools.SendMsgReply(data.Channel, data.ChannelID, TranslationManager.GetTranslation(data.User.Lang, "gptWait"), data.MessageID, data.User.Lang, true);
-                    Task task = Task.Run(() =>
+                    Tools.SaveBalance(data.UserUUID, -5, 0);
+                    Task<string[]> result = Tools.GPTRequest(data);
+                    if (result.Result.ToArray().ElementAt(0) == "ERR")
                     {
-                        Tools.SaveBalance(data.UserUUID, -5, 0);
-                        Task<string[]> result = Tools.GPTRequest(data);
-                        if (result.Result.ToArray().ElementAt(0) == "ERR")
+                        resultMessage = "🚩 " + TranslationManager.GetTranslation(data.User.Lang, "gptERR", data.ChannelID);
+                        resultNicknameColor = ChatColorPresets.Red;
+                        resultColor = Color.Red;
+                    }
+                    else
+                    {
+                        if (NoBanwords.fullCheck(result.Result.ToArray().ElementAt(0), data.ChannelID))
                         {
-                            resultMessage = "🚩 " + TranslationManager.GetTranslation(data.User.Lang, "gptERR", data.ChannelID);
-                            resultNicknameColor = ChatColorPresets.Red;
-                            resultColor = Color.Red;
+                            resultMessage = TranslationManager.GetTranslation(data.User.Lang, "gptSuccess", data.ChannelID).Replace("%text%", result.Result.ToArray().ElementAt(0)).Replace("%model%", result.Result.ToArray().ElementAt(1).Replace("-", " "));
                         }
                         else
                         {
-                            if (NoBanwords.fullCheck(result.Result.ToArray().ElementAt(0), data.ChannelID))
-                            {
-                                resultMessage = TranslationManager.GetTranslation(data.User.Lang, "gptSuccess", data.ChannelID).Replace("%text%", result.Result.ToArray().ElementAt(0)).Replace("%model%", result.Result.ToArray().ElementAt(1).Replace("-", " "));
-                            }
+                            return null;
                         }
-                    });
+                    }
+                    return new()
+                    {
+                        Message = resultMessage,
+                        IsSafeExecute = false,
+                        Description = "",
+                        Author = "",
+                        ImageURL = "",
+                        ThumbnailUrl = "",
+                        Footer = "",
+                        IsEmbed = false,
+                        Ephemeral = false,
+                        Title = resultMessageTitle,
+                        Color = resultColor,
+                        NickNameColor = resultNicknameColor
+                    };
                 }
-                return new()
+                else
                 {
-                    Message = resultMessage,
-                    IsSafeExecute = false,
-                    Description = "",
-                    Author = "",
-                    ImageURL = "",
-                    ThumbnailUrl = "",
-                    Footer = "",
-                    IsEmbed = false,
-                    Ephemeral = false,
-                    Title = resultMessageTitle,
-                    Color = resultColor,
-                    NickNameColor = resultNicknameColor
-                };
+                    return null;
+                }
             }
         }
     }
