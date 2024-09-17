@@ -27,7 +27,7 @@ namespace butterBror
                 ForBotCreator = false,
                 ForChannelAdmins = false
             };
-            public static CommandReturn Index(CommandData data)
+            public static async Task<CommandReturn> IndexAsync(CommandData data)
             {
                 string[] updateAlias = ["update", "обновить", "u", "о"];
                 string[] randomAlias = ["random", "рандом", "рандомный", "r", "р"];
@@ -39,7 +39,7 @@ namespace butterBror
                     {
                         if (UsersData.UserGetData<bool>(data.UserUUID, "isBotDev") || UsersData.UserGetData<bool>(data.UserUUID, "isBotModerator") || (bool)data.User.IsChannelAdmin || (bool)data.User.IsChannelBroadcaster)
                         {
-                            Tools.EmoteUpdate(data.Channel);
+                            await Tools.EmoteUpdate(data.Channel);
                             resultMessage = TranslationManager.GetTranslation(data.User.Lang, "emotesUpdated", data.ChannelID)
                                 .Replace("%ffzEmotes%", Bot.EmotesByChannel[data.Channel + "ffz"].Count().ToString())
                                 .Replace("%7tvEmotes%", Bot.EmotesByChannel[data.Channel + "7tv"].Count().ToString())
@@ -56,7 +56,7 @@ namespace butterBror
                         {
                             if (!(Bot.EmotesByChannel.ContainsKey(data.Channel + "7tv") || Bot.EmotesByChannel.ContainsKey(data.Channel + "ffz") || Bot.EmotesByChannel.ContainsKey(data.Channel + "bttv")))
                             {
-                                Tools.EmoteUpdate(data.Channel);
+                                await Tools.EmoteUpdate(data.Channel);
                             }
                             string[] services = ["7tv", "bttv", "ffz"];
                             string selectedService = data.args.ElementAt(1).ToLower();
@@ -85,7 +85,7 @@ namespace butterBror
                         {
                             if (!(Bot.EmotesByChannel.ContainsKey(data.Channel + "7tv") || Bot.EmotesByChannel.ContainsKey(data.Channel + "ffz") || Bot.EmotesByChannel.ContainsKey(data.Channel + "bttv")))
                             {
-                                Tools.EmoteUpdate(data.Channel);
+                                await Tools.EmoteUpdate(data.Channel);
                             }
                             bool isCompleted = false;
                             int attempts = 0;
@@ -122,7 +122,7 @@ namespace butterBror
                     }
                     else
                     {
-                        Tools.EmoteUpdate(data.Channel);
+                        await Tools.EmoteUpdate(data.Channel);
                         if (Bot.EmotesByChannel.ContainsKey(data.Channel + "7tv") || Bot.EmotesByChannel.ContainsKey(data.Channel + "ffz") || Bot.EmotesByChannel.ContainsKey(data.Channel + "bttv"))
                         {
                             resultMessage = TranslationManager.GetTranslation(data.User.Lang, "emotesCount", data.ChannelID)
