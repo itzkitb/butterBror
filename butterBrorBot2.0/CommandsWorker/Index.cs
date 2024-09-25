@@ -219,9 +219,35 @@ namespace butterBror
                                 if (Tools.IsNotOnCooldown(info.UserCooldown, info.GlobalCooldown, info.Name, data.User.Id, data.ChannelID, info.ResetCooldownIfItHasNotReachedZero))
                                 {
                                     Tools.executedCommand(data);
-
                                     var indexMethod = classType.GetMethod("Index", BindingFlags.Static | BindingFlags.Public);
-                                    cmdReturn = (CommandReturn)indexMethod.Invoke(null, [data]);
+
+                                    if (indexMethod.ReturnType == typeof(CommandReturn))
+                                    {
+                                        // Синхронный метод с возвращаемым значением типа CommandReturn
+                                        cmdReturn = (CommandReturn)indexMethod.Invoke(null, new object[] { data });
+                                    }
+                                    else
+                                    {
+                                        // Синхронный метод с возвращаемым значением Task<T>
+                                        var result = indexMethod.Invoke(null, new object[] { data }) as Task<CommandReturn>;
+                                        if (result != null)
+                                        {
+                                            try
+                                            {
+                                                cmdReturn = result.Result;
+                                            }
+                                            catch (Exception ex)
+                                            {
+                                                ConsoleServer.SendConsoleMessage("commands", $"Ошибка при получении результата из Task: {ex.Message}");
+                                                LogWorker.LogError($"Ошибка при получении результата из Task: {ex.Message}", $"commands/{info.Name}");
+                                            }
+                                        }
+                                        else
+                                        {
+                                            ConsoleServer.SendConsoleMessage("commands", $"Метод '{info.Name}' вернул неверный тип результата: {result.GetType().Name}");
+                                            LogWorker.LogWarning($"Метод '{info.Name}' вернул неверный тип результата: {result.GetType().Name}", $"commands/{info.Name}");
+                                        }
+                                    }
 
                                     if (data != null)
                                     {

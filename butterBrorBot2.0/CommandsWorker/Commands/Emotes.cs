@@ -27,12 +27,12 @@ namespace butterBror
                 ForBotCreator = false,
                 ForChannelAdmins = false
             };
-            public static async Task<CommandReturn> IndexAsync(CommandData data)
+            public static async Task<CommandReturn> Index(CommandData data)
             {
                 string[] updateAlias = ["update", "обновить", "u", "о"];
                 string[] randomAlias = ["random", "рандом", "рандомный", "r", "р"];
-
                 string resultMessage = "";
+
                 if (data.args.Count > 0)
                 {
                     if (updateAlias.Contains(data.args.ElementAt(0)))
@@ -149,7 +149,7 @@ namespace butterBror
                     Ephemeral = false,
                     Title = "",
                     Color = (Discord.Color)Color.Green,
-                    NickNameColor = TwitchLib.Client.Enums.ChatColorPresets.Coral
+                    NickNameColor = TwitchLib.Client.Enums.ChatColorPresets.YellowGreen
                 };
             }
         }

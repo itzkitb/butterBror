@@ -24,7 +24,7 @@ namespace butterBror
         public static bool isNeedRestart = false;
         static Bot bot = new();
         public static int restartedTimes = 0;
-        public static string botVersion = "2.07.48";
+        public static string botVersion = "2.07.49";
         public static int CompletedCommands = 0;
         public static DataManager currencyWorker = new();
         // butter's currency
@@ -196,6 +196,8 @@ namespace butterBror
         public static CommandService discordCommands;
         public static IServiceProvider discordServices;
         public static string nowColor = "";
+        public static string[] connectionAnnounceChannels = [];
+        public static string[] reconnectionAnnounceChannels = [];
 
         // #BOT 0A
         public void Start(string[] args, int ThreadID)
@@ -261,6 +263,8 @@ namespace butterBror
                     DataManager.SaveData(SettingsPath, "ClientID", ""); p();
                     DataManager.SaveData(SettingsPath, "Secret", ""); p();
                     string[] channels = ["1channel", "2channel"]; p();
+                    DataManager.SaveData(SettingsPath, "connectionInfoChannels", (string[])[]); p();
+                    DataManager.SaveData(SettingsPath, "reconnectionInfoChannels", (string[])[]); p();
                     DataManager.SaveData(SettingsPath, "channels", channels); p();
                     string[] apis = ["1 api", "2 api"]; p();
                     DataManager.SaveData(SettingsPath, "weatherApis", apis); p();
@@ -285,11 +289,14 @@ namespace butterBror
                     Tools.LOG("\n- Чтение информации", WrapLine: false);
                     BotNick = DataManager.GetData<string>(SettingsPath, "nickname"); p();
                     Channels = DataManager.GetData<string[]>(SettingsPath, "channels"); p();
+                    reconnectionAnnounceChannels = DataManager.GetData<string[]>(SettingsPath, "reconnectionInfoChannels"); p();
+                    connectionAnnounceChannels = DataManager.GetData<string[]>(SettingsPath, "connectionInfoChannels"); p();
                     BotDiscordToken = DataManager.GetData<string>(SettingsPath, "discordToken"); p();
                     imgurAPIkey = DataManager.GetData<string>(SettingsPath, "imgurAPI"); p();
                     UID = DataManager.GetData<string>(SettingsPath, "UID"); p();
                     ClientID = DataManager.GetData<string>(SettingsPath, "ClientID"); p();
                     Secret = DataManager.GetData<string>(SettingsPath, "Secret"); p();
+                    Tools.LOG($" {ClientID} {Secret} ");
                     Tools.LOG("\n- Генерируем/получаем токен...");
                     tokenGetter = new(ClientID, Secret, "database.db");
                     var token = await tokenGetter.GetTokenAsync();

@@ -112,6 +112,15 @@ namespace butterBror
         public static void OnReconnected(object s, OnReconnectedEventArgs e)
         {
             Tools.LOG("Переподключен!");
+            foreach (string channel in Bot.reconnectionAnnounceChannels)
+            {
+                string name = Tools.GetUsername(channel, "NONE\n");
+                if (name != "NONE\n")
+                {
+                    Tools.SendMessage(name, "butterBror Переподключен!", channel, "", "ru", true);
+                }
+            }
+
             if (false)
             {
                 Console.ForegroundColor = ConsoleColor.Cyan;
@@ -225,7 +234,14 @@ namespace butterBror
             {
                 await Tools.ChangeNicknameColorAsync(TwitchLib.Client.Enums.ChatColorPresets.DodgerBlue);
                 Tools.SendMessage(Bot.BotNick, "butterBror Подключён!", "", "", "ru", true);
-                Tools.SendMessage("itzkitb", "butterBror Подключён!", "", "", "ru", true);
+                foreach (string channel in Bot.connectionAnnounceChannels)
+                {
+                    string name = Tools.GetUsername(channel, "NONE\n");
+                    if (name != "NONE\n")
+                    {
+                        Tools.SendMessage(name, "butterBror Подключён!", channel, "", "ru", true);
+                    }
+                }
                 LogWorker.LogMessage("Подключён к Twitch!", "event4B");
                 Bot.is_connected = true;
             }
