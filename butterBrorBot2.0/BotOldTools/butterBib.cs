@@ -1,11 +1,11 @@
 ﻿using butterBror;
+using butterBror.Utils;
+using butterBror.Utils.DataManagers;
 using Discord;
 using Discord.WebSocket;
 using TwitchLib.Client.Enums;
 using TwitchLib.Client.Events;
 using TwitchLib.Client.Extensions;
-using static butterBror.BotWorker;
-using static butterBror.BotWorker.FileMng;
 
 namespace butterBib
 {
@@ -121,9 +121,9 @@ namespace butterBib
         public static async void SendCommandReply(TwitchMessageSendData data)
         {
             ConsoleServer.SendConsoleMessage("commands", "Отправка сообщения...");
-            LogWorker.LogInfo($"Был отправлен ответ на сообщение в канал {data.Channel}: {data.Message}", "SMR");
-            data.Message = Tools.FilterText(data.Message);
-            await Tools.ChangeNicknameColorAsync(data.NickNameColor);
+            LogWorker.Log($"Был отправлен ответ на сообщение в канал {data.Channel}: {data.Message}", LogWorker.LogTypes.Msg, "send_command_reply");
+            data.Message = TextUtil.FilterText(data.Message);
+            await CommandUtil.ChangeNicknameColorAsync(data.NickNameColor);
 
             if (data.Message.Length > 1500)
             {
@@ -165,8 +165,8 @@ namespace butterBib
         public static async void SendCommandReply(DiscordCommandSendData data)
         {
             ConsoleServer.SendConsoleMessage("discord", "Отправка сообщения...");
-            LogWorker.LogInfo($"Был отправлен ответ на комманду, на сервер {data.Server}: {data.Message}", "SMRDS");
-            data.Message = Tools.FilterText(data.Message);
+            LogWorker.Log($"Был отправлен ответ на комманду, на сервер {data.Server}: {data.Message}", LogWorker.LogTypes.Msg, "send_command_reply_discord");
+            data.Message = TextUtil.FilterText(data.Message);
 
             if (data.Message.Length > 1500)
             {

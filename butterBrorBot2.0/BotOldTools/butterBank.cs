@@ -6,8 +6,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static butterBror.BotWorker.FileMng;
-using static butterBror.BotWorker;
+using butterBror.Utils;
+using butterBror.Utils.DataManagers;
 
 namespace butterBank
 {
@@ -44,7 +44,7 @@ namespace butterBank
                     CardUUID = UserGetData<string>(UserID, "CardUUID"),
                     Cutlet = UserGetData<int>(UserID, "Cutlet"),
                     UserID = UserID,
-                    UserName = Tools.GetUsername(UserID, UserID)
+                    UserName = NamesUtil.GetUsername(UserID, UserID)
                 };
                 return data;
             }
@@ -52,7 +52,7 @@ namespace butterBank
             {
                 if (!Directory.Exists(Bot.UsersDataPath))
                 {
-                    FileTools.CreateDirectory(Bot.UsersDataPath);
+                    FileUtil.CreateDirectory(Bot.UsersDataPath);
                 }
             }
             public static void ClearData()
@@ -79,7 +79,7 @@ namespace butterBank
                     }
                     catch (Exception ex)
                     {
-                        Tools.ErrorOccured(ex.Message, "bankGetData");
+                        ConsoleUtil.ErrorOccured(ex.Message, "bankGetData");
                         return default(T);
                     }
                 }
@@ -162,7 +162,7 @@ namespace butterBank
                             string json = File.ReadAllText(filePath);
                             dynamic userParams = JsonConvert.DeserializeObject(json);
                             userParams[paramName] = JToken.FromObject(value);
-                            FileTools.SaveFile(filePath, JsonConvert.SerializeObject(userParams, Formatting.Indented));
+                            FileUtil.SaveFile(filePath, JsonConvert.SerializeObject(userParams, Formatting.Indented));
                         }
                     }
                     if (autoSave)
@@ -172,7 +172,7 @@ namespace butterBank
                 }
                 catch (Exception ex)
                 {
-                    Tools.ErrorOccured(ex.Message, "user1A");
+                    ConsoleUtil.ErrorOccured(ex.Message, "user1A");
                 }
             }
 
@@ -219,7 +219,7 @@ namespace butterBank
                 }
                 catch (Exception ex)
                 {
-                    Tools.ErrorOccured(ex.Message, "user2A");
+                    ConsoleUtil.ErrorOccured(ex.Message, "user2A");
                 }
             }
 
@@ -227,7 +227,7 @@ namespace butterBank
             {
                 string filePath = Bot.UsersBankDataPath + userId + ".json";
                 string json = JsonConvert.SerializeObject(userData[userId], Formatting.Indented);
-                FileTools.SaveFile(filePath, json);
+                FileUtil.SaveFile(filePath, json);
             }
 
             public static bool IsContainsKey(string key, string userId)

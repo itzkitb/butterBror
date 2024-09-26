@@ -1,6 +1,6 @@
-﻿using static butterBror.BotWorker.FileMng;
-using static butterBror.BotWorker;
-using butterBib;
+﻿using butterBib;
+using butterBror.Utils;
+using butterBror.Utils.DataManagers;
 using Discord;
 
 namespace butterBror
@@ -40,7 +40,7 @@ namespace butterBror
                 }
                 catch (Exception ex)
                 {
-                    Tools.ErrorOccured(ex.Message, "cmd7A");
+                    ConsoleUtil.ErrorOccured(ex.Message, "cmd7A");
                     resultMessage = TranslationManager.GetTranslation(data.User.Lang, "error", data.ChannelID);
                 }
                 return new()

@@ -1,6 +1,5 @@
-﻿using static butterBror.BotWorker.FileMng;
-using static butterBror.BotWorker;
-using butterBib;
+﻿using butterBib;
+using butterBror.Utils;
 using Discord;
 using TwitchLib.Client.Enums;
 
@@ -37,13 +36,13 @@ namespace butterBror
                 int win = rand.Next(1, 6);
                 int page2 = rand.Next(1, 4);
                 string translationParam = "russianRoullete";
-                if (Tools.GetBalance(data.UserUUID) > 4)
+                if (BalanceUtil.GetBalance(data.UserUUID) > 4)
                 {
                     if (win < 3)
                     {
                         // WIN
                         translationParam += "Win" + page2;
-                        Tools.SaveBalance(data.UserUUID, 1, 0);
+                        BalanceUtil.SaveBalance(data.UserUUID, 1, 0);
                     }
                     else
                     {
@@ -51,11 +50,11 @@ namespace butterBror
                         translationParam += "Over" + page2;
                         if (page2 == 4)
                         {
-                            Tools.SaveBalance(data.UserUUID, -1, 0);
+                            BalanceUtil.SaveBalance(data.UserUUID, -1, 0);
                         }
                         else
                         {
-                            Tools.SaveBalance(data.UserUUID, -5, 0);
+                            BalanceUtil.SaveBalance(data.UserUUID, -5, 0);
                         }
                         resultNicknameColor = ChatColorPresets.Red;
                         resultColor = Color.Red;

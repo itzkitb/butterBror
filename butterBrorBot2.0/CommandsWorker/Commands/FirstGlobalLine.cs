@@ -1,6 +1,6 @@
-﻿using static butterBror.BotWorker.FileMng;
-using static butterBror.BotWorker;
-using butterBib;
+﻿using butterBib;
+using butterBror.Utils;
+using butterBror.Utils.DataManagers;
 using Discord;
 using TwitchLib.Client.Enums;
 
@@ -34,63 +34,52 @@ namespace butterBror
                 string resultMessage = "";
                 Color resultColor = Color.Green;
                 string resultMessageTitle = TranslationManager.GetTranslation(data.User.Lang, "dsFGLTitle", data.ChannelID);
-                try
+                TimeZoneInfo tz = TimeZoneInfo.FindSystemTimeZoneById("Russian Standard Time");
+                DateTime now = TimeZoneInfo.ConvertTime(DateTime.Now, tz);
+                if (data.args.Count != 0)
                 {
-                    TimeZoneInfo tz = TimeZoneInfo.FindSystemTimeZoneById("Russian Standard Time");
-                    DateTime now = TimeZoneInfo.ConvertTime(DateTime.Now, tz);
-                    if (data.args.Count != 0)
+                    var name = TextUtil.NicknameFilter(data.args.ElementAt(0).ToLower());
+                    var userID = NamesUtil.GetUserID(name);
+                    if (userID == "err")
                     {
-                        var name = Tools.NicknameFilter(data.args.ElementAt(0).ToLower());
-                        var userID = Tools.GetUserID(name);
-                        if (userID == "err")
-                        {
-                            resultMessage = TranslationManager.GetTranslation(data.User.Lang, "noneExistUser", data.ChannelID)
-                                .Replace("%user%", Tools.DontPingUsername(name));
-                            resultMessageTitle = TranslationManager.GetTranslation(data.User.Lang, "Err", data.ChannelID);
-                            resultColor = Color.Red;
-                            resultNicknameColor = ChatColorPresets.Red;
-                        }
-                        else
-                        {
-                            var firstLine = UsersData.UserGetData<string>(userID, "firstMessage");
-                            var firstLineDate = UsersData.UserGetData<DateTime>(userID, "firstSeen");
-
-                            if (name == Bot.client.TwitchUsername.ToLower())
-                            {
-                                resultMessage = TranslationManager.GetTranslation(data.User.Lang, "firstGlobalLineWait", data.ChannelID);
-                            }
-                            else if (name == data.User.Name)
-                            {
-                                resultMessage = TranslationManager.GetTranslation(data.User.Lang, "myFirstGlobalLine", data.ChannelID)
-                                    .Replace("&timeAgo&", Tools.FormatTimeSpan(Tools.GetTimeTo(firstLineDate, now, false), data.User.Lang))
-                                    .Replace("%message%", firstLine);
-                            }
-                            else
-                            {
-                                resultMessage = TranslationManager.GetTranslation(data.User.Lang, "firstGlobalLine", data.ChannelID)
-                                    .Replace("%user%", Tools.DontPingUsername(Tools.GetUsername(userID, data.User.Name)))
-                                    .Replace("&timeAgo&", Tools.FormatTimeSpan(Tools.GetTimeTo(firstLineDate, now, false), data.User.Lang))
-                                    .Replace("%message%", firstLine);
-                            }
-                        }
+                        resultMessage = TranslationManager.GetTranslation(data.User.Lang, "noneExistUser", data.ChannelID)
+                            .Replace("%user%", NamesUtil.DontPingUsername(name));
+                        resultMessageTitle = TranslationManager.GetTranslation(data.User.Lang, "Err", data.ChannelID);
+                        resultColor = Color.Red;
+                        resultNicknameColor = ChatColorPresets.Red;
                     }
                     else
                     {
-                        var firstLine = UsersData.UserGetData<string>(data.UserUUID, "firstMessage");
-                        var firstLineDate = UsersData.UserGetData<DateTime>(data.UserUUID, "firstSeen");
+                        var firstLine = UsersData.UserGetData<string>(userID, "firstMessage");
+                        var firstLineDate = UsersData.UserGetData<DateTime>(userID, "firstSeen");
 
-                        resultMessage = TranslationManager.GetTranslation(data.User.Lang, "myFirstGlobalLine", data.ChannelID)
-                            .Replace("&timeAgo&", Tools.FormatTimeSpan(Tools.GetTimeTo(firstLineDate, now, false), data.User.Lang))
-                            .Replace("%message%", firstLine);
+                        if (name == Bot.client.TwitchUsername.ToLower())
+                        {
+                            resultMessage = TranslationManager.GetTranslation(data.User.Lang, "firstGlobalLineWait", data.ChannelID);
+                        }
+                        else if (name == data.User.Name)
+                        {
+                            resultMessage = TranslationManager.GetTranslation(data.User.Lang, "myFirstGlobalLine", data.ChannelID)
+                                .Replace("&timeAgo&", TextUtil.FormatTimeSpan(FormatUtil.GetTimeTo(firstLineDate, now, false), data.User.Lang))
+                                .Replace("%message%", firstLine);
+                        }
+                        else
+                        {
+                            resultMessage = TranslationManager.GetTranslation(data.User.Lang, "firstGlobalLine", data.ChannelID)
+                                .Replace("%user%", NamesUtil.DontPingUsername(NamesUtil.GetUsername(userID, data.User.Name)))
+                                .Replace("&timeAgo&", TextUtil.FormatTimeSpan(FormatUtil.GetTimeTo(firstLineDate, now, false), data.User.Lang))
+                                .Replace("%message%", firstLine);
+                        }
                     }
                 }
-                catch (Exception ex)
+                else
                 {
-                    Tools.ErrorOccured(ex.Message, "cmd2A");
-                    resultMessage = TranslationManager.GetTranslation(data.User.Lang, "error", data.ChannelID);
-                    resultMessageTitle = TranslationManager.GetTranslation(data.User.Lang, "Err", data.ChannelID);
-                    resultColor = Color.Red;
-                    resultNicknameColor = ChatColorPresets.Red;
+                    var firstLine = UsersData.UserGetData<string>(data.UserUUID, "firstMessage");
+                    var firstLineDate = UsersData.UserGetData<DateTime>(data.UserUUID, "firstSeen");
+
+                    resultMessage = TranslationManager.GetTranslation(data.User.Lang, "myFirstGlobalLine", data.ChannelID)
+                        .Replace("&timeAgo&", TextUtil.FormatTimeSpan(FormatUtil.GetTimeTo(firstLineDate, now, false), data.User.Lang))
+                        .Replace("%message%", firstLine);
                 }
 
                 return new()

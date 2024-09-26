@@ -1,8 +1,8 @@
-﻿using static butterBror.BotWorker.FileMng;
-using static butterBror.BotWorker;
-using Discord;
+﻿using Discord;
 using butterBib;
 using TwitchLib.Client.Enums;
+using butterBror.Utils;
+using butterBror.Utils.DataManagers;
 
 namespace butterBror
 {

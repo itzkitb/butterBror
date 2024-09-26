@@ -1,9 +1,9 @@
 ﻿using System.Net.NetworkInformation;
-using static butterBror.BotWorker;
 using Discord;
 using butterBib;
 using Discord.Rest;
 using TwitchLib.Client.Enums;
+using butterBror.Utils;
 
 namespace butterBror
 {
@@ -57,7 +57,7 @@ namespace butterBror
                 }
                 returnMessage = TranslationManager.GetTranslation(data.User.Lang, "pingText", data.ChannelID)
                             .Replace("%version%", BotEngine.botVersion)
-                            .Replace("%workTime%", Tools.FormatTimeSpan(workTime, data.User.Lang))
+                            .Replace("%workTime%", TextUtil.FormatTimeSpan(workTime, data.User.Lang))
                             .Replace("%tabs%", Bot.Channels.Length.ToString())
                             .Replace("%loadedCMDs%", Bot.CommandsActive.ToString())
                             .Replace("%completedCMDs%", BotEngine.CompletedCommands.ToString())

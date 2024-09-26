@@ -1,7 +1,6 @@
-﻿using static butterBror.BotWorker;
-using butterBib;
+﻿using butterBib;
+using butterBror.Utils;
 using Discord;
-using TwitchLib.Api.Helix.Models.Bits.ExtensionBitsProducts;
 using TwitchLib.Client.Enums;
 
 namespace butterBror
@@ -37,8 +36,8 @@ namespace butterBror
                 ChatColorPresets resultNicknameColor = ChatColorPresets.YellowGreen;
                 if (NoBanwords.fullCheck(data.ArgsAsString, data.ChannelID))
                 {
-                    Tools.SaveBalance(data.UserUUID, -5, 0);
-                    Task<string[]> result = Tools.GPTRequest(data);
+                    BalanceUtil.SaveBalance(data.UserUUID, -5, 0);
+                    Task<string[]> result = Utils.APIUtil.GPT.GPTRequest(data);
                     if (result.Result.ToArray().ElementAt(0) == "ERR")
                     {
                         resultMessage = "🚩 " + TranslationManager.GetTranslation(data.User.Lang, "gptERR", data.ChannelID);

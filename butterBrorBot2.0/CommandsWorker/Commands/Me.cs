@@ -1,6 +1,5 @@
-﻿using static butterBror.BotWorker;
-using TwitchLib.Client.Events;
-using butterBib;
+﻿using butterBib;
+using butterBror.Utils;
 using Discord;
 
 
@@ -32,10 +31,10 @@ namespace butterBror
             {
                 bool checked_msg = false;
                 string resultMessage = "";
-                if (Tools.FilterTextWithoutSpaces(data.ArgsAsString) != "")
+                if (TextUtil.FilterTextWithoutSpaces(data.ArgsAsString) != "")
                 {
                     string[] blockedEntries = ["/", "$", "#", "+", "-"];
-                    string meMessage = Tools.FilterText(data.ArgsAsString);
+                    string meMessage = TextUtil.FilterText(data.ArgsAsString);
                     while (!checked_msg)
                     {
                         checked_msg = true;

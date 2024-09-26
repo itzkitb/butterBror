@@ -1,6 +1,6 @@
-﻿using static butterBror.BotWorker.FileMng;
-using static butterBror.BotWorker;
-using butterBib;
+﻿using butterBib;
+using butterBror.Utils;
+using butterBror.Utils.DataManagers;
 using Discord;
 using TwitchLib.Client.Enums;
 
@@ -34,87 +34,77 @@ namespace butterBror
                 Color resultColor = Color.Green;
                 ChatColorPresets resultNicknameColor = ChatColorPresets.YellowGreen;
                 string resultMessageTitle = TranslationManager.GetTranslation(data.User.Lang, "dsLLTitle", data.ChannelID);
-                try
+                if (data.args.Count != 0)
                 {
-                    if (data.args.Count != 0)
+                    var name = TextUtil.NicknameFilter(data.args.ElementAt(0).ToLower());
+                    var userID = NamesUtil.GetUserID(name);
+                    var message = MessagesWorker.GetMessage(data.ChannelID, userID);
+                    var bages = "";
+                    if (message != null)
                     {
-                        var name = Tools.NicknameFilter(data.args.ElementAt(0).ToLower());
-                        var userID = Tools.GetUserID(name);
-                        var message = MessagesWorker.GetMessage(data.ChannelID, userID, 0);
-                        var bages = "";
-                        if (message != null)
+                        if (userID != "err")
                         {
-                            if (userID != "err")
+                            if (name != Bot.client.TwitchUsername.ToLower())
                             {
-                                if (name != Bot.client.TwitchUsername.ToLower())
+                                if (name == data.User.Name.ToLower())
                                 {
-                                    if (name == data.User.Name.ToLower())
-                                    {
-                                        resultMessage = TranslationManager.GetTranslation(data.User.Lang, "youRightThere", data.ChannelID);
-                                    }
-                                    else
-                                    {
-                                        if (message.isMe)
-                                        {
-                                            bages += TranslationManager.GetTranslation(data.User.Lang, "isMe", data.ChannelID);
-                                        }
-                                        if (message.isVip)
-                                        {
-                                            bages += TranslationManager.GetTranslation(data.User.Lang, "isVip", data.ChannelID);
-                                        }
-                                        if (message.isTurbo)
-                                        {
-                                            bages += TranslationManager.GetTranslation(data.User.Lang, "isTurbo", data.ChannelID);
-                                        }
-                                        if (message.isModerator)
-                                        {
-                                            bages += TranslationManager.GetTranslation(data.User.Lang, "isModerator", data.ChannelID);
-                                        }
-                                        if (message.isPartner)
-                                        {
-                                            bages += TranslationManager.GetTranslation(data.User.Lang, "isPartner", data.ChannelID);
-                                        }
-                                        if (message.isStaff)
-                                        {
-                                            bages += TranslationManager.GetTranslation(data.User.Lang, "isStaff", data.ChannelID);
-                                        }
-                                        if (message.isSubscriber)
-                                        {
-                                            bages += TranslationManager.GetTranslation(data.User.Lang, "isSubscriber", data.ChannelID);
-                                        }
-                                        var Date = message.messageDate;
-                                        resultMessage = TranslationManager.GetTranslation(data.User.Lang, "lastMessage", data.ChannelID)
-                                            .Replace("&timeAgo&", Tools.FormatTimeSpan(Tools.GetTimeTo(message.messageDate, DateTime.Now, false), data.User.Lang))
-                                            .Replace("%message%", message.messageText).Replace("%bages%", bages)
-                                            .Replace("%user%", Tools.DontPingUsername(Tools.GetUsername(userID, data.User.Name)));
-                                    }
+                                    resultMessage = TranslationManager.GetTranslation(data.User.Lang, "youRightThere", data.ChannelID);
                                 }
                                 else
                                 {
-                                    resultMessage = TranslationManager.GetTranslation(data.User.Lang, "lastMessageWait", data.ChannelID);
+                                    if (message.isMe)
+                                    {
+                                        bages += TranslationManager.GetTranslation(data.User.Lang, "isMe", data.ChannelID);
+                                    }
+                                    if (message.isVip)
+                                    {
+                                        bages += TranslationManager.GetTranslation(data.User.Lang, "isVip", data.ChannelID);
+                                    }
+                                    if (message.isTurbo)
+                                    {
+                                        bages += TranslationManager.GetTranslation(data.User.Lang, "isTurbo", data.ChannelID);
+                                    }
+                                    if (message.isModerator)
+                                    {
+                                        bages += TranslationManager.GetTranslation(data.User.Lang, "isModerator", data.ChannelID);
+                                    }
+                                    if (message.isPartner)
+                                    {
+                                        bages += TranslationManager.GetTranslation(data.User.Lang, "isPartner", data.ChannelID);
+                                    }
+                                    if (message.isStaff)
+                                    {
+                                        bages += TranslationManager.GetTranslation(data.User.Lang, "isStaff", data.ChannelID);
+                                    }
+                                    if (message.isSubscriber)
+                                    {
+                                        bages += TranslationManager.GetTranslation(data.User.Lang, "isSubscriber", data.ChannelID);
+                                    }
+                                    var Date = message.messageDate;
+                                    resultMessage = TranslationManager.GetTranslation(data.User.Lang, "lastMessage", data.ChannelID)
+                                        .Replace("&timeAgo&", TextUtil.FormatTimeSpan(FormatUtil.GetTimeTo(message.messageDate, DateTime.Now, false), data.User.Lang))
+                                        .Replace("%message%", message.messageText).Replace("%bages%", bages)
+                                        .Replace("%user%", NamesUtil.DontPingUsername(NamesUtil.GetUsername(userID, data.User.Name)));
                                 }
                             }
                             else
                             {
-                                resultMessage = TranslationManager.GetTranslation(data.User.Lang, "noneExistUser", data.ChannelID)
-                                    .Replace("%user%", Tools.DontPingUsername(name));
-                                resultMessageTitle = TranslationManager.GetTranslation(data.User.Lang, "Err", data.ChannelID);
-                                resultColor = Color.Red;
-                                resultNicknameColor = ChatColorPresets.Red;
+                                resultMessage = TranslationManager.GetTranslation(data.User.Lang, "lastMessageWait", data.ChannelID);
                             }
                         }
-                    }
-                    else
-                    {
-                        resultMessage = TranslationManager.GetTranslation(data.User.Lang, "youRightThere", data.ChannelID);
+                        else
+                        {
+                            resultMessage = TranslationManager.GetTranslation(data.User.Lang, "noneExistUser", data.ChannelID)
+                                .Replace("%user%", NamesUtil.DontPingUsername(name));
+                            resultMessageTitle = TranslationManager.GetTranslation(data.User.Lang, "Err", data.ChannelID);
+                            resultColor = Color.Red;
+                            resultNicknameColor = ChatColorPresets.Red;
+                        }
                     }
                 }
-                catch (Exception ex)
+                else
                 {
-                    Tools.ErrorOccured(ex.Message, "cmd3A");
-                    resultMessage = TranslationManager.GetTranslation(data.User.Lang, "error", data.ChannelID);
-                    resultMessageTitle = TranslationManager.GetTranslation(data.User.Lang, "Err", data.ChannelID);
-                    resultColor = Color.Red;
+                    resultMessage = TranslationManager.GetTranslation(data.User.Lang, "youRightThere", data.ChannelID);
                 }
                 return new()
                 {

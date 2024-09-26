@@ -1,7 +1,6 @@
-﻿using static butterBror.BotWorker.FileMng;
-using static butterBror.BotWorker;
-using butterBib;
-using Discord.Rest;
+﻿using butterBib;
+using butterBror.Utils;
+using butterBror.Utils.DataManagers;
 
 namespace butterBror
 {
@@ -82,7 +81,7 @@ namespace butterBror
                     UsersData.UserSaveData(data.UserUUID, "lastFromAfkResume", DateTime.UtcNow);
                     UsersData.UserSaveData(data.UserUUID, "fromAfkResumeTimes", 0);
                     string send = "";
-                    if (Tools.FilterTextWithoutSpaces(text) == "")
+                    if (TextUtil.FilterTextWithoutSpaces(text) == "")
                     {
                         send = result;
                     }

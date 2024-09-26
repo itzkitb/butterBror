@@ -1,11 +1,9 @@
 ﻿using Jint;
-using static butterBror.BotWorker.FileMng;
-using static butterBror.BotWorker;
-using TwitchLib.Client.Events;
 using butterBib;
 using Discord;
-using Discord.Rest;
 using TwitchLib.Client.Enums;
+using butterBror.Utils;
+using butterBror.Utils.DataManagers;
 
 namespace butterBror
 {
@@ -72,7 +70,7 @@ namespace butterBror
                         resultNicknameColor = ChatColorPresets.Firebrick;
                         resultMessage = "/me " + TranslationManager.GetTranslation(data.User.Lang, "jsError", data.ChannelID)
                             .Replace("%err%", ex.Message);
-                        LogWorker.LogWarning(ex.Message, "js");
+                        LogWorker.Log(ex.Message, LogWorker.LogTypes.Err, "js");
                     }
                 }
                 return new()

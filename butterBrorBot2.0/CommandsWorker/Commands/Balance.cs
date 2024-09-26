@@ -1,8 +1,7 @@
-﻿using static butterBror.BotWorker.FileMng;
-using static butterBror.BotWorker;
-using butterBib;
+﻿using butterBib;
+using butterBror.Utils;
+using butterBror.Utils.DataManagers;
 using Discord;
-using Discord.Rest;
 using TwitchLib.Client.Enums;
 
 namespace butterBror
@@ -34,24 +33,24 @@ namespace butterBror
                 string result = "";
                 Color colords = Color.Green;
                 ChatColorPresets colorNickname = ChatColorPresets.YellowGreen;
-                if (Tools.FilterTextWithoutSpaces(data.ArgsAsString) == "")
+                if (TextUtil.FilterTextWithoutSpaces(data.ArgsAsString) == "")
                 {
                     result = TranslationManager.GetTranslation(data.User.Lang, "balance", data.ChannelID)
                             .Replace("%coins%", UsersData.UserGetData<int>(data.UserUUID, "balance") + "." + UsersData.UserGetData<int>(data.UserUUID, "floatBalance"));
                 }
                 else
                 {
-                    var userID = Tools.GetUserID(Tools.NicknameFilter(data.ArgsAsString));
+                    var userID = NamesUtil.GetUserID(TextUtil.NicknameFilter(data.ArgsAsString));
                     if (userID != "err")
                     {
                         result = TranslationManager.GetTranslation(data.User.Lang, "balanceSelectedUser", data.ChannelID)
                             .Replace("%coins%", UsersData.UserGetData<int>(userID, "balance") + "." + UsersData.UserGetData<int>(userID, "floatBalance"))
-                            .Replace("%name%", Tools.DontPingUsername(Tools.NicknameFilter(data.ArgsAsString)));
+                            .Replace("%name%", NamesUtil.DontPingUsername(TextUtil.NicknameFilter(data.ArgsAsString)));
                     }
                     else
                     {
                         result = TranslationManager.GetTranslation(data.User.Lang, "noneExistUser", data.ChannelID)
-                            .Replace("%user%", Tools.DontPingUsername(Tools.NicknameFilter(data.ArgsAsString)));
+                            .Replace("%user%", NamesUtil.DontPingUsername(TextUtil.NicknameFilter(data.ArgsAsString)));
                         colords = Color.Red;
                         colorNickname = ChatColorPresets.Red;
                     }

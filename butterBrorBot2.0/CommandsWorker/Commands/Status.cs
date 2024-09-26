@@ -1,9 +1,7 @@
 ﻿using Discord;
 using System.Diagnostics;
-using static butterBror.BotWorker;
-using static butterBror.BotWorker.FileMng;
 using butterBib;
-using Discord.Rest;
+using butterBror.Utils;
 
 namespace butterBror
 {
@@ -46,7 +44,7 @@ namespace butterBror
                     DriveInfo driveInfo = new(driveLetter.Substring(0, 1));
                     long avalibeDiskSpace = driveInfo.AvailableFreeSpace / (1024 * 1024 * 1024); // GB
                     long diskSpace = driveInfo.TotalSize / (1024 * 1024 * 1024);
-                    int percentDiskUsed = (int)(float)(100.0 / Tools.ToNumber(diskSpace.ToString()) * Tools.ToNumber(avalibeDiskSpace.ToString()));
+                    int percentDiskUsed = (int)(float)(100.0 / FormatUtil.ToNumber(diskSpace.ToString()) * FormatUtil.ToNumber(avalibeDiskSpace.ToString()));
 
                     if (percentDiskUsed > 80)
                     {
@@ -173,7 +171,7 @@ namespace butterBror
                 }
                 catch (Exception ex)
                 {
-                    Tools.ErrorOccured(ex.Message, "cmd1A");
+                    ConsoleUtil.ErrorOccured(ex.Message, "cmd1A");
                 }
                 return new()
                 {

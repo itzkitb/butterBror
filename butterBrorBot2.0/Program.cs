@@ -7,13 +7,13 @@ using TwitchLib.Client.Events;
 using TwitchLib.Client.Models;
 using TwitchLib.Communication.Clients;
 using TwitchLib.Communication.Models;
-using static butterBror.BotWorker;
-using static butterBror.BotWorker.FileMng;
 using Discord;
 using Discord.WebSocket;
 using Discord.Commands;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
+using butterBror.Utils.DataManagers;
+using butterBror.Utils;
 
 
 namespace butterBror
@@ -24,7 +24,7 @@ namespace butterBror
         public static bool isNeedRestart = false;
         static Bot bot = new();
         public static int restartedTimes = 0;
-        public static string botVersion = "2.07.49";
+        public static string botVersion = "2.08";
         public static int CompletedCommands = 0;
         public static DataManager currencyWorker = new();
         // butter's currency
@@ -52,7 +52,7 @@ namespace butterBror
                 {
                     restartedTimes++;
                     isNeedRestart = false;
-                    Tools.LOG("Перезапуск...");
+                    ConsoleUtil.LOG("Перезапуск...");
                     Console.WriteLine(" +");
                     Console.WriteLine("");
                     try { task.Dispose(); } catch (Exception) { }
@@ -111,7 +111,7 @@ namespace butterBror
 
             var workTime = DateTime.Now - StartTime;
             var TimeNow = DateTime.UtcNow;
-            Tools.Title(botVersion, CompletedCommands, Tools.ReadedMessages, workTime);
+            ConsoleUtil.Title(botVersion, CompletedCommands, Bot.ReadedMessages, workTime);
 
             Random rand = new();
             Ping ping = new();
@@ -172,7 +172,7 @@ namespace butterBror
         public static readonly string LogsPath = MainPath + "LOGS.log";
         public static readonly string LocationsCachePath = MainPath + "LOC.cache";
         public static readonly string CurrencyPath = MainPath + "CURR.json";
-        public static TwitchTokenGetter tokenGetter = new(ClientID, Secret, "database.db");
+        public static TwitchTokenUtil tokenGetter = new(ClientID, Secret, "database.db");
         public static readonly CultureInfo LOL = new("fr-fr");
         public static readonly string ReserveCopyPath = ProgramPath + "bbRESERVE\\" + DateTime.UtcNow.Year + DateTime.UtcNow.Month + DateTime.UtcNow.Day + "/";
         public static Dictionary<string, string[]> EmotesByChannel = new();
@@ -198,6 +198,7 @@ namespace butterBror
         public static string nowColor = "";
         public static string[] connectionAnnounceChannels = [];
         public static string[] reconnectionAnnounceChannels = [];
+        public static int ReadedMessages = 0;
 
         // #BOT 0A
         public void Start(string[] args, int ThreadID)
@@ -238,23 +239,23 @@ namespace butterBror
             {
                 ConsoleServer.Main();
                 await Task.Delay(1000);
-                Tools.LOG("БОТ");
-                Tools.LOG("- Проверка и создание директорий", WrapLine: false);
-                FileTools.CreateDirectory(ProgramPath); p();
-                FileTools.CreateDirectory(MainPath); p();
-                FileTools.CreateDirectory(ChannelsPath); p();
-                FileTools.CreateDirectory(UsersDataPath); p();
-                FileTools.CreateDirectory(ConvertorsPath); p();
-                FileTools.CreateDirectory(NicknameToIDPath); p();
-                FileTools.CreateDirectory(IDToNicknamePath); p();
-                FileTools.CreateDirectory(TranslateDefualtPath); p();
-                FileTools.CreateDirectory(TranslateCustomPath); p();
-                FileTools.CreateDirectory(UsersBankDataPath); p();
+                ConsoleUtil.LOG("БОТ");
+                ConsoleUtil.LOG("- Проверка и создание директорий", WrapLine: false);
+                FileUtil.CreateDirectory(ProgramPath); p();
+                FileUtil.CreateDirectory(MainPath); p();
+                FileUtil.CreateDirectory(ChannelsPath); p();
+                FileUtil.CreateDirectory(UsersDataPath); p();
+                FileUtil.CreateDirectory(ConvertorsPath); p();
+                FileUtil.CreateDirectory(NicknameToIDPath); p();
+                FileUtil.CreateDirectory(IDToNicknamePath); p();
+                FileUtil.CreateDirectory(TranslateDefualtPath); p();
+                FileUtil.CreateDirectory(TranslateCustomPath); p();
+                FileUtil.CreateDirectory(UsersBankDataPath); p();
 
-                Tools.LOG("\n- Проверка и создание файлов", WrapLine: false);
+                ConsoleUtil.LOG("\n- Проверка и создание файлов", WrapLine: false);
                 if (!File.Exists(SettingsPath))
                 {
-                    FileTools.CreateFile(SettingsPath); p();
+                    FileUtil.CreateFile(SettingsPath); p();
                     DataManager.SaveData(SettingsPath, "nickname", ""); p();
                     DataManager.SaveData(SettingsPath, "token", ""); p();
                     DataManager.SaveData(SettingsPath, "discordToken", ""); p();
@@ -269,24 +270,23 @@ namespace butterBror
                     string[] apis = ["1 api", "2 api"]; p();
                     DataManager.SaveData(SettingsPath, "weatherApis", apis); p();
                     DataManager.SaveData(SettingsPath, "gptApis", apis); p();
-                    Tools.LOG($"\nФайл настроек создан! Заполните его! (Путь к файлу: {SettingsPath})", ConsoleColor.Black, ConsoleColor.Cyan);
+                    ConsoleUtil.LOG($"\nФайл настроек создан! Заполните его! (Путь к файлу: {SettingsPath})", ConsoleColor.Black, ConsoleColor.Cyan);
                     Thread.Sleep(-1);
                 }
                 else
                 {
                     p();
-                    FileTools.CreateFile(CookiesPath); p();
-                    FileTools.CreateFile(BanWordsPath); p();
-                    FileTools.CreateFile(BanWordsReplacementPath); p();
-                    FileTools.CreateFile(CurrencyPath); p();
-                    FileTools.CreateFile(LocationsCachePath); p();
-                    FileTools.CreateFile(LogsPath); p();
-                    FileTools.CreateFile(APIUseDataPath); p();
-                    FileTools.CreateFile(TranslateDefualtPath + "ru.txt"); p();
-                    FileTools.CreateFile(TranslateDefualtPath + "en.txt"); p();
-                    LogWorker.Ready(LogsPath);
+                    FileUtil.CreateFile(CookiesPath); p();
+                    FileUtil.CreateFile(BanWordsPath); p();
+                    FileUtil.CreateFile(BanWordsReplacementPath); p();
+                    FileUtil.CreateFile(CurrencyPath); p();
+                    FileUtil.CreateFile(LocationsCachePath); p();
+                    FileUtil.CreateFile(LogsPath); p();
+                    FileUtil.CreateFile(APIUseDataPath); p();
+                    FileUtil.CreateFile(TranslateDefualtPath + "ru.txt"); p();
+                    FileUtil.CreateFile(TranslateDefualtPath + "en.txt"); p();
 
-                    Tools.LOG("\n- Чтение информации", WrapLine: false);
+                    ConsoleUtil.LOG("\n- Чтение информации", WrapLine: false);
                     BotNick = DataManager.GetData<string>(SettingsPath, "nickname"); p();
                     Channels = DataManager.GetData<string[]>(SettingsPath, "channels"); p();
                     reconnectionAnnounceChannels = DataManager.GetData<string[]>(SettingsPath, "reconnectionInfoChannels"); p();
@@ -296,8 +296,8 @@ namespace butterBror
                     UID = DataManager.GetData<string>(SettingsPath, "UID"); p();
                     ClientID = DataManager.GetData<string>(SettingsPath, "ClientID"); p();
                     Secret = DataManager.GetData<string>(SettingsPath, "Secret"); p();
-                    Tools.LOG($" {ClientID} {Secret} ");
-                    Tools.LOG("\n- Генерируем/получаем токен...");
+                    ConsoleUtil.LOG($" {ClientID} {Secret} ");
+                    ConsoleUtil.LOG("\n- Генерируем/получаем токен...");
                     tokenGetter = new(ClientID, Secret, "database.db");
                     var token = await tokenGetter.GetTokenAsync();
                     if (token != null)
@@ -309,15 +309,15 @@ namespace butterBror
                     {
                         RestartPlease();
                     }
-                    Tools.ChangeNicknameColorAsync(TwitchLib.Client.Enums.ChatColorPresets.YellowGreen);
+                    CommandUtil.ChangeNicknameColorAsync(TwitchLib.Client.Enums.ChatColorPresets.YellowGreen);
                 }
             }
             catch (Exception ex)
             {
-                LogWorker.LogError(ex.Message, "bot0A");
+                LogWorker.Log(ex.Message, LogWorker.LogTypes.Err, "bot_maintrance");
                 Console.ForegroundColor = ConsoleColor.Red;
-                Tools.LOG("Ошибка подключения! Рестарт...", ConsoleColor.Red);
-                LogWorker.LogWarning($"Ошибка подключения! Рестарт...", "event0B");
+                ConsoleUtil.LOG("Ошибка подключения! Рестарт...", ConsoleColor.Red);
+                LogWorker.Log($"Ошибка подключения! Рестарт...", LogWorker.LogTypes.Err, "bot_maintrance");
                 Console.ResetColor();
                 RestartPlease();
             }
@@ -333,8 +333,8 @@ namespace butterBror
         {
             try
             {
-                Tools.LOG("\nТВИЧ");
-                Tools.LOG("- Подключение к Twitch.tv", WrapLine: false);
+                ConsoleUtil.LOG("\nТВИЧ");
+                ConsoleUtil.LOG("- Подключение к Twitch.tv", WrapLine: false);
                 ConnectionCredentials credentials = new(BotNick, "oauth:" + BotToken); p();
                 var clientOptions = new ClientOptions
                 {
@@ -373,14 +373,14 @@ namespace butterBror
                 // Console.Write("\n | Подготавливаем методы");
                 // MiniGames.MiningGame.Main.AddHardware(); p();
 
-                Tools.LOG("\n- Заканчиваем");
-                var lastChannel = Tools.GetUsername(Channels.LastOrDefault(), Channels.LastOrDefault());
+                ConsoleUtil.LOG("\n- Заканчиваем");
+                var lastChannel = NamesUtil.GetUsername(Channels.LastOrDefault(), Channels.LastOrDefault());
                 var notFoundedChannels = new List<string>();
                 last_channel_connected = lastChannel;
                 string sendChannelsMsg = "";
                 foreach (var channel in Channels)
                 {
-                    var channel2 = Tools.GetUsername(channel, "NONE\n");
+                    var channel2 = NamesUtil.GetUsername(channel, "NONE\n");
                     if (channel2 != "NONE\n")
                     {
                         sendChannelsMsg += $"{channel2}, ";
@@ -390,10 +390,10 @@ namespace butterBror
                         notFoundedChannels.Add(channel);
                     }
                 }
-                Tools.LOG($"Подключаюсь к: {sendChannelsMsg.TrimEnd(',', ' ')}");
+                ConsoleUtil.LOG($"Подключаюсь к: {sendChannelsMsg.TrimEnd(',', ' ')}");
                 foreach (var channel in Channels)
                 {
-                    var channel2 = Tools.GetUsername(channel, "NONE\n");
+                    var channel2 = NamesUtil.GetUsername(channel, "NONE\n");
                     if (channel2 != "NONE\n")
                     {
                         client.JoinChannel(channel2);
@@ -402,12 +402,12 @@ namespace butterBror
                 Console.ForegroundColor = ConsoleColor.Red;
                 foreach (var channel in notFoundedChannels)
                 {
-                    Tools.LOG("Не удалось найти пользователя с ID: " + channel, ConsoleColor.Red);
+                    ConsoleUtil.LOG("Не удалось найти пользователя с ID: " + channel, ConsoleColor.Red);
                 }
                 Console.ResetColor();
                 BotEngine.isTwitchReady = true;
-                Tools.LOG("ДИСКОРД");
-                Tools.LOG("- Создание клиента Discord", WrapLine: false);
+                ConsoleUtil.LOG("ДИСКОРД");
+                ConsoleUtil.LOG("- Создание клиента Discord", WrapLine: false);
                 var discordConfig = new DiscordSocketConfig
                 {
                     MessageCacheSize = 1000,
@@ -420,7 +420,7 @@ namespace butterBror
                     .AddSingleton(discordCommands)
                     .BuildServiceProvider(); p();
 
-                Tools.LOG("\n- Подписка на события Discord", WrapLine: false);
+                ConsoleUtil.LOG("\n- Подписка на события Discord", WrapLine: false);
                 discordClient.Log += DiscordEventHandler.LogAsync; p();
                 discordClient.JoinedGuild += DiscordEventHandler.ConnectToGuilt; p();
                 discordClient.Ready += DiscordWorker.ReadyAsync; p();
@@ -434,19 +434,19 @@ namespace butterBror
                 discordClient.ChannelUpdated += DiscordEventHandler.ChannelUpdated; p();
                 discordClient.Connected += DiscordEventHandler.Connected; p();
                 discordClient.ButtonExecuted += DiscordEventHandler.ButtonTouched; p();
-                Tools.LOG("\n- Регистрация команд Discord...");
+                ConsoleUtil.LOG("\n- Регистрация команд Discord...");
                 await DiscordWorker.RegisterCommandsAsync();
-                Tools.LOG("- Вход в Discord", WrapLine: false);
+                ConsoleUtil.LOG("- Вход в Discord", WrapLine: false);
                 await discordClient.LoginAsync(TokenType.Bot, BotDiscordToken); p();
                 await discordClient.StartAsync(); p();
-                Tools.LOG("\nГОТОВО!");
+                ConsoleUtil.LOG("\nГОТОВО!");
             }
             catch (Exception ex)
             {
-                LogWorker.LogError(ex.Message, "bot1A");
+                LogWorker.Log(ex.Message, LogWorker.LogTypes.Err, "bot_connect");
                 Console.ForegroundColor = ConsoleColor.Red;
-                Tools.LOG("Ошибка подключения! Рестарт...", ConsoleColor.Red);
-                LogWorker.LogWarning($"Ошибка подключения! Рестарт... " + ex.Message, "event0B");
+                ConsoleUtil.LOG("Ошибка подключения! Рестарт...", ConsoleColor.Red);
+                LogWorker.Log($"Ошибка подключения! Рестарт... " + ex.Message, LogWorker.LogTypes.Err, "bot_connect");
                 Console.ResetColor();
                 RestartPlease();
             }
@@ -458,34 +458,38 @@ namespace butterBror
                 // Сколько времени работает
                 var workTime = DateTime.Now - BotEngine.StartTime;
                 // Пинг твича
-                Tools.Pingator twPing = new();
+                PingUtil twPing = new();
                 await twPing.PingAsync("twitch.tv", 1000);
                 if (!twPing.isSuccess)
                 {
                     ConsoleServer.SendConsoleMessage("errors", "Cannot ping twitch: " + twPing.resultText);
                 }
                 // Пинг дискорда
-                Tools.Pingator dsPing = new();
+                PingUtil dsPing = new();
                 await dsPing.PingAsync("discord.com", 1000);
                 if (!dsPing.isSuccess)
                 {
                     ConsoleServer.SendConsoleMessage("errors", "Cannot ping discord: " + dsPing.resultText);
                 }
                 // Пинг гугла
-                Tools.Pingator glPing = new();
-                await glPing.PingAsync("google.com", 1000);
+                PingUtil glPing = new();
+                await glPing.PingAsync("192.168.1.1", 1000);
                 if (!glPing.isSuccess)
                 {
-                    ConsoleServer.SendConsoleMessage("errors", "Cannot ping discord: " + dsPing.resultText);
+                    await glPing.PingAsync("192.168.0.1", 1000);
+                    if (!glPing.isSuccess)
+                    {
+                        ConsoleServer.SendConsoleMessage("errors", "Cannot ping ASP: " + dsPing.resultText);
+                    }
                 }
                 // Память, занятая процессом
                 Process process = Process.GetCurrentProcess();
                 long workingAppSet = process.WorkingSet64 / (1024 * 1024);
                 // Подготовка сообщения
-                string message = $"/me glorp 📡 Твитч: {twPing.pingSpeed}ms · Дискорд: {dsPing.pingSpeed}ms · Global: {glPing.pingSpeed}ms · {workTime.ToString(@"dd\:hh\:mm\.ss")} · {workingAppSet}мб";
+                string message = $"/me glorp 📡 Твитч: {twPing.pingSpeed}ms · Дискорд: {dsPing.pingSpeed}ms · Глобальный: {glPing.pingSpeed}ms · {workTime.ToString(@"dd\:hh\:mm\.ss")} · {workingAppSet}мб";
                 // Отправка сообщения
-                await Tools.ChangeNicknameColorAsync(TwitchLib.Client.Enums.ChatColorPresets.DodgerBlue);
-                Tools.SendMessage(BotNick, message, "", "", "", true);
+                await CommandUtil.ChangeNicknameColorAsync(TwitchLib.Client.Enums.ChatColorPresets.DodgerBlue);
+                ChatUtil.SendMessage(BotNick, message, "", "", "", true);
                 string newToken = "";
                 try
                 {
@@ -497,13 +501,13 @@ namespace butterBror
                 }
                 catch (Exception ex)
                 {
-                    Tools.LOG($"Ошибка получения нового токена!!! ({ex.Message})", BG: ConsoleColor.Red, FG: ConsoleColor.Black);
+                    ConsoleUtil.LOG($"Ошибка получения нового токена!!! ({ex.Message})", BG: ConsoleColor.Red, FG: ConsoleColor.Black);
                 }
             }
             catch (Exception ex)
             {
                 // Обработчик ошибок
-                Tools.LOG($"Не удалось отправить статус сообщение! ({ex.Message})", ConsoleColor.Red);
+                ConsoleUtil.LOG($"Не удалось отправить статус сообщение! ({ex.Message})", ConsoleColor.Red);
             }
         } // Отправка статус-сообщенеия в чат бота
         public static void RestartPlease()
@@ -515,13 +519,13 @@ namespace butterBror
         } // Запуск рестарта
         static void Restarter()
         {
-            Tools.LOG("Рестарт через 3 сек.", WrapLine: false);
+            ConsoleUtil.LOG("Рестарт через 3 сек.", WrapLine: false);
             Thread.Sleep(1000);
             Console.Write(".");
             Thread.Sleep(1000);
             Console.Write(".\n");
             Thread.Sleep(1000);
-            Tools.LOG("Рестарт случился!");
+            ConsoleUtil.LOG("Рестарт случился!");
             // Попытка отключения всех каналов от клиента
             try
             {
@@ -592,7 +596,7 @@ namespace butterBror
             }
             catch (Exception ex)
             {
-                Tools.ErrorOccured(ex.Message, "DS01");
+                ConsoleUtil.ErrorOccured(ex.Message, "DS01");
             }
         }
         public static async Task MessageReceivedAsync(SocketMessage message)
@@ -601,11 +605,11 @@ namespace butterBror
             {
                 if (!(message is SocketUserMessage msg) || message.Author.IsBot) return;
                 OnMessageReceivedArgs e = default;
-                Tools.MessageWorker("ds" + message.Author.Id.ToString(), ((SocketGuildChannel)message.Channel).Guild.Id.ToString(), message.Author.Username.ToLower(), message.Content, e, ((SocketGuildChannel)message.Channel).Guild.Name, "ds", message.Channel.ToString());
+                CommandUtil.MessageWorker("ds" + message.Author.Id.ToString(), ((SocketGuildChannel)message.Channel).Guild.Id.ToString(), message.Author.Username.ToLower(), message.Content, e, ((SocketGuildChannel)message.Channel).Guild.Name, "ds", message.Channel.ToString());
             }
             catch (Exception ex)
             {
-                Tools.ErrorOccured(ex.Message, "DS02");
+                ConsoleUtil.ErrorOccured(ex.Message, "DS02");
             }
         }
         public static async Task RegisterCommandsAsync()
@@ -619,7 +623,7 @@ namespace butterBror
             }
             catch (Exception ex)
             {
-                Tools.ErrorOccured(ex.Message, "DS03");
+                ConsoleUtil.ErrorOccured(ex.Message, "DS03");
             }
         }
         private static async Task RegisterSlashCommands()
@@ -657,7 +661,7 @@ namespace butterBror
             }
             catch (Exception ex)
             {
-                Tools.ErrorOccured(ex.Message, "DS00");
+                ConsoleUtil.ErrorOccured(ex.Message, "DS00");
                 return Task.CompletedTask;
             }
         }
@@ -670,7 +674,7 @@ namespace butterBror
             }
             catch (Exception ex)
             {
-                Tools.ErrorOccured(ex.Message, "DS01");
+                ConsoleUtil.ErrorOccured(ex.Message, "DS01");
             }
         }
         public static async Task HandleCommandAsync(SocketMessage arg)
@@ -685,13 +689,16 @@ namespace butterBror
                 {
                     var context = new SocketCommandContext(Bot.discordClient, message);
                     var result = await Bot.discordCommands.ExecuteAsync(context, argPos, Bot.discordServices);
-                    if (!result.IsSuccess) Tools.LOG(result.ErrorReason, ConsoleColor.Red);
+                    if (!result.IsSuccess)
+                    {
+                        ConsoleUtil.LOG(result.ErrorReason, ConsoleColor.Red);
+                    }
                 }
             }
 
             catch (Exception ex)
             {
-                Tools.ErrorOccured(ex.Message, "DS03");
+                ConsoleUtil.ErrorOccured(ex.Message, "DS03");
             }
         }
         public static async Task SlashCommandHandler(SocketSlashCommand command)

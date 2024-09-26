@@ -1,5 +1,5 @@
-﻿using static butterBror.BotWorker;
-using butterBib;
+﻿using butterBib;
+using butterBror.Utils;
 using Discord;
 
 namespace butterBror
@@ -30,7 +30,7 @@ namespace butterBror
             {
                 DateTime startDate = new(2000, 6, 1);
                 DateTime endDate = new(2000, 9, 1);
-                string result = Tools.TimeTo(startDate, endDate, "Summer", 0, data.User.Lang, data.ArgsAsString, data.ChannelID);
+                string result = TextUtil.TimeTo(startDate, endDate, "Summer", 0, data.User.Lang, data.ArgsAsString, data.ChannelID);
                 return new()
                 {
                     Message = result,

@@ -1,4 +1,4 @@
-﻿using static butterBror.BotWorker;
+﻿using butterBror.Utils;
 using TwitchLib.Client.Events;
 
 namespace butterBror
@@ -7,7 +7,7 @@ namespace butterBror
     {
         static void pizza(OnChatCommandReceivedArgs e, string lang)
         {
-            if (Tools.IsNotOnCooldown(5, 1, "Pizza", e.Command.ChatMessage.UserId, e.Command.ChatMessage.RoomId))
+            if (CommandUtil.IsNotOnCooldown(5, 1, "Pizza", e.Command.ChatMessage.UserId, e.Command.ChatMessage.RoomId))
             {
                 string[] peepoHuyUsers = { "763415747" };
                 string[] buy = { "buy", "купить", "bought", "b", "к" };
@@ -22,11 +22,11 @@ namespace butterBror
                     }
                     if (peepoHuyUsers.Contains(e.Command.ChatMessage.UserId))
                     {
-                        Tools.SendMsgReply(e.Command.ChatMessage.Channel, e.Command.ChatMessage.RoomId, TranslationManager.GetTranslation(lang, "huicaMenu", "").Replace("%menu%", (pizzasAsString + "\n").Replace(", \n", "")), e.Command.ChatMessage.Id, lang, true);
+                        ChatUtil.SendMsgReply(e.Command.ChatMessage.Channel, e.Command.ChatMessage.RoomId, TranslationManager.GetTranslation(lang, "huicaMenu", "").Replace("%menu%", (pizzasAsString + "\n").Replace(", \n", "")), e.Command.ChatMessage.Id, lang, true);
                     }
                     else
                     {
-                        Tools.SendMsgReply(e.Command.ChatMessage.Channel, e.Command.ChatMessage.RoomId, TranslationManager.GetTranslation(lang, "pizzaMenu", "").Replace("%menu%", (pizzasAsString + "\n").Replace(", \n", "")), e.Command.ChatMessage.Id, lang, true);
+                        ChatUtil.SendMsgReply(e.Command.ChatMessage.Channel, e.Command.ChatMessage.RoomId, TranslationManager.GetTranslation(lang, "pizzaMenu", "").Replace("%menu%", (pizzasAsString + "\n").Replace(", \n", "")), e.Command.ChatMessage.Id, lang, true);
                     }
                 }
                 else if (e.Command.ArgumentsAsList.Count >= 2)

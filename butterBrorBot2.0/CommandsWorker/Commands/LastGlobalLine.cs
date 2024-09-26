@@ -1,7 +1,6 @@
-﻿using static butterBror.BotWorker.FileMng;
-using static butterBror.BotWorker;
-using TwitchLib.Client.Events;
-using butterBib;
+﻿using butterBib;
+using butterBror.Utils;
+using butterBror.Utils.DataManagers;
 using Discord;
 using TwitchLib.Client.Enums;
 
@@ -35,55 +34,45 @@ namespace butterBror
                 Color resultColor = Color.Green;
                 ChatColorPresets resultNicknameColor = ChatColorPresets.YellowGreen;
                 string resultMessageTitle = TranslationManager.GetTranslation(data.User.Lang, "dsLGLTitle", data.ChannelID);
-                try
+                if (data.args.Count != 0)
                 {
-                    if (data.args.Count != 0)
+                    var name = TextUtil.NicknameFilter(data.args.ElementAt(0).ToLower());
+                    var userID = NamesUtil.GetUserID(name);
+                    if (userID == "err")
                     {
-                        var name = Tools.NicknameFilter(data.args.ElementAt(0).ToLower());
-                        var userID = Tools.GetUserID(name);
-                        if (userID == "err")
-                        {
-                            resultMessage = TranslationManager.GetTranslation(data.User.Lang, "noneExistUser", data.ChannelID)
-                                .Replace("%user%", Tools.DontPingUsername(name));
-                            resultMessageTitle = TranslationManager.GetTranslation(data.User.Lang, "Err", data.ChannelID);
-                            resultColor = Color.Red;
-                            resultNicknameColor = ChatColorPresets.Red;
-                        }
-                        else
-                        {
-                            var lastLine = UsersData.UserGetData<string>(userID, "lastSeenMessage");
-                            var lastLineDate = UsersData.UserGetData<DateTime>(userID, "lastSeen");
-                            DateTime now = DateTime.UtcNow;
-                            if (name == Bot.client.TwitchUsername.ToLower())
-                            {
-                                resultMessage = TranslationManager.GetTranslation(data.User.Lang, "lastGlobalLineWait", data.ChannelID);
-                            }
-                            else if (name == data.User.Name.ToLower())
-                            {
-                                resultMessage = TranslationManager.GetTranslation(data.User.Lang, "youRightThere", data.ChannelID);
-                            }
-                            else
-                            {
-                                resultMessage = TranslationManager.GetTranslation(data.User.Lang, "lastGlobalLine", data.ChannelID)
-                                    .Replace("%user%", Tools.DontPingUsername(Tools.GetUsername(userID, data.User.Name)))
-                                    .Replace("&timeAgo&", BotWorker.Tools.FormatTimeSpan(BotWorker.Tools.GetTimeTo(lastLineDate, now, false), data.User.Lang))
-                                    .Replace("%message%", lastLine);
-                            }
-                        }
+                        resultMessage = TranslationManager.GetTranslation(data.User.Lang, "noneExistUser", data.ChannelID)
+                            .Replace("%user%", NamesUtil.DontPingUsername(name));
+                        resultMessageTitle = TranslationManager.GetTranslation(data.User.Lang, "Err", data.ChannelID);
+                        resultColor = Color.Red;
+                        resultNicknameColor = ChatColorPresets.Red;
                     }
                     else
                     {
-                        resultMessage = TranslationManager.GetTranslation(data.User.Lang, "youRightThere", data.ChannelID);
+                        var lastLine = UsersData.UserGetData<string>(userID, "lastSeenMessage");
+                        var lastLineDate = UsersData.UserGetData<DateTime>(userID, "lastSeen");
+                        DateTime now = DateTime.UtcNow;
+                        if (name == Bot.client.TwitchUsername.ToLower())
+                        {
+                            resultMessage = TranslationManager.GetTranslation(data.User.Lang, "lastGlobalLineWait", data.ChannelID);
+                        }
+                        else if (name == data.User.Name.ToLower())
+                        {
+                            resultMessage = TranslationManager.GetTranslation(data.User.Lang, "youRightThere", data.ChannelID);
+                        }
+                        else
+                        {
+                            resultMessage = TranslationManager.GetTranslation(data.User.Lang, "lastGlobalLine", data.ChannelID)
+                                .Replace("%user%", NamesUtil.DontPingUsername(NamesUtil.GetUsername(userID, data.User.Name)))
+                                .Replace("&timeAgo&", TextUtil.FormatTimeSpan(FormatUtil.GetTimeTo(lastLineDate, now, false), data.User.Lang))
+                                .Replace("%message%", lastLine);
+                        }
                     }
                 }
-                catch (Exception ex)
+                else
                 {
-                    Tools.ErrorOccured(ex.Message, "cmd2A");
-                    resultMessage = TranslationManager.GetTranslation(data.User.Lang, "error", data.ChannelID);
-                    resultMessageTitle = TranslationManager.GetTranslation(data.User.Lang, "Err", data.ChannelID);
-                    resultColor = Color.Red;
-                    resultNicknameColor = ChatColorPresets.Red;
+                    resultMessage = TranslationManager.GetTranslation(data.User.Lang, "youRightThere", data.ChannelID);
                 }
+
                 return new()
                 {
                     Message = resultMessage,

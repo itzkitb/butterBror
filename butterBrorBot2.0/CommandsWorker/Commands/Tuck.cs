@@ -1,6 +1,6 @@
-﻿using static butterBror.BotWorker.FileMng;
-using static butterBror.BotWorker;
-using butterBib;
+﻿using butterBib;
+using butterBror.Utils;
+using butterBror.Utils.DataManagers;
 using Discord;
 using TwitchLib.Client.Enums;
 
@@ -35,9 +35,9 @@ namespace butterBror
                 ChatColorPresets resultNicknameColor = ChatColorPresets.HotPink;
                 if (data.args.Count >= 1)
                 {
-                    var username = Tools.NicknameFilter(Tools.FilterTextWithoutSpaces(data.args[0]));
+                    var username = TextUtil.NicknameFilter(TextUtil.FilterTextWithoutSpaces(data.args[0]));
                     var isSelectedUserIsNotIgnored = true;
-                    var userID = Tools.GetUserID(username.ToLower());
+                    var userID = NamesUtil.GetUserID(username.ToLower());
                     try
                     {
                         if (userID != "err")
@@ -57,16 +57,16 @@ namespace butterBror
                         {
                             List<string> list = data.args;
                             list.RemoveAt(0);
-                            resultMessage = TranslationManager.GetTranslation(data.User.Lang, "tuckUserWithText", data.ChannelID).Replace("%user%", Tools.DontPingUsername(username)).Replace("%text%", string.Join(" ", list));
+                            resultMessage = TranslationManager.GetTranslation(data.User.Lang, "tuckUserWithText", data.ChannelID).Replace("%user%", NamesUtil.DontPingUsername(username)).Replace("%text%", string.Join(" ", list));
                         }
                         else
                         {
-                            resultMessage = TranslationManager.GetTranslation(data.User.Lang, "tuckUser", data.ChannelID).Replace("%user%", Tools.DontPingUsername(username));
+                            resultMessage = TranslationManager.GetTranslation(data.User.Lang, "tuckUser", data.ChannelID).Replace("%user%", NamesUtil.DontPingUsername(username));
                         }
                     }
                     else
                     {
-                        LogWorker.LogInfo($"Пользователь @{data.User.Name} пытался уложить пользователя, который находится в игноре", "CMD/tuck");
+                        LogWorker.Log($"Пользователь @{data.User.Name} пытался уложить пользователя, который находится в игноре", LogWorker.LogTypes.Warn, "CMD/tuck");
                         resultMessage = TranslationManager.GetTranslation(data.User.Lang, "tuckIgnored", data.ChannelID);
                     }
                 }

@@ -1,7 +1,7 @@
 ﻿using butterBib;
 using Discord;
 using TwitchLib.Client.Enums;
-using static butterBror.BotWorker.TranslationManager;
+using butterBror.Utils;
 
 namespace butterBror
 {
@@ -65,24 +65,24 @@ namespace butterBror
                                     if (uneditableitems.Contains(paramName))
                                     {
                                         // ТЫ НЕ ПРОЙДЕШЬ!
-                                        resultMessage = GetTranslation(data.User.Lang, "customTranslationSecured", "");
+                                        resultMessage = TranslationManager.GetTranslation(data.User.Lang, "customTranslationSecured", "");
                                         resultNicknameColor = ChatColorPresets.Red;
                                         resultColor = Color.Red;
                                     }
                                     else
                                     {
-                                        if (TranslateContains(paramName))
+                                        if (TranslationManager.TranslateContains(paramName))
                                         {
-                                            if (SetCustomTranslation(paramName, text, data.ChannelID, lang))
+                                            if (TranslationManager.SetCustomTranslation(paramName, text, data.ChannelID, lang))
                                             {
-                                                UpdateTranslation(lang, data.ChannelID);
+                                                TranslationManager.UpdateTranslation(lang, data.ChannelID);
                                                 // Ура
-                                                resultMessage = GetTranslation(data.User.Lang, "customTranslationSetted", "").Replace("%key%", paramName);
+                                                resultMessage = TranslationManager.GetTranslation(data.User.Lang, "customTranslationSetted", "").Replace("%key%", paramName);
                                             }
                                             else
                                             {
                                                 // Не ура
-                                                resultMessage = GetTranslation(data.User.Lang, "customTranslationSettingError", "");
+                                                resultMessage = TranslationManager.GetTranslation(data.User.Lang, "customTranslationSettingError", "");
                                                 resultNicknameColor = ChatColorPresets.Red;
                                                 resultColor = Color.Red;
                                             }
@@ -90,7 +90,7 @@ namespace butterBror
                                         else
                                         {
                                             // И че ты изменить хочешь?
-                                            resultMessage = GetTranslation(data.User.Lang, "customTranslationSettingWhat", "");
+                                            resultMessage = TranslationManager.GetTranslation(data.User.Lang, "customTranslationSettingWhat", "");
                                             resultNicknameColor = ChatColorPresets.GoldenRod;
                                             resultColor = Color.Gold;
                                         }
@@ -99,7 +99,7 @@ namespace butterBror
                                 else
                                 {
                                     // Почему
-                                    resultMessage = GetTranslation(data.User.Lang, "lowArgs", "").Replace("%commandWorks%", "#ct set [paramName] [en/ru] [text]");
+                                    resultMessage = TranslationManager.GetTranslation(data.User.Lang, "lowArgs", "").Replace("%commandWorks%", "#ct set [paramName] [en/ru] [text]");
                                     resultNicknameColor = ChatColorPresets.Red;
                                     resultColor = Color.Red;
                                 }
@@ -107,37 +107,37 @@ namespace butterBror
                             else if (getAliases.Contains(arg1) && ((bool)data.User.IsChannelAdmin || (bool)data.User.IsChannelBroadcaster || (bool)data.User.IsBotAdmin))
                             {
                                 // Получить перевод
-                                if (TranslateContains(paramName))
+                                if (TranslationManager.TranslateContains(paramName))
                                 {
-                                    resultMessage = GetTranslation(data.User.Lang, "customTranslationGetted", "").Replace("%key%", paramName).Replace("%translation%", GetTranslation(lang, paramName, data.ChannelID));
+                                    resultMessage = TranslationManager.GetTranslation(data.User.Lang, "customTranslationGetted", "").Replace("%key%", paramName).Replace("%translation%", TranslationManager.GetTranslation(lang, paramName, data.ChannelID));
                                 }
                                 else
                                 {
                                     // И че ты изменить хочешь?
-                                    resultMessage = GetTranslation(data.User.Lang, "customTranslationGettingWhat", "");
+                                    resultMessage = TranslationManager.GetTranslation(data.User.Lang, "customTranslationGettingWhat", "");
                                     resultNicknameColor = ChatColorPresets.GoldenRod;
                                     resultColor = Color.Gold;
                                 }
                             }
                             else if (originalAliases.Contains(arg1))
                             {
-                                resultMessage = GetTranslation(data.User.Lang, "customTranslationOriginal", "").Replace("%key%", paramName).Replace("%translation%", GetTranslation(lang, paramName, ""));
+                                resultMessage = TranslationManager.GetTranslation(data.User.Lang, "customTranslationOriginal", "").Replace("%key%", paramName).Replace("%translation%", TranslationManager.GetTranslation(lang, paramName, ""));
                             }
                             else if (deleteAliases.Contains(arg1) && ((bool)data.User.IsChannelAdmin || (bool)data.User.IsChannelBroadcaster || (bool)data.User.IsBotAdmin))
                             {
                                 // Удалить кастомный перевод
-                                if (TranslateContains(paramName))
+                                if (TranslationManager.TranslateContains(paramName))
                                 {
-                                    if (DeleteCustomTranslation(paramName, data.ChannelID, lang, data.Platform))
+                                    if (TranslationManager.DeleteCustomTranslation(paramName, data.ChannelID, lang, data.Platform))
                                     {
                                         // Ура
-                                        resultMessage = GetTranslation(data.User.Lang, "customTranslationDeleted", "").Replace("%key%", paramName);
-                                        UpdateTranslation(lang, data.ChannelID);
+                                        resultMessage = TranslationManager.GetTranslation(data.User.Lang, "customTranslationDeleted", "").Replace("%key%", paramName);
+                                        TranslationManager.UpdateTranslation(lang, data.ChannelID);
                                     }
                                     else
                                     {
                                         // Не ура
-                                        resultMessage = GetTranslation(data.User.Lang, "customTranslationDeletingError", "");
+                                        resultMessage = TranslationManager.GetTranslation(data.User.Lang, "customTranslationDeletingError", "");
                                         resultNicknameColor = ChatColorPresets.Red;
                                         resultColor = Color.Red;
                                     }
@@ -145,7 +145,7 @@ namespace butterBror
                                 else
                                 {
                                     // И че ты изменить хочешь?
-                                    resultMessage = GetTranslation(data.User.Lang, "customTranslationDeletingWhat", "");
+                                    resultMessage = TranslationManager.GetTranslation(data.User.Lang, "customTranslationDeletingWhat", "");
                                     resultNicknameColor = ChatColorPresets.GoldenRod;
                                     resultColor = Color.Gold;
                                 }
@@ -154,7 +154,7 @@ namespace butterBror
                         else
                         {
                             // Нет такого языка!
-                            resultMessage = GetTranslation(data.User.Lang, "customTranslationWrongLang", "").Replace("%lang%", lang).Replace("%langs%", string.Join(", ", langs));
+                            resultMessage = TranslationManager.GetTranslation(data.User.Lang, "customTranslationWrongLang", "").Replace("%lang%", lang).Replace("%langs%", string.Join(", ", langs));
                             resultNicknameColor = ChatColorPresets.Red;
                             resultColor = Color.Red;
                         }
@@ -162,15 +162,14 @@ namespace butterBror
                     catch (Exception ex)
                     {
                         Console.WriteLine(ex.Message + " | " + ex.StackTrace);
-                        resultMessage = GetTranslation(data.User.Lang, "error", data.Channel);
+                        resultMessage = TranslationManager.GetTranslation(data.User.Lang, "error", data.Channel);
                         resultNicknameColor = ChatColorPresets.Red;
                         resultColor = Color.Red;
                     }
                 }
                 else
                 {
-                    // If args lenght < 2
-                    resultMessage = GetTranslation(data.User.Lang, "lowArgs", "").Replace("%commandWorks%", "#ct set [paramName] [en/ru] [text]");
+                    resultMessage = TranslationManager.GetTranslation(data.User.Lang, "lowArgs", "").Replace("%commandWorks%", "#ct set [paramName] [en/ru] [text]");
                     resultNicknameColor = ChatColorPresets.Red;
                     resultColor = Color.Red;
                 }

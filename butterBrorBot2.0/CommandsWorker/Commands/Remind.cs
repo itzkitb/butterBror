@@ -1,5 +1,5 @@
-﻿using Discord.WebSocket;
-using static butterBror.BotWorker;
+﻿using butterBror.Utils;
+using Discord.WebSocket;
 using TwitchLib.Client.Events;
 
 namespace butterBror
@@ -22,7 +22,7 @@ namespace butterBror
             {
                 UserID = e.Command.ChatMessage.UserId;
                 RoomID = e.Command.ChatMessage.RoomId;
-                location = Tools.FilterText(e.Command.ArgumentsAsString);
+                location = TextUtil.FilterText(e.Command.ArgumentsAsString);
             }
             else if (platform == "ds")
             {

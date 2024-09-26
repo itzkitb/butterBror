@@ -1,6 +1,6 @@
-﻿using static butterBror.BotWorker.FileMng;
-using static butterBror.BotWorker;
-using butterBib;
+﻿using butterBib;
+using butterBror.Utils;
+using butterBror.Utils.DataManagers;
 using System.Drawing;
 
 namespace butterBror
@@ -39,7 +39,7 @@ namespace butterBror
                     {
                         if (UsersData.UserGetData<bool>(data.UserUUID, "isBotDev") || UsersData.UserGetData<bool>(data.UserUUID, "isBotModerator") || (bool)data.User.IsChannelAdmin || (bool)data.User.IsChannelBroadcaster)
                         {
-                            await Tools.EmoteUpdate(data.Channel);
+                            await EmotesUtil.EmoteUpdate(data.Channel);
                             resultMessage = TranslationManager.GetTranslation(data.User.Lang, "emotesUpdated", data.ChannelID)
                                 .Replace("%ffzEmotes%", Bot.EmotesByChannel[data.Channel + "ffz"].Count().ToString())
                                 .Replace("%7tvEmotes%", Bot.EmotesByChannel[data.Channel + "7tv"].Count().ToString())
@@ -56,13 +56,13 @@ namespace butterBror
                         {
                             if (!(Bot.EmotesByChannel.ContainsKey(data.Channel + "7tv") || Bot.EmotesByChannel.ContainsKey(data.Channel + "ffz") || Bot.EmotesByChannel.ContainsKey(data.Channel + "bttv")))
                             {
-                                await Tools.EmoteUpdate(data.Channel);
+                                await EmotesUtil.EmoteUpdate(data.Channel);
                             }
                             string[] services = ["7tv", "bttv", "ffz"];
                             string selectedService = data.args.ElementAt(1).ToLower();
                             if (services.Contains(selectedService))
                             {
-                                var randomEmote = Tools.RandomEmote(data.Channel, selectedService);
+                                var randomEmote = EmotesUtil.RandomEmote(data.Channel, selectedService);
                                 if (randomEmote["status"] == "OK")
                                 {
                                     resultMessage = TranslationManager.GetTranslation(data.User.Lang, "randomTypeEmote", data.ChannelID)
@@ -85,7 +85,7 @@ namespace butterBror
                         {
                             if (!(Bot.EmotesByChannel.ContainsKey(data.Channel + "7tv") || Bot.EmotesByChannel.ContainsKey(data.Channel + "ffz") || Bot.EmotesByChannel.ContainsKey(data.Channel + "bttv")))
                             {
-                                await Tools.EmoteUpdate(data.Channel);
+                                await EmotesUtil.EmoteUpdate(data.Channel);
                             }
                             bool isCompleted = false;
                             int attempts = 0;
@@ -95,7 +95,7 @@ namespace butterBror
                             {
                                 attempts++;
                                 var service = services[rand.Next(services.Length)];
-                                var randomEmote = Tools.RandomEmote(data.Channel, service);
+                                var randomEmote = EmotesUtil.RandomEmote(data.Channel, service);
                                 if (randomEmote["status"] == "OK")
                                 {
                                     resultMessage = TranslationManager.GetTranslation(data.User.Lang, "randomTypeEmote", data.ChannelID)
@@ -122,7 +122,7 @@ namespace butterBror
                     }
                     else
                     {
-                        await Tools.EmoteUpdate(data.Channel);
+                        await EmotesUtil.EmoteUpdate(data.Channel);
                         if (Bot.EmotesByChannel.ContainsKey(data.Channel + "7tv") || Bot.EmotesByChannel.ContainsKey(data.Channel + "ffz") || Bot.EmotesByChannel.ContainsKey(data.Channel + "bttv"))
                         {
                             resultMessage = TranslationManager.GetTranslation(data.User.Lang, "emotesCount", data.ChannelID)

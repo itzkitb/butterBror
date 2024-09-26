@@ -2,6 +2,7 @@
 using butterBib;
 using Discord;
 using TwitchLib.Client.Enums;
+using butterBror.Utils;
 
 namespace butterBror
 {

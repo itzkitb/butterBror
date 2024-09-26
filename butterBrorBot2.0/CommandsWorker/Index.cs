@@ -1,12 +1,11 @@
 ﻿using Discord.WebSocket;
 using TwitchLib.Client.Events;
-using static butterBror.BotWorker.FileMng;
-using static butterBror.BotWorker;
 using butterBib;
 using System.Drawing;
 using System.Reflection;
-using Discord.Rest;
 using TwitchLib.Client.Enums;
+using butterBror.Utils;
+using butterBror.Utils.DataManagers;
 
 namespace butterBror
 {
@@ -86,7 +85,7 @@ namespace butterBror
             }
             catch (Exception ex) 
             {
-                Tools.ErrorOccured(ex.Message + " - " + ex.TargetSite, "twCMD");
+                ConsoleUtil.ErrorOccured(ex.Message + " - " + ex.TargetSite, "TwitchCommand()");
             }
         }
         public static void DiscordCommand(SocketSlashCommand dsCmd)
@@ -129,7 +128,7 @@ namespace butterBror
             }
             catch (Exception ex) 
             {
-                Tools.ErrorOccured(ex.Message, "dsCMD");
+                ConsoleUtil.ErrorOccured(ex.Message, "DiscordCommand()");
             }
         }
         public static void Command(CommandData data)
@@ -167,7 +166,7 @@ namespace butterBror
                     }
                     catch (Exception ex)
                     {
-                        Tools.ErrorOccured(ex.Message, "cmd0A");
+                        ConsoleUtil.ErrorOccured(ex.Message, "cmd0A");
                     }
                     data.User.Lang = lang;
                     data.User.IsBanned = UsersData.UserGetData<bool>(data.UserUUID, "isBanned");
@@ -184,7 +183,7 @@ namespace butterBror
                     string[] location = ["location", "loc", "локация", "лок"];
                     string[] pizzas = ["pizza", "хуица", "пицца"];
                     string[] fishingAliases = ["fishing", "fish", "рыба", "рыбалка"];
-                    var command = Tools.FilterCommand(data.Name).Replace("ё", "е");
+                    var command = TextUtil.FilterCommand(data.Name).Replace("ё", "е");
                     // Console.Write("3");
 
                     if (!(bool)data.User.IsBanned && !(bool)data.User.IsIgnored)
@@ -216,9 +215,9 @@ namespace butterBror
                                     break;
                                 }
 
-                                if (Tools.IsNotOnCooldown(info.UserCooldown, info.GlobalCooldown, info.Name, data.User.Id, data.ChannelID, info.ResetCooldownIfItHasNotReachedZero))
+                                if (CommandUtil.IsNotOnCooldown(info.UserCooldown, info.GlobalCooldown, info.Name, data.User.Id, data.ChannelID, info.ResetCooldownIfItHasNotReachedZero))
                                 {
-                                    Tools.executedCommand(data);
+                                    CommandUtil.executedCommand(data);
                                     var indexMethod = classType.GetMethod("Index", BindingFlags.Static | BindingFlags.Public);
 
                                     if (indexMethod.ReturnType == typeof(CommandReturn))
@@ -239,13 +238,13 @@ namespace butterBror
                                             catch (Exception ex)
                                             {
                                                 ConsoleServer.SendConsoleMessage("commands", $"Ошибка при получении результата из Task: {ex.Message}");
-                                                LogWorker.LogError($"Ошибка при получении результата из Task: {ex.Message}", $"commands/{info.Name}");
+                                                LogWorker.Log($"Ошибка при получении результата из Task: {ex.Message}", LogWorker.LogTypes.Err, $"commands/{info.Name}");
                                             }
                                         }
                                         else
                                         {
                                             ConsoleServer.SendConsoleMessage("commands", $"Метод '{info.Name}' вернул неверный тип результата: {result.GetType().Name}");
-                                            LogWorker.LogWarning($"Метод '{info.Name}' вернул неверный тип результата: {result.GetType().Name}", $"commands/{info.Name}");
+                                            LogWorker.Log($"Метод '{info.Name}' вернул неверный тип результата: {result.GetType().Name}", LogWorker.LogTypes.Err, $"commands/{info.Name}");
                                         }
                                     }
 
@@ -292,7 +291,7 @@ namespace butterBror
                                     else
                                     {
                                         ConsoleServer.SendConsoleMessage("commands", "Пустой ответ от комманды");
-                                        LogWorker.LogWarning("Пустой ответ от комманды", $"commands/{info.Name}");
+                                        LogWorker.Log("Пустой ответ от комманды", LogWorker.LogTypes.Warn, $"commands/{info.Name}");
                                     }
                                 }
                                 break;
@@ -307,14 +306,14 @@ namespace butterBror
                         }
                         else
                         {
-                            LogWorker.LogInfo($"{data.Name} попробовал выполнить команду, но был заигнорен или забанен (#{data.Name} {data.ArgsAsString})", "CMD");
+                            LogWorker.Log($"{data.Name} попробовал выполнить команду, но был заигнорен или забанен (#{data.Name} {data.ArgsAsString})", LogWorker.LogTypes.Warn, "CMD");
                         }
                     }
                 }
             }
             catch (Exception ex)
             {
-                Tools.ErrorOccured(ex.Message + " - " + ex.StackTrace, "CMD");
+                ConsoleUtil.ErrorOccured(ex.Message + " - " + ex.StackTrace, "command_main");
                 if (data.Platform == Platforms.Twitch)
                 {
                     TwitchMessageSendData SendData = new()

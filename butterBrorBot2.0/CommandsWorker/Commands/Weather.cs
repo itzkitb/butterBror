@@ -1,11 +1,10 @@
 ﻿using System.Text.RegularExpressions;
-using TwitchLib.Client.Events;
-using static butterBror.BotWorker;
-using static butterBror.BotWorker.FileMng;
 using Discord;
-using Discord.WebSocket;
 using butterBib;
 using TwitchLib.Client.Enums;
+using butterBror.Utils;
+using butterBror.Utils.DataManagers;
+using butterBror.Utils.APIUtil;
 
 namespace butterBror
 {
@@ -44,18 +43,18 @@ namespace butterBror
 
                 if (data.Platform == Platforms.Twitch)
                 {
-                    location = Tools.FilterText(data.ArgsAsString);
+                    location = TextUtil.FilterText(data.ArgsAsString);
                     if (data.TWargs.Command.ArgumentsAsList.Count >= 2)
                     {
                         if (showAlias.Contains(data.TWargs.Command.ArgumentsAsList[0].ToLower().ToString()))
                         {
                             isShow = true;
-                            ShowID = Tools.ToNumber(data.TWargs.Command.ArgumentsAsList[1].ToLower().ToString());
+                            ShowID = FormatUtil.ToNumber(data.TWargs.Command.ArgumentsAsList[1].ToLower().ToString());
                         }
                         else if (pageAlias.Contains(data.TWargs.Command.ArgumentsAsList[0].ToLower().ToString()))
                         {
                             isPage = true;
-                            Page = Tools.ToNumber(data.TWargs.Command.ArgumentsAsList[1].ToLower().ToString());
+                            Page = FormatUtil.ToNumber(data.TWargs.Command.ArgumentsAsList[1].ToLower().ToString());
                         }
                     }
                 }
@@ -83,7 +82,7 @@ namespace butterBror
                 if ((bool)isPage)
                 {
                     var weatherResultLocationsUnworked = UsersData.UserGetData<string[]>(data.UserUUID, "weatherResultLocations");
-                    var weatherResultLocations = new List<Tools.Place>();
+                    var weatherResultLocations = new List<Utils.APIUtil.Weather.Place>();
 
                     foreach (var data2 in weatherResultLocationsUnworked)
                     {
@@ -95,7 +94,7 @@ namespace butterBror
                             string name = match.Groups[1].Value;
                             string lat = match.Groups[2].Value;
                             string lon = match.Groups[3].Value;
-                            Tools.Place placeData = new()
+                            Utils.APIUtil.Weather.Place placeData = new()
                             {
                                 name = name,
                                 lat = lat,
@@ -116,7 +115,7 @@ namespace butterBror
                                 int index = startID;
                                 for (int i = 0; i < 5; i++)
                                 {
-                                    locationPage += $"{index}. {weatherResultLocations[index - 1].name} (lat: {Tools.ShortenCoordinate(weatherResultLocations[index - 1].lat)}, lon: {Tools.ShortenCoordinate(weatherResultLocations[index - 1].lon)}), ";
+                                    locationPage += $"{index}. {weatherResultLocations[index - 1].name} (lat: {TextUtil.ShortenCoordinate(weatherResultLocations[index - 1].lat)}, lon: {TextUtil.ShortenCoordinate(weatherResultLocations[index - 1].lon)}), ";
                                     index++;
                                 }
                                 locationPage = locationPage.TrimEnd(',', ' ');
@@ -156,7 +155,7 @@ namespace butterBror
                 else if ((bool)isShow)
                 {
                     var weatherResultLocationsUnworked = UsersData.UserGetData<string[]>(data.UserUUID, "weatherResultLocations");
-                    var weatherResultLocations = new List<Tools.Place>();
+                    var weatherResultLocations = new List<Utils.APIUtil.Weather.Place>();
                     foreach (var data2 in weatherResultLocationsUnworked)
                     {
                         string pattern = @"name: ""(.*?)"", lat: ""(.*?)"", lon: ""(.*?)""";
@@ -167,7 +166,7 @@ namespace butterBror
                             string name = match.Groups[1].Value;
                             string lat = match.Groups[2].Value;
                             string lon = match.Groups[3].Value;
-                            Tools.Place placeData = new()
+                            Utils.APIUtil.Weather.Place placeData = new()
                             {
                                 name = name,
                                 lat = lat,
@@ -180,22 +179,22 @@ namespace butterBror
                     {
                         if (ShowID <= weatherResultLocations?.Count)
                         {
-                            var weather = Tools.Get_weather(weatherResultLocations[(int)ShowID - 1].lat, weatherResultLocations[(int)ShowID - 1].lon);
+                            var weather = Utils.APIUtil.Weather.Get_weather(weatherResultLocations[(int)ShowID - 1].lat, weatherResultLocations[(int)ShowID - 1].lon);
                             var result = weather.Result.current;
                             if (result.temperature != -400)
                             {
                                 resultMessage = TranslationManager.GetTranslation(data.User.Lang, "weatherSucceful", data.ChannelID)
-                                    .Replace("%emote%", Tools.GetWeatherEmoji(result.temperature))
+                                    .Replace("%emote%", Utils.APIUtil.Weather.GetWeatherEmoji(result.temperature))
                                     .Replace("%name%", weatherResultLocations[(int)ShowID - 1].name)
                                     .Replace("%temperature%", result.temperature.ToString())
                                     .Replace("%feelsLike%", result.feels_like.ToString())
                                     .Replace("%windSpeed%", result.wind.speed.ToString())
-                                    .Replace("%summary%", Tools.GetWeatherSummary(data.User.Lang, result.summary.ToString(), data.ChannelID))
+                                    .Replace("%summary%", Utils.APIUtil.Weather.GetWeatherSummary(data.User.Lang, result.summary.ToString(), data.ChannelID))
                                     .Replace("%pressure%", result.pressure.ToString())
                                     .Replace("%uvIndex%", result.uv_index.ToString())
                                     .Replace("%humidity%", result.humidity.ToString())
                                     .Replace("%visibility%", result.visibility.ToString())
-                                    .Replace("%skyEmote%", Tools.GetWeatherSummaryEmoji(result.summary.ToString()));
+                                    .Replace("%skyEmote%", Utils.APIUtil.Weather.GetWeatherSummaryEmoji(result.summary.ToString()));
                                 resultMessageTitle = TranslationManager.GetTranslation(data.User.Lang, "weatherDsTitle", data.ChannelID);
                             }
                             else
@@ -228,22 +227,22 @@ namespace butterBror
                     {
                         if (UsersData.UserGetData<string>(data.UserUUID, "userPlace") != "")
                         {
-                            var weather = Tools.Get_weather(UsersData.UserGetData<string>(data.UserUUID, "userLat"), UsersData.UserGetData<string>(data.UserUUID, "userLon"));
+                            var weather = Utils.APIUtil.Weather.Get_weather(UsersData.UserGetData<string>(data.UserUUID, "userLat"), UsersData.UserGetData<string>(data.UserUUID, "userLon"));
                             var result = weather.Result.current;
                             if (result.temperature != -400)
                             {
                                 resultMessage = TranslationManager.GetTranslation(data.User.Lang, "weatherSucceful", data.ChannelID)
-                                    .Replace("%emote%", Tools.GetWeatherEmoji(result.temperature))
+                                    .Replace("%emote%", Utils.APIUtil.Weather.GetWeatherEmoji(result.temperature))
                                     .Replace("%name%", UsersData.UserGetData<string>(data.UserUUID, "userPlace"))
                                     .Replace("%temperature%", result.temperature.ToString())
                                     .Replace("%feelsLike%", result.feels_like.ToString())
                                     .Replace("%windSpeed%", result.wind.speed.ToString())
-                                    .Replace("%summary%", Tools.GetWeatherSummary(data.User.Lang, result.summary.ToString(), data.ChannelID))
+                                    .Replace("%summary%", Utils.APIUtil.Weather.GetWeatherSummary(data.User.Lang, result.summary.ToString(), data.ChannelID))
                                     .Replace("%pressure%", result.pressure.ToString())
                                     .Replace("%uvIndex%", result.uv_index.ToString())
                                     .Replace("%humidity%", result.humidity.ToString())
                                     .Replace("%visibility%", result.visibility.ToString())
-                                    .Replace("%skyEmote%", Tools.GetWeatherSummaryEmoji(result.summary.ToString()));
+                                    .Replace("%skyEmote%", Utils.APIUtil.Weather.GetWeatherSummaryEmoji(result.summary.ToString()));
                                 resultMessageTitle = TranslationManager.GetTranslation(data.User.Lang, "weatherDsTitle", data.ChannelID);
                             }
                             else
@@ -266,7 +265,7 @@ namespace butterBror
                     {
                         try
                         {
-                            var locations = Tools.Get_location(location);
+                            var locations = Utils.APIUtil.Weather.Get_location(location);
                             locations.Wait();
                             var resultLoc = locations.Result;
                             if (resultLoc.Count == 0)
@@ -287,23 +286,23 @@ namespace butterBror
                                 }
                                 else
                                 {
-                                    var weather = Tools.Get_weather(resultLoc[0].lat, resultLoc[0].lon);
+                                    var weather = Utils.APIUtil.Weather.Get_weather(resultLoc[0].lat, resultLoc[0].lon);
                                     weather.Wait();
                                     var result = weather.Result.current;
                                     if (result.temperature != -400)
                                     {
                                         resultMessage = TranslationManager.GetTranslation(data.User.Lang, "weatherSucceful", data.ChannelID)
-                                            .Replace("%emote%", Tools.GetWeatherEmoji(result.temperature))
+                                            .Replace("%emote%", Utils.APIUtil.Weather.GetWeatherEmoji(result.temperature))
                                             .Replace("%name%", resultLoc[0].name)
                                             .Replace("%temperature%", result.temperature.ToString())
                                             .Replace("%feelsLike%", result.feels_like.ToString())
                                             .Replace("%windSpeed%", result.wind.speed.ToString())
-                                            .Replace("%summary%", Tools.GetWeatherSummary(data.User.Lang, result.summary.ToString(), data.ChannelID))
+                                            .Replace("%summary%", Utils.APIUtil.Weather.GetWeatherSummary(data.User.Lang, result.summary.ToString(), data.ChannelID))
                                             .Replace("%pressure%", result.pressure.ToString())
                                             .Replace("%uvIndex%", result.uv_index.ToString())
                                             .Replace("%humidity%", result.humidity.ToString())
                                             .Replace("%visibility%", result.visibility.ToString())
-                                            .Replace("%skyEmote%", Tools.GetWeatherSummaryEmoji(result.summary.ToString()));
+                                            .Replace("%skyEmote%", Utils.APIUtil.Weather.GetWeatherSummaryEmoji(result.summary.ToString()));
                                         resultMessageTitle = TranslationManager.GetTranslation(data.User.Lang, "weatherDsTitle", data.ChannelID);
                                     }
                                     else
@@ -330,7 +329,7 @@ namespace butterBror
                                     int index = 1;
                                     for (int i = 0; i < 5; i++)
                                     {
-                                        locationPage += $"{index}. {resultLoc[index - 1].name} (lat: {Tools.ShortenCoordinate(resultLoc[index - 1].lat)}, lon: {Tools.ShortenCoordinate(resultLoc[index - 1].lon)}), ";
+                                        locationPage += $"{index}. {resultLoc[index - 1].name} (lat: {TextUtil.ShortenCoordinate(resultLoc[index - 1].lat)}, lon: {TextUtil.ShortenCoordinate(resultLoc[index - 1].lon)}), ";
                                         index++;
                                     }
                                     locationPage = locationPage.TrimEnd(',', ' ');
@@ -354,7 +353,7 @@ namespace butterBror
                         }
                         catch (Exception ex)
                         {
-                            LogWorker.LogError(ex.Message, "weather");
+                            LogWorker.Log(ex.Message, LogWorker.LogTypes.Err, "weather");
                             resultMessage = TranslationManager.GetTranslation(data.User.Lang, "placeCrack", data.ChannelID);
                             resultMessageTitle = TranslationManager.GetTranslation(data.User.Lang, "weatherDsErrTitle", data.ChannelID);
                             resultColor = Color.Red;

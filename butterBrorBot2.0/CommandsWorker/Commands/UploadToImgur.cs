@@ -1,10 +1,7 @@
 ﻿using Discord;
-using Discord.WebSocket;
-using TwitchLib.Client.Events;
-using static butterBror.BotWorker;
-using Discord;
 using butterBib;
 using TwitchLib.Client.Enums;
+using butterBror.Utils;
 
 namespace butterBror
 {
@@ -39,7 +36,7 @@ namespace butterBror
                 string? url = "";
                 if (data.Platform == Platforms.Twitch)
                 {
-                    url = Tools.FilterText(data.ArgsAsString);
+                    url = TextUtil.FilterText(data.ArgsAsString);
                 }
                 else if (data.Platform == Platforms.Discord)
                 {
@@ -52,15 +49,15 @@ namespace butterBror
                     try
                     {
                         stage++;
-                        var imageBytesTask = Tools.DownloadImageAsync(url);
+                        var imageBytesTask = Utils.APIUtil.Imgur.DownloadImageAsync(url);
                         imageBytesTask.Wait();
                         byte[] imageBytes = imageBytesTask.Result;
                         stage++;
-                        var responseTask = Tools.UploadImageToImgurAsync(imageBytes, "Бот butterBror и его разработчик ItzKITb никак не связаны с данным изображением и не поддерживают его содержимое.", $"Картинка от @{data.User.Name}", Bot.imgurAPIkey, "https://api.imgur.com/3/upload");
+                        var responseTask = Utils.APIUtil.Imgur.UploadImageToImgurAsync(imageBytes, "Бот butterBror и его разработчик ItzKITb никак не связаны с данным изображением и не поддерживают его содержимое.", $"Картинка от @{data.User.Name}", Bot.imgurAPIkey, "https://api.imgur.com/3/upload");
                         responseTask.Wait();
                         string response = responseTask.Result;
                         stage++;
-                        string link = Tools.GetImgurLinkFromResponse(response);
+                        string link = Utils.APIUtil.Imgur.GetImgurLinkFromResponse(response);
                         resultMessage = TranslationManager.GetTranslation(data.User.Lang, "imgurUploaded", data.ChannelID).Replace("%link%", link);
                     }
                     catch (Exception ex)
@@ -82,7 +79,7 @@ namespace butterBror
                                 break;
                         }
                         resultMessage = TranslationManager.GetTranslation(data.User.Lang, errorTranslation, data.ChannelID);
-                        Tools.ErrorOccured(ex.Message, errorTranslation);
+                        ConsoleUtil.ErrorOccured(ex.Message, errorTranslation);
                     }
                 }
                 else

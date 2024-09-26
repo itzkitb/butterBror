@@ -1,6 +1,5 @@
-﻿using static butterBror.BotWorker.FileMng;
-using static butterBror.BotWorker;
-using butterBib;
+﻿using butterBib;
+using butterBror.Utils;
 using Discord;
 using TwitchLib.Client.Enums;
 
@@ -35,8 +34,8 @@ namespace butterBror
                 ChatColorPresets resultNicknameColor = ChatColorPresets.YellowGreen;
                 if (data.args.Count > 0)
                 {
-                    string username = Tools.NicknameFilter(data.args[0].ToLower());
-                    string ID = Tools.GetUserID(username, "null");
+                    string username = TextUtil.NicknameFilter(data.args[0].ToLower());
+                    string ID = NamesUtil.GetUserID(username, "null");
                     if (ID == data.UserUUID)
                     {
                         resultMessage = TranslationManager.GetTranslation(data.User.Lang, "IDYourSelfGet", data.ChannelID).Replace("%id%", data.UserUUID);
@@ -49,7 +48,7 @@ namespace butterBror
                     }
                     else
                     {
-                        resultMessage = TranslationManager.GetTranslation(data.User.Lang, "IDUserGet", data.ChannelID).Replace("%id%", ID).Replace("%user%", Tools.DontPingUsername(username));
+                        resultMessage = TranslationManager.GetTranslation(data.User.Lang, "IDUserGet", data.ChannelID).Replace("%id%", ID).Replace("%user%", NamesUtil.DontPingUsername(username));
                     }
                 }
                 else

@@ -1,9 +1,7 @@
-﻿using static butterBror.BotWorker;
-using butterBib;
+﻿using butterBib;
+using butterBror.Utils;
 using Discord;
-using Discord.Rest;
 using System.Reflection;
-using System;
 
 namespace butterBror
 {
@@ -70,7 +68,7 @@ namespace butterBror
                                 .Replace("%Args%", info.ArgsRequired)
                                 .Replace("%Link%", info.UseURL)
                                 .Replace("%Description%", info.Description)
-                                .Replace("%Author%", Tools.DontPingUsername(info.Author))
+                                .Replace("%Author%", NamesUtil.DontPingUsername(info.Author))
                                 .Replace("%creationDate%", info.CreationDate.ToShortDateString())
                                 .Replace("%uCooldown%", info.UserCooldown.ToString())
                                 .Replace("%gCooldown%", info.GlobalCooldown.ToString());

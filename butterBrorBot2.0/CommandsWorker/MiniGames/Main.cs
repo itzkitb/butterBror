@@ -1,5 +1,5 @@
-﻿using static butterBror.BotWorker.FileMng;
-using static butterBror.BotWorker;
+﻿using butterBror.Utils;
+using butterBror.Utils.DataManagers;
 
 namespace butterBror
 {
@@ -21,7 +21,7 @@ namespace butterBror
                         // Добавление видеокарты к пользователю
                         UsersData.UserSaveData(userId, "miningVideocards", videocardId);
                         // Вычитание стоимости из баланса
-                        BotWorker.Tools.SaveBalance(userId, 0, -price);
+                        BalanceUtil.SaveBalance(userId, 0, -price);
                     }
                 }
             }
@@ -37,7 +37,7 @@ namespace butterBror
                         // Добавление процессора к пользователю
                         UsersData.UserSaveData(userId, "miningProcessors", processorId);
                         // Вычитание стоимости из баланса
-                        BotWorker.Tools.SaveBalance(userId, 0, -price);
+                        BalanceUtil.SaveBalance(userId, 0, -price);
                     }
                 }
             }
@@ -67,7 +67,7 @@ namespace butterBror
                 }
 
                 // Добавление заработанной суммы к балансу пользователя
-                BotWorker.Tools.SaveBalance(userId, 0, totalIncome);
+                BalanceUtil.SaveBalance(userId, 0, totalIncome);
                 // Обновление времени последнего сбора
                 UsersData.UserSaveData(userId, "lastMiningClear", currentTime);
             }
@@ -193,7 +193,7 @@ namespace butterBror
                 }
                 catch (Exception ex)
                 {
-                    Tools.ErrorOccured(ex.Message, "MININGADDHARD");
+                    ConsoleUtil.ErrorOccured(ex.Message, "MININGADDHARD");
                 }
             }
         }

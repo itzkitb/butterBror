@@ -1,6 +1,6 @@
-﻿using static butterBror.BotWorker;
-using butterBib;
+﻿using butterBib;
 using TwitchLib.Client.Enums;
+using butterBror.Utils;
 
 namespace butterBror
 {
@@ -28,7 +28,7 @@ namespace butterBror
             };
             public static CommandReturn Index(CommandData data)
             {
-                if (Tools.IsNotOnCooldown(3600, 1, "VhsReset", data.UserUUID, data.ChannelID, false))
+                if (CommandUtil.IsNotOnCooldown(3600, 1, "VhsReset", data.UserUUID, data.ChannelID, false))
                 {
                     Task task = Task.Run(() =>
                     {
@@ -37,7 +37,7 @@ namespace butterBror
                         {
                             Thread.Sleep(rand.Next(10000, 30000));
                         }
-                        var videos = Tools.GetPlaylistVideos("https://www.youtube.com/playlist?list=PLAZUCud8HyO-9Ni4BSFkuBTOK8e3S5OLL");
+                        var videos = YTUtil.GetPlaylistVideos("https://www.youtube.com/playlist?list=PLAZUCud8HyO-9Ni4BSFkuBTOK8e3S5OLL");
                         Random rand2 = new Random();
                         int index = rand2.Next(videos.Length);
                         string randomUrl = videos[index];
