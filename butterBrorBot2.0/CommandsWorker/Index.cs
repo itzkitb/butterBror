@@ -282,7 +282,7 @@ namespace butterBror
                                             };
                                             butterBib.Commands.SendCommandReply(SendData);
                                         }
-                                        if (info.Cost != 0)
+                                        if (info.Cost != null)
                                         {
                                             BalanceUtil.SaveBalance(data.UserUUID, -(int)(info.Cost), 0);
                                         }
