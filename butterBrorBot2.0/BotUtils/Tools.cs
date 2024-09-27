@@ -14,11 +14,61 @@ using butterBib;
 using TwitchLib.Client.Enums;
 using System.Diagnostics;
 using butterBror.Utils.DataManagers;
+using System.Reflection;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Emit;
 
 namespace butterBror
 {
     namespace Utils
     {
+        public class DebugUtil
+        {
+            public static bool IsDebugEnabled = false;
+            public static void LOG(string message, ConsoleColor FG = ConsoleColor.Gray, ConsoleColor BG = ConsoleColor.Black, bool WrapLine = true, bool ShowDate = true)
+            {
+                if (IsDebugEnabled)
+                {
+                    Console.ResetColor();
+                    char EndSymbol = '\n';
+                    if (message.StartsWith("\n"))
+                    {
+                        Console.Write("\n");
+                    }
+                    if (!WrapLine)
+                    {
+                        EndSymbol = ' ';
+                    }
+                    if (ShowDate)
+                    {
+                        Console.ForegroundColor = ConsoleColor.DarkGreen;
+                        Console.Write($"[DEBUG] [{DateTime.Now.Hour}:{DateTime.Now.Minute}.{DateTime.Now.Second} ({DateTime.Now.Millisecond})]: ");
+                        Console.ResetColor();
+                    }
+                    if (FG != ConsoleColor.Gray)
+                    {
+                        Console.ForegroundColor = FG;
+                    }
+                    if (BG != ConsoleColor.Black)
+                    {
+                        Console.BackgroundColor = BG;
+                    }
+                    if (message.StartsWith("\n"))
+                    {
+                        Console.Write(" " + ("LO0O0OL" + message).Replace("LO0O0OL\n", "") + EndSymbol);
+                    }
+                    else
+                    {
+                        Console.Write(" " + message + EndSymbol);
+                    }
+                }
+            }
+        }
+
         /// <summary>
         /// Получение токена авторизации твича
         /// </summary>
@@ -1331,7 +1381,7 @@ namespace butterBror
                     request.Headers.Add("Client-Id", Bot.ClientID);
 
                     HttpResponseMessage response = await client.SendAsync(request);
-                    await Task.Delay(50);
+                    await Task.Delay(200);
                     if (response.StatusCode == HttpStatusCode.NoContent)
                     {
                         ConsoleUtil.LOG($"Цвет никнейма установлен на \"{colorString}\"!", ConsoleColor.Cyan);
@@ -1340,6 +1390,46 @@ namespace butterBror
                     {
                         ConsoleUtil.LOG($"Не удалось установить цвет никнейма на \"{colorString}\"! Ошибка: {response.StatusCode}, Описание: {response.ReasonPhrase} ({response.Content.ReadAsStringAsync()})", ConsoleColor.Red);
                     }
+                }
+            }
+            /// <summary>
+            /// Выполнить C# код
+            /// </summary>
+            public static string ExecuteCode(string code)
+            {
+                code = @"using butterBror;
+using butterBib;
+using System;
+public class MyClass {
+    static void Main(string[] args)
+    {
+        // Something LOL
+    }
+    public static string Execute()
+    { 
+    " + code + @"
+    }
+}";
+                SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(code);
+                Compilation compilation = CSharpCompilation.Create("MyAssembly")
+                    .AddSyntaxTrees(syntaxTree)
+                    .AddReferences(MetadataReference.CreateFromFile(typeof(object).Assembly.Location))
+                    .AddReferences(MetadataReference.CreateFromFile(Assembly.GetExecutingAssembly().Location)); ;
+
+                using (var stream = new MemoryStream())
+                {
+                    EmitResult result = compilation.Emit(stream);
+                    if (!result.Success)
+                    {
+                        throw new Exception(string.Join(", ", result.Diagnostics.Select(diagnostic => diagnostic.GetMessage())));
+                    }
+
+                    stream.Seek(0, SeekOrigin.Begin);
+                    Assembly assembly = Assembly.Load(stream.ToArray());
+                    Type type = assembly.GetType("MyClass");
+                    MethodInfo method = type.GetMethod("Execute");
+                    string result2 = (string)method.Invoke(null, new object[] { });
+                    return result2;
                 }
             }
         }

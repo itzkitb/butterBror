@@ -6,7 +6,7 @@ namespace butterBror
 {
     public partial class Commands
     {
-        public class say
+        public class Say
         {
             public static CommandInfo Info = new()
             {

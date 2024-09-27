@@ -24,7 +24,7 @@ namespace butterBror
         public static bool isNeedRestart = false;
         static Bot bot = new();
         public static int restartedTimes = 0;
-        public static string botVersion = "2.08";
+        public static string botVersion = "2.08.2";
         public static int CompletedCommands = 0;
         public static DataManager currencyWorker = new();
         // butter's currency
@@ -36,6 +36,7 @@ namespace butterBror
         private static DateTime statSenderTimer = DateTime.UtcNow;
         static void Main(string[] args)
         {
+            DebugUtil.IsDebugEnabled = true;
             statSenderTimer = DateTime.UtcNow;
             StartTime = DateTime.Now;
 

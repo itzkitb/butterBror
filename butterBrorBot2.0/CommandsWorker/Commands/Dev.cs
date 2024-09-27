@@ -1,8 +1,10 @@
 ﻿using butterBib;
+using System;
 using butterBror.Utils;
 using Discord;
 using Microsoft.CSharp;
 using System.CodeDom.Compiler;
+using System.Reflection;
 using TwitchLib.Client.Enums;
 
 namespace butterBror
@@ -21,10 +23,10 @@ namespace butterBror
                 UseURL = "NONE",
                 UserCooldown = 0,
                 GlobalCooldown = 0,
-                aliases = ["run", "code", "c#", "dev"],
+                aliases = ["run", "code", "csharp", "dev"],
                 ArgsRequired = "(C# код)",
                 ResetCooldownIfItHasNotReachedZero = true,
-                CreationDate = DateTime.Parse("09/26/2024"),
+                CreationDate = DateTime.Parse("26/09/2024"),
                 ForAdmins = false,
                 ForBotCreator = true,
                 ForChannelAdmins = false
@@ -34,42 +36,27 @@ namespace butterBror
                 string resultMessage = "";
                 Color resultColor = Color.Green;
                 ChatColorPresets resultNicknameColor = ChatColorPresets.YellowGreen;
+                DateTime StartTime = DateTime.Now;
 
                 try
                 {
-                    DateTime StartTime = DateTime.Now;
-                    var provider = new CSharpCodeProvider();
-                    var parameters = new CompilerParameters();
-                    parameters.GenerateInMemory = true;
-                    parameters.GenerateExecutable = false;
-                    var results = provider.CompileAssemblyFromSource(parameters, data.ArgsAsString);
-
-                    if (results.Errors.Count > 0)
-                    {
-                        DateTime EndTime = DateTime.Now;
-                        resultMessage = TranslationManager.GetTranslation(data.User.Lang, "c#_code:error", data.ChannelID)
-                            .Replace("%time%", TextUtil.FormatTimeSpan(EndTime - StartTime, data.User.Lang))
-                            .Replace("%result%", results.Errors[0].ErrorText);
-                    }
-                    else
-                    {
-                        var assembly = results.CompiledAssembly;
-                        var programType = assembly.GetType("Program");
-                        var mainMethod = programType.GetMethod("Main");
-                        var result = mainMethod.Invoke(null, null);
-                        DateTime EndTime = DateTime.Now;
-                        // resultMessage = TranslationManager.GetTranslation(data.User.Lang, "c#_code:error", data.ChannelID)
-                        //    .Replace("%time%", TextUtil.FormatTimeSpan(EndTime - StartTime, data.User.Lang))
-                        //    .Replace("%result%", result);
-                    }
+                    string result = CommandUtil.ExecuteCode(data.ArgsAsString);
+                    DateTime EndTime = DateTime.Now;
+                    resultMessage = TranslationManager.GetTranslation(data.User.Lang, "c#_code:result", data.ChannelID)
+                        .Replace("%time%", ((int)(EndTime - StartTime).TotalMilliseconds).ToString())
+                        .Replace("%result%", result);
                 }
-                catch (Exception ex)
+                catch (Exception ex) 
                 {
-
+                    DateTime EndTime = DateTime.Now;
+                    resultMessage = TranslationManager.GetTranslation(data.User.Lang, "c#_code:error", data.ChannelID)
+                        .Replace("%time%", ((int)(EndTime - StartTime).TotalMilliseconds).ToString())
+                        .Replace("%result%", ex.Message);
+                    resultNicknameColor = ChatColorPresets.Red;
+                    resultColor = Color.Red;
                 }
 
-
-                return new ()
+                return new()
                 {
                     Message = resultMessage,
                     IsSafeExecute = false,

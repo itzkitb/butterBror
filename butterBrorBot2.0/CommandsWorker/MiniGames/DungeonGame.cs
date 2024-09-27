@@ -1,5 +1,4 @@
-﻿using static butterBror.BotWorker;
-using butterBib;
+﻿using butterBib;
 using Discord;
 using TwitchLib.Client.Enums;
 using butterBror.Utils;

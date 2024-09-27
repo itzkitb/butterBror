@@ -22,13 +22,13 @@ namespace butterBror
                 aliases = ["gpt", "гпт"],
                 ArgsRequired = "(Вопрос)",
                 ResetCooldownIfItHasNotReachedZero = false,
-                CreationDate = DateTime.Parse("07/04/2024"),
+                CreationDate = DateTime.Parse("04/07/2024"),
                 ForAdmins = false,
                 ForBotCreator = false,
                 ForChannelAdmins = false,
                 Cost = 5.0
             };
-            public static CommandReturn Index(CommandData data)
+            public static async Task<CommandReturn> Index(CommandData data)
             {
                 string resultMessage = "";
                 string resultMessageTitle = "";
@@ -37,8 +37,8 @@ namespace butterBror
                 if (NoBanwords.fullCheck(data.ArgsAsString, data.ChannelID))
                 {
                     BalanceUtil.SaveBalance(data.UserUUID, -5, 0);
-                    Task<string[]> result = Utils.APIUtil.GPT.GPTRequest(data);
-                    if (result.Result.ToArray().ElementAt(0) == "ERR")
+                    string[] result = await Utils.APIUtil.GPT.GPTRequest(data);
+                    if (result.ElementAt(0) == "ERR")
                     {
                         resultMessage = "🚩 " + TranslationManager.GetTranslation(data.User.Lang, "gptERR", data.ChannelID);
                         resultNicknameColor = ChatColorPresets.Red;
@@ -46,9 +46,9 @@ namespace butterBror
                     }
                     else
                     {
-                        if (NoBanwords.fullCheck(result.Result.ToArray().ElementAt(0), data.ChannelID))
+                        if (NoBanwords.fullCheck(result.ElementAt(0), data.ChannelID))
                         {
-                            resultMessage = TranslationManager.GetTranslation(data.User.Lang, "gptSuccess", data.ChannelID).Replace("%text%", result.Result.ToArray().ElementAt(0)).Replace("%model%", result.Result.ToArray().ElementAt(1).Replace("-", " "));
+                            resultMessage = TranslationManager.GetTranslation(data.User.Lang, "gptSuccess", data.ChannelID).Replace("%text%", result.ElementAt(0)).Replace("%model%", result.ElementAt(1).Replace("-", " "));
                         }
                         else
                         {
