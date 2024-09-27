@@ -242,7 +242,7 @@ namespace butterBror
                                         }
                                     }
                                     DebugUtil.LOG("Выполнено!");
-                                    if (data != null)
+                                    if (cmdReturn != null)
                                     {
                                         DebugUtil.LOG("Отправка результата...");
                                         if (data.Platform == Platforms.Twitch)
