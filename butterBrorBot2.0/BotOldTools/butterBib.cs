@@ -136,7 +136,7 @@ namespace butterBib
                 string part1 = data.Message.Substring(0, splitIndex) + "...";
                 string part2 = "..." + data.Message.Substring(splitIndex);
 
-                data.Message = part1;
+                data.Message = part2;
 
                 await Task.Delay(1000);
                 SendCommandReply(data);
