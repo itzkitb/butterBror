@@ -136,10 +136,12 @@ namespace butterBib
                 string part1 = data.Message.Substring(0, splitIndex) + "...";
                 string part2 = "..." + data.Message.Substring(splitIndex);
 
-                data.Message = part2;
+                data.Message = part1;
+                var NewData = data;
+                NewData.Message = part2;
 
                 await Task.Delay(1000);
-                SendCommandReply(data);
+                SendCommandReply(NewData);
             }
 
             if (!Bot.client.JoinedChannels.Any(c => c.Channel == data.Channel))

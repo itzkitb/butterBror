@@ -2199,5 +2199,14 @@ public class MyClass {
                 }
             }
         }
+        public class RemindUtil
+        {
+            public static string Test()
+            {
+                var location = Utils.APIUtil.Weather.Get_location("Екатеринбург").Result[0];
+                var weather = Utils.APIUtil.Weather.Get_weather(location.lat, location.lon);
+                return weather.Result.current.temperature.ToString() + "°C";
+            }
+        }
     }
 }

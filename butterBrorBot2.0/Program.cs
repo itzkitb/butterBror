@@ -24,7 +24,7 @@ namespace butterBror
         public static bool isNeedRestart = false;
         static Bot bot = new();
         public static int restartedTimes = 0;
-        public static string botVersion = "2.08.23";
+        public static string botVersion = "2.08.24";
         public static int CompletedCommands = 0;
         public static DataManager currencyWorker = new();
         // butter's currency
@@ -32,7 +32,6 @@ namespace butterBror
         public static int buttersTotalUsers = 0;
         public static int buttersTotalDollarsInTheBank = 0;
         public static bool isTwitchReady = false;
-
         private static DateTime statSenderTimer = DateTime.UtcNow;
         static void Main(string[] args)
         {
@@ -137,7 +136,6 @@ namespace butterBror
             long workingAppSet = process.WorkingSet64 / (1024 * 1024);
             ConsoleServer.SendConsoleMessage("data", $"Время работы: {workTime.ToString(@"dd\.hh\:mm")}, Пинг с twitch: {pingSpeed}ms, Памяти занято процессом: {workingAppSet}мб, Бутеров в банке: {buttersTotalAmount}, Зарегистрированно пользователей: {buttersTotalUsers}");
         } // Таймер для обновления заголовка консоли
-
         private static void BotR(string[] args)
         {
             try
