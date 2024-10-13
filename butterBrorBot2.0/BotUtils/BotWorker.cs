@@ -595,6 +595,7 @@ namespace butterBror
 
                 public JsonManager(string path)
                 {
+                    _filePath = path;
                     if (!Directory.Exists(Path.GetDirectoryName(path)))
                     {
                         FileUtil.CreateDirectory(Path.GetDirectoryName(path));
@@ -604,19 +605,25 @@ namespace butterBror
                         FileUtil.CreateFile(path);
                     }
                     string json = File.ReadAllText(_filePath);
-                    var userParams = JObject.Parse(json);
                     _Data = new JObject();
-                    _Data = userParams;
+                    if (json != "")
+                    {
+                        var userParams = JObject.Parse(json);
+                        _Data = userParams;
+                    }
                 }
                 public T? GetData<T>(string paramName)
                 {
+                    DebugUtil.LOG("GD1");
                     if (_Data.ContainsKey(paramName))
                     {
+                        DebugUtil.LOG("GD2");
                         var data = _Data[paramName];
                         return data.ToObject<T>();
                     }
                     else
                     {
+                        DebugUtil.LOG("GD3");
                         SaveData(paramName, default(T));
                         return default(T);
                     }
@@ -624,27 +631,22 @@ namespace butterBror
 
                 public void SaveData(string paramName, object value, bool autoSave = true)
                 {
-                    if (_Data.ContainsKey(_filePath))
+                    DebugUtil.LOG("SD1");
+                    if (_Data.ContainsKey(paramName))
                     {
+                        DebugUtil.LOG("SD2");
                         _Data[paramName] = JToken.FromObject(value);
                     }
                     else
                     {
-                        if (!File.Exists(_filePath))
-                        {
-                            _Data = new JObject();
-                            _Data[paramName] = JToken.FromObject(value);
-                        }
-                        else
-                        {
-                            string json = File.ReadAllText(_filePath);
-                            dynamic userParams = JsonConvert.DeserializeObject(json);
-                            userParams[paramName] = JToken.FromObject(value);
-                            FileUtil.SaveFile(_filePath, JsonConvert.SerializeObject(userParams, Formatting.Indented));
-                        }
+                        DebugUtil.LOG("SD3");
+                        _Data = new JObject();
+                        DebugUtil.LOG("SD4");
+                        _Data[paramName] = JToken.FromObject(value);
                     }
                     if (autoSave)
                     {
+                        DebugUtil.LOG("SD5");
                         SaveParamsToFile();
                     }
                 }
