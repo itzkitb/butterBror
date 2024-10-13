@@ -39,6 +39,7 @@ namespace butterBib
         public SocketCommandBase ?d { get; set; }
         public required Platforms Platform { get; set; }
         public required UserData User { get; set; }
+        public required string CommandInstanceUUID { get; set; }
     }
     public enum Platforms
     {
@@ -120,28 +121,27 @@ namespace butterBib
     {
         public static async void SendCommandReply(TwitchMessageSendData data)
         {
+            string messageToSend = data.Message;
+            TwitchMessageSendData messageToSendPart2 = null;
             ConsoleServer.SendConsoleMessage("commands", "Отправка сообщения...");
             LogWorker.Log($"Был отправлен ответ на сообщение в канал {data.Channel}: {data.Message}", LogWorker.LogTypes.Msg, "send_command_reply");
-            data.Message = TextUtil.FilterText(data.Message);
+            messageToSend = TextUtil.FilterText(data.Message);
             await CommandUtil.ChangeNicknameColorAsync(data.NickNameColor);
 
-            if (data.Message.Length > 1500)
+            if (messageToSend.Length > 1500)
             {
-                data.Message = TranslationManager.GetTranslation(data.Lang, "tooLargeText", data.ChannelID);
+                messageToSend = TranslationManager.GetTranslation(data.Lang, "tooLargeText", data.ChannelID);
             }
-            else if (data.Message.Length > 500)
+            else if (messageToSend.Length > 500)
             {
-                int splitIndex = data.Message.LastIndexOf(' ', 450);
+                int splitIndex = messageToSend.LastIndexOf(' ', 450);
 
-                string part1 = data.Message.Substring(0, splitIndex) + "...";
-                string part2 = "..." + data.Message.Substring(splitIndex);
+                string part1 = messageToSend.Substring(0, splitIndex) + "...";
+                string part2 = "..." + messageToSend.Substring(splitIndex);
 
-                data.Message = part1;
-                var NewData = data;
-                NewData.Message = part2;
-
-                await Task.Delay(1000);
-                SendCommandReply(NewData);
+                messageToSend = part1;
+                messageToSendPart2 = data;
+                messageToSendPart2.Message = part2;
             }
 
             if (!Bot.client.JoinedChannels.Any(c => c.Channel == data.Channel))
@@ -150,18 +150,20 @@ namespace butterBib
             }
             if (Bot.client.JoinedChannels.Any(c => c.Channel == data.Channel))
             {
-                if (data.IsSafeExecute)
+                if (data.IsSafeExecute || NoBanwords.fullCheck(messageToSend, data.ChannelID))
                 {
-                    Bot.client.SendReply(data.Channel, data.AnswerID, data.Message);
-                }
-                else if (NoBanwords.fullCheck(data.Message, data.ChannelID))
-                {
-                    Bot.client.SendReply(data.Channel, data.AnswerID, data.Message);
+                    Bot.client.SendReply(data.Channel, data.AnswerID, messageToSend);
                 }
                 else
                 {
                     Bot.client.SendReply(data.Channel, data.AnswerID, TranslationManager.GetTranslation(data.Lang, "cantSend", data.ChannelID));
                 }
+            }
+
+            if (messageToSendPart2 != null)
+            {
+                await Task.Delay(1500);
+                SendCommandReply(messageToSendPart2);
             }
         }
         public static async void SendCommandReply(DiscordCommandSendData data)

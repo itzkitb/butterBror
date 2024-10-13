@@ -29,36 +29,43 @@ namespace butterBror
             };
             public static CommandReturn Index(CommandData data)
             {
+                DebugUtil.SetTaskID(0, data);
                 string resultMessage = "";
                 Color resultColor = Color.Green;
                 ChatColorPresets resultNicknameColor = ChatColorPresets.YellowGreen;
-                
+                DebugUtil.SetTaskID(1, data);
                 Random rand = new Random();
                 int stage1 = rand.Next(1, 4);
                 int stage2 = rand.Next(1, 5);
+                DebugUtil.SetTaskID(2, data);
                 string translationParam = "8ball";
                 if (stage1 == 1)
                 {
+                    DebugUtil.SetTaskID(3, data);
                     resultNicknameColor = ChatColorPresets.DodgerBlue;
                     resultColor = Color.Blue;
                     translationParam += "Positively" + stage2;
                 }
-                else if (stage1 == 2) 
+                else if (stage1 == 2)
                 {
+                    DebugUtil.SetTaskID(4, data);
                     translationParam += "Hesitantly" + stage2;
                 }
                 else if (stage1 == 3)
                 {
+                    DebugUtil.SetTaskID(5, data);
                     resultNicknameColor = ChatColorPresets.GoldenRod;
                     resultColor = Color.Gold;
                     translationParam += "Neutral" + stage2;
                 }
                 else if (stage1 == 4)
                 {
+                    DebugUtil.SetTaskID(6, data);
                     resultNicknameColor = ChatColorPresets.Red;
                     resultColor = Color.Red;
                     translationParam += "Negatively" + stage2;
                 }
+                DebugUtil.SetTaskID(7, data);
                 resultMessage = "🔮 " + TranslationManager.GetTranslation(data.User.Lang, translationParam, data.ChannelID);
                 return new()
                 {

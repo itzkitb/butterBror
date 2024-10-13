@@ -15,9 +15,6 @@ using TwitchLib.Client.Enums;
 using System.Diagnostics;
 using butterBror.Utils.DataManagers;
 using System.Reflection;
-using System.IO;
-using System.Linq;
-using System.Reflection;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
@@ -67,8 +64,24 @@ namespace butterBror
                     }
                 }
             }
+            public static void SetTaskID(int TaskID, CommandData data)
+            {
+                Commands.ErrorsInCommands[data.CommandInstanceUUID] = 0;
+            }
+            
         }
-
+        public class TasksDebugUtil
+        {
+            private int TaskNow = 0;
+            public void SetTask(int TaskID)
+            {
+                TaskNow = 100 + TaskID;
+            }
+            public int GetTask()
+            {
+                return TaskNow;
+            }
+        }
         /// <summary>
         /// Получение токена авторизации твича
         /// </summary>
@@ -125,12 +138,35 @@ namespace butterBror
                 listener.Prefixes.Add(_redirectUri);
                 listener.Start();
 
+                // Возвращаем HTML-страницу клиенту
+                var context = await listener.GetContextAsync();
+                var response = context.Response;
+                string responseString = @"
+        <html>
+            <head>
+                <meta charset='UTF-8'>
+                <title>Авторизация завершена</title>
+            </head>
+            <body>
+                <h1>Готово <img src='https://static-cdn.jtvnw.net/emoticons/v2/28/default/dark/3.0' style='vertical-align: middle;' />👍</h1>
+            </body>
+        </html>";
+
+                byte[] buffer = Encoding.UTF8.GetBytes(responseString);
+                response.ContentLength64 = buffer.Length;
+                response.ContentType = "text/html; charset=UTF-8";
+                using (var output = response.OutputStream)
+                {
+                    await output.WriteAsync(buffer, 0, buffer.Length);
+                }
+
                 var authorizationCode = await GetAuthorizationCodeAsync(listener);
                 var token = await ExchangeCodeForTokenAsync(authorizationCode);
                 SaveTokenData(token);
 
                 return token.AccessToken;
             }
+
             /// <summary>
             /// Обновление токена авторизации
             /// </summary>
@@ -273,6 +309,23 @@ namespace butterBror
                 {
                     string pattern = @"[^-1234567890]";
                     int result = Int32.Parse(Regex.Replace(input, pattern, ""));
+                    return result;
+                }
+                catch (Exception ex)
+                {
+                    ConsoleUtil.ErrorOccured(ex.Message, "wbot2A");
+                    return 0;
+                }
+            }
+            /// <summary>
+            /// Текст в число long
+            /// </summary>
+            public static long ToLong(string input)
+            {
+                try
+                {
+                    string pattern = @"[^-1234567890]";
+                    long result = long.Parse(Regex.Replace(input, pattern, ""));
                     return result;
                 }
                 catch (Exception ex)
@@ -917,7 +970,7 @@ namespace butterBror
             /// </summary>
             public static string FilterText(string input)
             {
-                string pattern = @"[^A-Za-zА-Яа-яёЁ\uD800-\uDB7F\uDB80-\uDFFF\u2705☀⛵⚙〽️❄❗🌫️🌨️⚖️⏺️⛈️🗻🌧️🌥️☁️⛅🌤️☀️ ⬛󠀀°.?/\\,·':;}{\][()*+-`~%$#@&№!»—«]";
+                string pattern = @"[^A-Za-zА-Яа-яёЁ\uD800-\uDB7F\uDB80-\uDFFF\u2705☀⛵⚙〽️❄❗🌫️🌨️⚖️⏺️⛈️🗻🌧️🌥️☁️⛅🌤️☀️ ⬛󠀀°.?/\\,·':;}{\][()*+-`~%$#@&№!»—«|]";
                 string filteredText = Regex.Replace(input, pattern, "");
 
                 return filteredText;
@@ -1379,8 +1432,10 @@ namespace butterBror
 
                     request.Headers.Add("Authorization", $"Bearer {Bot.BotToken}");
                     request.Headers.Add("Client-Id", Bot.ClientID);
-
+                    client.Timeout = TimeSpan.FromSeconds(1);
                     HttpResponseMessage response = await client.SendAsync(request);
+                    client.Dispose();
+                    
                     await Task.Delay(200);
                     if (response.StatusCode == HttpStatusCode.NoContent)
                     {
@@ -1400,8 +1455,9 @@ namespace butterBror
                 code = @"using butterBror;
 using butterBib;
 using System;
+using System.Runtime;
 public class MyClass {
-    static void Main(string[] args)
+    static void Main()
     {
         // Something LOL
     }
@@ -1414,7 +1470,7 @@ public class MyClass {
                 Compilation compilation = CSharpCompilation.Create("MyAssembly")
                     .AddSyntaxTrees(syntaxTree)
                     .AddReferences(MetadataReference.CreateFromFile(typeof(object).Assembly.Location))
-                    .AddReferences(MetadataReference.CreateFromFile(Assembly.GetExecutingAssembly().Location)); ;
+                    .AddReferences(MetadataReference.CreateFromFile(Assembly.GetExecutingAssembly().Location));
 
                 using (var stream = new MemoryStream())
                 {

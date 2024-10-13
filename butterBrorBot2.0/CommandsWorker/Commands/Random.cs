@@ -32,36 +32,57 @@ namespace butterBror
                 string resultMessage = "";
                 Color resultColor = Color.Green;
                 ChatColorPresets resultNicknameColor = ChatColorPresets.YellowGreen;
-                if (data.args.Count > 0)
+                var Task = new TasksDebugUtil();
+                bool IsError = false;
+                try
                 {
-                    if (data.ArgsAsString.Contains('-'))
+                    Task.SetTask(1);
+                    if (data.args.Count > 0)
                     {
-                        string[] numbers = data.ArgsAsString.Split('-');
-                        if (numbers.Length == 2 && int.TryParse(numbers[0], out int min) && int.TryParse(numbers[1], out int max))
+                        Task.SetTask(5);
+                        if (data.ArgsAsString.Contains('-'))
                         {
-                            Random rand = new Random();
-                            int randomNum = rand.Next(min, max + 1);
-                            resultMessage = $"{TranslationManager.GetTranslation(data.User.Lang, "randomNum", data.ChannelID)}{randomNum}";
+                            Task.SetTask(6);
+                            string[] numbers = data.ArgsAsString.Split('-');
+                            Task.SetTask(7);
+                            if (numbers.Length == 2 && int.TryParse(numbers[0], out int min) && int.TryParse(numbers[1], out int max))
+                            {
+                                Task.SetTask(8);
+                                Random rand = new Random();
+                                int randomNum = rand.Next(min, max + 1);
+                                Task.SetTask(9);
+                                resultMessage = $"{TranslationManager.GetTranslation(data.User.Lang, "randomNum", data.ChannelID)}{randomNum}";
+                            }
+                            else
+                            {
+                                Task.SetTask(10);
+                                string[] words = data.ArgsAsString.Split(' ');
+                                Random rand = new Random();
+                                string[] shuffledWords = words.OrderBy(x => rand.Next()).ToArray();
+                                Task.SetTask(11);
+                                resultMessage = $"{TranslationManager.GetTranslation(data.User.Lang, "randomTxt", data.ChannelID)}{string.Join(" ", shuffledWords)}";
+                            }
                         }
                         else
                         {
+                            Task.SetTask(3);
                             string[] words = data.ArgsAsString.Split(' ');
                             Random rand = new Random();
                             string[] shuffledWords = words.OrderBy(x => rand.Next()).ToArray();
+                            Task.SetTask(4);
                             resultMessage = $"{TranslationManager.GetTranslation(data.User.Lang, "randomTxt", data.ChannelID)}{string.Join(" ", shuffledWords)}";
                         }
                     }
                     else
                     {
-                        string[] words = data.ArgsAsString.Split(' ');
-                        Random rand = new Random();
-                        string[] shuffledWords = words.OrderBy(x => rand.Next()).ToArray();
-                        resultMessage = $"{TranslationManager.GetTranslation(data.User.Lang, "randomTxt", data.ChannelID)}{string.Join(" ", shuffledWords)}";
+                        Task.SetTask(2);
+                        resultMessage = TranslationManager.GetTranslation(data.User.Lang, "randomTxt", data.ChannelID) + "DinoDance";
                     }
                 }
-                else
+                catch (Exception e) 
                 {
-                    resultMessage = TranslationManager.GetTranslation(data.User.Lang, "randomTxt", data.ChannelID) + "DinoDance";
+                    ConsoleUtil.ErrorOccured(e.StackTrace, $"cmd_random_{Task.GetTask()}");
+                    IsError = true;
                 }
                 return new()
                 {

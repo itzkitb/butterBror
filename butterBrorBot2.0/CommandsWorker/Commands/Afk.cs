@@ -35,37 +35,59 @@ namespace butterBror
             static string[] study = ["study", "st", "учеба", "учится", "у"];
             static string[] poop = ["poop", "p", "😳", "туалет", "🚽"];
             static string[] shower = ["shower", "sh", "ванная", "душ"];
+            static TasksDebugUtil Tasks = new TasksDebugUtil();
             public static CommandReturn Index(CommandData data)
             {
-                string action = "";
-                switch (data.Name) 
+                try
                 {
-                    case string name when draw.Contains(name):
-                        action = "draw";
-                        break;
-                    case string name when sleep.Contains(name):
-                        action = "sleep";
-                        break;
-                    case string name when rest.Contains(name):
-                        action = "rest";
-                        break;
-                    case string name when lurk.Contains(name):
-                        action = "lurk";
-                        break;
-                    case string name when study.Contains(name):
-                        action = "study";
-                        break;
-                    case string name when poop.Contains(name):
-                        action = "poop";
-                        break;
-                    case string name when shower.Contains(name):
-                        action = "shower";
-                        break;
-                    default:
-                        action = "afk";
-                        break;
+                    string action = "";
+                    switch (data.Name)
+                    {
+                        case string name when draw.Contains(name):
+                            action = "draw";
+                            break;
+                        case string name when sleep.Contains(name):
+                            action = "sleep";
+                            break;
+                        case string name when rest.Contains(name):
+                            action = "rest";
+                            break;
+                        case string name when lurk.Contains(name):
+                            action = "lurk";
+                            break;
+                        case string name when study.Contains(name):
+                            action = "study";
+                            break;
+                        case string name when poop.Contains(name):
+                            action = "poop";
+                            break;
+                        case string name when shower.Contains(name):
+                            action = "shower";
+                            break;
+                        default:
+                            action = "afk";
+                            break;
+                    }
+                    return GoToAfk(data, action);
                 }
-                return GoToAfk(data, action);
+                catch (Exception ex)
+                {
+                    return new()
+                    {
+                        Message = "",
+                        IsSafeExecute = false,
+                        Description = "",
+                        Author = "",
+                        ImageURL = "",
+                        ThumbnailUrl = "",
+                        Footer = "",
+                        IsEmbed = false,
+                        Ephemeral = false,
+                        Title = "",
+                        Color = Discord.Color.Green,
+                        NickNameColor = TwitchLib.Client.Enums.ChatColorPresets.YellowGreen,
+                    };
+                }
             }
             public static CommandReturn GoToAfk(CommandData data, string afkType)
             {
@@ -102,24 +124,10 @@ namespace butterBror
                         Ephemeral = false,
                         Title = "",
                         Color = Discord.Color.Green,
-                        NickNameColor = TwitchLib.Client.Enums.ChatColorPresets.YellowGreen
+                        NickNameColor = TwitchLib.Client.Enums.ChatColorPresets.YellowGreen,
                     };
                 }
-                return new()
-                {
-                    Message = "",
-                    IsSafeExecute = false,
-                    Description = "",
-                    Author = "",
-                    ImageURL = "",
-                    ThumbnailUrl = "",
-                    Footer = "",
-                    IsEmbed = false,
-                    Ephemeral = false,
-                    Title = "",
-                    Color = Discord.Color.Green,
-                    NickNameColor = TwitchLib.Client.Enums.ChatColorPresets.YellowGreen
-                };
+                return null;
             }
         }
     }

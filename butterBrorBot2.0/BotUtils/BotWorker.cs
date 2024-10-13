@@ -585,6 +585,103 @@ namespace butterBror
                 }
             }
             /// <summary>
+            /// Работа с различными данными
+            /// </summary>
+            public class JsonManager
+            {
+                private string? _filePath;
+                private JObject _Data;
+                private const int JSONS_MAX = 50;
+
+                public JsonManager(string path)
+                {
+                    if (!Directory.Exists(Path.GetDirectoryName(path)))
+                    {
+                        FileUtil.CreateDirectory(Path.GetDirectoryName(path));
+                    }
+                    if (!File.Exists(path))
+                    {
+                        FileUtil.CreateFile(path);
+                    }
+                    string json = File.ReadAllText(_filePath);
+                    var userParams = JObject.Parse(json);
+                    _Data = new JObject();
+                    _Data = userParams;
+                }
+                public T? GetData<T>(string paramName)
+                {
+                    if (_Data.ContainsKey(paramName))
+                    {
+                        var data = _Data[paramName];
+                        return data.ToObject<T>();
+                    }
+                    else
+                    {
+                        SaveData(paramName, default(T));
+                        return default(T);
+                    }
+                }
+
+                public void SaveData(string paramName, object value, bool autoSave = true)
+                {
+                    if (_Data.ContainsKey(_filePath))
+                    {
+                        _Data[paramName] = JToken.FromObject(value);
+                    }
+                    else
+                    {
+                        if (!File.Exists(_filePath))
+                        {
+                            _Data = new JObject();
+                            _Data[paramName] = JToken.FromObject(value);
+                        }
+                        else
+                        {
+                            string json = File.ReadAllText(_filePath);
+                            dynamic userParams = JsonConvert.DeserializeObject(json);
+                            userParams[paramName] = JToken.FromObject(value);
+                            FileUtil.SaveFile(_filePath, JsonConvert.SerializeObject(userParams, Formatting.Indented));
+                        }
+                    }
+                    if (autoSave)
+                    {
+                        SaveParamsToFile();
+                    }
+                }
+                public void SaveData()
+                {
+                    SaveParamsToFile();
+                }
+                private void SaveParamsToFile()
+                {
+                    string data = JsonConvert.SerializeObject(_Data, Formatting.Indented);
+                    FileUtil.SaveFile(_filePath, data);
+                }
+                public bool IsContainsKey(string key, string path)
+                {
+                    if (_Data.ContainsKey(path))
+                    {
+                        return _Data.ContainsKey(key);
+                    }
+                    else
+                    {
+                        string filePath = Bot.UsersDataPath + path + ".json";
+                        if (!File.Exists(filePath))
+                        {
+                            return false;
+                        }
+                        else
+                        {
+                            string json = File.ReadAllText(filePath);
+                            dynamic userParams = JsonConvert.DeserializeObject(json);
+                            _Data = new JObject();
+                            _Data = userParams;
+                            return _Data.ContainsKey(key);
+                        }
+                    }
+                }
+            }
+            /// <summary>
             /// Работа с логами
             /// </summary>
             public class LogWorker

@@ -24,13 +24,16 @@ namespace butterBror
                 CreationDate = DateTime.Parse("07/04/2024"),
                 ForAdmins = false,
                 ForBotCreator = false,
-                ForChannelAdmins = false
+                ForChannelAdmins = false,
             };
             public static CommandReturn Index(CommandData data)
             {
+                string result = "";
+                ErrorsInCommands[data.CommandInstanceUUID] = 0;
                 DateTime startDate = new(2000, 9, 1);
                 DateTime endDate = new(2000, 12, 1);
-                string result = TextUtil.TimeTo(startDate, endDate, "Autumn", 0, data.User.Lang, data.ArgsAsString, data.ChannelID);
+                ErrorsInCommands[data.CommandInstanceUUID] = 1;
+                result = TextUtil.TimeTo(startDate, endDate, "Autumn", 0, data.User.Lang, data.ArgsAsString, data.ChannelID);
                 return new()
                 {
                     Message = result,

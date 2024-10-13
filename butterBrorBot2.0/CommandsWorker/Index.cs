@@ -11,6 +11,11 @@ namespace butterBror
 {
     public partial class Commands
     {
+        private static void SaveСommandDataToTheRegistry(CommandData data)
+        {
+
+        }
+        public static Dictionary<string, int> ErrorsInCommands = new();
         public static List<Type> classes = new List<Type>
         {
             typeof(Afk),
@@ -46,7 +51,8 @@ namespace butterBror
             typeof(RandomCMD),
             typeof(Say),
             typeof(Help),
-            typeof(Dev)
+            typeof(Dev),
+            typeof(FrogGame)
         }; // test
         public static void TwitchCommand(object sender, OnChatCommandReceivedArgs args)
         {
@@ -61,6 +67,7 @@ namespace butterBror
                     IsChannelBroadcaster = args.Command.ChatMessage.IsBroadcaster
                 };
                 Guid RequestUuid = Guid.NewGuid();
+                Guid CommandExecutionUuid = Guid.NewGuid();
                 string RequestUuidString = RequestUuid.ToString();
                 CommandData data = new()
                 {
@@ -74,7 +81,8 @@ namespace butterBror
                     MessageID = args.Command.ChatMessage.Id,
                     Platform = Platforms.Twitch,
                     User = user,
-                    TWargs = args
+                    TWargs = args,
+                    CommandInstanceUUID = CommandExecutionUuid.ToString()
                 };
                 if (args.Command.ChatMessage.ChatReply != null)
                 {
@@ -100,6 +108,7 @@ namespace butterBror
                     Name = dsCmd.User.Username
                 };
                 Guid RequestUuid = Guid.NewGuid();
+                Guid CommandExecutionUuid = Guid.NewGuid();
                 string RequestUuidString = RequestUuid.ToString();
                 string ArgsAsString = "";
                 Dictionary<string, dynamic> argsDS = new();
@@ -123,7 +132,8 @@ namespace butterBror
                     d = dsCmd,
                     User = user,
                     ArgsAsString = ArgsAsString,
-                    args = args
+                    args = args,
+                    CommandInstanceUUID = CommandExecutionUuid.ToString()
                 };
                 Command(data);
             }
@@ -177,11 +187,6 @@ namespace butterBror
                     Bot.CommandsActive = classes.Count;
                     string[] bot = ["bot", "bt", "бот", "бт"];
                     string[] help = ["help", "sos", "commands", "помощь", "информация", "info", "инфо"];
-
-                    string[] miningVideocard = ["mining", "mng", "манинг", "майн", "мнг"];
-                    string[] location = ["location", "loc", "локация", "лок"];
-                    string[] pizzas = ["pizza", "хуица", "пицца"];
-                    string[] fishingAliases = ["fishing", "fish", "рыба", "рыбалка"];
                     var command = TextUtil.FilterCommand(data.Name).Replace("ё", "е");
 
                     DebugUtil.LOG("Начало поиска комманды...");
