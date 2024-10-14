@@ -816,7 +816,7 @@ namespace butterBror
                         }
                         catch (Exception ex)
                         {
-                            ConsoleUtil.ErrorOccured(ex.Message, "user_get_data");
+                            ConsoleUtil.ErrorOccured(ex.Message, $"user_get_data#{userId}/{paramName}");
                             return default;
                         }
                     }
@@ -911,7 +911,7 @@ namespace butterBror
                     }
                     catch (Exception ex)
                     {
-                        ConsoleUtil.ErrorOccured(ex.Message, "user_save_data");
+                        ConsoleUtil.ErrorOccured(ex.Message, $"user_save_data#{userId}/{paramName}");
                     }
                 }
 
@@ -959,7 +959,7 @@ namespace butterBror
                     }
                     catch (Exception ex)
                     {
-                        ConsoleUtil.ErrorOccured(ex.Message, "register_user");
+                        ConsoleUtil.ErrorOccured(ex.Message, $"register_user#{userId}");
                     }
                 }
                 /// <summary>

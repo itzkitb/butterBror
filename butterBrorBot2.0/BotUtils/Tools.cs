@@ -138,19 +138,24 @@ namespace butterBror
                 listener.Prefixes.Add(_redirectUri);
                 listener.Start();
 
+                var authorizationCode = await GetAuthorizationCodeAsync(listener);
+                var token = await ExchangeCodeForTokenAsync(authorizationCode);
+                SaveTokenData(token);
+
                 // Возвращаем HTML-страницу клиенту
                 var context = await listener.GetContextAsync();
                 var response = context.Response;
                 string responseString = @"
-        <html>
-            <head>
-                <meta charset='UTF-8'>
-                <title>Авторизация завершена</title>
-            </head>
-            <body>
-                <h1>Готово <img src='https://static-cdn.jtvnw.net/emoticons/v2/28/default/dark/3.0' style='vertical-align: middle;' />👍</h1>
-            </body>
-        </html>";
+<html>
+    <head>
+        <meta charset='UTF-8'>
+        <title>Авторизация завершена</title>
+    </head>
+    <body>
+        <h2> Готово <img src='https://static-cdn.jtvnw.net/emoticons/v2/28/default/dark/1.0' style='vertical-align: middle;'/> 👍</h2>
+		<div> Можете закрыть эту страницу кожанный мешок с костями</div>
+    </body>
+</html>";
 
                 byte[] buffer = Encoding.UTF8.GetBytes(responseString);
                 response.ContentLength64 = buffer.Length;
@@ -159,10 +164,6 @@ namespace butterBror
                 {
                     await output.WriteAsync(buffer, 0, buffer.Length);
                 }
-
-                var authorizationCode = await GetAuthorizationCodeAsync(listener);
-                var token = await ExchangeCodeForTokenAsync(authorizationCode);
-                SaveTokenData(token);
 
                 return token.AccessToken;
             }
