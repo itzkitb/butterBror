@@ -82,23 +82,23 @@ namespace butterBror
                         }
                         else if (caughtAliases.Contains(data.args[0].ToLower()))
                         {
-                            if (CommandUtil.IsNotOnCooldown(3600, 1, "FrogsReset", data.UserUUID, data.ChannelID, false))
+                            if (CommandUtil.IsNotOnCooldown(3600, 0, "FrogsReset", data.UserUUID, data.ChannelID, false, true, true))
                             {
                                 Random rand = new Random();
-                                long frogCaughtType = rand.Next(0, 2);
-                                long frogsCaughted = 0;
+                                long frogCaughtType = rand.Next(0, 4);
+                                long frogsCaughted = rand.Next(1, 11);
 
                                 if (frogCaughtType == 0)
                                 {
-                                    frogsCaughted = rand.Next(1, 10);
+                                    frogsCaughted = rand.Next(1, 11);
                                 }
-                                else if (frogCaughtType == 1)
+                                else if (frogCaughtType <= 2)
                                 {
-                                    frogsCaughted = rand.Next(11, 100);
+                                    frogsCaughted = rand.Next(11, 101);
                                 }
-                                else if (frogCaughtType == 2)
+                                else if (frogCaughtType == 3)
                                 {
-                                    frogsCaughted = rand.Next(101, 1000);
+                                    frogsCaughted = rand.Next(101, 1001);
                                 }
 
                                 string caughtText = GetFrogRange(frogsCaughted);

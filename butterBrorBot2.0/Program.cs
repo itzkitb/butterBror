@@ -24,7 +24,7 @@ namespace butterBror
         public static bool isNeedRestart = false;
         static Bot bot = new();
         public static int restartedTimes = 0;
-        public static string botVersion = "2.08.27";
+        public static string botVersion = "2.08.28";
         public static int CompletedCommands = 0;
         public static DataManager currencyWorker = new();
         // butter's currency

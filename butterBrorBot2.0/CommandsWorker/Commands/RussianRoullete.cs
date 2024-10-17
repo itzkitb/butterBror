@@ -33,12 +33,12 @@ namespace butterBror
                 Color resultColor = Color.Green;
                 ChatColorPresets resultNicknameColor = ChatColorPresets.YellowGreen;
                 Random rand = new Random();
-                int win = rand.Next(1, 6);
-                int page2 = rand.Next(1, 4);
+                int win = rand.Next(1, 3);
+                int page2 = rand.Next(1, 5);
                 string translationParam = "russianRoullete";
                 if (BalanceUtil.GetBalance(data.UserUUID) > 4)
                 {
-                    if (win < 3)
+                    if (win == 1)
                     {
                         // WIN
                         translationParam += "Win" + page2;

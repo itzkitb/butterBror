@@ -1201,9 +1201,9 @@ namespace butterBror
             /// <summary>
             /// Проверка команд нв кулдаун
             /// </summary>
-            public static bool IsNotOnCooldown(int userSecondsCooldown, int globalCooldown, string cooldownParamName, string UserID, string RoomID, bool ResetUseTimeIfCommandIsNotReseted = true)
+            public static bool IsNotOnCooldown(int userSecondsCooldown, int globalCooldown, string cooldownParamName, string UserID, string RoomID, bool ResetUseTimeIfCommandIsNotReseted = true, bool IgnoreUserVIP = false, bool IgnoreGlobalCooldown = false)
             {
-                if (!(UsersData.UserGetData<bool>(UserID, "isBotModerator") || UsersData.UserGetData<bool>(UserID, "isBotDev")))
+                if (!(UsersData.UserGetData<bool>(UserID, "isBotModerator") || UsersData.UserGetData<bool>(UserID, "isBotDev")) || IgnoreUserVIP)
                 {
                     if (UsersData.IsContainsKey($"LU_{cooldownParamName}", UserID))
                     {
@@ -1218,6 +1218,12 @@ namespace butterBror
                                 Dictionary<string, DateTime> list = new();
                                 FileUtil.SaveFile(Bot.ChannelsPath + RoomID + "/CDD.json", JsonConvert.SerializeObject(list));
                             }
+
+                            if (IgnoreGlobalCooldown)
+                            {
+                                return true;
+                            }
+
                             if (DataManager.GetData<DateTime>(Bot.ChannelsPath + RoomID + "/CDD.json", $"LU_{cooldownParamName}") == default)
                             {
                                 DataManager.SaveData(Bot.ChannelsPath + RoomID + "/CDD.json", $"LU_{cooldownParamName}", DateTime.UtcNow);

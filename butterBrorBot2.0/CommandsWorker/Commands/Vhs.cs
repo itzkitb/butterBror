@@ -28,7 +28,7 @@ namespace butterBror
             };
             public static CommandReturn Index(CommandData data)
             {
-                if (CommandUtil.IsNotOnCooldown(3600, 1, "VhsReset", data.UserUUID, data.ChannelID, false))
+                if (CommandUtil.IsNotOnCooldown(3600, 1, "VhsReset", data.UserUUID, data.ChannelID, false, true, true))
                 {
                     Task task = Task.Run(() =>
                     {

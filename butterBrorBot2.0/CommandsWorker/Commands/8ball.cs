@@ -35,8 +35,8 @@ namespace butterBror
                 ChatColorPresets resultNicknameColor = ChatColorPresets.YellowGreen;
                 DebugUtil.SetTaskID(1, data);
                 Random rand = new Random();
-                int stage1 = rand.Next(1, 4);
-                int stage2 = rand.Next(1, 5);
+                int stage1 = rand.Next(1, 5);
+                int stage2 = rand.Next(1, 6);
                 DebugUtil.SetTaskID(2, data);
                 string translationParam = "8ball";
                 if (stage1 == 1)
