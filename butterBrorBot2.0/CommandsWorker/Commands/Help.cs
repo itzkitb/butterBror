@@ -11,12 +11,12 @@ namespace butterBror
         {
             public static CommandInfo Info = new()
             {
-                Name = "Winter",
+                Name = "Help",
                 Author = "@ItzKITb",
                 AuthorURL = "twitch.tv/itzkitb",
                 AuthorImageURL = "https://static-cdn.jtvnw.net/jtv_user_pictures/c3a9af55-d7af-4b4a-82de-39a4d8b296d3-profile_image-70x70.png",
-                Description = "С помощью этой команды вы можете узнать, сколько времени осталось до начала или конца зимы.",
-                UseURL = "https://itzkitb.ru/bot_command/winter",
+                Description = "С помощью этой команды вы можете узнать, данные о выбранной команде",
+                UseURL = "https://itzkitb.ru/bot/command?name=help",
                 UserCooldown = 120,
                 GlobalCooldown = 10,
                 aliases = ["help", "info", "помощь", "hlp"],

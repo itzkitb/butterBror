@@ -174,10 +174,10 @@ namespace butterBror
                                     }
 
                                     giftUserJsonManager.SaveData("frogs", giftUserFrogsBalance + frogs);
-                                    giftUserJsonManager.SaveData("received", giftUserReceived++);
+                                    giftUserJsonManager.SaveData("received", giftUserReceived + frogs);
 
                                     jsonManager.SaveData("frogs", frogsBalance - frogs);
-                                    jsonManager.SaveData("received", frogsGifted++);
+                                    jsonManager.SaveData("gifted", frogsGifted + frogs);
                                 }
                                 else
                                 {

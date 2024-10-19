@@ -19,12 +19,12 @@ namespace butterBror
                 UserCooldown = 20,
                 GlobalCooldown = 1,
                 aliases = ["draw", "drw", "d", "рисовать", "рис", "р", "afk", "афк", "sleep", "goodnight", "gn", "slp", "s", "спать", "храп", "хррр", "с", "rest", "nap", "r", "отдых", "отдохнуть", "о", "lurk", "l", "наблюдатьизтени", "спрятаться", "study", "st", "учеба", "учится", "у", "poop", "p", "туалет", "shower", "sh", "ванная", "душ"],
-                ArgsRequired = "(afk сообщение)",
+                ArgsRequired = "(Afk сообщение)",
                 ResetCooldownIfItHasNotReachedZero = true,
                 ForAdmins = false,
                 ForBotCreator = false,
                 ForChannelAdmins = false,
-                CreationDate = DateTime.Parse("07/04/2024")
+                CreationDate = DateTime.Parse("04/07/2024")
             };
             // AFK
             static string[] draw = ["draw", "drw", "d", "рисовать", "рис", "р"];

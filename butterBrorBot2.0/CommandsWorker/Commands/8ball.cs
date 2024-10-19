@@ -16,7 +16,7 @@ namespace butterBror
                 AuthorURL = "twitch.tv/itzkitb",
                 AuthorImageURL = "https://static-cdn.jtvnw.net/jtv_user_pictures/c3a9af55-d7af-4b4a-82de-39a4d8b296d3-profile_image-70x70.png",
                 Description = "При помощи этой команды вы можете сделать предсказание, надо вам что-то делать или нет.",
-                UseURL = "https://itzkitb.ru/bot_command/tuck",
+                UseURL = "https://itzkitb.ru/bot/command?name=8ball",
                 UserCooldown = 5,
                 GlobalCooldown = 1,
                 aliases = ["8ball", "eightball", "eb", "8b", "шар"],
