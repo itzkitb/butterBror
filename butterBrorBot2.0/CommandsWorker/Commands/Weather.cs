@@ -353,7 +353,7 @@ namespace butterBror
                         }
                         catch (Exception ex)
                         {
-                            LogWorker.Log(ex.Message, LogWorker.LogTypes.Err, "weather");
+                            LogWorker.Log(ex.Message, LogWorker.LogTypes.Err, "command\\Weather\\Index");
                             resultMessage = TranslationManager.GetTranslation(data.User.Lang, "placeCrack", data.ChannelID);
                             resultMessageTitle = TranslationManager.GetTranslation(data.User.Lang, "weatherDsErrTitle", data.ChannelID);
                             resultColor = Color.Red;

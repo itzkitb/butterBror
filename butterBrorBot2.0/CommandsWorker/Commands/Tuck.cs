@@ -66,7 +66,7 @@ namespace butterBror
                     }
                     else
                     {
-                        LogWorker.Log($"Пользователь @{data.User.Name} пытался уложить пользователя, который находится в игноре", LogWorker.LogTypes.Warn, "CMD/tuck");
+                        LogWorker.Log($"Пользователь @{data.User.Name} пытался уложить пользователя, который находится в игноре", LogWorker.LogTypes.Warn, $"command\\Tuck\\Index#{username}");
                         resultMessage = TranslationManager.GetTranslation(data.User.Lang, "tuckIgnored", data.ChannelID);
                     }
                 }

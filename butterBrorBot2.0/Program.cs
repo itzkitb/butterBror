@@ -15,55 +15,65 @@ using System.Reflection;
 using butterBror.Utils.DataManagers;
 using butterBror.Utils;
 
-
 namespace butterBror
 {
     public class BotEngine
     {
-        public static DateTime StartTime = new();
-        public static bool isNeedRestart = false;
         static Bot bot = new();
         public static int restartedTimes = 0;
-        public static string botVersion = "2.08.29";
         public static int CompletedCommands = 0;
-        public static DataManager currencyWorker = new();
-        // butter's currency
-        public static float buttersTotalAmount = 0;
         public static int buttersTotalUsers = 0;
-        public static int buttersTotalDollarsInTheBank = 0;
+        public static DateTime StartTime = new();
+        public static bool isNeedRestart = false;
         public static bool isTwitchReady = false;
+        public static float buttersTotalAmount = 0;
+        public static string botVersion = "2.08.31";
+        public static DataManager currencyWorker = new();
+        public static int buttersTotalDollarsInTheBank = 0;
         private static DateTime statSenderTimer = DateTime.UtcNow;
+        private static float previousSaveButtersAmount = 0;
+
         static void Main(string[] args)
         {
-            DebugUtil.IsDebugEnabled = false;
-            statSenderTimer = DateTime.UtcNow;
-            StartTime = DateTime.Now;
-
-            Task task = Task.Run(() =>
+            try
             {
-                BotR(args);
-            });
+                DebugUtil.IsDebugEnabled = false;
+                statSenderTimer = DateTime.UtcNow;
+                StartTime = DateTime.Now;
 
-            Timer TitleUpdateTimer = new(callback: timerTitle, null, 0, 1000);
-            while (true)
-            {
-                Thread.Sleep(1000);
-                if (isNeedRestart)
+                Task task = Task.Run(() =>
                 {
-                    restartedTimes++;
-                    isNeedRestart = false;
-                    ConsoleUtil.LOG("Перезапуск...");
-                    Console.WriteLine(" +");
-                    Console.WriteLine("");
-                    try { task.Dispose(); } catch (Exception) { }
-                    Thread.Sleep(5000);
-                    task = Task.Run(() =>
+                    BotR(args);
+                });
+
+                Timer TitleUpdateTimer = new(callback: timerTitle, null, 0, 1000);
+                while (true)
+                {
+                    Thread.Sleep(1000);
+                    if (isNeedRestart)
                     {
-                        BotR(args);
-                    });
+                        restartedTimes++;
+                        isNeedRestart = false;
+                        ConsoleUtil.LOG("Перезапуск...");
+                        Console.WriteLine(" +");
+                        Console.WriteLine("");
+                        try { task.Dispose(); } catch (Exception) { }
+                        task = Task.Run(() =>
+                        {
+                            BotR(args);
+                        });
+                    }
                 }
             }
-
+            catch (Exception e)
+            {
+                string ErrorText = $"ФАТАЛЬНАЯ ОШИБКА ДВИЖКА: {e.Message} : {e.Source}";
+                LogWorker.Log(ErrorText, LogWorker.LogTypes.Err, "BotEngine\\Main");
+                ConsoleUtil.LOG(ErrorText, ConsoleColor.Black, ConsoleColor.Red);
+                ConsoleUtil.LOG("Перезапуск...");
+                Task.Delay(1000);
+                Main(args);
+            }
         }
         public static void timerTitle(object timer)
         {
@@ -71,7 +81,7 @@ namespace butterBror
         }
         public static async Task TitleUpdate()
         {
-            if (!isNeedRestart && buttersTotalAmount != 0 && buttersTotalUsers != 0)
+            if (!isNeedRestart && buttersTotalAmount != 0 && buttersTotalUsers != 0 && previousSaveButtersAmount != buttersTotalAmount)
             {
                 Task task = Task.Run(() =>
                 {
@@ -94,12 +104,10 @@ namespace butterBror
                     DataManager.SaveData(Bot.CurrencyPath, $"{date.Day}.{date.Month}.{date.Year}totalDollarsInTheBank", buttersTotalDollarsInTheBank, false);
 
                     DataManager.SaveData(Bot.CurrencyPath);
+                    previousSaveButtersAmount = buttersTotalAmount;
                 });
             }
-
-            var spanedTime = DateTime.UtcNow - statSenderTimer;
-
-            if (DateTime.UtcNow.Minute % 10 == 0 && spanedTime.TotalMinutes >= 1 && isTwitchReady)
+            if (DateTime.UtcNow.Minute % 10 == 0 && (DateTime.UtcNow - statSenderTimer).TotalMinutes >= 1 && isTwitchReady)
             {
                 statSenderTimer = DateTime.UtcNow;
                 Task task2 = Task.Run(() =>
@@ -107,12 +115,9 @@ namespace butterBror
                     bot.StatusSender();
                 });
             }
-
-
             var workTime = DateTime.Now - StartTime;
             var TimeNow = DateTime.UtcNow;
             ConsoleUtil.Title(botVersion, CompletedCommands, Bot.ReadedMessages, workTime);
-
             Random rand = new();
             Ping ping = new();
             long pingSpeed = 0;
@@ -128,10 +133,7 @@ namespace butterBror
                     pingSpeed = 69;
                 }
             }
-            catch (Exception)
-            {
-
-            }
+            catch{}
             Process process = Process.GetCurrentProcess();
             long workingAppSet = process.WorkingSet64 / (1024 * 1024);
             ConsoleServer.SendConsoleMessage("data", $"Время работы: {workTime.ToString(@"dd\.hh\:mm")}, Пинг с twitch: {pingSpeed}ms, Памяти занято процессом: {workingAppSet}мб, Бутеров в банке: {buttersTotalAmount}, Зарегистрированно пользователей: {buttersTotalUsers}");
@@ -169,6 +171,7 @@ namespace butterBror
         public static readonly string BanWordsReplacementPath = MainPath + "BNWORDSREP.txt";
         public static readonly string APIUseDataPath = MainPath + "API.json";
         public static readonly string LogsPath = MainPath + "LOGS.log";
+        public static readonly string ErrorsPath = MainPath + "ERRORS.log";
         public static readonly string LocationsCachePath = MainPath + "LOC.cache";
         public static readonly string CurrencyPath = MainPath + "CURR.json";
         public static TwitchTokenUtil tokenGetter = new(ClientID, Secret, "database.db");
@@ -595,7 +598,7 @@ namespace butterBror
             }
             catch (Exception ex)
             {
-                ConsoleUtil.ErrorOccured(ex.Message, "DS01");
+                ConsoleUtil.ErrorOccured(ex.Message, "DiscordWorker\\ReadyAsync");
             }
         }
         public static async Task MessageReceivedAsync(SocketMessage message)
@@ -608,7 +611,7 @@ namespace butterBror
             }
             catch (Exception ex)
             {
-                ConsoleUtil.ErrorOccured(ex.Message, "DS02");
+                ConsoleUtil.ErrorOccured(ex.Message, $"DiscordWorker\\MessageReceivedAsync#{message.Content}");
             }
         }
         public static async Task RegisterCommandsAsync()
@@ -622,7 +625,7 @@ namespace butterBror
             }
             catch (Exception ex)
             {
-                ConsoleUtil.ErrorOccured(ex.Message, "DS03");
+                ConsoleUtil.ErrorOccured(ex.Message, "DiscordWorker\\RegisterCommandsAsync");
             }
         }
         private static async Task RegisterSlashCommands()
@@ -660,21 +663,14 @@ namespace butterBror
             }
             catch (Exception ex)
             {
-                ConsoleUtil.ErrorOccured(ex.Message, "DS00");
+                ConsoleUtil.ErrorOccured(ex.Message, $"DiscordEventHandler\\LogAsync#{log.Message}");
                 return Task.CompletedTask;
             }
         }
         public static async Task ConnectToGuilt(SocketGuild g)
         {
-            try
-            {
-                ConsoleServer.SendConsoleMessage("discord", $"Подключен к серверу: {g.Name}");
-                Bot.ServersConnected++;
-            }
-            catch (Exception ex)
-            {
-                ConsoleUtil.ErrorOccured(ex.Message, "DS01");
-            }
+            ConsoleServer.SendConsoleMessage("discord", $"Подключен к серверу: {g.Name}");
+            Bot.ServersConnected++;
         }
         public static async Task HandleCommandAsync(SocketMessage arg)
         {
@@ -694,10 +690,9 @@ namespace butterBror
                     }
                 }
             }
-
             catch (Exception ex)
             {
-                ConsoleUtil.ErrorOccured(ex.Message, "DS03");
+                ConsoleUtil.ErrorOccured(ex.Message, $"DiscordEventHandler\\HandleCommandAsync");
             }
         }
         public static async Task SlashCommandHandler(SocketSlashCommand command)

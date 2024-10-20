@@ -5,6 +5,8 @@ using System.Net.NetworkInformation;
 using butterBib;
 using butterBror.Utils;
 using butterBror.Utils.DataManagers;
+using Jint.Runtime;
+using TwitchLib.Client.Models;
 
 namespace butterBror
 {
@@ -119,7 +121,7 @@ namespace butterBror
                 }
                 catch (Exception ex)
                 {
-                    ConsoleUtil.ErrorOccured(ex.Message, "noban0A");
+                    ConsoleUtil.ErrorOccured(ex.Message, $"noBanWords\\CheckBannedWords#{channelID}\\{message}");
                     return false;
                 }
             }
@@ -147,7 +149,7 @@ namespace butterBror
                 }
                 catch (Exception ex)
                 {
-                    ConsoleUtil.ErrorOccured(ex.Message, "noban1A");
+                    ConsoleUtil.ErrorOccured(ex.Message, $"noBanWords\\CheckReplacement#{ChannelID}\\{message}");
                     return false;
                 }
             }
@@ -242,7 +244,7 @@ namespace butterBror
                 }
                 else
                 {
-                    ConsoleUtil.ErrorOccured($"Перевод для ключа '{key}' не найден! ({userLang})", "GetTranslation");
+                    ConsoleUtil.ErrorOccured($"Перевод для ключа '{key}' не найден! ({userLang})", $"TranslationManager\\GetTranslation#{channel}\\{userLang}\\{key}");
                     return $"¯\\_(ツ)_/¯";
                 }
             }
@@ -294,7 +296,7 @@ namespace butterBror
                 }
                 catch (Exception ex)
                 {
-                    ConsoleUtil.ErrorOccured(ex.Message, "set_custom_translation");
+                    ConsoleUtil.ErrorOccured(ex.Message, $"TranslationManager\\SetCustomTranslation#{channel}\\{lang}\\{key}");
                     return false;
                 }
             }
@@ -346,7 +348,7 @@ namespace butterBror
                 }
                 catch (Exception ex)
                 {
-                    ConsoleUtil.ErrorOccured(ex.Message, "setCustomTranslation");
+                    ConsoleUtil.ErrorOccured(ex.Message, $"TranslationManager\\DeleteCustomTranslation#{channel}\\{lang}\\{key}");
                     return false;
                 }
             }
@@ -416,7 +418,7 @@ namespace butterBror
                 }
                 else
                 {
-                    ConsoleUtil.ErrorOccured($"Translation file not found for language '{userLang}'", "LoadTranslations");
+                    ConsoleUtil.ErrorOccured($"Translation file not found for language '{userLang}'", $"TranslationManager\\LoadTranslations#{userLang}");
                     ConsoleServer.SendConsoleMessage("errors", $"Translation file not found for language '{userLang}'");
                 }
 
@@ -512,7 +514,7 @@ namespace butterBror
                     }
                     catch (Exception ex)
                     {
-                        ConsoleUtil.ErrorOccured(ex.Message, "DM0A");
+                        ConsoleUtil.ErrorOccured(ex.Message, $"DataManager\\GetData#{path}\\{paramName}");
                         return default(T);
                     }
                 }
@@ -548,7 +550,7 @@ namespace butterBror
                     }
                     catch (Exception ex)
                     {
-                        ConsoleUtil.ErrorOccured(ex.Message, "DM1A");
+                        ConsoleUtil.ErrorOccured(ex.Message, $"DataManager\\SaveData#{path}\\{paramName}");
                     }
                 }
                 public static void SaveData(string path)
@@ -737,35 +739,69 @@ namespace butterBror
                     public LogType LogType { get; set; }
                     public DateTime LogTime { get; set; }
                 }
-                static LogData[] log_cache = [];
-                static string start_text = null;
+                static List<LogData> log_cache = [];
+                static List<LogData> errors_log_cache = [];
+                static string start_text = "";
+                static string errors_start_text = "";
                 /// <summary>
                 /// Сохранение в файл логов
                 /// </summary>
                 public static void Log(string message, LogType type, string sector)
                 {
-                    FileUtil.CreateFile(Bot.LogsPath);
-                    if (start_text == null)
+                    if (type == LogTypes.Err)
                     {
-                        start_text = File.ReadAllText(Bot.LogsPath);
+                        LogError(message, sector);
                     }
+                    else
+                    {
+                        FileUtil.CreateFile(Bot.LogsPath);
+                        if (start_text == "")
+                        {
+                            start_text = File.ReadAllText(Bot.LogsPath);
+                        }
 
-                    string Logs = start_text;
+                        string Logs = start_text;
+                        var D = DateTime.Now;
+                        LogData newLog = new LogData
+                        {
+                            Text = message,
+                            SectorName = sector,
+                            LogType = type,
+                            LogTime = DateTime.Now
+                        };
+
+                        log_cache.Add(newLog);
+
+                        foreach (var e in log_cache)
+                        {
+                            Logs += $"[{e.LogTime.Year}/{e.LogTime.Month}/{e.LogTime.Day} {e.LogTime.Hour}:{e.LogTime.Minute}.{e.LogTime.Second}.{e.LogTime.Millisecond} ({e.LogTime.DayOfWeek})] [{e.LogType.Text} - Сектор: {e.SectorName}] - {e.Text}\n";
+                        }
+                        FileUtil.SaveFile(Bot.LogsPath, Logs, false);
+                    }
+                }
+
+                private static void LogError(string message, string sector)
+                {
+                    FileUtil.CreateFile(Bot.ErrorsPath);
+                    if (errors_start_text == "")
+                    {
+                        errors_start_text = File.ReadAllText(Bot.ErrorsPath);
+                    }
+                    string Logs = errors_start_text;
                     var D = DateTime.Now;
                     LogData newLog = new LogData
                     {
                         Text = message,
                         SectorName = sector,
-                        LogType = type,
+                        LogType = LogTypes.Err,
                         LogTime = DateTime.Now
                     };
-                    log_cache.Append(newLog);
-
-                    foreach (var e in log_cache)
+                    errors_log_cache.Add(newLog);
+                    foreach (var e in errors_log_cache)
                     {
-                        Logs += $"[{e.LogTime.Year}/{e.LogTime.Month}/{e.LogTime.Day} {e.LogTime.Hour}:{e.LogTime.Minute}.{e.LogTime.Second}.{e.LogTime.Millisecond} ({e.LogTime.DayOfWeek})] [{e.LogType.Text} - Сектор: {e.SectorName}] - {e.Text}\n";
+                        Logs += $"[{e.LogTime.Year}/{e.LogTime.Month}/{e.LogTime.Day} {e.LogTime.Hour}:{e.LogTime.Minute}.{e.LogTime.Second}.{e.LogTime.Millisecond} ({e.LogTime.DayOfWeek})] [Сектор: {e.SectorName}] - {e.Text}\n";
                     }
-                    FileUtil.SaveFile(Bot.LogsPath, Logs, true);
+                    FileUtil.SaveFile(Bot.ErrorsPath, Logs, false);
                 }
             }
             /// <summary>
@@ -816,7 +852,7 @@ namespace butterBror
                         }
                         catch (Exception ex)
                         {
-                            ConsoleUtil.ErrorOccured(ex.Message, $"user_get_data#{userId}/{paramName}");
+                            ConsoleUtil.ErrorOccured(ex.Message, $"UsersData\\UserGetData#{userId}\\{paramName}");
                             return default;
                         }
                     }
@@ -911,7 +947,7 @@ namespace butterBror
                     }
                     catch (Exception ex)
                     {
-                        ConsoleUtil.ErrorOccured(ex.Message, $"user_save_data#{userId}/{paramName}");
+                        ConsoleUtil.ErrorOccured(ex.Message, $"UsersData\\UserSaveData#{userId}\\{paramName}");
                     }
                 }
 
@@ -959,7 +995,7 @@ namespace butterBror
                     }
                     catch (Exception ex)
                     {
-                        ConsoleUtil.ErrorOccured(ex.Message, $"register_user#{userId}");
+                        ConsoleUtil.ErrorOccured(ex.Message, $"UsersData\\UserRegister#{userId}");
                     }
                 }
                 /// <summary>
@@ -1077,7 +1113,7 @@ namespace butterBror
                     catch (Exception ex)
                     {
                         // Срабатывает, если произошла непридвиденная ошибка
-                        ConsoleUtil.ErrorOccured(ex.Message, "msg0A");
+                        ConsoleUtil.ErrorOccured(ex.Message, $"MessagesWorker\\SaveMessage#{channelID}\\{userID}");
                     }
                     // Конец
                 }
@@ -1118,7 +1154,7 @@ namespace butterBror
                     catch (Exception ex)
                     {
                         // Я хз когда это должно сработать
-                        ConsoleUtil.ErrorOccured(ex.Message, "msg1A");
+                        ConsoleUtil.ErrorOccured(ex.Message, $"MessagesWorker\\GetMessage#{channelID}\\{userID}\\{customNumber}");
                         return null;
                     }
                 }
@@ -1143,7 +1179,7 @@ namespace butterBror
                     }
                     catch (Exception ex)
                     {
-                        ConsoleUtil.ErrorOccured(ex.Message, "creating_directory");
+                        ConsoleUtil.ErrorOccured(ex.Message, $"FileUtil\\CreateDirectory#{path}");
                     }
 
                 }
@@ -1163,7 +1199,7 @@ namespace butterBror
                     }
                     catch (Exception ex)
                     {
-                        ConsoleUtil.ErrorOccured(ex.Message, "creating_file");
+                        ConsoleUtil.ErrorOccured(ex.Message, $"FileUtil\\CreateFile#{path}");
                     }
                 } // Создание файла
                 /// <summary>
@@ -1194,7 +1230,7 @@ namespace butterBror
                     {
                         if (isSavingErrorLogs)
                         {
-                            ConsoleUtil.ErrorOccured(ex.Message, "saving_file");
+                            ConsoleUtil.ErrorOccured(ex.Message, $"FileUtil\\SaveFile#{path}");
                         }
                     }
                 }
@@ -1212,7 +1248,7 @@ namespace butterBror
                     }
                     catch (Exception ex)
                     {
-                        ConsoleUtil.ErrorOccured(ex.Message, "deleting_file");
+                        ConsoleUtil.ErrorOccured(ex.Message, $"FileUtil\\DeleteFile#{path}");
                     }
                 }
                 /// <summary>
@@ -1229,7 +1265,7 @@ namespace butterBror
                     }
                     catch (Exception ex)
                     {
-                        ConsoleUtil.ErrorOccured(ex.Message, "deleting_directory");
+                        ConsoleUtil.ErrorOccured(ex.Message, $"FileUtil\\DeleteDirectory#{path}");
                     }
                 }
                 /// <summary>

@@ -30,18 +30,10 @@ namespace butterBror
             public static CommandReturn Index(CommandData data)
             {
                 string resultMessage = "";
-                try
+                if (UsersData.UserGetData<bool>(data.UserUUID, "isBotModerator") || UsersData.UserGetData<bool>(data.UserUUID, "isBotDev"))
                 {
-                    if (UsersData.UserGetData<bool>(data.UserUUID, "isBotModerator") || UsersData.UserGetData<bool>(data.UserUUID, "isBotDev"))
-                    {
-                        resultMessage = "❄ Перезагрузка...";
-                        Bot.RestartPlease();
-                    }
-                }
-                catch (Exception ex)
-                {
-                    ConsoleUtil.ErrorOccured(ex.Message, "cmd7A");
-                    resultMessage = TranslationManager.GetTranslation(data.User.Lang, "error", data.ChannelID);
+                    resultMessage = "❄ Перезагрузка...";
+                    Bot.RestartPlease();
                 }
                 return new()
                 {

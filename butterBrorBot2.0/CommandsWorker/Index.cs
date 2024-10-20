@@ -94,7 +94,7 @@ namespace butterBror
             }
             catch (Exception ex) 
             {
-                ConsoleUtil.ErrorOccured(ex.Message + " - " + ex.TargetSite, "TwitchCommand()");
+                ConsoleUtil.ErrorOccured(ex.Message + " - " + ex.TargetSite, $"Command\\TwitchCommand#Command:{args.Command.CommandText}\\FullMessage:{args.Command.ChatMessage}");
             }
         }
         public static void DiscordCommand(SocketSlashCommand dsCmd)
@@ -139,21 +139,21 @@ namespace butterBror
             }
             catch (Exception ex) 
             {
-                ConsoleUtil.ErrorOccured(ex.Message, "DiscordCommand()");
+                ConsoleUtil.ErrorOccured(ex.Message + " - " + ex.TargetSite, $"Command\\DiscordCommand#Command:{dsCmd.CommandName}");
             }
         }
-        public static void Command(CommandData data)
+        public static async void Command(CommandData data)
         {
             try
             {
-                var allowed = true;
+                bool allowed = true;
                 if (data.Platform == Platforms.Twitch)
                 {
                     allowed = !data.TWargs.Command.ChatMessage.IsMe;
                 }
                 if (allowed)
                 {
-                    var lang = "ru";
+                    string lang = "ru";
                     try
                     {
                         string Id = "";
@@ -177,7 +177,7 @@ namespace butterBror
                     }
                     catch (Exception ex)
                     {
-                        ConsoleUtil.ErrorOccured(ex.Message, "cmd0A");
+                        ConsoleUtil.ErrorOccured(ex.Message, $"(NOTFATAL)Command\\Command\\GetLang#{data.UserUUID}");
                     }
                     data.User.Lang = lang;
                     data.User.IsBanned = UsersData.UserGetData<bool>(data.UserUUID, "isBanned");
@@ -192,19 +192,19 @@ namespace butterBror
                     DebugUtil.LOG("Начало поиска комманды...");
                     if (!(bool)data.User.IsBanned && !(bool)data.User.IsIgnored)
                     {
-                        // Console.Write("4 (");
+                        bool isCommandFound = false;
                         int num = 0;
-                        CommandReturn cmdReturn = null; // Инициализация переменной для хранения результата
+                        CommandReturn? cmdReturn = null;
                         DebugUtil.LOG("Поиск комманды...");
                         foreach (var classType in classes)
                         {
                             num++;
-                            // Получение значения статического свойства Info
                             var infoProperty = classType.GetField("Info", BindingFlags.Static | BindingFlags.Public);
                             var info = infoProperty.GetValue(null) as CommandInfo;
 
                             if (info.aliases.Contains(command))
                             {
+                                isCommandFound = true;
                                 DebugUtil.LOG("Комманда найдена!");
                                 if (info.ForBotCreator && !(bool)data.User.IsBotCreator || info.ForAdmins && !(bool)data.User.IsBotAdmin || info.ForChannelAdmins && !(bool)data.User.IsChannelAdmin)
                                 {
@@ -217,34 +217,27 @@ namespace butterBror
                                     CommandUtil.executedCommand(data);
                                     var indexMethod = classType.GetMethod("Index", BindingFlags.Static | BindingFlags.Public);
 
-                                    if (indexMethod.ReturnType == typeof(CommandReturn))
+                                    try
                                     {
-                                        DebugUtil.LOG("Выполнение в синхронном режиме...");
-                                        // Синхронный метод с возвращаемым значением типа CommandReturn
-                                        cmdReturn = (CommandReturn)indexMethod.Invoke(null, new object[] { data });
-                                    }
-                                    else
-                                    {
-                                        DebugUtil.LOG("Выполнение в асинхронном режиме...");
-                                        // Синхронный метод с возвращаемым значением Task<T>
-                                        var result = indexMethod.Invoke(null, new object[] { data }) as Task<CommandReturn>;
-                                        if (result != null)
+                                        if (indexMethod.ReturnType == typeof(CommandReturn))
                                         {
-                                            try
-                                            {
-                                                cmdReturn = result.Result;
-                                            }
-                                            catch (Exception ex)
-                                            {
-                                                ConsoleServer.SendConsoleMessage("commands", $"Ошибка при получении результата из Task: {ex.Message}");
-                                                LogWorker.Log($"Ошибка при получении результата из Task: {ex.Message}", LogWorker.LogTypes.Err, $"commands/{info.Name}");
-                                            }
+                                            DebugUtil.LOG("Выполнение в синхронном режиме...");
+                                            cmdReturn = indexMethod.Invoke(null, [data]) as CommandReturn;
+                                        }
+                                        else if (indexMethod.ReturnType == typeof(Task<CommandReturn>))
+                                        {
+                                            DebugUtil.LOG("Выполнение в асинхронном режиме...");
+                                            var task = indexMethod.Invoke(null, [data]) as Task<CommandReturn>;
+                                            cmdReturn = await task; // Используем await для асинхронного выполнения
                                         }
                                         else
                                         {
-                                            ConsoleServer.SendConsoleMessage("commands", $"Метод '{info.Name}' вернул неверный тип результата: {result.GetType().Name}");
-                                            LogWorker.Log($"Метод '{info.Name}' вернул неверный тип результата: {result.GetType().Name}", LogWorker.LogTypes.Err, $"commands/{info.Name}");
+                                            throw new InvalidOperationException($"Метод '{info.Name}' вернул неверный тип результата: {indexMethod.ReturnType.Name}");
                                         }
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        throw new ApplicationException($"Не удалось выполнить команду: \nОшибка: {ex.Message}\nСтак: {ex.StackTrace}\nМесто ошибки: {ex.Source}\nКоманда: {info.Name}\nАргументы команды: {data.ArgsAsString}\nПользователь, который выполнил команду: {data.User.Name} (#{data.UserUUID})");
                                     }
                                     DebugUtil.LOG("Выполнено!");
                                     if (cmdReturn != null)
@@ -295,12 +288,19 @@ namespace butterBror
                                     }
                                     else
                                     {
-                                        ConsoleServer.SendConsoleMessage("commands", "Пустой ответ от комманды");
-                                        LogWorker.Log("Пустой ответ от комманды", LogWorker.LogTypes.Warn, $"commands/{info.Name}");
+                                        string message = $"Пустой ответ от комманды!\nКоманда: {info.Name},\nАргументы команды: {data.ArgsAsString},\nПользователь, который выполнил команду: {data.User.Name} (#{data.UserUUID})";
+                                        ConsoleServer.SendConsoleMessage($"cmd\\{command}", message.Replace("\n", ""));
+                                        LogWorker.Log(message, LogWorker.LogTypes.Warn, $"cmd\\{info.Name}");
                                     }
                                 }
                                 break;
                             }
+                        }
+                        if (!isCommandFound)
+                        {
+                            string message = $"Команда не найдена!\nКоманда: {command},\nАргументы команды: {data.ArgsAsString},\nПользователь, который искал команду: {data.User.Name} (#{data.UserUUID})";
+                            ConsoleServer.SendConsoleMessage($"cmd\\{command}", message.Replace("\n", ""));
+                            LogWorker.Log(message, LogWorker.LogTypes.Info, $"cmd\\{command}");
                         }
                     }
                     else
@@ -311,14 +311,14 @@ namespace butterBror
                         }
                         else
                         {
-                            LogWorker.Log($"{data.Name} попробовал выполнить команду, но был заигнорен или забанен (#{data.Name} {data.ArgsAsString})", LogWorker.LogTypes.Warn, "CMD");
+                            LogWorker.Log($"{data.Name} пытался выполнить команду, но он в игноре или бане (#{data.Name} {data.ArgsAsString})", LogWorker.LogTypes.Warn, $"command#{data.UserUUID}");
                         }
                     }
                 }
             }
             catch (Exception ex)
             {
-                ConsoleUtil.ErrorOccured(ex.Message + " - " + ex.StackTrace, "command_main");
+                ConsoleUtil.ErrorOccured(ex.Message, $"command\\command#UserID:{data.UserUUID}\\Command:{data.Name}");
                 if (data.Platform == Platforms.Twitch)
                 {
                     TwitchMessageSendData SendData = new()

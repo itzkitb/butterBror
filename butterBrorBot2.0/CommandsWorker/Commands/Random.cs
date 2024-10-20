@@ -81,7 +81,7 @@ namespace butterBror
                 }
                 catch (Exception e) 
                 {
-                    ConsoleUtil.ErrorOccured(e.StackTrace, $"cmd_random_{Task.GetTask()}");
+                    ConsoleUtil.ErrorOccured(e.StackTrace, $"Command\\Bot\\Random#{Task.GetTask()}");
                     IsError = true;
                 }
                 return new()

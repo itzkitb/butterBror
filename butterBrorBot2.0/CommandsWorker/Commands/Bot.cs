@@ -53,6 +53,8 @@ namespace butterBror
                 string[] currencyAlias = ["currency", "c", "курс"];
                 string[] updateTranslaion = ["updatetranslation", "uptr", "ut", "обновитьперевод", "оп"];
 
+                var user = args.ElementAt(1).ToLower().Replace("@", "").Replace(",", "");
+
                 if (args.Count > 0)
                 {
                     var argument1 = args.ElementAt(0).ToLower();
@@ -278,7 +280,6 @@ namespace butterBror
                         {
                             try
                             {
-                                var user = args.ElementAt(1).ToLower().Replace("@", "").Replace(",", "");
                                 if (TextUtil.FilterTextWithoutSpaces(user) != "")
                                 {
                                     JoinedChannel userRecon = new(user);
@@ -293,14 +294,13 @@ namespace butterBror
                             }
                             catch (Exception ex)
                             {
-                                ConsoleUtil.ErrorOccured(ex.Message, "BOTCMD/rejoin");
+                                ConsoleUtil.ErrorOccured(ex.Message, $"(NOTFATAL)Command\\Bot\\Index\\Rejoin#{user}");
                             }
                         }
                         else if (argument1 == "addchannel" && data.Platform == Platforms.Twitch)
                         {
                             try
                             {
-                                var user = args.ElementAt(1).ToLower().Replace("@", "").Replace(",", "");
                                 if (TextUtil.FilterTextWithoutSpaces(user) != "")
                                 {
                                     var userID = NamesUtil.GetUserID(user);
@@ -324,14 +324,13 @@ namespace butterBror
                             }
                             catch (Exception ex)
                             {
-                                ConsoleUtil.ErrorOccured(ex.Message, "BOTCMD/join");
+                                ConsoleUtil.ErrorOccured(ex.Message, $"(NOTFATAL)Command\\Bot\\Index\\Join#{user}");
                             }
                         }
                         else if (argument1 == "delchannel" && data.Platform == Platforms.Twitch)
                         {
                             try
                             {
-                                var user = args.ElementAt(1).ToLower().Replace("@", "").Replace(",", "");
                                 if (TextUtil.FilterTextWithoutSpaces(user) != "")
                                 {
                                     var userID = NamesUtil.GetUserID(user);
@@ -352,14 +351,13 @@ namespace butterBror
                             }
                             catch (Exception ex)
                             {
-                                ConsoleUtil.ErrorOccured(ex.Message, "BOTCMD/join");
+                                ConsoleUtil.ErrorOccured(ex.Message, $"(NOTFATAL)Command\\Bot\\Index\\Rejoin#{user}");
                             }
                         }
                         else if (argument1 == "joinchannel" && data.Platform == Platforms.Twitch)
                         {
                             try
                             {
-                                var user = args.ElementAt(1).ToLower().Replace("@", "").Replace(",", "");
                                 if (TextUtil.FilterTextWithoutSpaces(user) != "")
                                 {
                                     Bot.client.JoinChannel(user);
@@ -368,14 +366,13 @@ namespace butterBror
                             }
                             catch (Exception ex)
                             {
-                                ConsoleUtil.ErrorOccured(ex.Message, "BOTCMD/join");
+                                ConsoleUtil.ErrorOccured(ex.Message, $"(NOTFATAL)Command\\Bot\\Index\\Join#{user}");
                             }
                         }
                         else if (argument1 == "leavechannel" && data.Platform == Platforms.Twitch)
                         {
                             try
                             {
-                                var user = args.ElementAt(1).ToLower().Replace("@", "").Replace(",", "");
                                 if (TextUtil.FilterTextWithoutSpaces(user) != "")
                                 {
                                     Bot.client.LeaveChannel(user);
@@ -384,7 +381,7 @@ namespace butterBror
                             }
                             catch (Exception ex)
                             {
-                                ConsoleUtil.ErrorOccured(ex.Message, "BOTCMD/leave");
+                                ConsoleUtil.ErrorOccured(ex.Message, $"(NOTFATAL)Command\\Bot\\Index\\Leave#{user}");
                             }
                         }
                         else if (is_dev)
@@ -393,7 +390,6 @@ namespace butterBror
                             {
                                 try
                                 {
-                                    var user = args.ElementAt(1).ToLower().Replace("@", "").Replace(",", "");
                                     var userID = NamesUtil.GetUserID(user);
                                     if (userID != "err")
                                     {
@@ -410,14 +406,13 @@ namespace butterBror
                                 }
                                 catch (Exception ex)
                                 {
-                                    ConsoleUtil.ErrorOccured(ex.Message, "BOTCMD/modadd");
+                                    ConsoleUtil.ErrorOccured(ex.Message, $"(NOTFATAL)Command\\Bot\\Index\\ModAdd#{user}");
                                 }
                             }
                             else if (argument1 == "demod")
                             {
                                 try
                                 {
-                                    var user = args.ElementAt(1).ToLower().Replace("@", "").Replace(",", "");
                                     var userID = NamesUtil.GetUserID(user);
                                     if (userID != "err")
                                     {
@@ -434,7 +429,7 @@ namespace butterBror
                                 }
                                 catch (Exception ex)
                                 {
-                                    ConsoleUtil.ErrorOccured(ex.Message, "BOTCMD/moddel");
+                                    ConsoleUtil.ErrorOccured(ex.Message, $"(NOTFATAL)Command\\Bot\\Index\\ModDelete#{user}");
                                 }
                             }
                             else if (updateTranslaion.Contains(argument1))

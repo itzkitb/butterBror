@@ -70,7 +70,7 @@ namespace butterBror
                         resultNicknameColor = ChatColorPresets.Firebrick;
                         resultMessage = "/me " + TranslationManager.GetTranslation(data.User.Lang, "jsError", data.ChannelID)
                             .Replace("%err%", ex.Message);
-                        LogWorker.Log(ex.Message, LogWorker.LogTypes.Err, "js");
+                        LogWorker.Log(ex.Message, LogWorker.LogTypes.Err, "command\\Java\\Index");
                     }
                 }
                 return new()

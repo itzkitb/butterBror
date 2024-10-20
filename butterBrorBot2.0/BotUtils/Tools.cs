@@ -314,7 +314,7 @@ namespace butterBror
                 }
                 catch (Exception ex)
                 {
-                    ConsoleUtil.ErrorOccured(ex.Message, "wbot2A");
+                    ConsoleUtil.ErrorOccured(ex.Message, $"FormatUtil\\ToNumber#{input}");
                     return 0;
                 }
             }
@@ -331,7 +331,7 @@ namespace butterBror
                 }
                 catch (Exception ex)
                 {
-                    ConsoleUtil.ErrorOccured(ex.Message, "wbot2A");
+                    ConsoleUtil.ErrorOccured(ex.Message, $"FormatUtil\\ToLong#{input}");
                     return 0;
                 }
             }
@@ -386,7 +386,7 @@ namespace butterBror
                 }
                 catch (Exception ex)
                 {
-                    ConsoleUtil.ErrorOccured(ex.Message, "wbot0A");
+                    ConsoleUtil.ErrorOccured(ex.Message, $"BalanceUtil\\SaveBalance#{userID}\\{plusBalance}.{plusFloatBalance}");
                 }
             }
             /// <summary>
@@ -429,7 +429,7 @@ namespace butterBror
                 }
                 catch (Exception ex)
                 {
-                    ConsoleUtil.ErrorOccured(ex.Message, "afkBack");
+                    ConsoleUtil.ErrorOccured(ex.Message, $"ChatUtil\\ReturnFromAFK#{e.ChatMessage.UserId}");
                 }
                 var message = UsersData.UserGetData<string>(e.ChatMessage.UserId, "afkText");
                 if (NoBanwords.fullCheck(message, e.ChatMessage.RoomId))
@@ -683,7 +683,7 @@ namespace butterBror
             public static void SendMessage(string channel, string message, string channelID, string messageID, string lang, bool isSafeEx = false)
             {
                 ConsoleServer.SendConsoleMessage("commands", "Отправка сообщения...");
-                LogWorker.Log($"Было отправлено сообщение в канал {channel}: {message}", LogWorker.LogTypes.Info, "SMR");
+                LogWorker.Log($"Было отправлено сообщение в канал {channel}: {message}", LogWorker.LogTypes.Info, "ChatUtil\\SendMessage");
                 if (!Bot.client.JoinedChannels.Any(c => c.Channel == channel))
                 {
                     Bot.client.JoinChannel(channel);
@@ -710,7 +710,7 @@ namespace butterBror
             public static void SendMsgReply(string channel, string channelID, string message, string messageID, string lang, bool isSafeEx = false)
             {
                 ConsoleServer.SendConsoleMessage("commands", "Отправка сообщения...");
-                LogWorker.Log($"Был отправлен ответ на сообщение в канал {channel}: {message}", LogWorker.LogTypes.Info, "SMR");
+                LogWorker.Log($"Был отправлен ответ на сообщение в канал {channel}: {message}", LogWorker.LogTypes.Info, "ChatUtil\\SendMsgReply");
                 message = TextUtil.FilterText(message);
 
                 if (message.Length > 1500)
@@ -777,7 +777,7 @@ namespace butterBror
                 }
                 catch (Exception ex)
                 {
-                    ConsoleUtil.ErrorOccured(ex.Message, "GUFT");
+                    ConsoleUtil.ErrorOccured(ex.Message, $"NamesUtil\\GetUsernameFromText#{text}");
                 }
                 return string.Empty;
             }
@@ -930,7 +930,7 @@ namespace butterBror
                 }
                 catch (Exception ex)
                 {
-                    ConsoleUtil.ErrorOccured(ex.Message, "wbot1A");
+                    ConsoleUtil.ErrorOccured(ex.Message, $"TextUtil\\FilterCommand#{input}");
                     return "none";
                 }
             }
@@ -1005,7 +1005,7 @@ namespace butterBror
                 }
                 catch (Exception ex)
                 {
-                    ConsoleUtil.ErrorOccured(ex.Message, "RDL");
+                    ConsoleUtil.ErrorOccured(ex.Message, $"TextUtil\\RemoveDuplicateLetters#{text}");
                     return string.Empty;
                 }
             }
@@ -1086,7 +1086,7 @@ namespace butterBror
                 }
                 catch (Exception ex)
                 {
-                    ConsoleUtil.ErrorOccured(ex.Message, "wbot3A");
+                    ConsoleUtil.ErrorOccured(ex.Message, $"TextUtil\\FormatTimeSpan#{lang}\\{timeSpan}");
                     return default;
                 }
             }
@@ -1194,7 +1194,7 @@ namespace butterBror
             public static void executedCommand(CommandData data)
             {
                 var info = $"Выполнена команда {data.Name} (Пользователь: {data.User.Name}, полное сообщение: \"{data.Name} {data.ArgsAsString}\", аргументы: \"{data.ArgsAsString}\", команда: \"{data.Name}\")";
-                LogWorker.Log(info, LogWorker.LogTypes.Info, $"cmd\\{data.Name}");
+                LogWorker.Log(info, LogWorker.LogTypes.Info, $"CommandUtil\\executedCommand#{data.Name}");
                 ConsoleServer.SendConsoleMessage("commands", info);
                 BotEngine.CompletedCommands++;
             }
@@ -1376,13 +1376,14 @@ namespace butterBror
                     }
                     UsersData.UserSaveData(UserID, "lastSeenMessage", Message, false);
                     UsersData.UserSaveData(UserID, "lastSeen", time, false);
+                    // TotalMessages
                     try
                     {
                         UsersData.UserSaveData(UserID, "totalMessages", UsersData.UserGetData<int>(UserID, "totalMessages") + 1, false);
                     }
                     catch (Exception ex)
                     {
-                        ConsoleUtil.ErrorOccured(ex.Message, "boteventMSG0A");
+                        ConsoleUtil.ErrorOccured(ex.Message, $"(NOTFATAL#TotalMessages)CommandUtil\\MessageWorker#UserID:{UserID}\\RoomId:{RoomId}\\Username:{Username}\\Room:{Room}\\platform:{platform}");
                     }
                     if (platform == "tw")
                     {
@@ -1413,45 +1414,51 @@ namespace butterBror
             /// </summary>
             public static async Task ChangeNicknameColorAsync(ChatColorPresets color)
             {
-                Dictionary<ChatColorPresets, string> replacements = new Dictionary<ChatColorPresets, string>();
-                replacements.Add(ChatColorPresets.Blue, "blue");
-                replacements.Add(ChatColorPresets.BlueViolet, "blue_violet");
-                replacements.Add(ChatColorPresets.CadetBlue, "cadet_blue");
-                replacements.Add(ChatColorPresets.Chocolate, "chocolate");
-                replacements.Add(ChatColorPresets.Coral, "coral");
-                replacements.Add(ChatColorPresets.DodgerBlue, "dodger_blue");
-                replacements.Add(ChatColorPresets.Firebrick, "firebrick");
-                replacements.Add(ChatColorPresets.GoldenRod, "golden_rod");
-                replacements.Add(ChatColorPresets.Green, "green");
-                replacements.Add(ChatColorPresets.HotPink, "hot_pink");
-                replacements.Add(ChatColorPresets.OrangeRed, "orange_red");
-                replacements.Add(ChatColorPresets.Red, "red");
-                replacements.Add(ChatColorPresets.SeaGreen, "sea_green");
-                replacements.Add(ChatColorPresets.SpringGreen, "spring_green");
-                replacements.Add(ChatColorPresets.YellowGreen, "yellow_green");
+                Dictionary<ChatColorPresets, string> replacements = new Dictionary<ChatColorPresets, string>
+    {
+        { ChatColorPresets.Blue, "blue" },
+        { ChatColorPresets.BlueViolet, "blue_violet" },
+        { ChatColorPresets.CadetBlue, "cadet_blue" },
+        { ChatColorPresets.Chocolate, "chocolate" },
+        { ChatColorPresets.Coral, "coral" },
+        { ChatColorPresets.DodgerBlue, "dodger_blue" },
+        { ChatColorPresets.Firebrick, "firebrick" },
+        { ChatColorPresets.GoldenRod, "golden_rod" },
+        { ChatColorPresets.Green, "green" },
+        { ChatColorPresets.HotPink, "hot_pink" },
+        { ChatColorPresets.OrangeRed, "orange_red" },
+        { ChatColorPresets.Red, "red" },
+        { ChatColorPresets.SeaGreen, "sea_green" },
+        { ChatColorPresets.SpringGreen, "spring_green" },
+        { ChatColorPresets.YellowGreen, "yellow_green" }
+    };
 
                 string colorString = replacements[color];
                 if (Bot.nowColor != colorString)
                 {
-                    Bot.nowColor = colorString;
                     HttpClient client = new HttpClient();
                     HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Put, $"https://api.twitch.tv/helix/chat/color?user_id={Bot.UID}&color={colorString}");
 
                     request.Headers.Add("Authorization", $"Bearer {Bot.BotToken}");
                     request.Headers.Add("Client-Id", Bot.ClientID);
                     client.Timeout = TimeSpan.FromSeconds(1);
+
                     HttpResponseMessage response = await client.SendAsync(request);
-                    client.Dispose();
-                    
-                    await Task.Delay(200);
+
                     if (response.StatusCode == HttpStatusCode.NoContent)
                     {
+                        Bot.nowColor = colorString; // Обновляем цвет только после успешного ответа
                         ConsoleUtil.LOG($"Цвет никнейма установлен на \"{colorString}\"!", ConsoleColor.Cyan);
                     }
                     else
                     {
-                        ConsoleUtil.LOG($"Не удалось установить цвет никнейма на \"{colorString}\"! Ошибка: {response.StatusCode}, Описание: {response.ReasonPhrase} ({response.Content.ReadAsStringAsync()})", ConsoleColor.Red);
+                        ConsoleUtil.LOG($"Не удалось установить цвет никнейма на \"{colorString}\"! Ошибка: {response.StatusCode}, Описание: {response.ReasonPhrase} ({await response.Content.ReadAsStringAsync()})", ConsoleColor.Red);
                     }
+
+                    client.Dispose();
+
+                    // Ожидаем некоторое время, чтобы убедиться, что цвет обновлен
+                    await Task.Delay(200);
                 }
             }
             /// <summary>
@@ -1562,7 +1569,7 @@ public class MyClass {
                                     }
                                     ip_attempt++;
                                     var err = $"ОШИБКА API GPT ({ips.ElementAt(ip_attempt)}): #{response.StatusCode}, {response.ReasonPhrase}";
-                                    LogWorker.Log(err, LogWorker.LogTypes.Err, "GPT");
+                                    LogWorker.Log(err, LogWorker.LogTypes.Err, $"APIUtils\\GPT#{data.UserUUID}");
                                 }
                             }
                         }
@@ -1570,7 +1577,7 @@ public class MyClass {
                     }
                     catch (Exception ex)
                     {
-                        ConsoleUtil.ErrorOccured(ex.Message, "GPT");
+                        ConsoleUtil.ErrorOccured(ex.Message, $"APIUtils\\GPT#{data.UserUUID}");
                         return new string[] { "ERR" };
                     }
                 }
@@ -1615,7 +1622,7 @@ public class MyClass {
                                 else
                                 {
                                     var err = $"\n ОШИБКА API ПОГОДЫ ({ip}): #{response.StatusCode}, {response.ReasonPhrase}";
-                                    LogWorker.Log(err, LogWorker.LogTypes.Err, "WEATHER");
+                                    LogWorker.Log(err, LogWorker.LogTypes.Err, $"ApiUtils\\Weather\\Get_weather#{ip}");
                                 }
                             }
                         }
@@ -1653,7 +1660,7 @@ public class MyClass {
                         {
                             current = weather
                         };
-                        ConsoleUtil.ErrorOccured(ex.Message, "WEATHER");
+                        ConsoleUtil.ErrorOccured(ex.Message, $"APIUtils\\Weather\\Get_weather#{lat}\\{lon}");
                         return errData;
                     }
                 }
@@ -1717,7 +1724,7 @@ public class MyClass {
                                     else
                                     {
                                         var err2 = $"\n ОШИБКА API ПОГОДЫ ({ip}): #{response.StatusCode}, {response.ReasonPhrase}";
-                                        LogWorker.Log(err2, LogWorker.LogTypes.Err, "WEATHER");
+                                        LogWorker.Log(err2, LogWorker.LogTypes.Err, $"ApiUtils\\Weather\\Get_location#{ip}");
                                     }
                                 }
                             }
@@ -1743,7 +1750,7 @@ public class MyClass {
                     }
                     catch (Exception ex)
                     {
-                        LogWorker.Log(ex.Message, LogWorker.LogTypes.Err, "locationGET");
+                        LogWorker.Log(ex.Message, LogWorker.LogTypes.Err, $"ApiUtils\\Weather\\Get_weather#{placeName}");
                         Place err = new()
                         {
                             name = "err",
@@ -1892,7 +1899,7 @@ public class MyClass {
                     catch (Exception ex)
                     {
                         var result = new List<(int Index, string Key, LocationCacheData Data)>();
-                        ConsoleUtil.ErrorOccured(ex.Message, "searchLoc");
+                        ConsoleUtil.ErrorOccured(ex.Message, $"APIUtils\\Weather\\Search#{query}");
                         return result;
                     }
                 }

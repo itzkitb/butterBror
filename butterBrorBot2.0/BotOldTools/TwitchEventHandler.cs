@@ -24,7 +24,7 @@ namespace butterBror
         public static void OnMessageThrottled(object s, OnMessageThrottledEventArgs e)
         {
             ConsoleServer.SendConsoleMessage("errors", $"Сообщение не отправленно! \"{e.Message}\" ");
-            LogWorker.Log($"Не удалось отправить сообщение! \"{e.Message}\"", LogWorker.LogTypes.Err, "event0A");
+            LogWorker.Log($"Не удалось отправить сообщение! \"{e.Message}\"", LogWorker.LogTypes.Err, $"TwitchEventHandler\\OnMessageThrottled#{e.Message}");
         }
         public static void OnLog(object s, TwitchLib.Client.Events.OnLogArgs e)
         {
@@ -39,7 +39,7 @@ namespace butterBror
         public static void OnSuspended(object s, OnSuspendedArgs e)
         {
             ConsoleServer.SendConsoleMessage("errors", $"Не удаётся подключится к {e.Channel}, так как этот канал был забанен на Twitch!");
-            LogWorker.Log($"Не удаётся подключится к {e.Channel}, так как этот канал был забанен на Twitch!", LogWorker.LogTypes.Warn, "event1A");
+            LogWorker.Log($"Не удаётся подключится к {e.Channel}, так как этот канал был забанен на Twitch!", LogWorker.LogTypes.Warn, $"TwitchEventHandler\\OnSuspended#{e.Channel}");
             Console.ResetColor();
         }
         public static void OnUserTimedout(object s, OnUserTimedoutArgs e)
@@ -51,28 +51,28 @@ namespace butterBror
         public static void OnReSubscriber(object s, OnReSubscriberArgs e)
         {
             ConsoleServer.SendConsoleMessage("info", $"({e.Channel}) {e.ReSubscriber.DisplayName} продлил подписку! Он подписывается уже {e.ReSubscriber.MsgParamCumulativeMonths} месяц(ев/а) \"{e.ReSubscriber.ResubMessage}\"");
-            LogWorker.Log($"{e.Channel} | {e.ReSubscriber.DisplayName} продлил подписку! Он подписывается уже {e.ReSubscriber.MsgParamCumulativeMonths} месяц(ев/а) \"{e.ReSubscriber.ResubMessage}\"", LogWorker.LogTypes.Info, "event2A");
+            LogWorker.Log($"{e.Channel} | {e.ReSubscriber.DisplayName} продлил подписку! Он подписывается уже {e.ReSubscriber.MsgParamCumulativeMonths} месяц(ев/а) \"{e.ReSubscriber.ResubMessage}\"", LogWorker.LogTypes.Info, $"TwitchEventHandler\\OnReSubscriber");
             Console.ResetColor();
         }
         // #EVENT 3A
         public static void OnGiftedSubscription(object s, OnGiftedSubscriptionArgs e)
         {
             ConsoleServer.SendConsoleMessage("info", $"({e.Channel}) {e.GiftedSubscription.DisplayName} подарил подписку {e.GiftedSubscription.MsgParamRecipientDisplayName} на {e.GiftedSubscription.MsgParamMonths} месяц(а/ев)!");
-            LogWorker.Log($"{e.Channel} | {e.GiftedSubscription.DisplayName} подарил подписку {e.GiftedSubscription.MsgParamRecipientDisplayName} на {e.GiftedSubscription.MsgParamMonths} месяц(а/ев)!", LogWorker.LogTypes.Info, "event3A");
+            LogWorker.Log($"{e.Channel} | {e.GiftedSubscription.DisplayName} подарил подписку {e.GiftedSubscription.MsgParamRecipientDisplayName} на {e.GiftedSubscription.MsgParamMonths} месяц(а/ев)!", LogWorker.LogTypes.Info, $"TwitchEventHandler\\OnGiftedSubscription");
             Console.ResetColor();
         }
         // #EVENT 4A
         public static void OnRaidNotification(object s, OnRaidNotificationArgs e)
         {
             ConsoleServer.SendConsoleMessage("info", $"({e.Channel}) Рейд от {e.RaidNotification.DisplayName} с {e.RaidNotification.MsgParamViewerCount} зрител(ем/ями)");
-            LogWorker.Log($"{e.Channel} | Рейд от {e.RaidNotification.DisplayName} с {e.RaidNotification.MsgParamViewerCount} зрител(ем/ями)", LogWorker.LogTypes.Info, "event4A");
+            LogWorker.Log($"{e.Channel} | Рейд от {e.RaidNotification.DisplayName} с {e.RaidNotification.MsgParamViewerCount} зрител(ем/ями)", LogWorker.LogTypes.Info, $"TwitchEventHandler\\OnRaidNotification");
             Console.ResetColor();
         }
         // #EVENT 5A
         public static void OnNewSubscriber(object s, OnNewSubscriberArgs e)
         {
             ConsoleServer.SendConsoleMessage("info", $"({e.Channel}) {e.Subscriber.DisplayName} купил подписку! \"{e.Subscriber.ResubMessage}\"");
-            LogWorker.Log($"{e.Channel} | {e.Subscriber.DisplayName} купил подписку! \"{e.Subscriber.ResubMessage}\"", LogWorker.LogTypes.Info, "event5A");
+            LogWorker.Log($"{e.Channel} | {e.Subscriber.DisplayName} купил подписку! \"{e.Subscriber.ResubMessage}\"", LogWorker.LogTypes.Info, $"TwitchEventHandler\\OnNewSubscriber");
             Console.ResetColor();
         }
         public static void OnMessageCleared(object s, OnMessageClearedArgs e)
@@ -85,7 +85,7 @@ namespace butterBror
         public static void OnIncorrectLogin(object s, OnIncorrectLoginArgs e)
         {
             ConsoleUtil.LOG("Неверные twitch данные!", ConsoleColor.Red);
-            LogWorker.Log("Неверные данные входа!", LogWorker.LogTypes.Err, "event6A");
+            LogWorker.Log("Неверные данные входа!", LogWorker.LogTypes.Err, $"TwitchEventHandler\\OnIncorrectLogin");
             Console.ResetColor();
             Bot.RestartPlease();
         }
@@ -98,14 +98,14 @@ namespace butterBror
         public static void OnError(object s, OnErrorEventArgs e)
         {
             ConsoleUtil.LOG($"Ошибка библиотеки! {e.Exception.Message}", ConsoleColor.Red);
-            LogWorker.Log($"Ошибка библиотеки! {e.Exception.Message}", LogWorker.LogTypes.Err, "event7A");
+            LogWorker.Log($"Ошибка библиотеки! {e.Exception.Message}", LogWorker.LogTypes.Err, $"TwitchEventHandler\\OnError#{e.Exception.Message}\\{e.Exception.Source}");
             Console.ResetColor();
         }
         // #EVENT 8A
         public static void OnLeftChannel(object s, OnLeftChannelArgs e)
         {
             ConsoleServer.SendConsoleMessage("info", $"Успешный выход с канала {e.Channel}");
-            LogWorker.Log($"Успешный выход с канала {e.Channel}", LogWorker.LogTypes.Err, "event8A");
+            LogWorker.Log($"Успешный выход с канала {e.Channel}", LogWorker.LogTypes.Err, $"TwitchEventHandler\\OnLeftChannel#{e.Channel}");
             Console.ResetColor();
         }
         // #EVENT 9A
@@ -120,28 +120,6 @@ namespace butterBror
                     ChatUtil.SendMessage(name, "butterBror Переподключен!", channel, "", "ru", true);
                 }
             }
-
-            if (false)
-            {
-                Console.ForegroundColor = ConsoleColor.Cyan;
-                Console.WriteLine($" | Переподключён!");
-                LogWorker.Log($"Переподключён!", LogWorker.LogTypes.Info, "event9A");
-                Console.ResetColor();
-                foreach (var channel in Bot.Channels)
-                {
-                    if (File.Exists(Bot.IDToNicknamePath + channel + ".txt"))
-                    {
-                        var channel2 = File.ReadAllText(Bot.IDToNicknamePath + channel + ".txt");
-                        Bot.client.JoinChannel(channel2);
-                    }
-                    else
-                    {
-                        Console.ForegroundColor = ConsoleColor.Red;
-                        Console.WriteLine(" | Не удалось найти пользователя с ID: " + channel);
-                        Console.ResetColor();
-                    }
-                }
-            }
         }
         // #EVENT 0B
         public static void OnTwitchDisconnected(object s, OnDisconnectedEventArgs e)
@@ -151,7 +129,7 @@ namespace butterBror
                 if (!Bot.client.IsConnected)
                 {
                     ConsoleServer.SendConsoleMessage("errors", "Был отключён от Twitch! Рестарт...");
-                    LogWorker.Log($"Был отключён от Twitch! Рестарт... ({Thread.CurrentThread.Name})", LogWorker.LogTypes.Warn, "event0B");
+                    LogWorker.Log($"Был отключён от Twitch! Рестарт... ({Thread.CurrentThread.Name})", LogWorker.LogTypes.Warn, $"TwitchEventHandler\\OnTwitchDisconnected");
                     Console.ResetColor();
 
                     if (!BotEngine.isNeedRestart)
@@ -175,7 +153,7 @@ namespace butterBror
         public static void OnContinuedGiftedSubscription(object s, OnContinuedGiftedSubscriptionArgs e)
         {
             ConsoleServer.SendConsoleMessage("info", $"({e.Channel}) Пользователь {e.ContinuedGiftedSubscription.DisplayName} продлил подарочную подписку!");
-            LogWorker.Log($"Пользователь {e.ContinuedGiftedSubscription.DisplayName} продлил подарочную подписку!", LogWorker.LogTypes.Info, "event1B");
+            LogWorker.Log($"Пользователь {e.ContinuedGiftedSubscription.DisplayName} продлил подарочную подписку!", LogWorker.LogTypes.Info, $"TwitchEventHandler\\OnContinuedGiftedSubscription");
             Console.ResetColor();
         }
         // #EVENT 2B
@@ -204,14 +182,14 @@ namespace butterBror
             }
             catch (Exception ex)
             {
-                ConsoleUtil.ErrorOccured(ex.Message, "Event2B");
+                ConsoleUtil.ErrorOccured(ex.Message, $"Twitch\\OnBannedEvent#{e.Channel}");
             }
         }
         // #EVENT 3B
         public static void OnConnectionError(object s, OnConnectionErrorArgs e)
         {
             ConsoleUtil.LOG($"Ошибка соединения! \"{e.Error.Message}\"", ConsoleColor.Red);
-            LogWorker.Log($"Ошибка соединения к Twitch! \"{e.Error.Message}\"", LogWorker.LogTypes.Err, "OnConnectionError");
+            LogWorker.Log($"Ошибка соединения к Twitch! \"{e.Error.Message}\"", LogWorker.LogTypes.Err, $"TwitchEventHandler\\OnConnectionError");
             Bot.RestartPlease();
         }
         // #EVENT 4B
@@ -225,7 +203,7 @@ namespace butterBror
                 {
                     await CommandUtil.ChangeNicknameColorAsync(TwitchLib.Client.Enums.ChatColorPresets.DodgerBlue);
                     ChatUtil.SendMessage(Bot.BotNick, "truckCrash Подключение к Twitch...", "", "", "ru", true);
-                    LogWorker.Log("Подключение к Twitch...", LogWorker.LogTypes.Info, "event4B");
+                    LogWorker.Log("Подключение к Twitch...", LogWorker.LogTypes.Info, $"TwitchEventHandler\\OnJoin");
                 }
             }
             else if (e.Channel == Bot.last_channel_connected.ToLower() & !Bot.is_connected)
@@ -240,7 +218,7 @@ namespace butterBror
                         ChatUtil.SendMessage(name, "butterBror Подключён!", channel, "", "ru", true);
                     }
                 }
-                LogWorker.Log("Подключён к Twitch!", LogWorker.LogTypes.Info, "event4B");
+                LogWorker.Log("Подключён к Twitch!", LogWorker.LogTypes.Info, $"TwitchEventHandler\\OnJoin");
                 Bot.is_connected = true;
             }
             Bot.Channels.Append(e.Channel);
@@ -255,7 +233,7 @@ namespace butterBror
             }
             catch (Exception ex)
             {
-                ConsoleUtil.ErrorOccured(ex.Message, "boteventMSG");
+                ConsoleUtil.ErrorOccured(ex.Message, $"Twitch\\OnMessageReceived#User:{e.ChatMessage.UserId}, Message:{e.ChatMessage.Message}");
             }
         }
     }

@@ -124,7 +124,7 @@ namespace butterBib
             string messageToSend = data.Message;
             TwitchMessageSendData messageToSendPart2 = null;
             ConsoleServer.SendConsoleMessage("commands", "Отправка сообщения...");
-            LogWorker.Log($"Был отправлен ответ на сообщение в канал {data.Channel}: {data.Message}", LogWorker.LogTypes.Msg, "send_command_reply");
+            LogWorker.Log($"Был отправлен ответ на сообщение {data.AnswerID} в канал {data.Channel}: {data.Message}", LogWorker.LogTypes.Msg, "ButterBib\\Commands\\SendCommandReply");
             messageToSend = TextUtil.FilterText(data.Message);
             await CommandUtil.ChangeNicknameColorAsync(data.NickNameColor);
 
@@ -169,7 +169,7 @@ namespace butterBib
         public static async void SendCommandReply(DiscordCommandSendData data)
         {
             ConsoleServer.SendConsoleMessage("discord", "Отправка сообщения...");
-            LogWorker.Log($"Был отправлен ответ на комманду, на сервер {data.Server}: {data.Message}", LogWorker.LogTypes.Msg, "send_command_reply_discord");
+            LogWorker.Log($"Был отправлен ответ на комманду, на сервер {data.Server}: {data.Message}", LogWorker.LogTypes.Msg, "ButterBib\\Commands\\SendDiscordReply");
             data.Message = TextUtil.FilterText(data.Message);
 
             if (data.Message.Length > 1500)
