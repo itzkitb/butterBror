@@ -1,6 +1,7 @@
-﻿using butterBib;
-using butterBror.Utils;
+﻿using butterBror.Utils;
+using butterBib;
 using Discord;
+using TwitchLib.Client.Enums;
 
 
 namespace butterBror
@@ -16,7 +17,7 @@ namespace butterBror
                 AuthorURL = "twitch.tv/itzkitb",
                 AuthorImageURL = "https://static-cdn.jtvnw.net/jtv_user_pictures/c3a9af55-d7af-4b4a-82de-39a4d8b296d3-profile_image-70x70.png",
                 Description = "Эта команда... Просто зачем-то существует.",
-                UseURL = "https://itzkitb.ru/bot_command/me",
+                UseURL = "https://itzkitb.ru/bot/command?name=me",
                 UserCooldown = 15,
                 GlobalCooldown = 5,
                 aliases = ["me", "m", "я"],
@@ -29,54 +30,77 @@ namespace butterBror
             };
             public static CommandReturn Index(CommandData data)
             {
-                bool checked_msg = false;
-                string resultMessage = "";
-                if (TextUtil.FilterTextWithoutSpaces(data.ArgsAsString) != "")
+                try
                 {
-                    string[] blockedEntries = ["/", "$", "#", "+", "-"];
-                    string meMessage = TextUtil.FilterText(data.ArgsAsString);
-                    while (!checked_msg)
+                    bool checked_msg = false;
+                    string resultMessage = "";
+                    if (TextUtil.FilterTextWithoutSpaces(data.ArgsAsString) != "")
                     {
-                        checked_msg = true;
-                        while (("\n" + meMessage).Contains("\n "))
+                        string[] blockedEntries = ["/", "$", "#", "+", "-"];
+                        string meMessage = TextUtil.FilterText(data.ArgsAsString);
+                        while (!checked_msg)
                         {
-                            meMessage = ("\n" + meMessage).Replace("\n ", "");
-                        }
-                        if (("\n" + meMessage).Contains("\n!"))
-                        {
-                            meMessage = ("\n" + meMessage).Replace("\n!", "❗");
-                            checked_msg = false;
-                        }
-                        foreach (string blockedEntry in blockedEntries)
-                        {
-                            if (("\n" + meMessage).Contains($"\n{blockedEntry}"))
+                            checked_msg = true;
+                            while (("\n" + meMessage).Contains("\n "))
                             {
-                                meMessage = ("\n" + meMessage).Replace($"\n{blockedEntry}", "");
+                                meMessage = ("\n" + meMessage).Replace("\n ", "");
+                            }
+                            if (("\n" + meMessage).Contains("\n!"))
+                            {
+                                meMessage = ("\n" + meMessage).Replace("\n!", "❗");
                                 checked_msg = false;
                             }
+                            foreach (string blockedEntry in blockedEntries)
+                            {
+                                if (("\n" + meMessage).Contains($"\n{blockedEntry}"))
+                                {
+                                    meMessage = ("\n" + meMessage).Replace($"\n{blockedEntry}", "");
+                                    checked_msg = false;
+                                }
+                            }
                         }
+                        resultMessage = $"/me ⁣ {meMessage}";
                     }
-                    resultMessage = $"/me ⁣ {meMessage}";
+                    else
+                    {
+                        resultMessage = "/me " + TranslationManager.GetTranslation(data.User.Lang, "YouCanPlaceAdHere", data.ChannelID);
+                    }
+                    return new()
+                    {
+                        Message = resultMessage,
+                        IsSafeExecute = false,
+                        Description = "",
+                        Author = "",
+                        ImageURL = "",
+                        ThumbnailUrl = "",
+                        Footer = "",
+                        IsEmbed = true,
+                        Ephemeral = false,
+                        Title = "",
+                        Color = Color.Green,
+                        NickNameColor = TwitchLib.Client.Enums.ChatColorPresets.DodgerBlue
+                    };
                 }
-                else
+                catch (Exception e)
                 {
-                    resultMessage = "/me " + TranslationManager.GetTranslation(data.User.Lang, "YouCanPlaceAdHere", data.ChannelID);
+                    return new()
+                    {
+                        Message = "",
+                        IsSafeExecute = false,
+                        Description = "",
+                        Author = "",
+                        ImageURL = "",
+                        ThumbnailUrl = "",
+                        Footer = "",
+                        IsEmbed = true,
+                        Ephemeral = false,
+                        Title = "",
+                        Color = Color.Green,
+                        NickNameColor = ChatColorPresets.YellowGreen,
+                        IsError = true,
+                        Error = e
+                    };
                 }
-                return new()
-                {
-                    Message = resultMessage,
-                    IsSafeExecute = false,
-                    Description = "",
-                    Author = "",
-                    ImageURL = "",
-                    ThumbnailUrl = "",
-                    Footer = "",
-                    IsEmbed = true,
-                    Ephemeral = false,
-                    Title = "",
-                    Color = Color.Green,
-                    NickNameColor = TwitchLib.Client.Enums.ChatColorPresets.DodgerBlue
-                };
             }
         }
     }

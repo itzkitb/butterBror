@@ -182,7 +182,7 @@ namespace butterBror
             }
             catch (Exception ex)
             {
-                ConsoleUtil.ErrorOccured(ex.Message, $"Twitch\\OnBannedEvent#{e.Channel}");
+                ConsoleUtil.ErrorOccured(ex, $"Twitch\\OnBannedEvent#{e.Channel}");
             }
         }
         // #EVENT 3B
@@ -233,7 +233,7 @@ namespace butterBror
             }
             catch (Exception ex)
             {
-                ConsoleUtil.ErrorOccured(ex.Message, $"Twitch\\OnMessageReceived#User:{e.ChatMessage.UserId}, Message:{e.ChatMessage.Message}");
+                ConsoleUtil.ErrorOccured(ex, $"Twitch\\OnMessageReceived#User:{e.ChatMessage.UserId}, Message:{e.ChatMessage.Message}");
             }
         }
     }

@@ -94,7 +94,7 @@ namespace butterBror
             }
             catch (Exception ex) 
             {
-                ConsoleUtil.ErrorOccured(ex.Message + " - " + ex.TargetSite, $"Command\\TwitchCommand#Command:{args.Command.CommandText}\\FullMessage:{args.Command.ChatMessage}");
+                ConsoleUtil.ErrorOccured(ex, $"Command\\TwitchCommand#Command:{args.Command.CommandText}\\FullMessage:{args.Command.ChatMessage}");
             }
         }
         public static void DiscordCommand(SocketSlashCommand dsCmd)
@@ -139,7 +139,7 @@ namespace butterBror
             }
             catch (Exception ex) 
             {
-                ConsoleUtil.ErrorOccured(ex.Message + " - " + ex.TargetSite, $"Command\\DiscordCommand#Command:{dsCmd.CommandName}");
+                ConsoleUtil.ErrorOccured(ex, $"Command\\DiscordCommand#Command:{dsCmd.CommandName}");
             }
         }
         public static async void Command(CommandData data)
@@ -177,7 +177,7 @@ namespace butterBror
                     }
                     catch (Exception ex)
                     {
-                        ConsoleUtil.ErrorOccured(ex.Message, $"(NOTFATAL)Command\\Command\\GetLang#{data.UserUUID}");
+                        ConsoleUtil.ErrorOccured(ex, $"(NOTFATAL)Command\\Command\\GetLang#{data.UserUUID}");
                     }
                     data.User.Lang = lang;
                     data.User.IsBanned = UsersData.UserGetData<bool>(data.UserUUID, "isBanned");
@@ -214,7 +214,7 @@ namespace butterBror
                                 if (CommandUtil.IsNotOnCooldown(info.UserCooldown, info.GlobalCooldown, info.Name, data.User.Id, data.ChannelID, info.ResetCooldownIfItHasNotReachedZero))
                                 {
                                     DebugUtil.LOG("Подготовка к выполнению...");
-                                    CommandUtil.executedCommand(data);
+                                    CommandUtil.ExecutedCommand(data);
                                     var indexMethod = classType.GetMethod("Index", BindingFlags.Static | BindingFlags.Public);
 
                                     try
@@ -242,49 +242,56 @@ namespace butterBror
                                     DebugUtil.LOG("Выполнено!");
                                     if (cmdReturn != null)
                                     {
-                                        DebugUtil.LOG("Отправка результата...");
-                                        if (data.Platform == Platforms.Twitch)
+                                        if (cmdReturn.IsError)
                                         {
-                                            TwitchMessageSendData SendData = new()
+                                            throw new ApplicationException($"Не удалось выполнить команду: \nОшибка: {cmdReturn.Error.Message}\nСтак: {cmdReturn.Error.StackTrace}\nМесто ошибки: {cmdReturn.Error.Source}\nКоманда: {info.Name}\nАргументы команды: {data.ArgsAsString}\nПользователь, который выполнил команду: {data.User.Name} (#{data.UserUUID})");
+                                        }
+                                        else
+                                        {
+                                            DebugUtil.LOG("Отправка результата...");
+                                            if (data.Platform == Platforms.Twitch)
                                             {
-                                                Message = cmdReturn.Message,
-                                                Channel = data.Channel,
-                                                ChannelID = data.ChannelID,
-                                                AnswerID = data.TWargs.Command.ChatMessage.Id,
-                                                Lang = data.User.Lang,
-                                                Name = data.User.Name,
-                                                IsSafeExecute = cmdReturn.IsSafeExecute,
-                                                NickNameColor = cmdReturn.NickNameColor
-                                            };
-                                            butterBib.Commands.SendCommandReply(SendData);
-                                        }
-                                        else if (data.Platform == Platforms.Discord)
-                                        {
-                                            DiscordCommandSendData SendData = new()
+                                                TwitchMessageSendData SendData = new()
+                                                {
+                                                    Message = cmdReturn.Message,
+                                                    Channel = data.Channel,
+                                                    ChannelID = data.ChannelID,
+                                                    AnswerID = data.TWargs.Command.ChatMessage.Id,
+                                                    Lang = data.User.Lang,
+                                                    Name = data.User.Name,
+                                                    IsSafeExecute = cmdReturn.IsSafeExecute,
+                                                    NickNameColor = cmdReturn.NickNameColor
+                                                };
+                                                butterBib.Commands.SendCommandReply(SendData);
+                                            }
+                                            else if (data.Platform == Platforms.Discord)
                                             {
-                                                Message = cmdReturn.Message,
-                                                Title = cmdReturn.Title,
-                                                Description = cmdReturn.Description,
-                                                Color = cmdReturn.Color,
-                                                IsEmbed = cmdReturn.IsEmbed,
-                                                Ephemeral = cmdReturn.Ephemeral,
-                                                Server = data.Channel,
-                                                ServerID = data.ChannelID,
-                                                Lang = data.User.Lang,
-                                                IsSafeExecute = cmdReturn.IsSafeExecute,
-                                                d = data.d,
-                                                Author = cmdReturn.Author,
-                                                ImageURL = cmdReturn.ImageURL,
-                                                ThumbnailUrl = cmdReturn.ThumbnailUrl,
-                                                Footer = cmdReturn.Footer
-                                            };
-                                            butterBib.Commands.SendCommandReply(SendData);
+                                                DiscordCommandSendData SendData = new()
+                                                {
+                                                    Message = cmdReturn.Message,
+                                                    Title = cmdReturn.Title,
+                                                    Description = cmdReturn.Description,
+                                                    Color = cmdReturn.Color,
+                                                    IsEmbed = cmdReturn.IsEmbed,
+                                                    Ephemeral = cmdReturn.Ephemeral,
+                                                    Server = data.Channel,
+                                                    ServerID = data.ChannelID,
+                                                    Lang = data.User.Lang,
+                                                    IsSafeExecute = cmdReturn.IsSafeExecute,
+                                                    d = data.d,
+                                                    Author = cmdReturn.Author,
+                                                    ImageURL = cmdReturn.ImageURL,
+                                                    ThumbnailUrl = cmdReturn.ThumbnailUrl,
+                                                    Footer = cmdReturn.Footer
+                                                };
+                                                butterBib.Commands.SendCommandReply(SendData);
+                                            }
+                                            if (info.Cost != null)
+                                            {
+                                                BalanceUtil.SaveBalance(data.UserUUID, -(int)(info.Cost), 0);
+                                            }
+                                            DebugUtil.LOG("Отправлено!");
                                         }
-                                        if (info.Cost != null)
-                                        {
-                                            BalanceUtil.SaveBalance(data.UserUUID, -(int)(info.Cost), 0);
-                                        }
-                                        DebugUtil.LOG("Отправлено!");
                                     }
                                     else
                                     {
@@ -318,7 +325,7 @@ namespace butterBror
             }
             catch (Exception ex)
             {
-                ConsoleUtil.ErrorOccured(ex.Message, $"command\\command#UserID:{data.UserUUID}\\Command:{data.Name}");
+                ConsoleUtil.ErrorOccured(ex, $"command\\command#UserID:{data.UserUUID}\\Command:{data.Name}");
                 if (data.Platform == Platforms.Twitch)
                 {
                     TwitchMessageSendData SendData = new()

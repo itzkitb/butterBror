@@ -1,6 +1,8 @@
-﻿using butterBib;
-using butterBror.Utils;
+﻿using butterBror.Utils;
 using butterBror.Utils.DataManagers;
+using butterBib;
+using Discord;
+using TwitchLib.Client.Enums;
 
 namespace butterBror
 {
@@ -15,7 +17,7 @@ namespace butterBror
                 AuthorURL = "twitch.tv/itzkitb",
                 AuthorImageURL = "https://static-cdn.jtvnw.net/jtv_user_pictures/c3a9af55-d7af-4b4a-82de-39a4d8b296d3-profile_image-70x70.png",
                 Description = "Эта комманда поможет уйти вам из чата в афк.",
-                UseURL = "https://itzkitb.ru/bot_command/afk",
+                UseURL = "https://itzkitb.ru/bot/command?name=afk",
                 UserCooldown = 20,
                 GlobalCooldown = 1,
                 aliases = ["draw", "drw", "d", "рисовать", "рис", "р", "afk", "афк", "sleep", "goodnight", "gn", "slp", "s", "спать", "храп", "хррр", "с", "rest", "nap", "r", "отдых", "отдохнуть", "о", "lurk", "l", "наблюдатьизтени", "спрятаться", "study", "st", "учеба", "учится", "у", "poop", "p", "туалет", "shower", "sh", "ванная", "душ"],
@@ -70,7 +72,7 @@ namespace butterBror
                     }
                     return GoToAfk(data, action);
                 }
-                catch (Exception ex)
+                catch (Exception e)
                 {
                     return new()
                     {
@@ -81,53 +83,78 @@ namespace butterBror
                         ImageURL = "",
                         ThumbnailUrl = "",
                         Footer = "",
-                        IsEmbed = false,
+                        IsEmbed = true,
                         Ephemeral = false,
                         Title = "",
-                        Color = Discord.Color.Green,
-                        NickNameColor = TwitchLib.Client.Enums.ChatColorPresets.YellowGreen,
+                        Color = Color.Green,
+                        NickNameColor = ChatColorPresets.YellowGreen,
+                        IsError = true,
+                        Error = e
                     };
                 }
             }
             public static CommandReturn GoToAfk(CommandData data, string afkType)
             {
-                string result = TranslationManager.GetTranslation(data.User.Lang, $"{afkType}:start", data.ChannelID).Replace("%user%", data.User.Name);
-                string text = data.ArgsAsString;
-
-                if (NoBanwords.fullCheck(text, data.ChannelID))
+                try
                 {
-                    UsersData.UserSaveData(data.UserUUID, "isAfk", true);
-                    UsersData.UserSaveData(data.UserUUID, "afkText", text);
-                    UsersData.UserSaveData(data.UserUUID, "afkType", afkType);
-                    UsersData.UserSaveData(data.UserUUID, "afkTime", DateTime.UtcNow);
-                    UsersData.UserSaveData(data.UserUUID, "lastFromAfkResume", DateTime.UtcNow);
-                    UsersData.UserSaveData(data.UserUUID, "fromAfkResumeTimes", 0);
-                    string send = "";
-                    if (TextUtil.FilterTextWithoutSpaces(text) == "")
+                    string result = TranslationManager.GetTranslation(data.User.Lang, $"{afkType}:start", data.ChannelID).Replace("%user%", data.User.Name);
+                    string text = data.ArgsAsString;
+
+                    if (NoBanwords.fullCheck(text, data.ChannelID))
                     {
-                        send = result;
+                        UsersData.UserSaveData(data.UserUUID, "isAfk", true);
+                        UsersData.UserSaveData(data.UserUUID, "afkText", text);
+                        UsersData.UserSaveData(data.UserUUID, "afkType", afkType);
+                        UsersData.UserSaveData(data.UserUUID, "afkTime", DateTime.UtcNow);
+                        UsersData.UserSaveData(data.UserUUID, "lastFromAfkResume", DateTime.UtcNow);
+                        UsersData.UserSaveData(data.UserUUID, "fromAfkResumeTimes", 0);
+                        string send = "";
+                        if (TextUtil.FilterTextWithoutSpaces(text) == "")
+                        {
+                            send = result;
+                        }
+                        else
+                        {
+                            send = result + ": " + text;
+                        }
+                        return new()
+                        {
+                            Message = send,
+                            IsSafeExecute = false,
+                            Description = "",
+                            Author = "",
+                            ImageURL = "",
+                            ThumbnailUrl = "",
+                            Footer = "",
+                            IsEmbed = false,
+                            Ephemeral = false,
+                            Title = "",
+                            Color = Discord.Color.Green,
+                            NickNameColor = TwitchLib.Client.Enums.ChatColorPresets.YellowGreen,
+                        };
                     }
-                    else
-                    {
-                        send = result + ": " + text;
-                    }
+                    return null;
+                }
+                catch (Exception e)
+                {
                     return new()
                     {
-                        Message = send,
+                        Message = "",
                         IsSafeExecute = false,
                         Description = "",
                         Author = "",
                         ImageURL = "",
                         ThumbnailUrl = "",
                         Footer = "",
-                        IsEmbed = false,
+                        IsEmbed = true,
                         Ephemeral = false,
                         Title = "",
-                        Color = Discord.Color.Green,
-                        NickNameColor = TwitchLib.Client.Enums.ChatColorPresets.YellowGreen,
+                        Color = Color.Green,
+                        NickNameColor = ChatColorPresets.YellowGreen,
+                        IsError = true,
+                        Error = e
                     };
                 }
-                return null;
             }
         }
     }

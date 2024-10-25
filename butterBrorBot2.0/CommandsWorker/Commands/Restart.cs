@@ -1,7 +1,8 @@
-﻿using butterBib;
-using butterBror.Utils;
+﻿using butterBror.Utils;
 using butterBror.Utils.DataManagers;
+using butterBib;
 using Discord;
+using TwitchLib.Client.Enums;
 
 namespace butterBror
 {
@@ -16,7 +17,7 @@ namespace butterBror
                 AuthorURL = "twitch.tv/itzkitb",
                 AuthorImageURL = "https://static-cdn.jtvnw.net/jtv_user_pictures/c3a9af55-d7af-4b4a-82de-39a4d8b296d3-profile_image-70x70.png",
                 Description = "С помощью этой команды можно перезагрузить бота.",
-                UseURL = "NONE",
+                UseURL = "https://itzkitb.ru/bot/command?name=restart",
                 UserCooldown = 1,
                 GlobalCooldown = 1,
                 aliases = ["restart", "reload", "перезагрузить", "рестарт"],
@@ -29,27 +30,50 @@ namespace butterBror
             };
             public static CommandReturn Index(CommandData data)
             {
-                string resultMessage = "";
-                if (UsersData.UserGetData<bool>(data.UserUUID, "isBotModerator") || UsersData.UserGetData<bool>(data.UserUUID, "isBotDev"))
+                try
                 {
-                    resultMessage = "❄ Перезагрузка...";
-                    Bot.RestartPlease();
+                    string resultMessage = "";
+                    if (UsersData.UserGetData<bool>(data.UserUUID, "isBotModerator") || UsersData.UserGetData<bool>(data.UserUUID, "isBotDev"))
+                    {
+                        resultMessage = "❄ Перезагрузка...";
+                        Bot.RestartPlease();
+                    }
+                    return new()
+                    {
+                        Message = resultMessage,
+                        IsSafeExecute = false,
+                        Description = "",
+                        Author = "",
+                        ImageURL = "",
+                        ThumbnailUrl = "",
+                        Footer = "",
+                        IsEmbed = false,
+                        Ephemeral = false,
+                        Title = "",
+                        Color = Color.Blue,
+                        NickNameColor = TwitchLib.Client.Enums.ChatColorPresets.DodgerBlue
+                    };
                 }
-                return new()
+                catch (Exception e)
                 {
-                    Message = resultMessage,
-                    IsSafeExecute = false,
-                    Description = "",
-                    Author = "",
-                    ImageURL = "",
-                    ThumbnailUrl = "",
-                    Footer = "",
-                    IsEmbed = false,
-                    Ephemeral = false,
-                    Title = "",
-                    Color = Color.Blue,
-                    NickNameColor = TwitchLib.Client.Enums.ChatColorPresets.DodgerBlue
-                };
+                    return new()
+                    {
+                        Message = "",
+                        IsSafeExecute = false,
+                        Description = "",
+                        Author = "",
+                        ImageURL = "",
+                        ThumbnailUrl = "",
+                        Footer = "",
+                        IsEmbed = true,
+                        Ephemeral = false,
+                        Title = "",
+                        Color = Color.Green,
+                        NickNameColor = ChatColorPresets.YellowGreen,
+                        IsError = true,
+                        Error = e
+                    };
+                }
             }
         }
     }

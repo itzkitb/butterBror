@@ -1,6 +1,6 @@
-﻿using butterBib;
-using butterBror.Utils;
+﻿using butterBror.Utils;
 using butterBror.Utils.DataManagers;
+using butterBib;
 using Discord;
 using TwitchLib.Client.Enums;
 
@@ -17,7 +17,7 @@ namespace butterBror
                 AuthorURL = "twitch.tv/itzkitb",
                 AuthorImageURL = "https://static-cdn.jtvnw.net/jtv_user_pictures/c3a9af55-d7af-4b4a-82de-39a4d8b296d3-profile_image-70x70.png",
                 Description = "🐸☕ Небольшая игра про лягушек!",
-                UseURL = "https://itzkitb.ru/bot_command/frogs",
+                UseURL = "https://itzkitb.ru/bot/command?name=frogs",
                 UserCooldown = 10,
                 GlobalCooldown = 1,
                 aliases = ["frog", "frg", "лягушка", "лягушки", "лягуш"],
@@ -30,183 +30,206 @@ namespace butterBror
             };
             public static CommandReturn Index(CommandData data)
             {
-                string resultMessage = "";
-                Color resultColor = Color.Green;
-                string resultMessageTitle = TranslationManager.GetTranslation(data.User.Lang, "dsFLTitle", data.ChannelID);
-                ChatColorPresets resultNicknameColor = ChatColorPresets.YellowGreen;
-                string rootPath = Bot.MainPath + "GAMES_DATA\\FROGS\\";
-                string userRootPath = Bot.MainPath + $"GAMES_DATA\\FROGS\\{data.UserUUID}.json";
-                FileUtil.CreateDirectory(rootPath);
-                FileUtil.CreateFile(userRootPath);
-                if (File.ReadAllText(userRootPath) == "")
+                try
                 {
-                    File.WriteAllText(userRootPath, "{\r\n\t\"frogs\": 0,\r\n\t\"gifted\": 0,\r\n\t\"received\": 0\r\n}"); // Пока-что заглушка
-                }
-                JsonManager jsonManager = new JsonManager(userRootPath);
-                dynamic? frogsBalanceCache = jsonManager.GetData<dynamic>("frogs");
-                dynamic? frogsGiftedCache = jsonManager.GetData<dynamic>("gifted");
-                dynamic? frogsReceivedCache = jsonManager.GetData<dynamic>("received");
-                long frogsBalance = 0;
-                long frogsGifted = 0;
-                long frogsReceived = 0;
-                string[] infoAliases = ["info", "i"];
-                string[] statisticAliases = ["statistic", "stat", "s"];
-                string[] caughtAliases = ["caught", "c"];
-                string[] giftAliases = ["gift", "g"];
-                if (frogsBalanceCache != null && frogsGiftedCache != null && frogsReceivedCache != null)
-                {
-                    frogsBalance = FormatUtil.ToLong(frogsBalanceCache.ToString());
-                    frogsGifted = FormatUtil.ToLong(frogsGiftedCache.ToString());
-                    frogsReceived = FormatUtil.ToLong(frogsReceivedCache.ToString());
-                }
-                if (data.args.Count > 0)
-                {
-                    if (infoAliases.Contains(data.args[0].ToLower()))
+                    string resultMessage = "";
+                    Color resultColor = Color.Green;
+                    string resultMessageTitle = TranslationManager.GetTranslation(data.User.Lang, "dsFLTitle", data.ChannelID);
+                    ChatColorPresets resultNicknameColor = ChatColorPresets.YellowGreen;
+                    string rootPath = Bot.MainPath + "GAMES_DATA\\FROGS\\";
+                    string userRootPath = Bot.MainPath + $"GAMES_DATA\\FROGS\\{data.UserUUID}.json";
+                    FileUtil.CreateDirectory(rootPath);
+                    FileUtil.CreateFile(userRootPath);
+                    if (File.ReadAllText(userRootPath) == "")
                     {
-                        resultMessage = TranslationManager.GetTranslation(data.User.Lang, "frog:info", data.ChannelID);
+                        File.WriteAllText(userRootPath, "{\r\n\t\"frogs\": 0,\r\n\t\"gifted\": 0,\r\n\t\"received\": 0\r\n}"); // Пока-что заглушка
                     }
-                    else if (statisticAliases.Contains(data.args[0].ToLower()))
+                    JsonManager jsonManager = new JsonManager(userRootPath);
+                    dynamic? frogsBalanceCache = jsonManager.GetData<dynamic>("frogs");
+                    dynamic? frogsGiftedCache = jsonManager.GetData<dynamic>("gifted");
+                    dynamic? frogsReceivedCache = jsonManager.GetData<dynamic>("received");
+                    long frogsBalance = 0;
+                    long frogsGifted = 0;
+                    long frogsReceived = 0;
+                    string[] infoAliases = ["info", "i"];
+                    string[] statisticAliases = ["statistic", "stat", "s"];
+                    string[] caughtAliases = ["caught", "c"];
+                    string[] giftAliases = ["gift", "g"];
+                    if (frogsBalanceCache != null && frogsGiftedCache != null && frogsReceivedCache != null)
                     {
-                        resultMessage = TranslationManager.GetTranslation(data.User.Lang, "frog:statistic", data.ChannelID)
-                            .Replace("%frogs%", frogsBalance.ToString())
-                            .Replace("%frogs_gifted%", frogsGifted.ToString())
-                            .Replace("%frogs_received%", frogsReceived.ToString());
+                        frogsBalance = FormatUtil.ToLong(frogsBalanceCache.ToString());
+                        frogsGifted = FormatUtil.ToLong(frogsGiftedCache.ToString());
+                        frogsReceived = FormatUtil.ToLong(frogsReceivedCache.ToString());
                     }
-                    else if (caughtAliases.Contains(data.args[0].ToLower()))
+                    if (data.args.Count > 0)
                     {
-                        if (CommandUtil.IsNotOnCooldown(3600, 0, "FrogsReset", data.UserUUID, data.ChannelID, false, true, true))
+                        if (infoAliases.Contains(data.args[0].ToLower()))
                         {
-                            Random rand = new Random();
-                            long frogCaughtType = rand.Next(0, 4);
-                            long frogsCaughted = rand.Next(1, 11);
+                            resultMessage = TranslationManager.GetTranslation(data.User.Lang, "frog:info", data.ChannelID);
+                        }
+                        else if (statisticAliases.Contains(data.args[0].ToLower()))
+                        {
+                            resultMessage = TranslationManager.GetTranslation(data.User.Lang, "frog:statistic", data.ChannelID)
+                                .Replace("%frogs%", frogsBalance.ToString())
+                                .Replace("%frogs_gifted%", frogsGifted.ToString())
+                                .Replace("%frogs_received%", frogsReceived.ToString());
+                        }
+                        else if (caughtAliases.Contains(data.args[0].ToLower()))
+                        {
+                            if (CommandUtil.IsNotOnCooldown(3600, 0, "FrogsReset", data.UserUUID, data.ChannelID, false, true, true))
+                            {
+                                Random rand = new Random();
+                                long frogCaughtType = rand.Next(0, 4);
+                                long frogsCaughted = rand.Next(1, 11);
 
-                            if (frogCaughtType == 0)
-                            {
-                                frogsCaughted = rand.Next(1, 11);
-                            }
-                            else if (frogCaughtType <= 2)
-                            {
-                                frogsCaughted = rand.Next(11, 101);
-                            }
-                            else if (frogCaughtType == 3)
-                            {
-                                frogsCaughted = rand.Next(101, 1001);
-                            }
+                                if (frogCaughtType == 0)
+                                {
+                                    frogsCaughted = rand.Next(1, 11);
+                                }
+                                else if (frogCaughtType <= 2)
+                                {
+                                    frogsCaughted = rand.Next(11, 101);
+                                }
+                                else if (frogCaughtType == 3)
+                                {
+                                    frogsCaughted = rand.Next(101, 1001);
+                                }
 
-                            string caughtText = GetFrogRange(frogsCaughted);
+                                string caughtText = GetFrogRange(frogsCaughted);
 
-                            if (caughtText == "error:range")
-                            {
-                                resultMessage = TranslationManager.GetTranslation(data.User.Lang, "frog:error:range", data.ChannelID);
-                                resultNicknameColor = ChatColorPresets.Red;
+                                if (caughtText == "error:range")
+                                {
+                                    resultMessage = TranslationManager.GetTranslation(data.User.Lang, "frog:error:range", data.ChannelID);
+                                    resultNicknameColor = ChatColorPresets.Red;
+                                }
+                                else
+                                {
+                                    resultMessage = TranslationManager.GetTranslation(data.User.Lang, "frog:caught", data.ChannelID)
+                                        .Replace("%action%", TranslationManager.GetTranslation(data.User.Lang, $"frog:{caughtText}", data.ChannelID))
+                                        .Replace("%old_frogs_count%", frogsBalance.ToString())
+                                        .Replace("%new_frogs_count%", (frogsBalance + frogsCaughted).ToString())
+                                        .Replace("%added_count%", frogsCaughted.ToString());
+                                    jsonManager.SaveData("frogs", (long)(frogsBalance + frogsCaughted));
+                                }
                             }
                             else
                             {
-                                resultMessage = TranslationManager.GetTranslation(data.User.Lang, "frog:caught", data.ChannelID)
-                                    .Replace("%action%", TranslationManager.GetTranslation(data.User.Lang, $"frog:{caughtText}", data.ChannelID))
-                                    .Replace("%old_frogs_count%", frogsBalance.ToString())
-                                    .Replace("%new_frogs_count%", (frogsBalance + frogsCaughted).ToString())
-                                    .Replace("%added_count%", frogsCaughted.ToString());
-                                jsonManager.SaveData("frogs", (long)(frogsBalance + frogsCaughted));
+                                resultMessage = TranslationManager.GetTranslation(data.User.Lang, "frog:error:caught", data.ChannelID);
+                                resultNicknameColor = ChatColorPresets.Red;
                             }
                         }
-                        else
+                        else if (giftAliases.Contains(data.args[0].ToLower()))
                         {
-                            resultMessage = TranslationManager.GetTranslation(data.User.Lang, "frog:error:caught", data.ChannelID);
-                            resultNicknameColor = ChatColorPresets.Red;
-                        }
-                    }
-                    else if (giftAliases.Contains(data.args[0].ToLower()))
-                    {
-                        if (data.args.Count > 2)
-                        {
-                            string username = data.args[1].ToLower();
-                            long frogs = FormatUtil.ToLong(data.args[2]);
-                            string userID = NamesUtil.GetUserID(username);
+                            if (data.args.Count > 2)
+                            {
+                                string username = data.args[1].ToLower();
+                                long frogs = FormatUtil.ToLong(data.args[2]);
+                                string userID = NamesUtil.GetUserID(username);
 
-                            if (userID == "err")
-                            {
-                                resultMessage = TranslationManager.GetTranslation(data.User.Lang, "noneExistUser", data.ChannelID)
-                                    .Replace("%user%", NamesUtil.DontPingUsername(username));
-                                resultNicknameColor = ChatColorPresets.Red;
-                            }
-                            else if (frogs == 0)
-                            {
-                                resultMessage = TranslationManager.GetTranslation(data.User.Lang, "frog:gift:error:zero", data.ChannelID);
-                                resultNicknameColor = ChatColorPresets.Red;
-                            }
-                            else if (frogs < 0)
-                            {
-                                resultMessage = TranslationManager.GetTranslation(data.User.Lang, "frog:gift:error:lowerThanZero", data.ChannelID);
-                                resultNicknameColor = ChatColorPresets.Red;
-                            }
-                            else if (frogsBalance >= frogs)
-                            {
-                                resultMessage = TranslationManager.GetTranslation(data.User.Lang, "frog:gift", data.ChannelID)
-                                    .Replace("%frogs%", frogs.ToString())
-                                    .Replace("%gift_user%", NamesUtil.DontPingUsername(username));
-                                string giftUserRootPath = Bot.MainPath + $"GAMES_DATA\\FROGS\\{userID}.json";
-                                FileUtil.CreateFile(giftUserRootPath);
-                                if (File.ReadAllText(giftUserRootPath) == "")
+                                if (userID == "err")
                                 {
-                                    File.WriteAllText(giftUserRootPath, "{\r\n\t\"frogs\": 0,\r\n\t\"gifted\": 0,\r\n\t\"received\": 0\r\n}"); // Пока-что заглушка
+                                    resultMessage = TranslationManager.GetTranslation(data.User.Lang, "noneExistUser", data.ChannelID)
+                                        .Replace("%user%", NamesUtil.DontPingUsername(username));
+                                    resultNicknameColor = ChatColorPresets.Red;
                                 }
-                                JsonManager giftUserJsonManager = new JsonManager(giftUserRootPath);
-
-                                dynamic? giftUserFrogsBalanceCache = giftUserJsonManager.GetData<dynamic>("frogs");
-                                dynamic? giftUserFrogsReceivedCache = giftUserJsonManager.GetData<dynamic>("received");
-
-                                long giftUserFrogsBalance = 0;
-                                long giftUserReceived = 0;
-
-                                if (giftUserFrogsBalanceCache != null && giftUserFrogsReceivedCache != null)
+                                else if (frogs == 0)
                                 {
-                                    giftUserFrogsBalance = FormatUtil.ToLong(giftUserFrogsBalanceCache.ToString());
-                                    giftUserReceived = FormatUtil.ToLong(giftUserFrogsReceivedCache.ToString());
+                                    resultMessage = TranslationManager.GetTranslation(data.User.Lang, "frog:gift:error:zero", data.ChannelID);
+                                    resultNicknameColor = ChatColorPresets.Red;
                                 }
+                                else if (frogs < 0)
+                                {
+                                    resultMessage = TranslationManager.GetTranslation(data.User.Lang, "frog:gift:error:lowerThanZero", data.ChannelID);
+                                    resultNicknameColor = ChatColorPresets.Red;
+                                }
+                                else if (frogsBalance >= frogs)
+                                {
+                                    resultMessage = TranslationManager.GetTranslation(data.User.Lang, "frog:gift", data.ChannelID)
+                                        .Replace("%frogs%", frogs.ToString())
+                                        .Replace("%gift_user%", NamesUtil.DontPingUsername(username));
+                                    string giftUserRootPath = Bot.MainPath + $"GAMES_DATA\\FROGS\\{userID}.json";
+                                    FileUtil.CreateFile(giftUserRootPath);
+                                    if (File.ReadAllText(giftUserRootPath) == "")
+                                    {
+                                        File.WriteAllText(giftUserRootPath, "{\r\n\t\"frogs\": 0,\r\n\t\"gifted\": 0,\r\n\t\"received\": 0\r\n}"); // Пока-что заглушка
+                                    }
+                                    JsonManager giftUserJsonManager = new JsonManager(giftUserRootPath);
 
-                                giftUserJsonManager.SaveData("frogs", giftUserFrogsBalance + frogs);
-                                giftUserJsonManager.SaveData("received", giftUserReceived + frogs);
+                                    dynamic? giftUserFrogsBalanceCache = giftUserJsonManager.GetData<dynamic>("frogs");
+                                    dynamic? giftUserFrogsReceivedCache = giftUserJsonManager.GetData<dynamic>("received");
 
-                                jsonManager.SaveData("frogs", frogsBalance - frogs);
-                                jsonManager.SaveData("gifted", frogsGifted + frogs);
+                                    long giftUserFrogsBalance = 0;
+                                    long giftUserReceived = 0;
+
+                                    if (giftUserFrogsBalanceCache != null && giftUserFrogsReceivedCache != null)
+                                    {
+                                        giftUserFrogsBalance = FormatUtil.ToLong(giftUserFrogsBalanceCache.ToString());
+                                        giftUserReceived = FormatUtil.ToLong(giftUserFrogsReceivedCache.ToString());
+                                    }
+
+                                    giftUserJsonManager.SaveData("frogs", giftUserFrogsBalance + frogs);
+                                    giftUserJsonManager.SaveData("received", giftUserReceived + frogs);
+
+                                    jsonManager.SaveData("frogs", frogsBalance - frogs);
+                                    jsonManager.SaveData("gifted", frogsGifted + frogs);
+                                }
+                                else
+                                {
+                                    resultMessage = TranslationManager.GetTranslation(data.User.Lang, "frog:gift:error:noFrogs", data.ChannelID);
+                                    resultNicknameColor = ChatColorPresets.Red;
+                                }
                             }
                             else
                             {
-                                resultMessage = TranslationManager.GetTranslation(data.User.Lang, "frog:gift:error:noFrogs", data.ChannelID);
+                                resultMessage = TranslationManager.GetTranslation(data.User.Lang, "lowArgs", data.ChannelID)
+                                    .Replace("%commandWorks%", "#frog gift [user] [frogs]");
                                 resultNicknameColor = ChatColorPresets.Red;
                             }
                         }
-                        else
-                        {
-                            resultMessage = TranslationManager.GetTranslation(data.User.Lang, "lowArgs", data.ChannelID)
-                                .Replace("%commandWorks%", "#frog gift [user] [frogs]");
-                            resultNicknameColor = ChatColorPresets.Red;
-                        }
                     }
-                }
-                else
-                {
-                    resultMessage = TranslationManager.GetTranslation(data.User.Lang, "lowArgs", data.ChannelID)
-                                .Replace("%commandWorks%", $"#frog {Info.ArgsRequired}");
-                    resultNicknameColor = ChatColorPresets.Red;
-                }
+                    else
+                    {
+                        resultMessage = TranslationManager.GetTranslation(data.User.Lang, "lowArgs", data.ChannelID)
+                                    .Replace("%commandWorks%", $"#frog {Info.ArgsRequired}");
+                        resultNicknameColor = ChatColorPresets.Red;
+                    }
 
-                return new()
+                    return new()
+                    {
+                        Message = resultMessage,
+                        IsSafeExecute = true,
+                        Description = "",
+                        Author = "",
+                        ImageURL = "",
+                        ThumbnailUrl = "",
+                        Footer = "",
+                        IsEmbed = true,
+                        Ephemeral = false,
+                        Title = resultMessageTitle,
+                        Color = resultColor,
+                        NickNameColor = resultNicknameColor
+                    };
+                }
+                catch (Exception e)
                 {
-                    Message = resultMessage,
-                    IsSafeExecute = true,
-                    Description = "",
-                    Author = "",
-                    ImageURL = "",
-                    ThumbnailUrl = "",
-                    Footer = "",
-                    IsEmbed = true,
-                    Ephemeral = false,
-                    Title = resultMessageTitle,
-                    Color = resultColor,
-                    NickNameColor = resultNicknameColor
-                };
+                    return new ()
+                    {
+                        Message = "",
+                        IsSafeExecute = false,
+                        Description = "",
+                        Author = "",
+                        ImageURL = "",
+                        ThumbnailUrl = "",
+                        Footer = "",
+                        IsEmbed = true,
+                        Ephemeral = false,
+                        Title = "",
+                        Color = Color.Green,
+                        NickNameColor = ChatColorPresets.YellowGreen,
+                        IsError = true,
+                        Error = e
+                    };
+                }
             }
 
             static string GetFrogRange(long number)

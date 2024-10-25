@@ -27,7 +27,7 @@ namespace butterBror
         public static bool isNeedRestart = false;
         public static bool isTwitchReady = false;
         public static float buttersTotalAmount = 0;
-        public static string botVersion = "2.08.31";
+        public static string botVersion = "2.09";
         public static DataManager currencyWorker = new();
         public static int buttersTotalDollarsInTheBank = 0;
         private static DateTime statSenderTimer = DateTime.UtcNow;
@@ -598,7 +598,7 @@ namespace butterBror
             }
             catch (Exception ex)
             {
-                ConsoleUtil.ErrorOccured(ex.Message, "DiscordWorker\\ReadyAsync");
+                ConsoleUtil.ErrorOccured(ex, "DiscordWorker\\ReadyAsync");
             }
         }
         public static async Task MessageReceivedAsync(SocketMessage message)
@@ -611,7 +611,7 @@ namespace butterBror
             }
             catch (Exception ex)
             {
-                ConsoleUtil.ErrorOccured(ex.Message, $"DiscordWorker\\MessageReceivedAsync#{message.Content}");
+                ConsoleUtil.ErrorOccured(ex, $"DiscordWorker\\MessageReceivedAsync#{message.Content}");
             }
         }
         public static async Task RegisterCommandsAsync()
@@ -625,7 +625,7 @@ namespace butterBror
             }
             catch (Exception ex)
             {
-                ConsoleUtil.ErrorOccured(ex.Message, "DiscordWorker\\RegisterCommandsAsync");
+                ConsoleUtil.ErrorOccured(ex, "DiscordWorker\\RegisterCommandsAsync");
             }
         }
         private static async Task RegisterSlashCommands()
@@ -663,7 +663,7 @@ namespace butterBror
             }
             catch (Exception ex)
             {
-                ConsoleUtil.ErrorOccured(ex.Message, $"DiscordEventHandler\\LogAsync#{log.Message}");
+                ConsoleUtil.ErrorOccured(ex, $"DiscordEventHandler\\LogAsync#{log.Message}");
                 return Task.CompletedTask;
             }
         }
@@ -692,7 +692,7 @@ namespace butterBror
             }
             catch (Exception ex)
             {
-                ConsoleUtil.ErrorOccured(ex.Message, $"DiscordEventHandler\\HandleCommandAsync");
+                ConsoleUtil.ErrorOccured(ex, $"DiscordEventHandler\\HandleCommandAsync");
             }
         }
         public static async Task SlashCommandHandler(SocketSlashCommand command)

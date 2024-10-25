@@ -1,7 +1,8 @@
-﻿using butterBib;
-using butterBror.Utils;
+﻿using butterBror.Utils;
+using butterBib;
 using Discord;
 using System.Reflection;
+using TwitchLib.Client.Enums;
 
 namespace butterBror
 {
@@ -29,78 +30,101 @@ namespace butterBror
             };
             public static CommandReturn Index(CommandData data)
             {
-                string result = "";
-                if (data.args.Count == 1)
+                try
                 {
-                    string classToFound = data.args[0];
-                    result = TranslationManager.GetTranslation(data.User.Lang, "help:notFound", data.ChannelID);
-                    foreach (var classType in classes)
+                    string result = "";
+                    if (data.args.Count == 1)
                     {
-                        // Получение значения статического свойства Info
-                        var infoProperty = classType.GetField("Info", BindingFlags.Static | BindingFlags.Public);
-                        var info = infoProperty.GetValue(null) as CommandInfo;
-
-                        if (info.aliases.Contains(classToFound))
+                        string classToFound = data.args[0];
+                        result = TranslationManager.GetTranslation(data.User.Lang, "help:notFound", data.ChannelID);
+                        foreach (var classType in classes)
                         {
-                            string aliasesList = "";
-                            int num = 0;
-                            int numWithoutComma = 5;
-                            if (info.aliases.Length < 5)
+                            // Получение значения статического свойства Info
+                            var infoProperty = classType.GetField("Info", BindingFlags.Static | BindingFlags.Public);
+                            var info = infoProperty.GetValue(null) as CommandInfo;
+
+                            if (info.aliases.Contains(classToFound))
                             {
-                                numWithoutComma = info.aliases.Length;
-                            }
-                            
-                            foreach (string alias in info.aliases)
-                            {
-                                num++;
-                                if (num < numWithoutComma)
+                                string aliasesList = "";
+                                int num = 0;
+                                int numWithoutComma = 5;
+                                if (info.aliases.Length < 5)
                                 {
-                                    aliasesList += $"#{alias}, ";
+                                    numWithoutComma = info.aliases.Length;
                                 }
-                                else if (num == numWithoutComma)
+
+                                foreach (string alias in info.aliases)
                                 {
-                                    aliasesList += $"#{alias}";
+                                    num++;
+                                    if (num < numWithoutComma)
+                                    {
+                                        aliasesList += $"#{alias}, ";
+                                    }
+                                    else if (num == numWithoutComma)
+                                    {
+                                        aliasesList += $"#{alias}";
+                                    }
                                 }
+                                result = TranslationManager.GetTranslation(data.User.Lang, "help:found", data.ChannelID)
+                                    .Replace("%commandName%", info.Name)
+                                    .Replace("%Variables%", aliasesList)
+                                    .Replace("%Args%", info.ArgsRequired)
+                                    .Replace("%Link%", info.UseURL)
+                                    .Replace("%Description%", info.Description)
+                                    .Replace("%Author%", NamesUtil.DontPingUsername(info.Author))
+                                    .Replace("%creationDate%", info.CreationDate.ToShortDateString())
+                                    .Replace("%uCooldown%", info.UserCooldown.ToString())
+                                    .Replace("%gCooldown%", info.GlobalCooldown.ToString());
+                                break;
                             }
-                            result = TranslationManager.GetTranslation(data.User.Lang, "help:found", data.ChannelID)
-                                .Replace("%commandName%", info.Name)
-                                .Replace("%Variables%", aliasesList)
-                                .Replace("%Args%", info.ArgsRequired)
-                                .Replace("%Link%", info.UseURL)
-                                .Replace("%Description%", info.Description)
-                                .Replace("%Author%", NamesUtil.DontPingUsername(info.Author))
-                                .Replace("%creationDate%", info.CreationDate.ToShortDateString())
-                                .Replace("%uCooldown%", info.UserCooldown.ToString())
-                                .Replace("%gCooldown%", info.GlobalCooldown.ToString());
-                            break;
                         }
                     }
-                }
-                else if (data.args.Count > 1)
-                {
-                    result = TranslationManager.GetTranslation(data.User.Lang, "aFewArgs", data.ChannelID).Replace("%args%", "(command_name)");
-                }
-                else
-                {
-                    result = TranslationManager.GetTranslation(data.User.Lang, "botInfo", data.ChannelID);
-                }
+                    else if (data.args.Count > 1)
+                    {
+                        result = TranslationManager.GetTranslation(data.User.Lang, "aFewArgs", data.ChannelID).Replace("%args%", "(command_name)");
+                    }
+                    else
+                    {
+                        result = TranslationManager.GetTranslation(data.User.Lang, "botInfo", data.ChannelID);
+                    }
 
 
-                return new()
+                    return new()
+                    {
+                        Message = result,
+                        IsSafeExecute = true,
+                        Description = "",
+                        Author = "",
+                        ImageURL = "",
+                        ThumbnailUrl = "",
+                        Footer = "",
+                        IsEmbed = true,
+                        Ephemeral = false,
+                        Title = TranslationManager.GetTranslation(data.User.Lang, "dsWinterTitle", data.ChannelID),
+                        Color = Color.Blue,
+                        NickNameColor = TwitchLib.Client.Enums.ChatColorPresets.DodgerBlue
+                    };
+                }
+                catch (Exception e)
                 {
-                    Message = result,
-                    IsSafeExecute = true,
-                    Description = "",
-                    Author = "",
-                    ImageURL = "",
-                    ThumbnailUrl = "",
-                    Footer = "",
-                    IsEmbed = true,
-                    Ephemeral = false,
-                    Title = TranslationManager.GetTranslation(data.User.Lang, "dsWinterTitle", data.ChannelID),
-                    Color = Color.Blue,
-                    NickNameColor = TwitchLib.Client.Enums.ChatColorPresets.DodgerBlue
-                };
+                    return new()
+                    {
+                        Message = "",
+                        IsSafeExecute = false,
+                        Description = "",
+                        Author = "",
+                        ImageURL = "",
+                        ThumbnailUrl = "",
+                        Footer = "",
+                        IsEmbed = true,
+                        Ephemeral = false,
+                        Title = "",
+                        Color = Color.Green,
+                        NickNameColor = ChatColorPresets.YellowGreen,
+                        IsError = true,
+                        Error = e
+                    };
+                }
             }
         }
     }

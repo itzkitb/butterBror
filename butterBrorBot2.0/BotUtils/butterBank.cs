@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 using butterBror.Utils;
 using butterBror.Utils.DataManagers;
 
-namespace butterBank
+namespace butterBrorBot2._0.BotUtils
 {
     public class PayAccountData
     {
@@ -38,8 +38,8 @@ namespace butterBank
             private const int MAX_USERS = 50;
             public static BalanceAccountData GetUserData(string UserID)
             {
-                BalanceAccountData data = new() 
-                { 
+                BalanceAccountData data = new()
+                {
                     Butters = UserGetData<ulong>(UserID, "Butters"),
                     CardUUID = UserGetData<string>(UserID, "CardUUID"),
                     Cutlet = UserGetData<int>(UserID, "Cutlet"),
@@ -80,7 +80,7 @@ namespace butterBank
                     catch (Exception ex)
                     {
                         ConsoleUtil.ErrorOccured(ex.Message, "bankGetData");
-                        return default(T);
+                        return default;
                     }
                 }
                 else
@@ -91,7 +91,7 @@ namespace butterBank
 
             private static T? UserGetData2<T>(string userId, string paramName)
             {
-                T result = default(T);
+                T result = default;
                 string filePath = Bot.UsersBankDataPath + userId + ".json";
                 if (userData.ContainsKey(userId))
                 {

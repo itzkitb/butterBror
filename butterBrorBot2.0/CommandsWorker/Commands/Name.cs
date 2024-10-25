@@ -1,49 +1,73 @@
-﻿using TwitchLib.Client.Enums;
-using Discord;
+﻿using butterBror.Utils;
 using butterBib;
+using Discord;
+using TwitchLib.Client.Enums;
 
 namespace butterBror
 {
     public partial class Commands
     {
-        public class Say
+        public class Name
         {
             public static CommandInfo Info = new()
             {
-                Name = "Say",
+                Name = "Name",
                 Author = "@ItzKITb",
                 AuthorURL = "twitch.tv/itzkitb",
                 AuthorImageURL = "https://static-cdn.jtvnw.net/jtv_user_pictures/c3a9af55-d7af-4b4a-82de-39a4d8b296d3-profile_image-70x70.png",
-                Description = "При помощи этой администратор бота может писать сообщения от лица бота.",
-                UseURL = "https://itzkitb.ru/bot/command?name=say",
+                Description = "Эта команда выводит ваш twitch ID или ID выбранного пользователя.",
+                UseURL = "https://itzkitb.ru/bot/command?name=name",
                 UserCooldown = 5,
                 GlobalCooldown = 1,
-                aliases = ["say", "tell", "сказать", "type", "написать"],
-                ArgsRequired = "[Текст]",
+                aliases = ["name", "nick", "nickname", "никнейм", "ник", "имя"],
+                ArgsRequired = "[ID пользователя]",
                 ResetCooldownIfItHasNotReachedZero = true,
-                CreationDate = DateTime.Parse("09/07/2024"),
+                CreationDate = DateTime.Parse("25/10/2024"),
                 ForAdmins = false,
-                ForBotCreator = true,
+                ForBotCreator = false,
                 ForChannelAdmins = false
             };
             public static CommandReturn Index(CommandData data)
             {
                 try
                 {
-                    string resultMessage = data.ArgsAsString;
+                    string resultMessage = "";
                     Color resultColor = Color.Green;
                     ChatColorPresets resultNicknameColor = ChatColorPresets.YellowGreen;
+                    if (data.args.Count > 0)
+                    {
+                        string username = TextUtil.NicknameFilter(data.args[0].ToLower());
+                        string ID = NamesUtil.GetUserID(username, "null");
+                        if (ID == data.UserUUID)
+                        {
+                            resultMessage = TranslationManager.GetTranslation(data.User.Lang, "IDYourSelfGet", data.ChannelID).Replace("%id%", data.UserUUID);
+                        }
+                        else if (ID == "null")
+                        {
+                            resultMessage = TranslationManager.GetTranslation(data.User.Lang, "noneExistUser", data.ChannelID).Replace("%user%", username);
+                            resultNicknameColor = ChatColorPresets.Red;
+                            resultColor = Color.Red;
+                        }
+                        else
+                        {
+                            resultMessage = TranslationManager.GetTranslation(data.User.Lang, "IDUserGet", data.ChannelID).Replace("%id%", ID).Replace("%user%", NamesUtil.DontPingUsername(username));
+                        }
+                    }
+                    else
+                    {
+                        resultMessage = TranslationManager.GetTranslation(data.User.Lang, "IDYourSelfGet", data.ChannelID).Replace("%id%", data.UserUUID);
+                    }
 
                     return new()
                     {
                         Message = resultMessage,
-                        IsSafeExecute = true,
+                        IsSafeExecute = false,
                         Description = "",
                         Author = "",
                         ImageURL = "",
                         ThumbnailUrl = "",
                         Footer = "",
-                        IsEmbed = true,
+                        IsEmbed = false,
                         Ephemeral = false,
                         Title = "",
                         Color = resultColor,

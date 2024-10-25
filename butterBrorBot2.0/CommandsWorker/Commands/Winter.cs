@@ -1,6 +1,7 @@
-﻿using butterBib;
-using butterBror.Utils;
+﻿using butterBror.Utils;
+using butterBib;
 using Discord;
+using TwitchLib.Client.Enums;
 
 namespace butterBror
 {
@@ -15,7 +16,7 @@ namespace butterBror
                 AuthorURL = "twitch.tv/itzkitb",
                 AuthorImageURL = "https://static-cdn.jtvnw.net/jtv_user_pictures/c3a9af55-d7af-4b4a-82de-39a4d8b296d3-profile_image-70x70.png",
                 Description = "С помощью этой команды вы можете узнать, сколько времени осталось до начала или конца зимы.",
-                UseURL = "https://itzkitb.ru/bot_command/winter",
+                UseURL = "https://itzkitb.ru/bot/command?name=winter",
                 UserCooldown = 120,
                 GlobalCooldown = 10,
                 aliases = ["winter", "w", "зима"],
@@ -28,24 +29,47 @@ namespace butterBror
             };
             public static CommandReturn Index(CommandData data)
             {
-                DateTime startDate = new(2000, 12, 1);
-                DateTime endDate = new(2000, 3, 1);
-                string result = TextUtil.TimeTo(startDate, endDate, "Winter", 1, data.User.Lang, data.ArgsAsString, data.ChannelID);
-                return new()
+                try
                 {
-                    Message = result,
-                    IsSafeExecute = false,
-                    Description = "",
-                    Author = "",
-                    ImageURL = "",
-                    ThumbnailUrl = "",
-                    Footer = "",
-                    IsEmbed = true,
-                    Ephemeral = false,
-                    Title = TranslationManager.GetTranslation(data.User.Lang, "dsWinterTitle", data.ChannelID),
-                    Color = Color.Blue,
-                    NickNameColor = TwitchLib.Client.Enums.ChatColorPresets.DodgerBlue
-                };
+                    DateTime startDate = new(2000, 12, 1);
+                    DateTime endDate = new(2000, 3, 1);
+                    string result = TextUtil.TimeTo(startDate, endDate, "Winter", 1, data.User.Lang, data.ArgsAsString, data.ChannelID);
+                    return new()
+                    {
+                        Message = result,
+                        IsSafeExecute = false,
+                        Description = "",
+                        Author = "",
+                        ImageURL = "",
+                        ThumbnailUrl = "",
+                        Footer = "",
+                        IsEmbed = true,
+                        Ephemeral = false,
+                        Title = TranslationManager.GetTranslation(data.User.Lang, "dsWinterTitle", data.ChannelID),
+                        Color = Color.Blue,
+                        NickNameColor = TwitchLib.Client.Enums.ChatColorPresets.DodgerBlue
+                    };
+                }
+                catch (Exception e)
+                {
+                    return new()
+                    {
+                        Message = "",
+                        IsSafeExecute = false,
+                        Description = "",
+                        Author = "",
+                        ImageURL = "",
+                        ThumbnailUrl = "",
+                        Footer = "",
+                        IsEmbed = true,
+                        Ephemeral = false,
+                        Title = "",
+                        Color = Color.Green,
+                        NickNameColor = ChatColorPresets.YellowGreen,
+                        IsError = true,
+                        Error = e
+                    };
+                }
             }
         }
     }

@@ -16,10 +16,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Remove="BotUtils\TwitchEventHandler.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="Discord.Net" Version="3.16.0" />
     <PackageReference Include="Google.Apis" Version="1.68.0" />
     <PackageReference Include="Google.Apis.YouTube.v3" Version="1.68.0.3546" />

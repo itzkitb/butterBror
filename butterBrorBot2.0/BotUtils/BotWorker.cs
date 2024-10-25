@@ -2,11 +2,11 @@
 using Newtonsoft.Json.Linq;
 using System.Text.RegularExpressions;
 using System.Net.NetworkInformation;
-using butterBib;
 using butterBror.Utils;
 using butterBror.Utils.DataManagers;
 using Jint.Runtime;
 using TwitchLib.Client.Models;
+using butterBib;
 
 namespace butterBror
 {
@@ -23,75 +23,83 @@ namespace butterBror
             /// </summary>
             public static bool fullCheck(string message, string channelID)
             {
-                FoundedBanWord = "";
-                bool IsCheckFailed = false;
-                string FoundSector = "";
-
-                Guid myuuid = Guid.NewGuid();
-                string checkUUID = myuuid.ToString();
-                var message2 = TextUtil.FilterText(TextUtil.RemoveDuplicateLetters(message.Replace(" ", "").Replace("󠀀", "")));
-
-                ConsoleUtil.LOG($"[check#{checkUUID}] Проверка \"{message}\" ({message2}) (ChlID: " + channelID + ")...");
-
-                bool chck1 = false;
-                bool chck2 = false;
-                bool chck3 = false;
-                bool chck4 = false;
-                bool chck5 = false;
-
-                // Проверка
-                chck1 = CheckBannedWords(message2, channelID);
-                if (chck1)
+                try
                 {
-                    chck2 = CheckReplacement(message2, channelID);
-                    if (chck2)
+                    FoundedBanWord = "";
+                    bool IsCheckFailed = false;
+                    string FoundSector = "";
+
+                    Guid myuuid = Guid.NewGuid();
+                    string checkUUID = myuuid.ToString();
+                    var message2 = TextUtil.FilterText(TextUtil.RemoveDuplicateLetters(message.Replace(" ", "").Replace("󠀀", "")));
+
+                    ConsoleUtil.LOG($"[check#{checkUUID}] Проверка \"{message}\" ({message2}) (ChlID: " + channelID + ")...");
+
+                    bool chck1 = false;
+                    bool chck2 = false;
+                    bool chck3 = false;
+                    bool chck4 = false;
+                    bool chck5 = false;
+
+                    // Проверка
+                    chck1 = CheckBannedWords(message2, channelID);
+                    if (chck1)
                     {
-                        chck3 = CheckBannedWords(TextUtil.ChangeLayout(message2), channelID);
-                        if (chck3)
+                        chck2 = CheckReplacement(message2, channelID);
+                        if (chck2)
                         {
-                            chck4 = CheckReplacement(TextUtil.ChangeLayout(message2), channelID);
-                            if (chck4)
+                            chck3 = CheckBannedWords(TextUtil.ChangeLayout(message2), channelID);
+                            if (chck3)
                             {
-                                chck5 = LinkCheck(message);
-                                if (!chck5)
+                                chck4 = CheckReplacement(TextUtil.ChangeLayout(message2), channelID);
+                                if (chck4)
+                                {
+                                    chck5 = LinkCheck(message);
+                                    if (!chck5)
+                                    {
+                                        IsCheckFailed = true;
+                                        FoundSector = "LinksCheck";
+                                    }
+                                }
+                                else
                                 {
                                     IsCheckFailed = true;
-                                    FoundSector = "LinksCheck";
+                                    FoundSector = "LayoutChangeReplacementCheck";
                                 }
                             }
                             else
                             {
                                 IsCheckFailed = true;
-                                FoundSector = "LayoutChangeReplacementCheck";
+                                FoundSector = "LayoutChangeCheck";
                             }
                         }
                         else
                         {
                             IsCheckFailed = true;
-                            FoundSector = "LayoutChangeCheck";
+                            FoundSector = "LightReplacemetCheck";
                         }
                     }
                     else
                     {
                         IsCheckFailed = true;
-                        FoundSector = "LightReplacemetCheck";
+                        FoundSector = "LightCheck";
                     }
-                }
-                else
-                {
-                    IsCheckFailed = true;
-                    FoundSector = "LightCheck";
-                }
-                if (IsCheckFailed)
-                {
-                    ConsoleUtil.LOG($"[check#{checkUUID}] ОБНАРУЖЕНЫ БАНВОРДЫ! Банворд: {FoundedBanWord}, сектор поиска: {FoundSector}.", ConsoleColor.Red);
-                }
-                else
-                {
-                    ConsoleUtil.LOG($"[check#{checkUUID}] Успешно! Банворды не найдены.", ConsoleColor.Green);
-                }
+                    if (IsCheckFailed)
+                    {
+                        ConsoleUtil.LOG($"[check#{checkUUID}] ОБНАРУЖЕНЫ БАНВОРДЫ! Банворд: {FoundedBanWord}, сектор поиска: {FoundSector}.", ConsoleColor.Red);
+                    }
+                    else
+                    {
+                        ConsoleUtil.LOG($"[check#{checkUUID}] Успешно! Банворды не найдены.", ConsoleColor.Green);
+                    }
 
-                return !IsCheckFailed;
+                    return !IsCheckFailed;
+                }
+                catch (Exception ex)
+                {
+                    ConsoleUtil.ErrorOccured(ex, $"NOBANWORDS\\FullCheck");
+                    return false;
+                }
             }
             /// <summary>
             /// Проверка текста
@@ -121,7 +129,7 @@ namespace butterBror
                 }
                 catch (Exception ex)
                 {
-                    ConsoleUtil.ErrorOccured(ex.Message, $"noBanWords\\CheckBannedWords#{channelID}\\{message}");
+                    ConsoleUtil.ErrorOccured(ex, $"NOBANWORDS\\CheckBannedWords#{channelID}\\{message}");
                     return false;
                 }
             }
@@ -149,7 +157,7 @@ namespace butterBror
                 }
                 catch (Exception ex)
                 {
-                    ConsoleUtil.ErrorOccured(ex.Message, $"noBanWords\\CheckReplacement#{ChannelID}\\{message}");
+                    ConsoleUtil.ErrorOccured(ex, $"NOBANWORDS\\CheckReplacement#{ChannelID}\\{message}");
                     return false;
                 }
             }
@@ -158,53 +166,69 @@ namespace butterBror
             /// </summary>
             public static bool LinksCheck(string message)
             {
-                string[] words = message.Split(' ');
-
-                foreach (string word in words)
+                try
                 {
-                    bool result = LinkCheck(word);
-                    if (result)
+                    string[] words = message.Split(' ');
+
+                    foreach (string word in words)
                     {
-                        return false;
+                        bool result = LinkCheck(word);
+                        if (result)
+                        {
+                            return false;
+                        }
                     }
+                    return true;
                 }
-                return true;
+                catch (Exception ex)
+                {
+                    ConsoleUtil.ErrorOccured(ex, $"NOBANWORDS\\LinksCheck");
+                    return false;
+                }
             }
             /// <summary>
             /// Проверка ссылки
             /// </summary>
             public static bool LinkCheck(string link)
             {
-                // Регулярное выражение для поиска URL в тексте
-                string pattern = @"(?:[a-zA-Z]+://)?[a-zA-ZА-Яа-я0-9-]+(?:\.[a-z0-9-]+)+\b";
-                Regex regex = new Regex(pattern);
-
-                foreach (Match match in regex.Matches(link))
+                try
                 {
-                    string url = match.Value.ToLower(); // Получаем URL из текста
+                    // Регулярное выражение для поиска URL в тексте
+                    string pattern = @"(?:[a-zA-Z]+://)?[a-zA-ZА-Яа-я0-9-]+(?:\.[a-z0-9-]+)+\b";
+                    Regex regex = new Regex(pattern);
 
-                    // Используем Uri для разбора URL и получения основного домена
-                    try
+                    foreach (Match match in regex.Matches(link))
                     {
-                        Uri uri = new Uri(url);
-                        string domain = uri.Host; // Получаем только доменное имя без префиксов
+                        string url = match.Value.ToLower(); // Получаем URL из текста
 
-                        // Делаем проверку пингом (пример вашего кода)
-                        PingUtil ping = new(); // Проверьте, как создаётся экземпляр в вашем коде
-                        ping.Ping(domain, 1000); // Пингуем только основной домен
-
-                        if (ping.PingResult.Status == IPStatus.Success)
+                        // Используем Uri для разбора URL и получения основного домена
+                        try
                         {
-                            NoBanwords.FoundedBanWord = domain;
-                            return false;
+                            Uri uri = new Uri(url);
+                            string domain = uri.Host; // Получаем только доменное имя без префиксов
+
+                            // Делаем проверку пингом (пример вашего кода)
+                            PingUtil ping = new(); // Проверьте, как создаётся экземпляр в вашем коде
+                            ping.Ping(domain, 1000); // Пингуем только основной домен
+
+                            if (ping.PingResult.Status == IPStatus.Success)
+                            {
+                                NoBanwords.FoundedBanWord = domain;
+                                return false;
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            // Обработка неверного формата URL, если это нужно (Не нужно)
                         }
                     }
-                    catch (Exception ex)
-                    {
-                        // Обработка неверного формата URL, если это нужно (Не нужно)
-                    }
+                    return true; // Если ни один URL не прошел проверку
                 }
-                return true; // Если ни один URL не прошел проверку
+                catch (Exception ex)
+                {
+                    ConsoleUtil.ErrorOccured(ex, $"NOBANWORDS\\LinkCheck#{link}");
+                    return false;
+                }
             }
         }
         /// <summary>
@@ -220,32 +244,39 @@ namespace butterBror
             /// </summary>
             public static string GetTranslation(string userLang, string key, string channel)
             {
-                if (!translations.ContainsKey(userLang))
+                try
                 {
-                    translations[userLang] = LoadTranslations(userLang);
-                }
-                if (!customTranslations.ContainsKey(channel))
-                {
-                    customTranslations[channel] = new();
-                    customTranslations[channel][userLang] = LoadCustomTranslations(userLang, channel);
-                }
-                else if (!customTranslations[channel].ContainsKey(userLang))
-                {
-                    customTranslations[channel][userLang] = LoadCustomTranslations(userLang, channel);
-                }
+                    if (!translations.ContainsKey(userLang))
+                    {
+                        translations[userLang] = LoadTranslations(userLang);
+                    }
+                    if (!customTranslations.ContainsKey(channel))
+                    {
+                        customTranslations[channel] = new();
+                        customTranslations[channel][userLang] = LoadCustomTranslations(userLang, channel);
+                    }
+                    else if (!customTranslations[channel].ContainsKey(userLang))
+                    {
+                        customTranslations[channel][userLang] = LoadCustomTranslations(userLang, channel);
+                    }
 
-                if (customTranslations[channel][userLang].ContainsKey(key))
-                {
-                    return customTranslations[channel][userLang][key];
+                    if (customTranslations[channel][userLang].ContainsKey(key))
+                    {
+                        return customTranslations[channel][userLang][key];
+                    }
+                    else if (translations[userLang].ContainsKey(key))
+                    {
+                        return translations[userLang][key];
+                    }
+                    else
+                    {
+                        return $"¯\\_(ツ)_/¯";
+                    }
                 }
-                else if (translations[userLang].ContainsKey(key))
+                catch (Exception ex)
                 {
-                    return translations[userLang][key];
-                }
-                else
-                {
-                    ConsoleUtil.ErrorOccured($"Перевод для ключа '{key}' не найден! ({userLang})", $"TranslationManager\\GetTranslation#{channel}\\{userLang}\\{key}");
-                    return $"¯\\_(ツ)_/¯";
+                    ConsoleUtil.ErrorOccured(ex, $"TranslationManager\\GetTranslation#CHNL:{channel}, KEY:{key}, LANG:{userLang}");
+                    return null;
                 }
             }
             /// <summary>
@@ -296,7 +327,7 @@ namespace butterBror
                 }
                 catch (Exception ex)
                 {
-                    ConsoleUtil.ErrorOccured(ex.Message, $"TranslationManager\\SetCustomTranslation#{channel}\\{lang}\\{key}");
+                    ConsoleUtil.ErrorOccured(ex, $"TranslationManager\\SetCustomTranslation#CHNL:{channel}, LANG:{lang}, KEY:{key}");
                     return false;
                 }
             }
@@ -348,7 +379,7 @@ namespace butterBror
                 }
                 catch (Exception ex)
                 {
-                    ConsoleUtil.ErrorOccured(ex.Message, $"TranslationManager\\DeleteCustomTranslation#{channel}\\{lang}\\{key}");
+                    ConsoleUtil.ErrorOccured(ex, $"TranslationManager\\DeleteCustomTranslation#CHNL:{channel}, LANG:{lang}, KEY:{key}");
                     return false;
                 }
             }
@@ -369,27 +400,35 @@ namespace butterBror
             /// </summary>
             public static bool UpdateTranslation(string userLang, string channel)
             {
-                if (translations.ContainsKey(userLang))
+                try
                 {
-                    translations[userLang].Clear();
-                }
-                if (customTranslations.ContainsKey(channel))
-                {
-                    if (customTranslations[channel].ContainsKey(userLang))
+                    if (translations.ContainsKey(userLang))
                     {
-                        customTranslations[channel][userLang].Clear();
+                        translations[userLang].Clear();
+                    }
+                    if (customTranslations.ContainsKey(channel))
+                    {
+                        if (customTranslations[channel].ContainsKey(userLang))
+                        {
+                            customTranslations[channel][userLang].Clear();
+                        }
+                    }
+
+                    translations[userLang] = LoadTranslations(userLang);
+                    customTranslations[channel][userLang] = LoadCustomTranslations(userLang, channel);
+
+                    if (translations[userLang].Count > 0)
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
                     }
                 }
-
-                translations[userLang] = LoadTranslations(userLang);
-                customTranslations[channel][userLang] = LoadCustomTranslations(userLang, channel);
-
-                if (translations[userLang].Count > 0)
+                catch (Exception ex)
                 {
-                    return true;
-                }
-                else
-                {
+                    ConsoleUtil.ErrorOccured(ex, $"TranslationManager\\UpdateTranslation#{channel}\\{userLang}");
                     return false;
                 }
             }
@@ -398,57 +437,72 @@ namespace butterBror
             /// </summary>
             private static Dictionary<string, string> LoadTranslations(string userLang)
             {
-                string filePath = $"{Bot.TranslateDefualtPath}{userLang}.txt";
-                var translations = new Dictionary<string, string>();
-
-                if (File.Exists(filePath))
+                try
                 {
-                    string[] lines = File.ReadAllLines(filePath);
+                    string filePath = $"{Bot.TranslateDefualtPath}{userLang}.txt";
+                    var translations = new Dictionary<string, string>();
 
-                    foreach (string line in lines)
+                    if (File.Exists(filePath))
                     {
-                        string[] parts = line.Split(":::");
-                        if (parts.Length == 2)
+                        string[] lines = File.ReadAllLines(filePath);
+
+                        foreach (string line in lines)
                         {
-                            string key = parts[0].Trim().Trim('"');
-                            string translation = parts[1].Trim().Trim('"');
-                            translations[key] = translation;
+                            string[] parts = line.Split(":::");
+                            if (parts.Length == 2)
+                            {
+                                string key = parts[0].Trim().Trim('"');
+                                string translation = parts[1].Trim().Trim('"');
+                                translations[key] = translation;
+                            }
                         }
                     }
-                }
-                else
-                {
-                    ConsoleUtil.ErrorOccured($"Translation file not found for language '{userLang}'", $"TranslationManager\\LoadTranslations#{userLang}");
-                    ConsoleServer.SendConsoleMessage("errors", $"Translation file not found for language '{userLang}'");
-                }
+                    else
+                    {
+                        ConsoleServer.SendConsoleMessage("errors", $"Translation file not found for language '{userLang}'");
+                    }
 
-                return translations;
+                    return translations;
+                }
+                catch (Exception ex)
+                {
+                    ConsoleUtil.ErrorOccured(ex, $"TranslationManager\\LoadTranslations#{userLang}");
+                    return null;
+                }
             }
             /// <summary>
             /// Загрузить кастомный перевод
             /// </summary>
             private static Dictionary<string, string> LoadCustomTranslations(string userLang, string channel)
             {
-                string filePath = $"{Bot.TranslateCustomPath}{channel}\\{userLang}.txt";
-                var translations = new Dictionary<string, string>();
-
-                if (File.Exists(filePath))
+                try
                 {
-                    string[] lines = File.ReadAllLines(filePath);
+                    string filePath = $"{Bot.TranslateCustomPath}{channel}\\{userLang}.txt";
+                    var translations = new Dictionary<string, string>();
 
-                    foreach (string line in lines)
+                    if (File.Exists(filePath))
                     {
-                        string[] parts = line.Split(":::");
-                        if (parts.Length == 2)
+                        string[] lines = File.ReadAllLines(filePath);
+
+                        foreach (string line in lines)
                         {
-                            string key = parts[0].Trim().Trim('"');
-                            string translation = parts[1].Trim().Trim('"');
-                            translations[key] = translation;
+                            string[] parts = line.Split(":::");
+                            if (parts.Length == 2)
+                            {
+                                string key = parts[0].Trim().Trim('"');
+                                string translation = parts[1].Trim().Trim('"');
+                                translations[key] = translation;
+                            }
                         }
                     }
-                }
 
-                return translations;
+                    return translations;
+                }
+                catch (Exception ex)
+                {
+                    ConsoleUtil.ErrorOccured(ex, $"TranslationManager\\LoadCustomTranslations#{channel}\\{userLang}");
+                    return null;
+                }
             }
         }
         namespace DataManagers
@@ -472,15 +526,19 @@ namespace butterBror
                 }
                 public static void ClearData()
                 {
-                    if (jsonsData.Count > JSONS_MAX)
+                    try
                     {
-                        jsonsData.Clear();
-                        ConsoleServer.SendConsoleMessage("info", "Кэш отчищен!");
+                        if (jsonsData.Count > JSONS_MAX)
+                        {
+                            jsonsData.Clear();
+                            ConsoleServer.SendConsoleMessage("info", "Кэш отчищен!");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        ConsoleUtil.ErrorOccured(ex, $"DataManager\\ClearData");
                     }
                 }
-
-                // #USER 0A
-
                 public static T? GetData<T>(string path, string paramName)
                 {
                     try
@@ -514,11 +572,10 @@ namespace butterBror
                     }
                     catch (Exception ex)
                     {
-                        ConsoleUtil.ErrorOccured(ex.Message, $"DataManager\\GetData#{path}\\{paramName}");
+                        ConsoleUtil.ErrorOccured(ex, $"DataManager\\GetData#{path}\\{paramName}");
                         return default(T);
                     }
                 }
-
                 public static void SaveData(string path, string paramName, object value, bool autoSave = true)
                 {
                     try
@@ -550,7 +607,7 @@ namespace butterBror
                     }
                     catch (Exception ex)
                     {
-                        ConsoleUtil.ErrorOccured(ex.Message, $"DataManager\\SaveData#{path}\\{paramName}");
+                        ConsoleUtil.ErrorOccured(ex, $"DataManager\\SaveData#{path}\\{paramName}");
                     }
                 }
                 public static void SaveData(string path)
@@ -559,30 +616,45 @@ namespace butterBror
                 }
                 private static void SaveParamsToFile(string path)
                 {
-                    string data = JsonConvert.SerializeObject(jsonsData[path], Formatting.Indented);
-                    FileUtil.SaveFile(path, data);
+                    try
+                    {
+                        string data = JsonConvert.SerializeObject(jsonsData[path], Formatting.Indented);
+                        FileUtil.SaveFile(path, data);
+                    }
+                    catch (Exception ex)
+                    {
+                        ConsoleUtil.ErrorOccured(ex, $"DataManager\\SaveParamsToFile#{path}");
+                    }
                 }
                 public static bool IsContainsKey(string key, string path)
                 {
-                    if (jsonsData.ContainsKey(path))
+                    try
                     {
-                        return jsonsData[path].ContainsKey(key);
-                    }
-                    else
-                    {
-                        string filePath = Bot.UsersDataPath + path + ".json";
-                        if (!File.Exists(filePath))
+                        if (jsonsData.ContainsKey(path))
                         {
-                            return false;
+                            return jsonsData[path].ContainsKey(key);
                         }
                         else
                         {
-                            string json = File.ReadAllText(filePath);
-                            dynamic userParams = JsonConvert.DeserializeObject(json);
-                            jsonsData[path] = new Dictionary<string, dynamic>();
-                            jsonsData[path] = userParams;
-                            return jsonsData[path].ContainsKey(key);
+                            string filePath = Bot.UsersDataPath + path + ".json";
+                            if (!File.Exists(filePath))
+                            {
+                                return false;
+                            }
+                            else
+                            {
+                                string json = File.ReadAllText(filePath);
+                                dynamic userParams = JsonConvert.DeserializeObject(json);
+                                jsonsData[path] = new Dictionary<string, dynamic>();
+                                jsonsData[path] = userParams;
+                                return jsonsData[path].ContainsKey(key);
+                            }
                         }
+                    }
+                    catch (Exception ex)
+                    {
+                        ConsoleUtil.ErrorOccured(ex, $"DataManager\\IsContainsKey#{path}\\{key}");
+                        return false;
                     }
                 }
             }
@@ -630,7 +702,6 @@ namespace butterBror
                         return default(T);
                     }
                 }
-
                 public void SaveData(string paramName, object value, bool autoSave = true)
                 {
                     DebugUtil.LOG("SD1");
@@ -748,60 +819,74 @@ namespace butterBror
                 /// </summary>
                 public static void Log(string message, LogType type, string sector)
                 {
-                    if (type == LogTypes.Err)
+                    try
                     {
-                        LogError(message, sector);
+                        if (type == LogTypes.Err)
+                        {
+                            LogError(message, sector);
+                        }
+                        else
+                        {
+                            FileUtil.CreateFile(Bot.LogsPath);
+                            if (start_text == "")
+                            {
+                                start_text = File.ReadAllText(Bot.LogsPath);
+                            }
+
+                            string Logs = start_text;
+                            var D = DateTime.Now;
+                            LogData newLog = new LogData
+                            {
+                                Text = message,
+                                SectorName = sector,
+                                LogType = type,
+                                LogTime = DateTime.Now
+                            };
+
+                            log_cache.Add(newLog);
+
+                            foreach (var e in log_cache)
+                            {
+                                Logs += $"[{e.LogTime.Year}/{e.LogTime.Month}/{e.LogTime.Day} {e.LogTime.Hour}:{e.LogTime.Minute}.{e.LogTime.Second}.{e.LogTime.Millisecond} ({e.LogTime.DayOfWeek})] [{e.LogType.Text} - Сектор: {e.SectorName}] - {e.Text}\n";
+                            }
+                            FileUtil.SaveFile(Bot.LogsPath, Logs, false);
+                        }
                     }
-                    else
+                    catch (Exception ex)
                     {
-                        FileUtil.CreateFile(Bot.LogsPath);
-                        if (start_text == "")
-                        {
-                            start_text = File.ReadAllText(Bot.LogsPath);
-                        }
-
-                        string Logs = start_text;
-                        var D = DateTime.Now;
-                        LogData newLog = new LogData
-                        {
-                            Text = message,
-                            SectorName = sector,
-                            LogType = type,
-                            LogTime = DateTime.Now
-                        };
-
-                        log_cache.Add(newLog);
-
-                        foreach (var e in log_cache)
-                        {
-                            Logs += $"[{e.LogTime.Year}/{e.LogTime.Month}/{e.LogTime.Day} {e.LogTime.Hour}:{e.LogTime.Minute}.{e.LogTime.Second}.{e.LogTime.Millisecond} ({e.LogTime.DayOfWeek})] [{e.LogType.Text} - Сектор: {e.SectorName}] - {e.Text}\n";
-                        }
-                        FileUtil.SaveFile(Bot.LogsPath, Logs, false);
+                        ConsoleUtil.ErrorOccured(ex, $"LogWorker\\LOG");
                     }
                 }
 
                 private static void LogError(string message, string sector)
                 {
-                    FileUtil.CreateFile(Bot.ErrorsPath);
-                    if (errors_start_text == "")
+                    try
                     {
-                        errors_start_text = File.ReadAllText(Bot.ErrorsPath);
+                        FileUtil.CreateFile(Bot.ErrorsPath);
+                        if (errors_start_text == "")
+                        {
+                            errors_start_text = File.ReadAllText(Bot.ErrorsPath);
+                        }
+                        string Logs = errors_start_text;
+                        var D = DateTime.Now;
+                        LogData newLog = new LogData
+                        {
+                            Text = message,
+                            SectorName = sector,
+                            LogType = LogTypes.Err,
+                            LogTime = DateTime.Now
+                        };
+                        errors_log_cache.Add(newLog);
+                        foreach (var e in errors_log_cache)
+                        {
+                            Logs += $"[{e.LogTime.Year}/{e.LogTime.Month}/{e.LogTime.Day} {e.LogTime.Hour}:{e.LogTime.Minute}.{e.LogTime.Second}.{e.LogTime.Millisecond} ({e.LogTime.DayOfWeek})] [Сектор: {e.SectorName}] - {e.Text}\n";
+                        }
+                        FileUtil.SaveFile(Bot.ErrorsPath, Logs, false);
                     }
-                    string Logs = errors_start_text;
-                    var D = DateTime.Now;
-                    LogData newLog = new LogData
+                    catch (Exception ex)
                     {
-                        Text = message,
-                        SectorName = sector,
-                        LogType = LogTypes.Err,
-                        LogTime = DateTime.Now
-                    };
-                    errors_log_cache.Add(newLog);
-                    foreach (var e in errors_log_cache)
-                    {
-                        Logs += $"[{e.LogTime.Year}/{e.LogTime.Month}/{e.LogTime.Day} {e.LogTime.Hour}:{e.LogTime.Minute}.{e.LogTime.Second}.{e.LogTime.Millisecond} ({e.LogTime.DayOfWeek})] [Сектор: {e.SectorName}] - {e.Text}\n";
+                        ConsoleUtil.ErrorOccured(ex, $"LogWorker\\LogError");
                     }
-                    FileUtil.SaveFile(Bot.ErrorsPath, Logs, false);
                 }
             }
             /// <summary>
@@ -826,10 +911,17 @@ namespace butterBror
                 /// </summary>
                 public static void ClearData()
                 {
-                    if (userData.Count > MAX_USERS)
+                    try
                     {
-                        userData.Clear();
-                        ConsoleServer.SendConsoleMessage("info", "Кэш отчищен!");
+                        if (userData.Count > MAX_USERS)
+                        {
+                            userData.Clear();
+                            ConsoleServer.SendConsoleMessage("info", "Кэш отчищен!");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        ConsoleUtil.ErrorOccured(ex, $"UsersData\\ClearData");
                     }
                 }
                 /// <summary>
@@ -852,7 +944,7 @@ namespace butterBror
                         }
                         catch (Exception ex)
                         {
-                            ConsoleUtil.ErrorOccured(ex.Message, $"UsersData\\UserGetData#{userId}\\{paramName}");
+                            ConsoleUtil.ErrorOccured(ex, $"UsersData\\UserGetData#{userId}\\{paramName}");
                             return default;
                         }
                     }
@@ -947,7 +1039,7 @@ namespace butterBror
                     }
                     catch (Exception ex)
                     {
-                        ConsoleUtil.ErrorOccured(ex.Message, $"UsersData\\UserSaveData#{userId}\\{paramName}");
+                        ConsoleUtil.ErrorOccured(ex, $"UsersData\\UserSaveData#{userId}\\{paramName}");
                     }
                 }
 
@@ -995,7 +1087,7 @@ namespace butterBror
                     }
                     catch (Exception ex)
                     {
-                        ConsoleUtil.ErrorOccured(ex.Message, $"UsersData\\UserRegister#{userId}");
+                        ConsoleUtil.ErrorOccured(ex, $"UsersData\\UserRegister#{userId}");
                     }
                 }
                 /// <summary>
@@ -1003,34 +1095,49 @@ namespace butterBror
                 /// </summary>
                 private static void SaveUserParamsToFile(string userId)
                 {
-                    string filePath = Bot.UsersDataPath + userId + ".json";
-                    string json = JsonConvert.SerializeObject(userData[userId], Formatting.Indented);
-                    FileUtil.SaveFile(filePath, json);
+                    try
+                    {
+                        string filePath = Bot.UsersDataPath + userId + ".json";
+                        string json = JsonConvert.SerializeObject(userData[userId], Formatting.Indented);
+                        FileUtil.SaveFile(filePath, json);
+                    }
+                    catch (Exception ex)
+                    {
+                        ConsoleUtil.ErrorOccured(ex, $"DataManager\\SaveUserParamsToFile#{userId}");
+                    }
                 }
                 /// <summary>
                 /// Проверка наличия определенного ключа в базе данных пользователя
                 /// </summary>
                 public static bool IsContainsKey(string key, string userId)
                 {
-                    if (userData.ContainsKey(userId))
+                    try
                     {
-                        return userData[userId].ContainsKey(key);
-                    }
-                    else
-                    {
-                        string filePath = Bot.UsersDataPath + userId + ".json";
-                        if (!File.Exists(filePath))
+                        if (userData.ContainsKey(userId))
                         {
-                            return false;
+                            return userData[userId].ContainsKey(key);
                         }
                         else
                         {
-                            string json = File.ReadAllText(filePath);
-                            dynamic userParams = JsonConvert.DeserializeObject(json);
-                            userData[userId] = new Dictionary<string, dynamic>();
-                            userData[userId] = userParams;
-                            return userData[userId].ContainsKey(key);
+                            string filePath = Bot.UsersDataPath + userId + ".json";
+                            if (!File.Exists(filePath))
+                            {
+                                return false;
+                            }
+                            else
+                            {
+                                string json = File.ReadAllText(filePath);
+                                dynamic userParams = JsonConvert.DeserializeObject(json);
+                                userData[userId] = new Dictionary<string, dynamic>();
+                                userData[userId] = userParams;
+                                return userData[userId].ContainsKey(key);
+                            }
                         }
+                    }
+                    catch (Exception ex)
+                    {
+                        ConsoleUtil.ErrorOccured(ex, $"UsersData\\IsContainsKey#{userId}\\{key}");
+                        return false;
                     }
                 }
             }
@@ -1113,7 +1220,7 @@ namespace butterBror
                     catch (Exception ex)
                     {
                         // Срабатывает, если произошла непридвиденная ошибка
-                        ConsoleUtil.ErrorOccured(ex.Message, $"MessagesWorker\\SaveMessage#{channelID}\\{userID}");
+                        ConsoleUtil.ErrorOccured(ex, $"MessagesWorker\\SaveMessage#{channelID}\\{userID}");
                     }
                     // Конец
                 }
@@ -1154,7 +1261,7 @@ namespace butterBror
                     catch (Exception ex)
                     {
                         // Я хз когда это должно сработать
-                        ConsoleUtil.ErrorOccured(ex.Message, $"MessagesWorker\\GetMessage#{channelID}\\{userID}\\{customNumber}");
+                        ConsoleUtil.ErrorOccured(ex, $"MessagesWorker\\GetMessage#{channelID}\\{userID}\\{customNumber}");
                         return null;
                     }
                 }
@@ -1179,7 +1286,7 @@ namespace butterBror
                     }
                     catch (Exception ex)
                     {
-                        ConsoleUtil.ErrorOccured(ex.Message, $"FileUtil\\CreateDirectory#{path}");
+                        ConsoleUtil.ErrorOccured(ex, $"FileUtil\\CreateDirectory#{path}");
                     }
 
                 }
@@ -1199,7 +1306,7 @@ namespace butterBror
                     }
                     catch (Exception ex)
                     {
-                        ConsoleUtil.ErrorOccured(ex.Message, $"FileUtil\\CreateFile#{path}");
+                        ConsoleUtil.ErrorOccured(ex, $"FileUtil\\CreateFile#{path}");
                     }
                 } // Создание файла
                 /// <summary>
@@ -1230,7 +1337,7 @@ namespace butterBror
                     {
                         if (isSavingErrorLogs)
                         {
-                            ConsoleUtil.ErrorOccured(ex.Message, $"FileUtil\\SaveFile#{path}");
+                            ConsoleUtil.ErrorOccured(ex, $"FileUtil\\SaveFile#{path}");
                         }
                     }
                 }
@@ -1248,7 +1355,7 @@ namespace butterBror
                     }
                     catch (Exception ex)
                     {
-                        ConsoleUtil.ErrorOccured(ex.Message, $"FileUtil\\DeleteFile#{path}");
+                        ConsoleUtil.ErrorOccured(ex, $"FileUtil\\DeleteFile#{path}");
                     }
                 }
                 /// <summary>
@@ -1265,7 +1372,7 @@ namespace butterBror
                     }
                     catch (Exception ex)
                     {
-                        ConsoleUtil.ErrorOccured(ex.Message, $"FileUtil\\DeleteDirectory#{path}");
+                        ConsoleUtil.ErrorOccured(ex, $"FileUtil\\DeleteDirectory#{path}");
                     }
                 }
                 /// <summary>

@@ -1,5 +1,5 @@
-﻿using butterBib;
-using butterBror.Utils;
+﻿using butterBror.Utils;
+using butterBib;
 using Discord;
 using TwitchLib.Client.Enums;
 
@@ -16,7 +16,7 @@ namespace butterBror
                 AuthorURL = "twitch.tv/itzkitb",
                 AuthorImageURL = "https://static-cdn.jtvnw.net/jtv_user_pictures/c3a9af55-d7af-4b4a-82de-39a4d8b296d3-profile_image-70x70.png",
                 Description = "Эта команда перемешивает текст либо-же выводит рандомное число.",
-                UseURL = "NONE",
+                UseURL = "https://itzkitb.ru/bot/command?name=remind",
                 UserCooldown = 5,
                 GlobalCooldown = 1,
                 aliases = ["remind", "rmd", "напомнить", "нап"],

@@ -1,6 +1,7 @@
-﻿using butterBib;
-using butterBror.Utils;
+﻿using butterBror.Utils;
+using butterBib;
 using Discord;
+using Discord.Rest;
 using TwitchLib.Client.Enums;
 
 namespace butterBror
@@ -29,59 +30,74 @@ namespace butterBror
             };
             public static CommandReturn Index(CommandData data)
             {
-                DebugUtil.SetTaskID(0, data);
-                string resultMessage = "";
-                Color resultColor = Color.Green;
-                ChatColorPresets resultNicknameColor = ChatColorPresets.YellowGreen;
-                DebugUtil.SetTaskID(1, data);
-                Random rand = new Random();
-                int stage1 = rand.Next(1, 5);
-                int stage2 = rand.Next(1, 6);
-                DebugUtil.SetTaskID(2, data);
-                string translationParam = "8ball";
-                if (stage1 == 1)
+                try
                 {
-                    DebugUtil.SetTaskID(3, data);
-                    resultNicknameColor = ChatColorPresets.DodgerBlue;
-                    resultColor = Color.Blue;
-                    translationParam += "Positively" + stage2;
+                    string resultMessage = "";
+                    Color resultColor = Color.Green;
+                    ChatColorPresets resultNicknameColor = ChatColorPresets.YellowGreen;
+                    Random rand = new Random();
+                    int stage1 = rand.Next(1, 5);
+                    int stage2 = rand.Next(1, 6);
+                    string translationParam = "8ball";
+                    if (stage1 == 1)
+                    {
+                        resultNicknameColor = ChatColorPresets.DodgerBlue;
+                        resultColor = Color.Blue;
+                        translationParam += "Positively" + stage2;
+                    }
+                    else if (stage1 == 2)
+                    {
+                        translationParam += "Hesitantly" + stage2;
+                    }
+                    else if (stage1 == 3)
+                    {
+                        resultNicknameColor = ChatColorPresets.GoldenRod;
+                        resultColor = Color.Gold;
+                        translationParam += "Neutral" + stage2;
+                    }
+                    else if (stage1 == 4)
+                    {
+                        resultNicknameColor = ChatColorPresets.Red;
+                        resultColor = Color.Red;
+                        translationParam += "Negatively" + stage2;
+                    }
+                    resultMessage = "🔮 " + TranslationManager.GetTranslation(data.User.Lang, translationParam, data.ChannelID);
+                    return new()
+                    {
+                        Message = resultMessage,
+                        IsSafeExecute = false,
+                        Description = "",
+                        Author = "",
+                        ImageURL = "",
+                        ThumbnailUrl = "",
+                        Footer = "",
+                        IsEmbed = true,
+                        Ephemeral = false,
+                        Title = "",
+                        Color = resultColor,
+                        NickNameColor = resultNicknameColor
+                    };
                 }
-                else if (stage1 == 2)
+                catch (Exception e)
                 {
-                    DebugUtil.SetTaskID(4, data);
-                    translationParam += "Hesitantly" + stage2;
+                    return new()
+                    {
+                        Message = "",
+                        IsSafeExecute = false,
+                        Description = "",
+                        Author = "",
+                        ImageURL = "",
+                        ThumbnailUrl = "",
+                        Footer = "",
+                        IsEmbed = true,
+                        Ephemeral = false,
+                        Title = "",
+                        Color = Color.Green,
+                        NickNameColor = ChatColorPresets.YellowGreen,
+                        IsError = true,
+                        Error = e
+                    };
                 }
-                else if (stage1 == 3)
-                {
-                    DebugUtil.SetTaskID(5, data);
-                    resultNicknameColor = ChatColorPresets.GoldenRod;
-                    resultColor = Color.Gold;
-                    translationParam += "Neutral" + stage2;
-                }
-                else if (stage1 == 4)
-                {
-                    DebugUtil.SetTaskID(6, data);
-                    resultNicknameColor = ChatColorPresets.Red;
-                    resultColor = Color.Red;
-                    translationParam += "Negatively" + stage2;
-                }
-                DebugUtil.SetTaskID(7, data);
-                resultMessage = "🔮 " + TranslationManager.GetTranslation(data.User.Lang, translationParam, data.ChannelID);
-                return new()
-                {
-                    Message = resultMessage,
-                    IsSafeExecute = false,
-                    Description = "",
-                    Author = "",
-                    ImageURL = "",
-                    ThumbnailUrl = "",
-                    Footer = "",
-                    IsEmbed = true,
-                    Ephemeral = false,
-                    Title = "",
-                    Color = resultColor,
-                    NickNameColor = resultNicknameColor
-                };
             }
         }
     }
