@@ -58,7 +58,7 @@ namespace butterBror
                                     NickNameColor = ChatColorPresets.YellowGreen
                                 };
 
-                                butterBrorBot2._0.BotUtils.Commands.SendCommandReply(SendData);
+                                butterBib.Commands.SendCommandReply(SendData);
                             }
                             else if (data.Platform == Platforms.Discord)
                             {
@@ -74,7 +74,7 @@ namespace butterBror
                                     IsSafeExecute = true,
                                     d = data.d
                                 };
-                                butterBrorBot2._0.BotUtils.Commands.SendCommandReply(SendData);
+                                butterBib.Commands.SendCommandReply(SendData);
                             }
                         });
                         return new()

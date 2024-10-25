@@ -79,7 +79,7 @@ namespace butterBrorBot2._0.BotUtils
                     }
                     catch (Exception ex)
                     {
-                        ConsoleUtil.ErrorOccured(ex.Message, "bankGetData");
+                        ConsoleUtil.ErrorOccured(ex, "bankGetData");
                         return default;
                     }
                 }
@@ -172,7 +172,7 @@ namespace butterBrorBot2._0.BotUtils
                 }
                 catch (Exception ex)
                 {
-                    ConsoleUtil.ErrorOccured(ex.Message, "user1A");
+                    ConsoleUtil.ErrorOccured(ex, "user1A");
                 }
             }
 
@@ -219,7 +219,7 @@ namespace butterBrorBot2._0.BotUtils
                 }
                 catch (Exception ex)
                 {
-                    ConsoleUtil.ErrorOccured(ex.Message, "user2A");
+                    ConsoleUtil.ErrorOccured(ex, "user2A");
                 }
             }
 

@@ -296,7 +296,7 @@ namespace butterBror
                                 }
                                 catch (Exception ex)
                                 {
-                                    ConsoleUtil.ErrorOccured(ex.Message, $"(NOTFATAL)Command\\Bot\\Index\\Rejoin#{user}");
+                                    ConsoleUtil.ErrorOccured(ex, $"(NOTFATAL)Command\\Bot\\Index\\Rejoin#{user}");
                                 }
                             }
                             else if (argument1 == "addchannel" && data.Platform == Platforms.Twitch)
@@ -326,7 +326,7 @@ namespace butterBror
                                 }
                                 catch (Exception ex)
                                 {
-                                    ConsoleUtil.ErrorOccured(ex.Message, $"(NOTFATAL)Command\\Bot\\Index\\Join#{user}");
+                                    ConsoleUtil.ErrorOccured(ex, $"(NOTFATAL)Command\\Bot\\Index\\Join#{user}");
                                 }
                             }
                             else if (argument1 == "delchannel" && data.Platform == Platforms.Twitch)
@@ -353,7 +353,7 @@ namespace butterBror
                                 }
                                 catch (Exception ex)
                                 {
-                                    ConsoleUtil.ErrorOccured(ex.Message, $"(NOTFATAL)Command\\Bot\\Index\\Rejoin#{user}");
+                                    ConsoleUtil.ErrorOccured(ex, $"(NOTFATAL)Command\\Bot\\Index\\Rejoin#{user}");
                                 }
                             }
                             else if (argument1 == "joinchannel" && data.Platform == Platforms.Twitch)
@@ -368,7 +368,7 @@ namespace butterBror
                                 }
                                 catch (Exception ex)
                                 {
-                                    ConsoleUtil.ErrorOccured(ex.Message, $"(NOTFATAL)Command\\Bot\\Index\\Join#{user}");
+                                    ConsoleUtil.ErrorOccured(ex, $"(NOTFATAL)Command\\Bot\\Index\\Join#{user}");
                                 }
                             }
                             else if (argument1 == "leavechannel" && data.Platform == Platforms.Twitch)
@@ -383,7 +383,7 @@ namespace butterBror
                                 }
                                 catch (Exception ex)
                                 {
-                                    ConsoleUtil.ErrorOccured(ex.Message, $"(NOTFATAL)Command\\Bot\\Index\\Leave#{user}");
+                                    ConsoleUtil.ErrorOccured(ex, $"(NOTFATAL)Command\\Bot\\Index\\Leave#{user}");
                                 }
                             }
                             else if (is_dev)
@@ -408,7 +408,7 @@ namespace butterBror
                                     }
                                     catch (Exception ex)
                                     {
-                                        ConsoleUtil.ErrorOccured(ex.Message, $"(NOTFATAL)Command\\Bot\\Index\\ModAdd#{user}");
+                                        ConsoleUtil.ErrorOccured(ex, $"(NOTFATAL)Command\\Bot\\Index\\ModAdd#{user}");
                                     }
                                 }
                                 else if (argument1 == "demod")
@@ -431,7 +431,7 @@ namespace butterBror
                                     }
                                     catch (Exception ex)
                                     {
-                                        ConsoleUtil.ErrorOccured(ex.Message, $"(NOTFATAL)Command\\Bot\\Index\\ModDelete#{user}");
+                                        ConsoleUtil.ErrorOccured(ex, $"(NOTFATAL)Command\\Bot\\Index\\ModDelete#{user}");
                                     }
                                 }
                                 else if (updateTranslaion.Contains(argument1))

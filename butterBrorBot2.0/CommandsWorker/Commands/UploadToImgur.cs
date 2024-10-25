@@ -81,7 +81,7 @@ namespace butterBror
                                     break;
                             }
                             resultMessage = TranslationManager.GetTranslation(data.User.Lang, errorTranslation, data.ChannelID);
-                            ConsoleUtil.ErrorOccured(ex.Message, errorTranslation);
+                            ConsoleUtil.ErrorOccured(ex, errorTranslation);
                         }
                     }
                     else

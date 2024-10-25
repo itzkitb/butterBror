@@ -27,7 +27,7 @@ namespace butterBror
         public static bool isNeedRestart = false;
         public static bool isTwitchReady = false;
         public static float buttersTotalAmount = 0;
-        public static string botVersion = "2.09";
+        public static string botVersion = "2.09.1";
         public static DataManager currencyWorker = new();
         public static int buttersTotalDollarsInTheBank = 0;
         private static DateTime statSenderTimer = DateTime.UtcNow;
