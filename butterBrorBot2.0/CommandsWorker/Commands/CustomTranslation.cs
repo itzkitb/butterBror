@@ -25,7 +25,8 @@ namespace butterBror
                 CreationDate = DateTime.Parse("08/05/2024"),
                 ForAdmins = false,
                 ForBotCreator = false,
-                ForChannelAdmins = false
+                ForChannelAdmins = false,
+                AllowedPlatforms = [Platforms.Twitch, Platforms.Telegram, Platforms.Discord]
             };
             public static CommandReturn Index(CommandData data)
             {
@@ -163,7 +164,6 @@ namespace butterBror
                         }
                         catch (Exception ex)
                         {
-                            Console.WriteLine(ex.Message + " | " + ex.StackTrace);
                             resultMessage = TranslationManager.GetTranslation(data.User.Lang, "error", data.Channel);
                             resultNicknameColor = ChatColorPresets.Red;
                             resultColor = Color.Red;

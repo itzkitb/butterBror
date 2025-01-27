@@ -78,7 +78,7 @@
 //                    string[] weather = ["weather", "погода", "wthr", "пгд"]; add();
 //                    string[] location = ["location", "loc", "локация", "лок"]; add();
 //                    string[] js = ["js", "javascript", "джава", "jaba", "supinic"]; add();
-//                    string[] help = ["help", "sos", "commands", "помощь", "информация", "info", "инфо"]; add();
+//                    string[] help = ["help", "sos", "info", "помощь", "информация", "info", "инфо"]; add();
 //                    string[] gptCmd = ["gpt", "гпт"]; add();
 //                    string[] tuckCmd = ["tuck", "уложить", "tk", "улож", "тык"]; add();
 //                    string[] vhsTapes = ["cassette", "vhs", "foundfootage", "footage"]; add();

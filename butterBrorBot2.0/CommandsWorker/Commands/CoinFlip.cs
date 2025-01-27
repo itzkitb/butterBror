@@ -7,7 +7,7 @@ namespace butterBror
 {
     public partial class Commands
     {
-        public class coinflip
+        public class Coinflip
         {
             public static CommandInfo Info = new()
             {
@@ -25,7 +25,8 @@ namespace butterBror
                 CreationDate = DateTime.Parse("08/08/2024"),
                 ForAdmins = false,
                 ForBotCreator = false,
-                ForChannelAdmins = false
+                ForChannelAdmins = false,
+                AllowedPlatforms = [Platforms.Twitch, Platforms.Telegram, Platforms.Discord]
             };
             public static CommandReturn Index(CommandData data)
             {

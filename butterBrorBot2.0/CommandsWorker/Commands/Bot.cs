@@ -28,24 +28,26 @@ namespace butterBror
                 CreationDate = DateTime.Parse("07/04/2024"),
                 ForAdmins = false,
                 ForBotCreator = false,
-                ForChannelAdmins = false
+                ForChannelAdmins = false,
+                AllowedPlatforms = [Platforms.Twitch, Platforms.Telegram, Platforms.Discord]
             };
             public static CommandReturn Index(CommandData data)
             {
                 try
                 {
-                    string resultMessage = "";
-                    string resultMessageTitle = "";
-                    Color resultColor = Color.Green;
-                    bool resultIdSafe = true;
-                    var is_mod = UsersData.UserGetData<bool>(data.UserUUID, "isBotModerator");
-                    var args = data.args;
-                    var argsc = args.Count;
-                    var UserId = data.UserUUID;
-                    var RoomId = data.ChannelID;
-                    var Channel = data.Channel;
-                    var MsgId = data.MessageID;
-                    var is_dev = UsersData.UserGetData<bool>(UserId, "isBotDev");
+                    string message = "";
+                    string title = "";
+                    Color color = Color.Green;
+                    bool safe = true;
+                    bool mod = (bool)data.User.IsBotAdmin;
+                    List<string> args = (data.args == null ? [] : data.args);
+                    int argsc = (args == null ? 0 : args.Count);
+                    string uid = data.UserUUID;
+                    string? rid = data.ChannelID;
+                    string? chnl = data.Channel;
+                    string? mid = data.MessageID;
+                    bool dev = (data.User.IsBotCreator == null ? false : (bool)data.User.IsBotCreator);
+                    string lang = data.User.Lang;
 
                     string[] langAlias = ["lang", "l", "language", "язык", "я"];
                     string[] setAlias = ["set", "s", "сет", "установить", "у"];
@@ -53,287 +55,248 @@ namespace butterBror
                     string[] langsRuAlias = ["ru", "r", "рус", "русский"];
                     string[] addDollarsAlias = ["adddollars", "addd", "ad", "добавитьдоллары", "дд"];
                     string[] currencyAlias = ["currency", "c", "курс"];
+                    string[] inviteAlias = ["invite", "пригласить", "i", "п"];
                     string[] updateTranslaion = ["updatetranslation", "uptr", "ut", "обновитьперевод", "оп"];
 
-                    var user = args.ElementAt(1).ToLower().Replace("@", "").Replace(",", "");
+                    string[] banAlias = ["ban", "бан", "block", "kill", "заблокировать", "чел"];
+                    string[] pardonAlias = ["pardon", "unblock", "unban", "разблокировать", "разбанить", "анбан"];
+                    string[] rejoinAlias = ["rejoin", "rej", "переподключить", "reenter", "ree"];
+                    string[] addchnlAlias = ["addchannel", "newchannel", "addc", "newc", "дканал", "нканал"];
+                    string[] delchnlAlias = ["delchannel", "deletechannel", "удалитьканал", "уканал"];
+                    string[] joinchnlAlias = ["joinchannel", "joinc", "вканал"];
+                    string[] leavechnlAlias = ["leavechannel", "leavec", "пканал"];
 
-                    if (args.Count > 0)
+                    string[] modaddAlias = ["modadd", "дм", "добавитьмодератора"];
+                    string[] demodAlias = ["demod", "ум", "удалитьмодератора"];
+
+                    var user = NamesUtil.GetUsernameFromText(data.ArgsAsString);
+
+                    switch (args.Count)
                     {
-                        var argument1 = args.ElementAt(0).ToLower();
-                        if (langAlias.Contains(argument1))
-                        {
-                            if (argsc > 1)
+                        case > 0:
                             {
-                                var argument2 = args.ElementAt(1).ToLower();
-                                if (setAlias.Contains(argument2))
+                                var arg1 = args.ElementAt(0).ToLower();
+                                if (langAlias.Contains(arg1))
+                                {
+                                    if (argsc > 1)
+                                    {
+                                        string argument2 = args.ElementAt(1).ToLower();
+                                        if (setAlias.Contains(argument2))
+                                        {
+                                            if (argsc > 2)
+                                            {
+                                                string arg3 = args.ElementAt(2).ToLower();
+                                                string result = string.Empty;
+                                                if (langsEnAlias.Contains(arg3))
+                                                    result = "en";
+                                                else if (langsRuAlias.Contains(arg3))
+                                                    result = "ru";
+
+                                                if (result.Equals(string.Empty))
+                                                {
+                                                    message = TranslationManager.GetTranslation(lang, "wrongArgs", rid);
+                                                    color = Color.Red;
+                                                }
+                                                else
+                                                {
+                                                    UsersData.UserSaveData(uid, "language", result);
+                                                    message = TranslationManager.GetTranslation("ru", "changedLang", rid);
+                                                }
+                                            }
+                                            else
+                                            {
+                                                message = TranslationManager.GetTranslation(data.User.Lang, "lowArgs", rid)
+                                                    .Replace("%commandWorks%", "#bot lang set en/ru");
+                                                color = Color.Red;
+                                            }
+                                        }
+                                        else if (argument2.Contains("get"))
+                                            message = TranslationManager.GetTranslation(lang, "lang", rid);
+                                        else
+                                        {
+                                            message = TranslationManager.GetTranslation(lang, "wrongArgs", rid);
+                                            color = Color.Red;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        message = TranslationManager.GetTranslation(lang, "lowArgs", rid)
+                                            .Replace("%commandWorks%", "#bot lang (set en/ru)/get");
+                                        color = Color.Red;
+                                    }
+                                }
+                                else if (inviteAlias.Contains(arg1))
+                                {
+                                    ConsoleUtil.LOG($"Request to add a bot from @{data.User.Name}", "info");
+                                    Dictionary<string, dynamic> userData = new()
+                                    {
+                                        { "userLang", data.User.Lang },
+                                        { "username", data.User.Name },
+                                        { "userID", data.UserUUID },
+                                        { "requestVerifyDate", DateTime.UtcNow }
+                                    };
+                                    DataManager.SaveData(Bot.ProgramPath + $"INVITE/{data.User.Name}.txt", $"rq{DateTime.UtcNow}", userData);
+                                    message = TranslationManager.GetTranslation(lang, "botVerified", rid);
+                                }
+                                else if (currencyAlias.Contains(arg1))
                                 {
                                     if (argsc > 2)
                                     {
-                                        var argument3 = args.ElementAt(2).ToLower();
-                                        if (langsEnAlias.Contains(argument3))
+                                        string arg2 = args.ElementAt(1).ToLower();
+                                        if (addDollarsAlias.Contains(arg2) && dev)
                                         {
-                                            UsersData.UserSaveData(UserId, "language", "en");
-                                            resultMessage = TranslationManager.GetTranslation("en", "changedLang", data.ChannelID);
-                                        }
-                                        else if (langsRuAlias.Contains(argument3))
-                                        {
-                                            UsersData.UserSaveData(UserId, "language", "ru");
-                                            resultMessage = TranslationManager.GetTranslation("ru", "changedLang", data.ChannelID);
-                                        }
-                                        else
-                                        {
-                                            resultMessage = TranslationManager.GetTranslation(data.User.Lang, "wrongArgs", data.ChannelID);
-                                            resultColor = Color.Red;
+                                            var converted = FormatUtil.ToNumber(args.ElementAt(2).ToLower());
+                                            BotEngine.buttersDollars += converted;
+                                            message = TranslationManager.GetTranslation(lang, "currencyDollarsAdded", rid)
+                                                .Replace("%dollarsAdded%", converted.ToString())
+                                                .Replace("%dollarsNOW%", BotEngine.buttersDollars.ToString());
                                         }
                                     }
                                     else
                                     {
-                                        resultMessage = TranslationManager.GetTranslation(data.User.Lang, "lowArgs", data.ChannelID)
-                                            .Replace("%commandWorks%", "#bot lang set en/ru");
-                                        resultColor = Color.Red;
+                                        // 0_0
+
+                                        var date = DateTime.UtcNow.AddDays(-1);
+
+                                        float oldCurrencyAmount = DataManager.GetData<float>(Bot.CurrencyPath, $"{date.Day}.{date.Month}.{date.Year}totalAmount");
+                                        float oldCurrencyCost = DataManager.GetData<float>(Bot.CurrencyPath, $"{date.Day}.{date.Month}.{date.Year}butter'sCost");
+                                        int oldCurrencyUsers = DataManager.GetData<int>(Bot.CurrencyPath, $"{date.Day}.{date.Month}.{date.Year}totalUsers");
+                                        int oldDollarsInBank = DataManager.GetData<int>(Bot.CurrencyPath, $"{date.Day}.{date.Month}.{date.Year}totalDollarsInTheBank");
+                                        float oldMiddle = oldCurrencyUsers != 0 ? float.Parse((oldCurrencyAmount / oldCurrencyUsers).ToString("0.00")) : 0;
+
+                                        float currencyCost = float.Parse((BotEngine.buttersDollars / BotEngine.buttersAmount).ToString("0.00"));
+                                        float middleUsersBalance = float.Parse((BotEngine.buttersAmount / BotEngine.users).ToString("0.00"));
+
+                                        float plusOrMinusCost = currencyCost - oldCurrencyCost;
+                                        float plusOrMinusAmount = BotEngine.buttersAmount - oldCurrencyAmount;
+                                        int plusOrMinusUsers = BotEngine.users - oldCurrencyUsers;
+                                        int plusOrMinusDollars = BotEngine.buttersDollars - oldDollarsInBank;
+                                        float plusOrMinusMiddle = middleUsersBalance - oldMiddle;
+
+                                        string buttersCostProgress = oldCurrencyCost > currencyCost ? $"🔽 ({plusOrMinusCost.ToString("0.00")})" : oldCurrencyCost == currencyCost ? "⏺️ (0)" : $"🔼 (+{plusOrMinusCost.ToString("0.00")})";
+                                        string buttersAmountProgress = oldCurrencyAmount > BotEngine.buttersAmount ? $"🔽 ({plusOrMinusAmount.ToString("0.00")})" : oldCurrencyAmount == BotEngine.buttersAmount ? "⏺️ (0)" : $"🔼 (+{plusOrMinusAmount.ToString("0.00")})";
+                                        string buttersUsers = oldCurrencyUsers > BotEngine.users ? $"🔽 ({plusOrMinusUsers})" : oldCurrencyUsers == BotEngine.users ? "⏺️ (0)" : $"🔼 (+{plusOrMinusUsers})";
+                                        string buttersDollars = oldDollarsInBank > BotEngine.buttersDollars ? $"🔽 ({plusOrMinusDollars})" : oldDollarsInBank == BotEngine.buttersDollars ? "⏺️ (0)" : $"🔼 (+{plusOrMinusDollars})";
+                                        string buttersMiddle = oldMiddle > middleUsersBalance ? $"🔽 ({plusOrMinusMiddle.ToString("0.00")})" : oldMiddle == middleUsersBalance ? "⏺️ (0)" : $"🔼 (+{plusOrMinusMiddle.ToString("0.00")})";
+
+                                        message = TranslationManager.GetTranslation(lang, "currencyInfo", rid)
+                                            .Replace("%totalAmount%", BotEngine.buttersAmount.ToString() + " " + buttersAmountProgress)
+                                            .Replace("%totalUsers%", BotEngine.users.ToString() + " " + buttersUsers)
+                                            .Replace("%midleBalance%", (BotEngine.buttersAmount / BotEngine.users).ToString("0.00") + " " + buttersMiddle)
+                                            .Replace("%buterCost%", (BotEngine.buttersDollars / BotEngine.buttersAmount).ToString("0.00") + "$ " + buttersCostProgress)
+                                            .Replace("%buterDollars%", BotEngine.buttersDollars + "$ " + buttersDollars);
+                                        safe = false;
                                     }
                                 }
-                                else if (argument2.Contains("get"))
+                                else if (mod || dev)
                                 {
-                                    resultMessage = TranslationManager.GetTranslation(data.User.Lang, "lang", data.ChannelID);
-                                }
-                                else
-                                {
-                                    resultMessage = TranslationManager.GetTranslation(data.User.Lang, "wrongArgs", data.ChannelID);
-                                    resultColor = Color.Red;
-                                }
-                            }
-                            else
-                            {
-                                resultMessage = TranslationManager.GetTranslation(data.User.Lang, "lowArgs", data.ChannelID)
-                                    .Replace("%commandWorks%", "#bot lang (set en/ru)/get");
-                                resultColor = Color.Red;
-                            }
-                        }
-                        else if (argument1.Contains("verify"))
-                        {
-                            ConsoleServer.SendConsoleMessage("commands", "Отправлен запрос на подтверждения учетной записи!");
-                            Guid myuuid = Guid.NewGuid();
-                            string myuuidAsString = myuuid.ToString();
-                            Dictionary<string, dynamic> userData = new();
-                            userData.Add("userLang", data.User.Lang);
-                            userData.Add("username", data.User.Name);
-                            userData.Add("userID", data.UserUUID);
-                            userData.Add("requestUUID", myuuidAsString);
-                            userData.Add("requestVerifyDate", DateTime.UtcNow);
-                            FileUtil.CreateDirectory(Bot.ProgramPath + $"TwitchVerifyWaiting/");
-                            DataManager.SaveData(Bot.ProgramPath + $"TwitchVerifyWaiting/{data.User.Name}.txt", $"verifyRequest{DateTime.UtcNow}", userData);
-                            resultMessage = TranslationManager.GetTranslation(data.User.Lang, "botVerified", data.ChannelID);
-                        }
-                        else if (currencyAlias.Contains(argument1))
-                        {
-                            if (argsc > 2)
-                            {
-                                var argument2 = args.ElementAt(1).ToLower();
-                                if (addDollarsAlias.Contains(argument2))
-                                {
-                                    if (is_dev)
+                                    if (banAlias.Contains(arg1))
                                     {
-                                        var converted = FormatUtil.ToNumber(args.ElementAt(2).ToLower());
-                                        BotEngine.buttersTotalDollarsInTheBank += converted;
-                                        resultMessage = TranslationManager.GetTranslation(data.User.Lang, "currencyDollarsAdded", data.ChannelID)
-                                            .Replace("%dollarsAdded%", converted.ToString())
-                                            .Replace("%dollarsNOW%", BotEngine.buttersTotalDollarsInTheBank.ToString());
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                // WTF IS THAT
-                                // 0-0
-
-                                var date = DateTime.UtcNow.AddDays(-1);
-                                string buttersCostProgress = "⬛";
-                                string buttersAmountProgress = "⬛";
-                                string buttersUsers = "⬛";
-                                string buttersDollars = "⬛";
-                                string buttersMiddle = "⬛";
-
-                                float oldCurrencyAmount = DataManager.GetData<float>(Bot.CurrencyPath, $"{date.Day}.{date.Month}.{date.Year}totalAmount");
-                                float oldCurrencyCost = DataManager.GetData<float>(Bot.CurrencyPath, $"{date.Day}.{date.Month}.{date.Year}butter'sCost");
-                                int oldCurrencyUsers = DataManager.GetData<int>(Bot.CurrencyPath, $"{date.Day}.{date.Month}.{date.Year}totalUsers");
-                                int oldDollarsInBank = DataManager.GetData<int>(Bot.CurrencyPath, $"{date.Day}.{date.Month}.{date.Year}totalDollarsInTheBank");
-                                float oldMiddle = oldCurrencyUsers != 0 ? float.Parse((oldCurrencyAmount / oldCurrencyUsers).ToString("0.00")) : 0;
-
-                                float currencyCost = float.Parse((BotEngine.buttersTotalDollarsInTheBank / BotEngine.buttersTotalAmount).ToString("0.00"));
-                                float middleUsersBalance = float.Parse((BotEngine.buttersTotalAmount / BotEngine.buttersTotalUsers).ToString("0.00"));
-
-                                float plusOrMinusCost = currencyCost - oldCurrencyCost;
-                                float plusOrMinusAmount = BotEngine.buttersTotalAmount - oldCurrencyAmount;
-                                int plusOrMinusUsers = BotEngine.buttersTotalUsers - oldCurrencyUsers;
-                                int plusOrMinusDollars = BotEngine.buttersTotalDollarsInTheBank - oldDollarsInBank;
-                                float plusOrMinusMiddle = middleUsersBalance - oldMiddle;
-
-                                buttersCostProgress = oldCurrencyCost > currencyCost ? $"🔽 ({plusOrMinusCost.ToString("0.00")})" : oldCurrencyCost == currencyCost ? "⏺️ (0)" : $"🔼 (+{plusOrMinusCost.ToString("0.00")})";
-                                buttersAmountProgress = oldCurrencyAmount > BotEngine.buttersTotalAmount ? $"🔽 ({plusOrMinusAmount.ToString("0.00")})" : oldCurrencyAmount == BotEngine.buttersTotalAmount ? "⏺️ (0)" : $"🔼 (+{plusOrMinusAmount.ToString("0.00")})";
-                                buttersUsers = oldCurrencyUsers > BotEngine.buttersTotalUsers ? $"🔽 ({plusOrMinusUsers})" : oldCurrencyUsers == BotEngine.buttersTotalUsers ? "⏺️ (0)" : $"🔼 (+{plusOrMinusUsers})";
-                                buttersDollars = oldDollarsInBank > BotEngine.buttersTotalDollarsInTheBank ? $"🔽 ({plusOrMinusDollars})" : oldDollarsInBank == BotEngine.buttersTotalDollarsInTheBank ? "⏺️ (0)" : $"🔼 (+{plusOrMinusDollars})";
-                                buttersMiddle = oldMiddle > middleUsersBalance ? $"🔽 ({plusOrMinusMiddle.ToString("0.00")})" : oldMiddle == middleUsersBalance ? "⏺️ (0)" : $"🔼 (+{plusOrMinusMiddle.ToString("0.00")})";
-
-                                resultMessage = TranslationManager.GetTranslation(data.User.Lang, "currencyInfo", data.ChannelID)
-                                    .Replace("%totalAmount%", BotEngine.buttersTotalAmount.ToString() + " " + buttersAmountProgress)
-                                    .Replace("%totalUsers%", BotEngine.buttersTotalUsers.ToString() + " " + buttersUsers)
-                                    .Replace("%midleBalance%", (BotEngine.buttersTotalAmount / BotEngine.buttersTotalUsers).ToString("0.00") + " " + buttersMiddle)
-                                    .Replace("%buterCost%", (BotEngine.buttersTotalDollarsInTheBank / BotEngine.buttersTotalAmount).ToString("0.00") + "$ " + buttersCostProgress)
-                                    .Replace("%buterDollars%", BotEngine.buttersTotalDollarsInTheBank + "$ " + buttersDollars);
-                                resultIdSafe = false;
-                            }
-                        }
-                        else if (is_mod)
-                        {
-                            if (argument1 == "ban")
-                            {
-                                if (args.Count > 1)
-                                {
-                                    var argument2 = args.ElementAt(1).ToLower().Replace("@", "").Replace(",", "");
-                                    var BanChannelID = NamesUtil.GetUserID(argument2);
-                                    var BanReason = data.ArgsAsString.Replace(args.ElementAt(0), "").Replace(args.ElementAt(1), "").Replace("  ", "");
-                                    if (BanChannelID == "err")
-                                    {
-                                        resultMessage = TranslationManager.GetTranslation(data.User.Lang, "noneExistUser", data.ChannelID)
-                                            .Replace("%user%", argument2);
-                                        resultColor = Color.Red;
-                                        resultIdSafe = false;
-                                    }
-                                    else
-                                    {
-                                        if (is_dev)
+                                        if (args.Count > 1)
                                         {
-                                            UsersData.UserSaveData(BanChannelID, "isBanned", true);
-                                            UsersData.UserSaveData(BanChannelID, "banReason", BanReason);
-                                            resultMessage = TranslationManager.GetTranslation(data.User.Lang, "userBanned", data.ChannelID)
-                                                .Replace("%user%", argument2)
-                                                .Replace("%reason%", BanReason);
-                                        }
-                                        else
-                                        {
-                                            if (!UsersData.UserGetData<bool>(BanChannelID, "isBotModerator") && !UsersData.UserGetData<bool>(BanChannelID, "isBotDev"))
+                                            string arg2 = args.ElementAt(1).ToLower().Replace("@", "").Replace(",", "");
+                                            string bcid = NamesUtil.GetUserID(arg2);
+                                            string reason = data.ArgsAsString.Replace(args.ElementAt(0), "").Replace(args.ElementAt(1), "").Replace("  ", "");
+                                            if (bcid.Equals("err"))
                                             {
-                                                UsersData.UserSaveData(BanChannelID, "isBanned", true);
-                                                UsersData.UserSaveData(BanChannelID, "banReason", BanReason);
-                                                resultMessage = TranslationManager.GetTranslation(data.User.Lang, "userBanned", data.ChannelID)
-                                                    .Replace("%user%", argument2)
-                                                    .Replace("%reason%", BanReason);
+                                                message = TranslationManager.GetTranslation(lang, "noneExistUser", rid)
+                                                    .Replace("%user%", arg2);
+                                                color = Color.Red;
+                                                safe = false;
                                             }
                                             else
                                             {
-                                                resultMessage = TranslationManager.GetTranslation(data.User.Lang, "noAccess", data.ChannelID);
-                                                resultColor = Color.Red;
+                                                if (dev)
+                                                {
+                                                    UsersData.UserSaveData(bcid, "isBanned", true);
+                                                    UsersData.UserSaveData(bcid, "banReason", reason);
+                                                    message = TranslationManager.GetTranslation(lang, "userBanned", rid)
+                                                        .Replace("%user%", arg2)
+                                                        .Replace("%reason%", reason);
+                                                }
+                                                else
+                                                {
+                                                    if (!UsersData.UserGetData<bool>(bcid, "isBotModerator") && !UsersData.UserGetData<bool>(bcid, "isBotDev"))
+                                                    {
+                                                        UsersData.UserSaveData(bcid, "isBanned", true);
+                                                        UsersData.UserSaveData(bcid, "banReason", reason);
+                                                        message = TranslationManager.GetTranslation(lang, "userBanned", rid)
+                                                            .Replace("%user%", arg2)
+                                                            .Replace("%reason%", reason);
+                                                    }
+                                                    else
+                                                    {
+                                                        message = TranslationManager.GetTranslation(lang, "noAccess", rid);
+                                                        color = Color.Red;
+                                                    }
+                                                }
                                             }
-                                        }
-                                    }
-                                }
-                                else
-                                {
-                                    resultMessage = TranslationManager.GetTranslation(data.User.Lang, "lowArgs", data.ChannelID)
-                                        .Replace("%commandWorks%", "#bot ban (channel) (reason)");
-                                    resultColor = Color.Red;
-                                }
-                            }
-                            else if (argument1 == "pardon")
-                            {
-                                if (args.Count > 1)
-                                {
-                                    var argument2 = args.ElementAt(1).ToLower().Replace("@", "").Replace(",", "");
-                                    var BanChannelID = NamesUtil.GetUserID(argument2);
-                                    if (BanChannelID == "err")
-                                    {
-                                        resultMessage = TranslationManager.GetTranslation(data.User.Lang, "noneExistUser", data.ChannelID)
-                                            .Replace("%user%", argument2);
-                                        resultColor = Color.Red;
-                                        resultIdSafe = false;
-                                    }
-                                    else
-                                    {
-                                        if (is_dev)
-                                        {
-                                            UsersData.UserSaveData(BanChannelID, "isBanned", false);
-                                            resultMessage = TranslationManager.GetTranslation(data.User.Lang, "userPardon", data.ChannelID)
-                                                .Replace("%user%", argument2);
                                         }
                                         else
                                         {
-                                            if (!UsersData.UserGetData<bool>(BanChannelID, "isBotModerator") && !UsersData.UserGetData<bool>(BanChannelID, "isBotDev"))
+                                            message = TranslationManager.GetTranslation(lang, "lowArgs", rid)
+                                                .Replace("%commandWorks%", "#bot ban (channel) (reason)");
+                                            color = Color.Red;
+                                        }
+                                    }
+                                    else if (pardonAlias.Equals("pardon"))
+                                    {
+                                        if (argsc > 1)
+                                        {
+                                            var arg2 = args.ElementAt(1).ToLower().Replace("@", "").Replace(",", "");
+                                            var BanChannelID = NamesUtil.GetUserID(arg2);
+                                            if (BanChannelID.Equals("err"))
                                             {
-                                                UsersData.UserSaveData(BanChannelID, "isBanned", false);
-                                                resultMessage = TranslationManager.GetTranslation(data.User.Lang, "userPardon", data.ChannelID)
-                                                    .Replace("%user%", argument2);
+                                                message = TranslationManager.GetTranslation(lang, "noneExistUser", rid)
+                                                    .Replace("%user%", arg2);
+                                                color = Color.Red;
+                                                safe = false;
                                             }
                                             else
                                             {
-                                                resultMessage = TranslationManager.GetTranslation(data.User.Lang, "noAccess", data.ChannelID);
-                                                resultColor = Color.Red;
+                                                if (dev || mod && (!UsersData.UserGetData<bool>(BanChannelID, "isBotModerator") && !UsersData.UserGetData<bool>(BanChannelID, "isBotDev")))
+                                                {
+                                                    UsersData.UserSaveData(BanChannelID, "isBanned", false);
+                                                    message = TranslationManager.GetTranslation(lang, "userPardon", rid)
+                                                        .Replace("%user%", arg2);
+                                                }
+                                                else
+                                                {
+                                                    message = TranslationManager.GetTranslation(lang, "noAccess", rid);
+                                                    color = Color.Red;
+                                                }
                                             }
                                         }
+                                        else
+                                            message = TranslationManager.GetTranslation(lang, "lowArgs", rid)
+                                                .Replace("%commandWorks%", "#bot pardon (channel)");
                                     }
-                                }
-                                else
-                                {
-                                    resultMessage = TranslationManager.GetTranslation(data.User.Lang, "lowArgs", data.ChannelID)
-                                        .Replace("%commandWorks%", "#bot pardon (channel)");
-                                }
-                            }
-                            else if (argument1 == "rejoinchannel" && data.Platform == Platforms.Twitch)
-                            {
-                                try
-                                {
-                                    if (TextUtil.FilterTextWithoutSpaces(user) != "")
+                                    else if (rejoinAlias.Contains(arg1) && data.Platform.Equals(Platforms.Twitch) && TextUtil.FilterTextWithoutSpaces(user) != "")
                                     {
                                         JoinedChannel userRecon = new(user);
-                                        if (Bot.client.JoinedChannels.ToList().Contains(userRecon))
-                                        {
-                                            Bot.client.LeaveChannel(user);
-                                        }
-                                        Thread.Sleep(1000);
-                                        Bot.client.JoinChannel(user);
-                                        resultMessage = TranslationManager.GetTranslation(data.User.Lang, "rejoinedChannel", data.ChannelID);
+                                        if (Bot.Client.JoinedChannels.ToList().Contains(userRecon))
+                                            Bot.Client.LeaveChannel(user);
+                                        Bot.Client.JoinChannel(user);
+                                        message = TranslationManager.GetTranslation(lang, "rejoinedChannel", rid);
                                     }
-                                }
-                                catch (Exception ex)
-                                {
-                                    ConsoleUtil.ErrorOccured(ex, $"(NOTFATAL)Command\\Bot\\Index\\Rejoin#{user}");
-                                }
-                            }
-                            else if (argument1 == "addchannel" && data.Platform == Platforms.Twitch)
-                            {
-                                try
-                                {
-                                    if (TextUtil.FilterTextWithoutSpaces(user) != "")
+                                    else if (addchnlAlias.Contains(arg1) && data.Platform.Equals(Platforms.Twitch) && TextUtil.FilterTextWithoutSpaces(user) != "")
                                     {
-                                        var userID = NamesUtil.GetUserID(user);
-                                        if (userID != "err")
+                                        string newid = NamesUtil.GetUserID(user);
+                                        if (newid != "err")
                                         {
                                             List<string> channels = DataManager.GetData<List<string>>(Bot.SettingsPath, "channels");
-                                            channels.Add(userID);
-                                            string[] output = channels.ToArray();
+                                            channels.Add(newid);
+                                            string[] output = [.. channels];
+
                                             DataManager.SaveData(Bot.SettingsPath, "channels", output);
-                                            Bot.client.JoinChannel(user);
-                                            ChatUtil.SendMsgReply(Channel, RoomId, TranslationManager.GetTranslation(data.User.Lang, "addedChannel", data.ChannelID).Replace("%user%", user), MsgId, data.User.Lang, true);
-                                            Thread.Sleep(1000);
-                                            CommandUtil.ChangeNicknameColorAsync(ChatColorPresets.DodgerBlue);
-                                            ChatUtil.SendMessage(user, TranslationManager.GetTranslation(data.User.Lang, "welcomeChannel", data.ChannelID).Replace("%version%", BotEngine.botVersion), RoomId, MsgId, data.User.Lang, true);
+                                            Bot.Client.JoinChannel(user);
+                                            ChatUtil.TWSendMsgReply(chnl, rid, TranslationManager.GetTranslation(lang, "addedChannel", rid).Replace("%user%", user), mid, lang, true);
+                                            ChatUtil.SendMessage(user, TranslationManager.GetTranslation(lang, "welcomeChannel", rid).Replace("%version%", BotEngine.botVersion), rid, mid, lang, true);
                                         }
                                         else
-                                        {
-                                            ChatUtil.SendMsgReply(Channel, RoomId, TranslationManager.GetTranslation(data.User.Lang, "noneExistUser", data.ChannelID).Replace("%user%", user), MsgId, data.User.Lang, true);
-                                        }
+                                            ChatUtil.TWSendMsgReply(chnl, rid, TranslationManager.GetTranslation(lang, "noneExistUser", rid).Replace("%user%", user), mid, lang, true);
                                     }
-                                }
-                                catch (Exception ex)
-                                {
-                                    ConsoleUtil.ErrorOccured(ex, $"(NOTFATAL)Command\\Bot\\Index\\Join#{user}");
-                                }
-                            }
-                            else if (argument1 == "delchannel" && data.Platform == Platforms.Twitch)
-                            {
-                                try
-                                {
-                                    if (TextUtil.FilterTextWithoutSpaces(user) != "")
+                                    else if (delchnlAlias.Contains(arg1) && data.Platform == Platforms.Twitch && TextUtil.FilterTextWithoutSpaces(user) != "")
                                     {
                                         var userID = NamesUtil.GetUserID(user);
                                         if (userID != "err")
@@ -341,124 +304,82 @@ namespace butterBror
                                             List<string> channels = DataManager.GetData<List<string>>(Bot.SettingsPath, "channels");
                                             channels.Remove(userID);
                                             string[] output = channels.ToArray();
+
                                             DataManager.SaveData(Bot.SettingsPath, "channels", output);
-                                            Bot.client.LeaveChannel(user);
-                                            ChatUtil.SendMsgReply(Channel, RoomId, TranslationManager.GetTranslation(data.User.Lang, "delChannel", data.ChannelID).Replace("%user%", user), MsgId, data.User.Lang, true);
+                                            Bot.Client.LeaveChannel(user);
+                                            ChatUtil.TWSendMsgReply(chnl, rid, TranslationManager.GetTranslation(lang, "delChannel", rid).Replace("%user%", user), mid, data.User.Lang, true);
                                         }
                                         else
+                                            ChatUtil.TWSendMsgReply(chnl, rid, TranslationManager.GetTranslation(lang, "noneExistUser", rid).Replace("%user%", user), mid, data.User.Lang, true);
+                                    }
+                                    else if (joinchnlAlias.Contains(arg1) && data.Platform == Platforms.Twitch && TextUtil.FilterTextWithoutSpaces(user) != "")
+                                    {
+                                        Bot.Client.JoinChannel(user);
+                                        ChatUtil.TWSendMsgReply(chnl, rid, TranslationManager.GetTranslation(lang, "joinedChannel", rid), mid, data.User.Lang, true);
+                                    }
+                                    else if (leavechnlAlias.Contains(arg1) && data.Platform == Platforms.Twitch && TextUtil.FilterTextWithoutSpaces(user) != "")
+                                    {
+                                        Bot.Client.LeaveChannel(user);
+                                        ChatUtil.TWSendMsgReply(chnl, rid, TranslationManager.GetTranslation(lang, "leavedChannel", rid), mid, data.User.Lang, true);
+                                    }
+                                    else if (dev)
+                                    {
+                                        if (modaddAlias.Contains(arg1))
                                         {
-                                            ChatUtil.SendMsgReply(Channel, RoomId, TranslationManager.GetTranslation(data.User.Lang, "noneExistUser", data.ChannelID).Replace("%user%", user), MsgId, data.User.Lang, true);
+                                            var userID = NamesUtil.GetUserID(user);
+                                            if (userID != "err")
+                                            {
+                                                UsersData.UserSaveData(userID, "isBotModerator", true);
+                                                message = TranslationManager.GetTranslation(lang, "modAdded", rid)
+                                                    .Replace("%user%", user);
+                                            }
+                                            else
+                                            {
+                                                message = TranslationManager.GetTranslation(lang, "noneExistUser", rid)
+                                                    .Replace("%user%", user);
+                                                color = Color.Red;
+                                            }
+                                        }
+                                        else if (demodAlias.Contains(arg1))
+                                        {
+                                            var userID = NamesUtil.GetUserID(user);
+                                            if (userID != "err")
+                                            {
+                                                UsersData.UserSaveData(userID, "isBotModerator", false);
+                                                message = TranslationManager.GetTranslation(lang, "modDel", rid)
+                                                    .Replace("%user%", user);
+                                            }
+                                            else
+                                            {
+                                                message = TranslationManager.GetTranslation(lang, "noneExistUser", rid)
+                                                    .Replace("%user%", user);
+                                                color = Color.Red;
+                                            }
+                                        }
+                                        else if (updateTranslaion.Contains(arg1))
+                                        {
+                                            TranslationManager.UpdateTranslation("ru", rid);
+                                            TranslationManager.UpdateTranslation("en", rid);
+                                            message = "MrDestructoid 👍 Го-тово!";
                                         }
                                     }
                                 }
-                                catch (Exception ex)
-                                {
-                                    ConsoleUtil.ErrorOccured(ex, $"(NOTFATAL)Command\\Bot\\Index\\Rejoin#{user}");
-                                }
+
+                                break;
                             }
-                            else if (argument1 == "joinchannel" && data.Platform == Platforms.Twitch)
-                            {
-                                try
-                                {
-                                    if (TextUtil.FilterTextWithoutSpaces(user) != "")
-                                    {
-                                        Bot.client.JoinChannel(user);
-                                        ChatUtil.SendMsgReply(Channel, RoomId, TranslationManager.GetTranslation(data.User.Lang, "joinedChannel", data.ChannelID), MsgId, data.User.Lang, true);
-                                    }
-                                }
-                                catch (Exception ex)
-                                {
-                                    ConsoleUtil.ErrorOccured(ex, $"(NOTFATAL)Command\\Bot\\Index\\Join#{user}");
-                                }
-                            }
-                            else if (argument1 == "leavechannel" && data.Platform == Platforms.Twitch)
-                            {
-                                try
-                                {
-                                    if (TextUtil.FilterTextWithoutSpaces(user) != "")
-                                    {
-                                        Bot.client.LeaveChannel(user);
-                                        ChatUtil.SendMsgReply(Channel, RoomId, TranslationManager.GetTranslation(data.User.Lang, "leavedChannel", data.ChannelID), MsgId, data.User.Lang, true);
-                                    }
-                                }
-                                catch (Exception ex)
-                                {
-                                    ConsoleUtil.ErrorOccured(ex, $"(NOTFATAL)Command\\Bot\\Index\\Leave#{user}");
-                                }
-                            }
-                            else if (is_dev)
-                            {
-                                if (argument1 == "modadd")
-                                {
-                                    try
-                                    {
-                                        var userID = NamesUtil.GetUserID(user);
-                                        if (userID != "err")
-                                        {
-                                            UsersData.UserSaveData(userID, "isBotModerator", true);
-                                            resultMessage = TranslationManager.GetTranslation(data.User.Lang, "modAdded", data.ChannelID)
-                                                .Replace("%user%", user);
-                                        }
-                                        else
-                                        {
-                                            resultMessage = TranslationManager.GetTranslation(data.User.Lang, "noneExistUser", data.ChannelID)
-                                                .Replace("%user%", user);
-                                            resultColor = Color.Red;
-                                        }
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        ConsoleUtil.ErrorOccured(ex, $"(NOTFATAL)Command\\Bot\\Index\\ModAdd#{user}");
-                                    }
-                                }
-                                else if (argument1 == "demod")
-                                {
-                                    try
-                                    {
-                                        var userID = NamesUtil.GetUserID(user);
-                                        if (userID != "err")
-                                        {
-                                            UsersData.UserSaveData(userID, "isBotModerator", false);
-                                            resultMessage = TranslationManager.GetTranslation(data.User.Lang, "modDel", data.ChannelID)
-                                                .Replace("%user%", user);
-                                        }
-                                        else
-                                        {
-                                            resultMessage = TranslationManager.GetTranslation(data.User.Lang, "noneExistUser", data.ChannelID)
-                                                .Replace("%user%", user);
-                                            resultColor = Color.Red;
-                                        }
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        ConsoleUtil.ErrorOccured(ex, $"(NOTFATAL)Command\\Bot\\Index\\ModDelete#{user}");
-                                    }
-                                }
-                                else if (updateTranslaion.Contains(argument1))
-                                {
-                                    TranslationManager.UpdateTranslation("ru", data.ChannelID);
-                                    TranslationManager.UpdateTranslation("en", data.ChannelID);
-                                    resultMessage = "MrDestructoid 👍 Го-тово!";
-                                }
-                            }
-                        }
-                    }
-                    else
-                    {
-                        resultMessage = TranslationManager.GetTranslation(data.User.Lang, "botInfo", data.ChannelID);
+                        default:
+                            message = TranslationManager.GetTranslation(lang, "botInfo", rid);
+                            break;
                     }
 
                     ChatColorPresets resultNicknameColor = ChatColorPresets.YellowGreen;
-
-                    if (resultColor == Color.Red)
-                    {
+                    if (color == Color.Red)
                         resultNicknameColor = ChatColorPresets.Red;
-                    }
 
                     return new()
                     {
-                        Message = resultMessage,
-                        IsSafeExecute = true,
+                        Message = message,
+                        IsSafeExecute = safe,
                         Description = "",
                         Author = "",
                         ImageURL = "",
@@ -466,8 +387,8 @@ namespace butterBror
                         Footer = "",
                         IsEmbed = true,
                         Ephemeral = false,
-                        Title = resultMessageTitle,
-                        Color = resultColor,
+                        Title = title,
+                        Color = color,
                         NickNameColor = resultNicknameColor
                     };
                 }

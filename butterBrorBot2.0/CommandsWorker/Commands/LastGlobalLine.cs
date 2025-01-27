@@ -26,7 +26,8 @@ namespace butterBror
                 CreationDate = DateTime.Parse("07/04/2024"),
                 ForAdmins = false,
                 ForBotCreator = false,
-                ForChannelAdmins = false
+                ForChannelAdmins = false,
+                AllowedPlatforms = [Platforms.Twitch, Platforms.Telegram, Platforms.Discord]
             };
             public static CommandReturn Index(CommandData data)
             {
@@ -53,7 +54,7 @@ namespace butterBror
                             var lastLine = UsersData.UserGetData<string>(userID, "lastSeenMessage");
                             var lastLineDate = UsersData.UserGetData<DateTime>(userID, "lastSeen");
                             DateTime now = DateTime.UtcNow;
-                            if (name == Bot.client.TwitchUsername.ToLower())
+                            if (name == Bot.Client.TwitchUsername.ToLower())
                             {
                                 resultMessage = TranslationManager.GetTranslation(data.User.Lang, "lastGlobalLineWait", data.ChannelID);
                             }

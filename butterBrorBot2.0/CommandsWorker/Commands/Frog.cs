@@ -26,7 +26,8 @@ namespace butterBror
                 CreationDate = DateTime.Parse("13/10/2024"),
                 ForAdmins = false,
                 ForBotCreator = false,
-                ForChannelAdmins = false
+                ForChannelAdmins = false,
+                AllowedPlatforms = [Platforms.Twitch, Platforms.Telegram, Platforms.Discord]
             };
             public static CommandReturn Index(CommandData data)
             {
@@ -36,8 +37,8 @@ namespace butterBror
                     Color resultColor = Color.Green;
                     string resultMessageTitle = TranslationManager.GetTranslation(data.User.Lang, "dsFLTitle", data.ChannelID);
                     ChatColorPresets resultNicknameColor = ChatColorPresets.YellowGreen;
-                    string rootPath = Bot.MainPath + "GAMES_DATA\\FROGS\\";
-                    string userRootPath = Bot.MainPath + $"GAMES_DATA\\FROGS\\{data.UserUUID}.json";
+                    string rootPath = Bot.MainPath + "GAMES_DATA/FROGS/";
+                    string userRootPath = Bot.MainPath + $"GAMES_DATA/FROGS/{data.UserUUID}.json";
                     FileUtil.CreateDirectory(rootPath);
                     FileUtil.CreateFile(userRootPath);
                     if (File.ReadAllText(userRootPath) == "")
@@ -83,17 +84,11 @@ namespace butterBror
                                 long frogsCaughted = rand.Next(1, 11);
 
                                 if (frogCaughtType == 0)
-                                {
                                     frogsCaughted = rand.Next(1, 11);
-                                }
                                 else if (frogCaughtType <= 2)
-                                {
                                     frogsCaughted = rand.Next(11, 101);
-                                }
                                 else if (frogCaughtType == 3)
-                                {
                                     frogsCaughted = rand.Next(101, 1001);
-                                }
 
                                 string caughtText = GetFrogRange(frogsCaughted);
 
@@ -109,12 +104,13 @@ namespace butterBror
                                         .Replace("%old_frogs_count%", frogsBalance.ToString())
                                         .Replace("%new_frogs_count%", (frogsBalance + frogsCaughted).ToString())
                                         .Replace("%added_count%", frogsCaughted.ToString());
-                                    jsonManager.SaveData("frogs", (long)(frogsBalance + frogsCaughted));
+                                    jsonManager.SaveData("frogs", frogsBalance + frogsCaughted);
                                 }
                             }
                             else
                             {
-                                resultMessage = TranslationManager.GetTranslation(data.User.Lang, "frog:error:caught", data.ChannelID);
+                                resultMessage = TranslationManager.GetTranslation(data.User.Lang, "frog:error:caught", data.ChannelID)
+                                    .Replace("%time%", TextUtil.FormatTimeSpan(CommandUtil.GetCooldownTime(data.UserUUID, "FrogsReset", 3600), data.User.Lang));
                                 resultNicknameColor = ChatColorPresets.Red;
                             }
                         }
@@ -147,7 +143,7 @@ namespace butterBror
                                     resultMessage = TranslationManager.GetTranslation(data.User.Lang, "frog:gift", data.ChannelID)
                                         .Replace("%frogs%", frogs.ToString())
                                         .Replace("%gift_user%", NamesUtil.DontPingUsername(username));
-                                    string giftUserRootPath = Bot.MainPath + $"GAMES_DATA\\FROGS\\{userID}.json";
+                                    string giftUserRootPath = Bot.MainPath + $"GAMES_DATA/FROGS/{userID}.json";
                                     FileUtil.CreateFile(giftUserRootPath);
                                     if (File.ReadAllText(giftUserRootPath) == "")
                                     {

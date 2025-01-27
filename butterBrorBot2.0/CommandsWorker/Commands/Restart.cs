@@ -27,6 +27,7 @@ namespace butterBror
                 ForAdmins = true,
                 ForBotCreator = true,
                 ForChannelAdmins = false,
+                AllowedPlatforms = [Platforms.Twitch, Platforms.Telegram, Platforms.Discord]
             };
             public static CommandReturn Index(CommandData data)
             {
@@ -36,7 +37,7 @@ namespace butterBror
                     if (UsersData.UserGetData<bool>(data.UserUUID, "isBotModerator") || UsersData.UserGetData<bool>(data.UserUUID, "isBotDev"))
                     {
                         resultMessage = "❄ Перезагрузка...";
-                        Bot.RestartPlease();
+                        Bot.Restart();
                     }
                     return new()
                     {

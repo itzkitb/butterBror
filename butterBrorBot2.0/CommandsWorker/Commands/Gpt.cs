@@ -26,7 +26,8 @@ namespace butterBror
                 ForAdmins = false,
                 ForBotCreator = false,
                 ForChannelAdmins = false,
-                Cost = 5.0
+                Cost = 5.0,
+                AllowedPlatforms = [Platforms.Twitch, Platforms.Telegram, Platforms.Discord]
             };
             public static async Task<CommandReturn> Index(CommandData data)
             {

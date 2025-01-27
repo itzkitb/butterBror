@@ -29,11 +29,12 @@ namespace butterBror
                     bool IsCheckFailed = false;
                     string FoundSector = "";
 
-                    Guid myuuid = Guid.NewGuid();
-                    string checkUUID = myuuid.ToString();
+                    string checkUUID = Guid.NewGuid().ToString();
                     var message2 = TextUtil.FilterText(TextUtil.RemoveDuplicateLetters(message.Replace(" ", "").Replace("󠀀", "")));
 
-                    ConsoleUtil.LOG($"[check#{checkUUID}] Проверка \"{message}\" ({message2}) (ChlID: " + channelID + ")...");
+                    string line = $"[{checkUUID}] Checking \"{message}\" ({message2}) (Channel ID: " + channelID + ")...";
+                    ConsoleUtil.LOG(line, "nbw");
+
 
                     bool chck1 = false;
                     bool chck2 = false;
@@ -86,11 +87,11 @@ namespace butterBror
                     }
                     if (IsCheckFailed)
                     {
-                        ConsoleUtil.LOG($"[check#{checkUUID}] ОБНАРУЖЕНЫ БАНВОРДЫ! Банворд: {FoundedBanWord}, сектор поиска: {FoundSector}.", ConsoleColor.Red);
+                        ConsoleUtil.LOG($"[{checkUUID}] BANWORDS WAS FOUNDED! Banword: {FoundedBanWord}, sector: {FoundSector}", "nbw", ConsoleColor.Red);
                     }
                     else
                     {
-                        ConsoleUtil.LOG($"[check#{checkUUID}] Успешно! Банворды не найдены.", ConsoleColor.Green);
+                        ConsoleUtil.LOG($"[{checkUUID}] Succeful! Banwords was not found!", "nbw", ConsoleColor.Green);
                     }
 
                     return !IsCheckFailed;
@@ -113,9 +114,8 @@ namespace butterBror
                     // Загрузка списка запрещенных слов из файлов
                     List<string> bannedWords = File.ReadAllLines(bannedWordsPath).ToList();
                     if (File.Exists(channelBannedWordsPath))
-                    {
                         bannedWords.AddRange(File.ReadAllLines(channelBannedWordsPath));
-                    }
+
                     // Проверка наличия запрещенных слов в сообщении
                     foreach (string word in bannedWords)
                     {
@@ -217,7 +217,7 @@ namespace butterBror
                                 return false;
                             }
                         }
-                        catch (Exception ex)
+                        catch
                         {
                             // Обработка неверного формата URL, если это нужно (Не нужно)
                         }
@@ -286,7 +286,7 @@ namespace butterBror
             {
                 try
                 {
-                    string path = $"{Bot.TranslateCustomPath}{channel}\\";
+                    string path = $"{Bot.TranslateCustomPath}{channel}/";
                     if (!Directory.Exists(path))
                     {
                         Directory.CreateDirectory(path);
@@ -459,7 +459,7 @@ namespace butterBror
                     }
                     else
                     {
-                        ConsoleServer.SendConsoleMessage("errors", $"Translation file not found for language '{userLang}'");
+                        ConsoleUtil.LOG($"Translate file for '{userLang}' was not found!", "err");
                     }
 
                     return translations;
@@ -512,17 +512,13 @@ namespace butterBror
             /// </summary>
             public class DataManager
             {
-                private static string? _filePath;
-                private static dynamic _Data;
-                private static Dictionary<string, dynamic> jsonsData = new Dictionary<string, dynamic>();
-                private const int JSONS_MAX = 50;
+                private static Dictionary<string, dynamic> jsonsData = [];
+                private const int JSONS_MAX = 100;
 
                 public DataManager()
                 {
                     if (!Directory.Exists(Bot.UsersDataPath))
-                    {
                         FileUtil.CreateDirectory(Bot.UsersDataPath);
-                    }
                 }
                 public static void ClearData()
                 {
@@ -531,7 +527,7 @@ namespace butterBror
                         if (jsonsData.Count > JSONS_MAX)
                         {
                             jsonsData.Clear();
-                            ConsoleServer.SendConsoleMessage("info", "Кэш отчищен!");
+                            ConsoleUtil.LOG("Cache has been cleared!", "info");
                         }
                     }
                     catch (Exception ex)
@@ -566,9 +562,7 @@ namespace butterBror
                             return userParams.GetValue(paramName).ToObject<T>();
                         }
                         else
-                        {
                             return default(T);
-                        }
                     }
                     catch (Exception ex)
                     {
@@ -581,9 +575,7 @@ namespace butterBror
                     try
                     {
                         if (jsonsData.ContainsKey(path))
-                        {
                             jsonsData[path][paramName] = JToken.FromObject(value);
-                        }
                         else
                         {
                             string filePath = Bot.UsersDataPath + path + ".json";
@@ -600,10 +592,9 @@ namespace butterBror
                                 FileUtil.SaveFile(filePath, JsonConvert.SerializeObject(userParams, Formatting.Indented));
                             }
                         }
+
                         if (autoSave)
-                        {
                             SaveParamsToFile(path);
-                        }
                     }
                     catch (Exception ex)
                     {
@@ -631,16 +622,12 @@ namespace butterBror
                     try
                     {
                         if (jsonsData.ContainsKey(path))
-                        {
                             return jsonsData[path].ContainsKey(key);
-                        }
                         else
                         {
                             string filePath = Bot.UsersDataPath + path + ".json";
                             if (!File.Exists(filePath))
-                            {
                                 return false;
-                            }
                             else
                             {
                                 string json = File.ReadAllText(filePath);
@@ -665,19 +652,14 @@ namespace butterBror
             {
                 private string? _filePath;
                 private JObject _Data;
-                private const int JSONS_MAX = 50;
 
                 public JsonManager(string path)
                 {
                     _filePath = path;
                     if (!Directory.Exists(Path.GetDirectoryName(path)))
-                    {
                         FileUtil.CreateDirectory(Path.GetDirectoryName(path));
-                    }
                     if (!File.Exists(path))
-                    {
                         FileUtil.CreateFile(path);
-                    }
                     string json = File.ReadAllText(_filePath);
                     _Data = new JObject();
                     if (json != "")
@@ -688,40 +670,28 @@ namespace butterBror
                 }
                 public T? GetData<T>(string paramName)
                 {
-                    DebugUtil.LOG("GD1");
                     if (_Data.ContainsKey(paramName))
                     {
-                        DebugUtil.LOG("GD2");
                         var data = _Data[paramName];
                         return data.ToObject<T>();
                     }
                     else
                     {
-                        DebugUtil.LOG("GD3");
                         SaveData(paramName, default(T));
                         return default(T);
                     }
                 }
                 public void SaveData(string paramName, object value, bool autoSave = true)
                 {
-                    DebugUtil.LOG("SD1");
                     if (_Data.ContainsKey(paramName))
-                    {
-                        DebugUtil.LOG("SD2");
                         _Data[paramName] = JToken.FromObject(value);
-                    }
                     else
                     {
-                        DebugUtil.LOG("SD3");
                         _Data = new JObject();
-                        DebugUtil.LOG("SD4");
                         _Data[paramName] = JToken.FromObject(value);
                     }
                     if (autoSave)
-                    {
-                        DebugUtil.LOG("SD5");
                         SaveParamsToFile();
-                    }
                 }
                 public void SaveData()
                 {
@@ -735,16 +705,12 @@ namespace butterBror
                 public bool IsContainsKey(string key, string path)
                 {
                     if (_Data.ContainsKey(path))
-                    {
                         return _Data.ContainsKey(key);
-                    }
                     else
                     {
                         string filePath = Bot.UsersDataPath + path + ".json";
                         if (!File.Exists(filePath))
-                        {
                             return false;
-                        }
                         else
                         {
                             string json = File.ReadAllText(filePath);
@@ -822,20 +788,16 @@ namespace butterBror
                     try
                     {
                         if (type == LogTypes.Err)
-                        {
                             LogError(message, sector);
-                        }
                         else
                         {
                             FileUtil.CreateFile(Bot.LogsPath);
                             if (start_text == "")
-                            {
                                 start_text = File.ReadAllText(Bot.LogsPath);
-                            }
 
                             string Logs = start_text;
                             var D = DateTime.Now;
-                            LogData newLog = new LogData
+                            LogData newLog = new()
                             {
                                 Text = message,
                                 SectorName = sector,
@@ -846,9 +808,8 @@ namespace butterBror
                             log_cache.Add(newLog);
 
                             foreach (var e in log_cache)
-                            {
                                 Logs += $"[{e.LogTime.Year}/{e.LogTime.Month}/{e.LogTime.Day} {e.LogTime.Hour}:{e.LogTime.Minute}.{e.LogTime.Second}.{e.LogTime.Millisecond} ({e.LogTime.DayOfWeek})] [{e.LogType.Text} - Сектор: {e.SectorName}] - {e.Text}\n";
-                            }
+
                             FileUtil.SaveFile(Bot.LogsPath, Logs, false);
                         }
                     }
@@ -902,9 +863,7 @@ namespace butterBror
                 public UsersData()
                 {
                     if (!Directory.Exists(Bot.UsersDataPath))
-                    {
                         FileUtil.CreateDirectory(Bot.UsersDataPath);
-                    }
                 }
                 /// <summary>
                 /// Отчистка кэша
@@ -916,7 +875,7 @@ namespace butterBror
                         if (userData.Count > MAX_USERS)
                         {
                             userData.Clear();
-                            ConsoleServer.SendConsoleMessage("info", "Кэш отчищен!");
+                            ConsoleUtil.LOG("Cache has been cleared!", "info");
                         }
                     }
                     catch (Exception ex)
@@ -958,21 +917,17 @@ namespace butterBror
                 /// </summary>
                 private static T? UserGetData2<T>(string userId, string paramName)
                 {
-                    T result = default(T); // Переменная с результатом
                     string filePath = Bot.UsersDataPath + userId + ".json"; // Путь к файлу
+                    T? result;
                     if (userData.ContainsKey(userId)) // Проверка наличия пользователя в кэше
                     {
                         if (userData[userId].ContainsKey(paramName)) // Проверка наличия параметра в кэше пользователя
                         {
                             var data = userData[userId][paramName]; // Получение данных
                             if (data is JArray jArray) // Проверка на наличие списков в данных
-                            {
                                 result = jArray.ToObject<T>();
-                            }
                             else
-                            {
                                 result = (T)data;
-                            }
                         }
                         else
                         {
@@ -989,20 +944,12 @@ namespace butterBror
                         userData[userId] = userParams; // Сохранение в кэш
                         var paramData = userParams[paramName];
                         if (paramData is JArray jArray)
-                        {
                             result = jArray.ToObject<T>();
-                        }
                         else
-                        {
                             result = (T)paramData;
-                        }
                     }
                     else
-                    {
-                        // ¯\_(ツ)_/¯
-                        // Ты кто?
                         result = default;
-                    }
                     return result;
                 }
                 /// <summary>
@@ -1013,9 +960,7 @@ namespace butterBror
                     try
                     {
                         if (userData.ContainsKey(userId))
-                        {
                             userData[userId][paramName] = JToken.FromObject(value);
-                        }
                         else
                         {
                             string filePath = Bot.UsersDataPath + userId + ".json";
@@ -1033,9 +978,7 @@ namespace butterBror
                             }
                         }
                         if (autoSave)
-                        {
                             SaveUserParamsToFile(userId);
-                        }
                     }
                     catch (Exception ex)
                     {
@@ -1053,37 +996,39 @@ namespace butterBror
                         string[] empty = [];
                         Dictionary<string, dynamic> EmptyRemind = new Dictionary<string, dynamic>();
                         DateTime minusDay = DateTime.UtcNow.AddDays(-1);
-                        userData[userId] = new Dictionary<string, dynamic>();
-                        userData[userId]["firstSeen"] = DateTime.UtcNow;
-                        userData[userId]["firstMessage"] = firstMessage;
-                        userData[userId]["lastSeenMessage"] = firstMessage;
-                        userData[userId]["lastSeen"] = DateTime.UtcNow;
-                        userData[userId]["floatBalance"] = 0;
-                        userData[userId]["balance"] = 0;
-                        userData[userId]["totalMessages"] = 0;
-                        userData[userId]["miningVideocards"] = empty;
-                        userData[userId]["miningProccessors"] = empty;
-                        userData[userId]["lastMiningClear"] = DateTime.UtcNow;
-                        userData[userId]["isBotModerator"] = false;
-                        userData[userId]["isBanned"] = false;
-                        userData[userId]["isIgnored"] = false;
-                        userData[userId]["rating"] = 500;
-                        userData[userId]["invertory"] = empty;
-                        userData[userId]["warningLvl"] = 3;
-                        userData[userId]["isVip"] = false;
-                        userData[userId]["isAfk"] = false;
-                        userData[userId]["afkText"] = "";
-                        userData[userId]["afkType"] = "";
-                        userData[userId]["reminders"] = EmptyRemind;
-                        userData[userId]["lastCookieEat"] = minusDay;
-                        userData[userId]["giftedCookies"] = 0;
-                        userData[userId]["eatedCookies"] = 0;
-                        userData[userId]["buyedCookies"] = 0;
-                        userData[userId]["userPlace"] = "";
-                        userData[userId]["userLon"] = "0";
-                        userData[userId]["userLat"] = "0";
-                        userData[userId]["language"] = "ru";
-                        userData[userId]["afkTime"] = DateTime.UtcNow;
+                        userData[userId] = new Dictionary<string, dynamic>()
+                        {
+                            { "firstSeen", DateTime.UtcNow },
+                            { "firstMessage", firstMessage },
+                            { "lastSeenMessage", firstMessage },
+                            { "lastSeen", DateTime.UtcNow },
+                            { "floatBalance", 0 },
+                            { "balance", 0 },
+                            { "totalMessages", 0 },
+                            { "miningVideocards", empty },
+                            { "miningProccessors", empty },
+                            { "lastMiningClear", DateTime.UtcNow },
+                            { "isBotModerator", false },
+                            { "isBanned", false },
+                            { "isIgnored", false },
+                            { "rating", 500 },
+                            { "invertory", empty },
+                            { "warningLvl", 3 },
+                            { "isVip", false },
+                            { "isAfk", false },
+                            { "afkText", "" },
+                            { "afkType", "" },
+                            { "reminders", EmptyRemind },
+                            { "lastCookieEat", minusDay },
+                            { "giftedCookies", 0 },
+                            { "eatedCookies", 0 },
+                            { "buyedCookies", 0 },
+                            { "userPlace", "" },
+                            { "userLon", "0" },
+                            { "userLat", "0" },
+                            { "language", "ru" },
+                            { "afkTime", DateTime.UtcNow }
+                        };
                     }
                     catch (Exception ex)
                     {
@@ -1114,16 +1059,12 @@ namespace butterBror
                     try
                     {
                         if (userData.ContainsKey(userId))
-                        {
                             return userData[userId].ContainsKey(key);
-                        }
                         else
                         {
                             string filePath = Bot.UsersDataPath + userId + ".json";
                             if (!File.Exists(filePath))
-                            {
                                 return false;
-                            }
                             else
                             {
                                 string json = File.ReadAllText(filePath);
@@ -1174,9 +1115,8 @@ namespace butterBror
                         List<Message> messages = []; // Список сообщений
 
                         if (File.Exists(path + userID + ".json")) // Проверка наличия файла с сообщениями
-                        {
                             messages = JsonConvert.DeserializeObject<List<Message>>(File.ReadAllText(path + userID + ".json")); // Загрузка и конвертация сообщений в список
-                        }
+
                         Message newMessage = new Message
                         {
                             messageDate = messageDate,
@@ -1210,10 +1150,8 @@ namespace butterBror
                         }
 
                         messages.Insert(0, newMessage); // Добавление нового экземпляра в список сообщений
-                        if (messages.Count > 3000) 
-                        {
-                            messages = messages.Take(2999).ToList(); // Удаление последнего сообщения, если сообщений больше 3000
-                        }
+                        if (messages.Count > 1000) 
+                            messages = messages.Take(999).ToList(); // Удаление последнего сообщения, если сообщений больше 1000
 
                         FileUtil.SaveFile(path + userID + ".json", JsonConvert.SerializeObject(messages)); // Сохранение файла с сообщением
                     }
@@ -1233,27 +1171,18 @@ namespace butterBror
                     {
                         string path = Bot.ChannelsPath + channelID + "/MSGS/"; // Путь к директории сообщений
                         if (!File.Exists(path + userID + ".json")) // Если файл сообщений пользователя не существует, то возвращаем null
-                        {
                             return null;
-                        }
 
                         List<Message> messages = JsonConvert.DeserializeObject<List<Message>>(File.ReadAllText(path + userID + ".json")); // Создаем список сообщений пользователя
                         if (!isGetCustomNumber) // Проверка, не нужно ли вернуть определенный элемент списка
-                        {
-                            // Да
                             return messages[0];
-                        }
                         else if (customNumber >= -1 && customNumber < messages.Count) // Проверяем, что число больше-равно 0 и меньше максимального числа в списке
                         {
                             // Нет
                             if (customNumber == -1)
-                            {
                                 return messages.Last();
-                            }
                             else
-                            {
                                 return messages[customNumber];
-                            }
                         }
 
                         return null; // Возвращаем null, если ничего не подошло
@@ -1281,7 +1210,7 @@ namespace butterBror
                         if (!Directory.Exists(path))
                         {
                             Directory.CreateDirectory(path);
-                            ConsoleServer.SendConsoleMessage("files", $"Создана директория '{path}'");
+                            ConsoleUtil.LOG($"Created directory: {path}", "files");
                         }
                     }
                     catch (Exception ex)
@@ -1301,7 +1230,7 @@ namespace butterBror
                         {
                             FileStream fs = File.Create(path);
                             fs.Close();
-                            ConsoleServer.SendConsoleMessage("files", $"Создан файл '{path}'");
+                            ConsoleUtil.LOG($"Created file: {path}", "files");
                         }
                     }
                     catch (Exception ex)
@@ -1322,23 +1251,17 @@ namespace butterBror
                         {
                             Directory.CreateDirectory(Path.GetDirectoryName(destinationFile));
                             File.Copy(path, destinationFile);
-                            ConsoleServer.SendConsoleMessage("files", $"Создана резервная копия файла '{path}'");
+                            ConsoleUtil.LOG($"Created file reserve copy: {path}", "files");
                         } // Проверка и создание резервной копии
-                        using (FileStream fs = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None))
-                        {
-                            using (StreamWriter sw = new StreamWriter(fs))
-                            {
-                                sw.Write(content);
-                                ConsoleServer.SendConsoleMessage("files", $"Saved data to file '{path}'");
-                            }
-                        }
+                        using FileStream fs = new(path, FileMode.Create, FileAccess.Write, FileShare.None);
+                        using StreamWriter sw = new(fs);
+                        sw.Write(content);
+                        ConsoleUtil.LOG($"Data saved: {path}", "files");
                     }
                     catch (Exception ex)
                     {
                         if (isSavingErrorLogs)
-                        {
                             ConsoleUtil.ErrorOccured(ex, $"FileUtil\\SaveFile#{path}");
-                        }
                     }
                 }
                 /// <summary>
@@ -1348,10 +1271,8 @@ namespace butterBror
                 {
                     try
                     {
-                        if (!File.Exists(path))
-                        {
+                        if (File.Exists(path))
                             File.Delete(path);
-                        }
                     }
                     catch (Exception ex)
                     {
@@ -1366,9 +1287,7 @@ namespace butterBror
                     try
                     {
                         if (Directory.Exists(path))
-                        {
                             Directory.Delete(path);
-                        }
                     }
                     catch (Exception ex)
                     {
@@ -1381,9 +1300,8 @@ namespace butterBror
                 public static string[] GetFilesInDirectory(string directory)
                 {
                     if (Directory.Exists(directory))
-                    {
                         return Directory.GetFiles(directory);
-                    }
+
                     return [];
                 }
                 /// <summary>
@@ -1392,9 +1310,8 @@ namespace butterBror
                 public static byte[] GetFileBytes(string imagePath)
                 {
                     if (File.Exists(imagePath))
-                    {
                         return File.ReadAllBytes(imagePath);
-                    }
+                    
                     return null;
                 }
             }

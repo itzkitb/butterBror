@@ -25,7 +25,8 @@ namespace butterBror
                 CreationDate = DateTime.Parse("07/04/2024"),
                 ForAdmins = false,
                 ForBotCreator = false,
-                ForChannelAdmins = false
+                ForChannelAdmins = false,
+                AllowedPlatforms = [Platforms.Twitch, Platforms.Telegram, Platforms.Discord]
             };
 
             public static CommandReturn Index(CommandData data)
@@ -55,7 +56,7 @@ namespace butterBror
                             imageBytesTask.Wait();
                             byte[] imageBytes = imageBytesTask.Result;
                             stage++;
-                            var responseTask = Utils.APIUtil.Imgur.UploadImageToImgurAsync(imageBytes, "Бот butterBror и его разработчик ItzKITb никак не связаны с данным изображением и не поддерживают его содержимое.", $"Картинка от @{data.User.Name}", Bot.imgurAPIkey, "https://api.imgur.com/3/upload");
+                            var responseTask = Utils.APIUtil.Imgur.UploadImageToImgurAsync(imageBytes, "Бот butterBror и его разработчик ItzKITb никак не связаны с данным изображением и не поддерживают его содержимое.", $"Картинка от @{data.User.Name}", Bot.ImgurAPIkey, "https://api.imgur.com/3/upload");
                             responseTask.Wait();
                             string response = responseTask.Result;
                             stage++;

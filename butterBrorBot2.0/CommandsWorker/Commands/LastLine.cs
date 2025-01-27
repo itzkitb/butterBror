@@ -26,7 +26,8 @@ namespace butterBror
                 CreationDate = DateTime.Parse("07/04/2024"),
                 ForAdmins = false,
                 ForBotCreator = false,
-                ForChannelAdmins = false
+                ForChannelAdmins = false,
+                AllowedPlatforms = [Platforms.Twitch, Platforms.Telegram, Platforms.Discord]
             };
             public static CommandReturn Index(CommandData data)
             {
@@ -46,7 +47,7 @@ namespace butterBror
                         {
                             if (userID != "err")
                             {
-                                if (name != Bot.client.TwitchUsername.ToLower())
+                                if (name != Bot.Client.TwitchUsername.ToLower())
                                 {
                                     if (name == data.User.Name.ToLower())
                                     {

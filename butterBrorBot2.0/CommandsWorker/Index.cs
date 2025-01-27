@@ -6,16 +6,33 @@ using System.Reflection;
 using TwitchLib.Client.Enums;
 using butterBror.Utils;
 using butterBror.Utils.DataManagers;
+using System;
+using Telegram.Bot.Types;
 
 namespace butterBror
 {
     public partial class Commands
     {
-        private static void SaveСommandDataToTheRegistry(CommandData data)
+        public static void IndexCommands()
         {
-
+            ConsoleUtil.LOG($"Indexing commands...", "main");
+            foreach (var classType in classes)
+            {
+                try
+                {
+                    var infoProperty = classType.GetField("Info", BindingFlags.Static | BindingFlags.Public);
+                    var info = infoProperty.GetValue(null) as CommandInfo;
+                    commandsIndex.Add(info);
+                }
+                catch (Exception ex) 
+                {
+                    ConsoleUtil.LOG($"[COMMAND_INDEXER] INDEX ERROR FOR CLASS {classType.Name}: {ex.Message}", "main");
+                }
+            }
+            ConsoleUtil.LOG($"Indexed!", "main");
         }
         public static Dictionary<string, int> ErrorsInCommands = new();
+        public static List<CommandInfo> commandsIndex = new();
         public static List<Type> classes = new List<Type>
         {
             typeof(Afk),
@@ -43,9 +60,9 @@ namespace butterBror
             typeof(BotCommand),
             typeof(GPT),
             typeof(CustomTranslation),
-            typeof(eightball),
-            typeof(coinflip),
-            typeof(percent),
+            typeof(Eightball),
+            typeof(Coinflip),
+            typeof(Percent),
             typeof(RussianRoullete),
             typeof(ID),
             typeof(RandomCMD),
@@ -142,15 +159,63 @@ namespace butterBror
                 ConsoleUtil.ErrorOccured(ex, $"Command\\DiscordCommand#Command:{dsCmd.CommandName}");
             }
         }
+
+        public static void TelegramCommand(Message message)
+        {
+            try
+            {
+                UserData user = new()
+                {
+                    Id = "tg" + message.From.Id.ToString(),
+                    Lang = "ru",
+                    Name = message.From.Username ?? message.From.FirstName,
+                    IsChannelAdmin = false,
+                    IsChannelBroadcaster = message.From.Id == message.Chat.Id
+                };
+
+                Guid RequestUuid = Guid.NewGuid();
+                Guid CommandExecutionUuid = Guid.NewGuid();
+                string RequestUuidString = RequestUuid.ToString();
+
+                CommandData data = new()
+                {
+                    Name = message.Text.ToLower().Split(' ')[0],
+                    RequestUUID = RequestUuidString,
+                    UserUUID = message.From.Id.ToString(),
+                    args = message.Text.Split(' ').Skip(1).ToList(),
+                    ArgsAsString = string.Join(" ", message.Text.Split(' ').Skip(1)),
+                    Channel = message.Chat.Title ?? message.Chat.Username ?? message.Chat.Id.ToString(),
+                    ChannelID = "tg" + message.Chat.Id.ToString(),
+                    MessageID = message.MessageId.ToString(),
+                    Platform = Platforms.Telegram,
+                    User = user,
+                    CommandInstanceUUID = CommandExecutionUuid.ToString(),
+                    TelegramReply = message
+                };
+
+                // Если есть ответ на сообщение, добавляем его аргументы
+                if (message.ReplyToMessage != null)
+                {
+                    string[] trimmedReplyText = message.ReplyToMessage.Text.Split(' ');
+                    data.args.AddRange(trimmedReplyText);
+                    data.ArgsAsString += " " + string.Join(" ", trimmedReplyText);
+                }
+
+                Command(data);
+            }
+            catch (Exception ex)
+            {
+                ConsoleUtil.ErrorOccured(ex, $"Command\\TelegramCommand#Command:{message.Text}\\FullMessage:{message}");
+            }
+        }
         public static async void Command(CommandData data)
         {
             try
             {
                 bool allowed = true;
                 if (data.Platform == Platforms.Twitch)
-                {
                     allowed = !data.TWargs.Command.ChatMessage.IsMe;
-                }
+
                 if (allowed)
                 {
                     string lang = "ru";
@@ -158,22 +223,14 @@ namespace butterBror
                     {
                         string Id = "";
                         if (data.Platform == Platforms.Twitch)
-                        {
                             Id = data.UserUUID;
-                        }
                         else if (data.Platform == Platforms.Discord)
-                        {
                             Id = "ds" + data.UserUUID;
-                        }
 
                         if (UsersData.UserGetData<string>(Id, "language") == default)
-                        {
                             UsersData.UserSaveData(Id, "language", "ru");
-                        }
                         else
-                        {
                             lang = UsersData.UserGetData<string>(Id, "language");
-                        }
                     }
                     catch (Exception ex)
                     {
@@ -186,69 +243,40 @@ namespace butterBror
                     data.User.IsBotCreator = UsersData.UserGetData<bool>(data.UserUUID, "isBotDev");
                     Bot.CommandsActive = classes.Count;
                     string[] bot = ["bot", "bt", "бот", "бт"];
-                    string[] help = ["help", "sos", "commands", "помощь", "информация", "info", "инфо"];
+                    string[] help = ["help", "sos", "info", "помощь", "информация", "info", "инфо"];
                     var command = TextUtil.FilterCommand(data.Name).Replace("ё", "е");
 
-                    DebugUtil.LOG("Начало поиска комманды...");
                     if (!(bool)data.User.IsBanned && !(bool)data.User.IsIgnored)
                     {
                         bool isCommandFound = false;
                         int num = 0;
                         CommandReturn? cmdReturn = null;
-                        DebugUtil.LOG("Поиск комманды...");
-                        foreach (var classType in classes)
+                        foreach (var info in commandsIndex)
                         {
-                            num++;
-                            var infoProperty = classType.GetField("Info", BindingFlags.Static | BindingFlags.Public);
-                            var info = infoProperty.GetValue(null) as CommandInfo;
-
                             if (info.aliases.Contains(command))
                             {
                                 isCommandFound = true;
-                                DebugUtil.LOG("Комманда найдена!");
-                                if (info.ForBotCreator && !(bool)data.User.IsBotCreator || info.ForAdmins && !(bool)data.User.IsBotAdmin || info.ForChannelAdmins && !(bool)data.User.IsChannelAdmin)
-                                {
-                                    break;
-                                }
-                                DebugUtil.LOG("Проверка кулдауна...");
+                                if (info.ForBotCreator && !(bool)data.User.IsBotCreator || info.ForAdmins && !(bool)data.User.IsBotAdmin || info.ForChannelAdmins && !(bool)data.User.IsChannelAdmin) break;
                                 if (CommandUtil.IsNotOnCooldown(info.UserCooldown, info.GlobalCooldown, info.Name, data.User.Id, data.ChannelID, info.ResetCooldownIfItHasNotReachedZero))
                                 {
-                                    DebugUtil.LOG("Подготовка к выполнению...");
                                     CommandUtil.ExecutedCommand(data);
-                                    var indexMethod = classType.GetMethod("Index", BindingFlags.Static | BindingFlags.Public);
+                                    var indexMethod = classes[num].GetMethod("Index", BindingFlags.Static | BindingFlags.Public);
 
                                     try
                                     {
-                                        if (indexMethod.ReturnType == typeof(CommandReturn))
-                                        {
-                                            DebugUtil.LOG("Выполнение в синхронном режиме...");
-                                            cmdReturn = indexMethod.Invoke(null, [data]) as CommandReturn;
-                                        }
-                                        else if (indexMethod.ReturnType == typeof(Task<CommandReturn>))
-                                        {
-                                            DebugUtil.LOG("Выполнение в асинхронном режиме...");
-                                            var task = indexMethod.Invoke(null, [data]) as Task<CommandReturn>;
-                                            cmdReturn = await task; // Используем await для асинхронного выполнения
-                                        }
-                                        else
-                                        {
-                                            throw new InvalidOperationException($"Метод '{info.Name}' вернул неверный тип результата: {indexMethod.ReturnType.Name}");
-                                        }
+                                        if (indexMethod.ReturnType == typeof(CommandReturn)) cmdReturn = indexMethod.Invoke(null, [data]) as CommandReturn;
+                                        else if (indexMethod.ReturnType == typeof(Task<CommandReturn>))cmdReturn = await (indexMethod.Invoke(null, [data]) as Task<CommandReturn>);
+                                        else throw new InvalidOperationException($"Method '{info.Name}' returned an incorrect result type: {indexMethod.ReturnType.Name}");
                                     }
                                     catch (Exception ex)
                                     {
-                                        throw new ApplicationException($"Не удалось выполнить команду: \nОшибка: {ex.Message}\nСтак: {ex.StackTrace}\nМесто ошибки: {ex.Source}\nКоманда: {info.Name}\nАргументы команды: {data.ArgsAsString}\nПользователь, который выполнил команду: {data.User.Name} (#{data.UserUUID})");
+                                        throw new ApplicationException($"Failed to execute command: \nError: {ex.Message}\nStack: {ex.StackTrace}\nError Location: {ex.Source}\nCommand: {info.Name}\nCommand Arguments: {data.ArgsAsString}\nUser who executed the command: {data.User.Name} (#{data.UserUUID})");
                                     }
-                                    DebugUtil.LOG("Выполнено!");
                                     if (cmdReturn != null)
                                     {
-                                        if (cmdReturn.IsError)
-                                        {
-                                            throw new ApplicationException($"Не удалось выполнить команду: \nОшибка: {cmdReturn.Error.Message}\nСтак: {cmdReturn.Error.StackTrace}\nМесто ошибки: {cmdReturn.Error.Source}\nКоманда: {info.Name}\nАргументы команды: {data.ArgsAsString}\nПользователь, который выполнил команду: {data.User.Name} (#{data.UserUUID})");
-                                        }
+                                        if (cmdReturn.IsError) throw new ApplicationException($"The command failed: \nError: {cmdReturn.Error.Message}\nStack: {cmdReturn.Error.StackTrace}\nError location: {cmdReturn.Error.Source}\nCommand: {info.Name}\nCommand arguments: {data.ArgsAsString}\nUser who executed the command: {data.User.Name} (#{data.UserUUID})");
                                         else
                                         {
-                                            DebugUtil.LOG("Отправка результата...");
                                             if (data.Platform == Platforms.Twitch)
                                             {
                                                 TwitchMessageSendData SendData = new()
@@ -271,7 +299,7 @@ namespace butterBror
                                                     Message = cmdReturn.Message,
                                                     Title = cmdReturn.Title,
                                                     Description = cmdReturn.Description,
-                                                    Color = cmdReturn.Color,
+                                                    Color = (Discord.Color?)cmdReturn.Color,
                                                     IsEmbed = cmdReturn.IsEmbed,
                                                     Ephemeral = cmdReturn.Ephemeral,
                                                     Server = data.Channel,
@@ -286,27 +314,42 @@ namespace butterBror
                                                 };
                                                 butterBib.Commands.SendCommandReply(SendData);
                                             }
+                                            else if (data.Platform == Platforms.Telegram)
+                                            {
+                                                TelegramMessageSendData SendData = new()
+                                                {
+                                                    Message = cmdReturn.Message,
+                                                    Lang = data.User.Lang,
+                                                    IsSafeExecute = cmdReturn.IsSafeExecute,
+                                                    Channel = data.Channel,
+                                                    ChannelID = data.ChannelID,
+                                                    Answer = data.TelegramReply,
+                                                    Name = data.Name
+                                                };
+                                                butterBib.Commands.SendCommandReply(SendData);
+                                            }
+
                                             if (info.Cost != null)
                                             {
                                                 BalanceUtil.SaveBalance(data.UserUUID, -(int)(info.Cost), 0);
                                             }
-                                            DebugUtil.LOG("Отправлено!");
                                         }
                                     }
                                     else
                                     {
-                                        string message = $"Пустой ответ от комманды!\nКоманда: {info.Name},\nАргументы команды: {data.ArgsAsString},\nПользователь, который выполнил команду: {data.User.Name} (#{data.UserUUID})";
-                                        ConsoleServer.SendConsoleMessage($"cmd\\{command}", message.Replace("\n", ""));
+                                        string message = $"Empty response from command!\nCommand: {info.Name},\nCommand arguments: {data.ArgsAsString},\nUser who executed the command: {data.User.Name} (#{data.UserUUID})";
+                                        ConsoleUtil.LOG(message.Replace("\n", ""), "info");
                                         LogWorker.Log(message, LogWorker.LogTypes.Warn, $"cmd\\{info.Name}");
                                     }
                                 }
                                 break;
                             }
+                            num++;
                         }
                         if (!isCommandFound)
                         {
-                            string message = $"Команда не найдена!\nКоманда: {command},\nАргументы команды: {data.ArgsAsString},\nПользователь, который искал команду: {data.User.Name} (#{data.UserUUID})";
-                            ConsoleServer.SendConsoleMessage($"cmd\\{command}", message.Replace("\n", ""));
+                            string message = $"Command not found!\nCommand: {command},\nCommand arguments: {data.ArgsAsString},\nUser who searched for the command: {data.User.Name} (#{data.UserUUID})";
+                            ConsoleUtil.LOG(message.Replace("\n", ""), "info");
                             LogWorker.Log(message, LogWorker.LogTypes.Info, $"cmd\\{command}");
                         }
                     }
@@ -341,6 +384,21 @@ namespace butterBror
                     };
                     butterBib.Commands.SendCommandReply(SendData);
                 }
+                else if (data.Platform == Platforms.Telegram)
+                {
+                    TwitchMessageSendData SendData = new()
+                    {
+                        Message = TranslationManager.GetTranslation("ru", "error", data.ChannelID),
+                        Channel = data.Channel,
+                        ChannelID = data.ChannelID,
+                        AnswerID = data.TWargs.Command.ChatMessage.Id,
+                        Lang = data.User.Lang,
+                        Name = data.User.Name,
+                        IsSafeExecute = true,
+                        NickNameColor = ChatColorPresets.Red
+                    };
+                    butterBib.Commands.SendCommandReply(SendData);
+                }
                 else if (data.Platform == Platforms.Discord)
                 {
                     DiscordCommandSendData SendData = new()
@@ -348,13 +406,27 @@ namespace butterBror
                         Message = "",
                         Description = TranslationManager.GetTranslation("ru", "error", data.ChannelID),
                         IsEmbed = true,
-                        Color = (Discord.Color?)Color.Red,
+                        Color = (Discord.Color?)System.Drawing.Color.Red,
                         Ephemeral = true,
                         Server = data.Channel,
                         ServerID = data.ChannelID,
                         Lang = data.User.Lang,
                         IsSafeExecute = true,
                         d = data.d
+                    };
+                    butterBib.Commands.SendCommandReply(SendData);
+                }
+                else if (data.Platform == Platforms.Telegram)
+                {
+                    TelegramMessageSendData SendData = new()
+                    {
+                        Message = TranslationManager.GetTranslation("ru", "error", data.ChannelID),
+                        Lang = data.User.Lang,
+                        IsSafeExecute = true,
+                        Channel = data.Channel,
+                        ChannelID = data.ChannelID,
+                        Answer = data.TelegramReply,
+                        Name = data.Name
                     };
                     butterBib.Commands.SendCommandReply(SendData);
                 }

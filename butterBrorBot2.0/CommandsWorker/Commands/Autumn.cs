@@ -26,6 +26,7 @@ namespace butterBror
                 ForAdmins = false,
                 ForBotCreator = false,
                 ForChannelAdmins = false,
+                AllowedPlatforms = [Platforms.Twitch, Platforms.Telegram, Platforms.Discord]
             };
             public static CommandReturn Index(CommandData data)
             {

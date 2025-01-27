@@ -41,7 +41,7 @@ namespace butterBror
                                     UsersData.UserSaveData(e.Command.ChatMessage.UserId, "fishIsMovingNow", true);
                                     int endTime = randomMultiplier * distanceToLocation;
                                     DateTime ArrivalTime = DateTime.UtcNow.AddMilliseconds(endTime);
-                                    ChatUtil.SendMsgReply(e.Command.ChatMessage.Channel, e.Command.ChatMessage.RoomId, TranslationManager.GetTranslation(lang, "fishMoving", "").Replace("%point%", point.ToString()).Replace("%time%", TextUtil.FormatTimeSpan(FormatUtil.GetTimeTo(ArrivalTime, DateTime.UtcNow), lang)), e.Command.ChatMessage.Id, lang, true);
+                                    ChatUtil.TWSendMsgReply(e.Command.ChatMessage.Channel, e.Command.ChatMessage.RoomId, TranslationManager.GetTranslation(lang, "fishMoving", "").Replace("%point%", point.ToString()).Replace("%time%", TextUtil.FormatTimeSpan(FormatUtil.GetTimeTo(ArrivalTime, DateTime.UtcNow), lang)), e.Command.ChatMessage.Id, lang, true);
                                     Task task = Task.Run(() =>
                                     {
                                         Thread.Sleep(endTime);
@@ -51,17 +51,17 @@ namespace butterBror
                                 }
                                 else
                                 {
-                                    ChatUtil.SendMsgReply(e.Command.ChatMessage.Channel, e.Command.ChatMessage.RoomId, TranslationManager.GetTranslation(lang, "fishWrong", ""), e.Command.ChatMessage.Id, lang, true);
+                                    ChatUtil.TWSendMsgReply(e.Command.ChatMessage.Channel, e.Command.ChatMessage.RoomId, TranslationManager.GetTranslation(lang, "fishWrong", ""), e.Command.ChatMessage.Id, lang, true);
                                 }
                             }
                             else
                             {
-                                ChatUtil.SendMsgReply(e.Command.ChatMessage.Channel, e.Command.ChatMessage.RoomId, TranslationManager.GetTranslation(lang, "fishWrongNum", ""), e.Command.ChatMessage.Id, lang, true);
+                                ChatUtil.TWSendMsgReply(e.Command.ChatMessage.Channel, e.Command.ChatMessage.RoomId, TranslationManager.GetTranslation(lang, "fishWrongNum", ""), e.Command.ChatMessage.Id, lang, true);
                             }
                         }
                         else
                         {
-                            ChatUtil.SendMsgReply(e.Command.ChatMessage.Channel, e.Command.ChatMessage.RoomId, TranslationManager.GetTranslation(lang, "fishCurrentPlace", "").Replace("%point%", nowLocation.ToString()), e.Command.ChatMessage.Id, lang, true);
+                            ChatUtil.TWSendMsgReply(e.Command.ChatMessage.Channel, e.Command.ChatMessage.RoomId, TranslationManager.GetTranslation(lang, "fishCurrentPlace", "").Replace("%point%", nowLocation.ToString()), e.Command.ChatMessage.Id, lang, true);
                         }
                     }
                 }

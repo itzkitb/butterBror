@@ -3,6 +3,8 @@ using butterBror.Utils;
 using butterBror.Utils.DataManagers;
 using Discord;
 using Discord.WebSocket;
+using Telegram.Bot;
+using Telegram.Bot.Types;
 using TwitchLib.Client.Enums;
 using TwitchLib.Client.Events;
 using TwitchLib.Client.Extensions;
@@ -40,11 +42,14 @@ namespace butterBib
         public required Platforms Platform { get; set; }
         public required UserData User { get; set; }
         public required string CommandInstanceUUID { get; set; }
+        public Message? TelegramReply { get; set; }
+
     }
     public enum Platforms
     {
         Twitch,
-        Discord
+        Discord,
+        Telegram
     }
     public class TwitchMessageSendData
     {
@@ -57,6 +62,16 @@ namespace butterBib
         public required bool IsSafeExecute { get; set; }
         public required ChatColorPresets NickNameColor { get; set; }
     }
+    public class TelegramMessageSendData
+    {
+        public required string Message { get; set; }
+        public required string Channel { get; set; }
+        public required string ChannelID { get; set; }
+        public required Message Answer { get; set; }
+        public required string Lang { get; set; }
+        public required string Name { get; set; }
+        public required bool IsSafeExecute { get; set; }
+    }
     public class DiscordCommandSendData
     {
         public required string Description { get; set; }
@@ -67,7 +82,7 @@ namespace butterBib
         public required bool IsEmbed { get; set; }
         public required bool Ephemeral { get; set; }
         public string? Title { get; set; }
-        public Color? Color { get; set; }
+        public Discord.Color? Color { get; set; }
         public required string Server { get; set; }
         public required string ServerID { get; set; }
         public required string Lang { get; set; }
@@ -93,6 +108,7 @@ namespace butterBib
         public required bool ForChannelAdmins { get; set; }
         public required bool ForBotCreator { get; set; }
         public double? Cost { get; set; }
+        public required Platforms[] AllowedPlatforms { get; set; }
     }
     public class CommandReturn
     {
@@ -106,7 +122,7 @@ namespace butterBib
         public required bool IsEmbed { get; set; }
         public required bool Ephemeral { get; set; }
         public required string Title { get; set; }
-        public required Color Color { get; set; }
+        public required System.Drawing.Color Color { get; set; }
         public required ChatColorPresets NickNameColor { get; set; }
         public bool IsError { get; set; }
         public Exception? Error { get; set; }
@@ -127,10 +143,9 @@ namespace butterBib
             {
                 string messageToSend = data.Message;
                 TwitchMessageSendData messageToSendPart2 = null;
-                ConsoleServer.SendConsoleMessage("commands", "Отправка сообщения...");
-                LogWorker.Log($"Был отправлен ответ на сообщение {data.AnswerID} в канал {data.Channel}: {data.Message}", LogWorker.LogTypes.Msg, "ButterBib\\Commands\\SendCommandReply");
+                ConsoleUtil.LOG("[TW] Sending a message...", "info");
+                LogWorker.Log($"[TW] A response to message {data.AnswerID} was sent to channel {data.Channel}: {data.Message}", LogWorker.LogTypes.Msg, "ButterBib\\Commands\\SendCommandReply");
                 messageToSend = TextUtil.FilterText(data.Message);
-                await CommandUtil.ChangeNicknameColorAsync(data.NickNameColor);
 
                 if (messageToSend.Length > 1500)
                 {
@@ -148,20 +163,67 @@ namespace butterBib
                     messageToSendPart2.Message = part2;
                 }
 
-                if (!Bot.client.JoinedChannels.Any(c => c.Channel == data.Channel))
+                if (!Bot.Client.JoinedChannels.Any(c => c.Channel == data.Channel))
                 {
-                    Bot.client.JoinChannel(data.Channel);
+                    Bot.Client.JoinChannel(data.Channel);
                 }
-                if (Bot.client.JoinedChannels.Any(c => c.Channel == data.Channel))
+                if (Bot.Client.JoinedChannels.Any(c => c.Channel == data.Channel))
                 {
                     if (data.IsSafeExecute || NoBanwords.fullCheck(messageToSend, data.ChannelID))
                     {
-                        Bot.client.SendReply(data.Channel, data.AnswerID, messageToSend);
+                        Bot.Client.SendReply(data.Channel, data.AnswerID, messageToSend);
                     }
                     else
                     {
-                        Bot.client.SendReply(data.Channel, data.AnswerID, TranslationManager.GetTranslation(data.Lang, "cantSend", data.ChannelID));
+                        Bot.Client.SendReply(data.Channel, data.AnswerID, TranslationManager.GetTranslation(data.Lang, "cantSend", data.ChannelID));
                     }
+                }
+
+                if (messageToSendPart2 != null)
+                {
+                    await Task.Delay(1500);
+                    SendCommandReply(messageToSendPart2);
+                }
+            }
+            catch (Exception ex)
+            {
+                ConsoleUtil.ErrorOccured(ex, $"butterBib\\Commands\\SendCommandReply");
+            }
+        }
+        public static async void SendCommandReply(TelegramMessageSendData data)
+        {
+            try
+            {
+                string messageToSend = data.Message;
+                TelegramMessageSendData messageToSendPart2 = null;
+                ConsoleUtil.LOG($"[TG] Sending a message... (Room: {(data.ChannelID == null ? "null" : data.ChannelID)}, message ID: {(data.Answer == null ? "null" : data.Answer.Id)})", "info");
+                LogWorker.Log($"[TG] A message response was sent to the {data.Channel} channel: {data.Message}", LogWorker.LogTypes.Msg, "ButterBib\\Commands\\SendCommandReply");
+                messageToSend = TextUtil.FilterText(data.Message);
+
+                if (messageToSend.Length > 1500)
+                {
+                    messageToSend = TranslationManager.GetTranslation(data.Lang, "tooLargeText", data.ChannelID);
+                }
+                else if (messageToSend.Length > 500)
+                {
+                    int splitIndex = messageToSend.LastIndexOf(' ', 450);
+
+                    string part1 = messageToSend.Substring(0, splitIndex) + "...";
+                    string part2 = "..." + messageToSend.Substring(splitIndex);
+
+                    messageToSend = part1;
+                    messageToSendPart2 = data;
+                    messageToSendPart2.Message = part2;
+                }
+
+                if (!Bot.Client.JoinedChannels.Any(c => c.Channel == data.Channel))
+                    Bot.Client.JoinChannel(data.Channel);
+                if (Bot.Client.JoinedChannels.Any(c => c.Channel == data.Channel))
+                {
+                    if (data.IsSafeExecute || NoBanwords.fullCheck(messageToSend, data.ChannelID))
+                        await Bot.TelegramClient.SendMessage(long.Parse(data.ChannelID.Replace("tg", "")), data.Message, replyParameters: data.Answer.Id);
+                    else
+                        await Bot.TelegramClient.SendMessage(long.Parse(data.ChannelID.Replace("tg", "")), TranslationManager.GetTranslation(data.Lang, "cantSend", data.ChannelID), replyParameters: data.Answer.Id);
                 }
 
                 if (messageToSendPart2 != null)
@@ -179,8 +241,8 @@ namespace butterBib
         {
             try
             {
-                ConsoleServer.SendConsoleMessage("discord", "Отправка сообщения...");
-                LogWorker.Log($"Был отправлен ответ на комманду, на сервер {data.Server}: {data.Message}", LogWorker.LogTypes.Msg, "ButterBib\\Commands\\SendDiscordReply");
+                ConsoleUtil.LOG("[DS] Sending a message...", "info");
+                LogWorker.Log($"[DS] A response to the command was sent to the server {data.Server}: {data.Message}", LogWorker.LogTypes.Msg, "ButterBib\\Commands\\SendDiscordReply");
                 data.Message = TextUtil.FilterText(data.Message);
 
                 if (data.Message.Length > 1500)
@@ -209,9 +271,9 @@ namespace butterBib
                         {
                             embed.WithTitle(data.Title);
                         }
-                        if (data.Color != default(Color))
+                        if (data.Color != default(Discord.Color))
                         {
-                            embed.WithColor((Color)data.Color);
+                            embed.WithColor((Discord.Color)data.Color);
                         }
                         if (data.Description != "")
                         {
@@ -242,9 +304,9 @@ namespace butterBib
                         {
                             embed.WithTitle(data.Title);
                         }
-                        if (data.Color != default(Color))
+                        if (data.Color != default(Discord.Color))
                         {
-                            embed.WithColor((Color)data.Color);
+                            embed.WithColor((Discord.Color)data.Color);
                         }
                         if (data.Description != "")
                         {
@@ -270,7 +332,7 @@ namespace butterBib
                 {
                     var embed = new EmbedBuilder()
                         .WithTitle(TranslationManager.GetTranslation(data.Lang, "cantSend", ""))
-                        .WithColor(Color.Red)
+                        .WithColor(Discord.Color.Red)
                         .Build();
                     data.d.RespondAsync(embed: embed, ephemeral: data.Ephemeral);
                 }

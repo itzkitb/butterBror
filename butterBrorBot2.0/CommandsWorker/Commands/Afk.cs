@@ -26,7 +26,8 @@ namespace butterBror
                 ForAdmins = false,
                 ForBotCreator = false,
                 ForChannelAdmins = false,
-                CreationDate = DateTime.Parse("04/07/2024")
+                CreationDate = DateTime.Parse("04/07/2024"),
+                AllowedPlatforms = [Platforms.Twitch, Platforms.Telegram]
             };
             // AFK
             static string[] draw = ["draw", "drw", "d", "рисовать", "рис", "р"];

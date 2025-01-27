@@ -26,7 +26,8 @@ namespace butterBror
                 CreationDate = DateTime.Parse("07/07/2024"),
                 ForAdmins = false,
                 ForBotCreator = false,
-                ForChannelAdmins = false
+                ForChannelAdmins = false,
+                AllowedPlatforms = [Platforms.Twitch, Platforms.Telegram]
             };
             public static CommandReturn Index(CommandData data)
             {
