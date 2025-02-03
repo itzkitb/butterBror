@@ -30,7 +30,7 @@ namespace butterBror
         public static bool isRestarting = false;
         public static bool isTwitchReady = false;
         public static float buttersAmount = 0;
-        public static string botVersion = "2.01.1";
+        public static string botVersion = "2.10.1";
         public static string patchID = "J";
         public static int buttersDollars = 0;
         public static DateTime botStartTime = new();
