@@ -172,17 +172,15 @@ namespace butterBror
         public static async void OnJoin(object sender, OnJoinedChannelArgs e)
         {
             ConsoleUtil.LOG($"[TW] Connected to {e.Channel}", "main", ConsoleColor.Black, ConsoleColor.Cyan);
-            if (e.Channel.ToLower() == Bot.BotNick.ToLower())
-                if (!Bot.Connected) ChatUtil.SendMessage(Bot.BotNick, "truckCrash Connecting to twitch...", "", "", "ru", true);
 
             if (Bot.VersionChangeAnnounceChannels.Contains(NamesUtil.GetUserID(e.Channel)) || e.Channel.Equals(Bot.BotNick.ToLower()))
-                ChatUtil.SendMessage(e.Channel, $"butterBror Loaded v.{BotEngine.botVersion} (patch #{BotEngine.patchID})", e.Channel, "", "ru", true);
+                ChatUtil.TwitchSendMessage(e.Channel, $"butterBror v.{BotEngine.botVersion}{BotEngine.patchID}", e.Channel, "", "ru", true);
 
             if (Bot.ConnectionAnnounceChannels.Contains(NamesUtil.GetUserID(e.Channel)))
-                ChatUtil.SendMessage(e.Channel, "butterBror Connected!", e.Channel, "", "ru", true);
+                ChatUtil.TwitchSendMessage(e.Channel, "butterBror Connected!", e.Channel, "", "ru", true);
 
             if (Bot.Reconnected && Bot.ReconnectionAnnounceChannels.Contains(NamesUtil.GetUserID(e.Channel)) || e.Channel.Equals(Bot.BotNick.ToLower()))
-                ChatUtil.SendMessage(e.Channel, "butterBror Reconnected!", e.Channel, "", "ru", true);
+                ChatUtil.TwitchSendMessage(e.Channel, "butterBror Reconnected!", e.Channel, "", "ru", true);
             if (!Bot.Channels.Contains(e.Channel))
                 Bot.Channels.Append(e.Channel);
         } // Обработка присоединения к каналу

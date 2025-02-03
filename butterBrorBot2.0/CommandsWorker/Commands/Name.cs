@@ -38,12 +38,12 @@ namespace butterBror
                     if (data.args.Count > 0)
                     {
                         string username = TextUtil.NicknameFilter(data.args[0].ToLower());
-                        string ID = NamesUtil.GetUserID(username, "null");
+                        string ID = NamesUtil.GetUserID(username);
                         if (ID == data.UserUUID)
                         {
                             resultMessage = TranslationManager.GetTranslation(data.User.Lang, "IDYourSelfGet", data.ChannelID).Replace("%id%", data.UserUUID);
                         }
-                        else if (ID == "null")
+                        else if (ID == null)
                         {
                             resultMessage = TranslationManager.GetTranslation(data.User.Lang, "noneExistUser", data.ChannelID).Replace("%user%", username);
                             resultNicknameColor = ChatColorPresets.Red;

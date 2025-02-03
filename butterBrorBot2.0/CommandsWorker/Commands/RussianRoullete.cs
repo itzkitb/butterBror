@@ -15,7 +15,7 @@ namespace butterBror
                 Author = "@ItzKITb",
                 AuthorURL = "twitch.tv/itzkitb",
                 AuthorImageURL = "https://static-cdn.jtvnw.net/jtv_user_pictures/c3a9af55-d7af-4b4a-82de-39a4d8b296d3-profile_image-70x70.png",
-                Description = "Хотите проверить свою удачу? Вы можете проверить её тут!",
+                Description = "Хотите проверить свою удачу? Вы можете сделать это тут!",
                 UseURL = "https://itzkitb.ru/bot/command?name=rr",
                 UserCooldown = 5,
                 GlobalCooldown = 1,
@@ -39,13 +39,13 @@ namespace butterBror
                     int win = rand.Next(1, 3);
                     int page2 = rand.Next(1, 5);
                     string translationParam = "russianRoullete";
-                    if (BalanceUtil.GetBalance(data.UserUUID) > 4)
+                    if (BalanceUtil.GetButters(data.UserUUID) > 4)
                     {
                         if (win == 1)
                         {
                             // WIN
                             translationParam += "Win" + page2;
-                            BalanceUtil.SaveBalance(data.UserUUID, 1, 0);
+                            BalanceUtil.Add(data.UserUUID, 1, 0);
                         }
                         else
                         {
@@ -53,11 +53,11 @@ namespace butterBror
                             translationParam += "Over" + page2;
                             if (page2 == 4)
                             {
-                                BalanceUtil.SaveBalance(data.UserUUID, -1, 0);
+                                BalanceUtil.Add(data.UserUUID, -1, 0);
                             }
                             else
                             {
-                                BalanceUtil.SaveBalance(data.UserUUID, -5, 0);
+                                BalanceUtil.Add(data.UserUUID, -5, 0);
                             }
                             resultNicknameColor = ChatColorPresets.Red;
                             resultColor = Color.Red;

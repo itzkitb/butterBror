@@ -22,11 +22,11 @@ namespace butterBror
                     }
                     if (peepoHuyUsers.Contains(e.Command.ChatMessage.UserId))
                     {
-                        ChatUtil.TWSendMsgReply(e.Command.ChatMessage.Channel, e.Command.ChatMessage.RoomId, TranslationManager.GetTranslation(lang, "huicaMenu", "").Replace("%menu%", (pizzasAsString + "\n").Replace(", \n", "")), e.Command.ChatMessage.Id, lang, true);
+                        ChatUtil.TwitchReplyMessage(e.Command.ChatMessage.Channel, e.Command.ChatMessage.RoomId, TranslationManager.GetTranslation(lang, "huicaMenu", "").Replace("%menu%", (pizzasAsString + "\n").Replace(", \n", "")), e.Command.ChatMessage.Id, lang, true);
                     }
                     else
                     {
-                        ChatUtil.TWSendMsgReply(e.Command.ChatMessage.Channel, e.Command.ChatMessage.RoomId, TranslationManager.GetTranslation(lang, "pizzaMenu", "").Replace("%menu%", (pizzasAsString + "\n").Replace(", \n", "")), e.Command.ChatMessage.Id, lang, true);
+                        ChatUtil.TwitchReplyMessage(e.Command.ChatMessage.Channel, e.Command.ChatMessage.RoomId, TranslationManager.GetTranslation(lang, "pizzaMenu", "").Replace("%menu%", (pizzasAsString + "\n").Replace(", \n", "")), e.Command.ChatMessage.Id, lang, true);
                     }
                 }
                 else if (e.Command.ArgumentsAsList.Count >= 2)

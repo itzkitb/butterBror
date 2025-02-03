@@ -36,7 +36,7 @@ namespace butterBror
                     string result = "";
                     Color colords = Color.Green;
                     ChatColorPresets colorNickname = ChatColorPresets.YellowGreen;
-                    if (TextUtil.FilterTextWithoutSpaces(data.ArgsAsString) == "")
+                    if (TextUtil.CleanAsciiWithoutSpaces(data.ArgsAsString) == "")
                     {
                         result = TranslationManager.GetTranslation(data.User.Lang, "balance", data.ChannelID)
                                 .Replace("%coins%", UsersData.UserGetData<int>(data.UserUUID, "balance") + "." + UsersData.UserGetData<int>(data.UserUUID, "floatBalance"));
@@ -44,7 +44,7 @@ namespace butterBror
                     else
                     {
                         var userID = NamesUtil.GetUserID(TextUtil.NicknameFilter(data.ArgsAsString));
-                        if (userID != "err")
+                        if (userID != null)
                         {
                             result = TranslationManager.GetTranslation(data.User.Lang, "balanceSelectedUser", data.ChannelID)
                                 .Replace("%coins%", UsersData.UserGetData<int>(userID, "balance") + "." + UsersData.UserGetData<int>(userID, "floatBalance"))

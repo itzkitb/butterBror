@@ -36,35 +36,25 @@ namespace butterBror
                     string result = "";
                     if (data.args.Count == 1)
                     {
-                        string classToFound = data.args[0];
+                        string classToFind = data.args[0];
                         result = TranslationManager.GetTranslation(data.User.Lang, "help:notFound", data.ChannelID);
-                        foreach (var classType in classes)
+                        foreach (var info in commandsIndex)
                         {
-                            // Получение значения статического свойства Info
-                            var infoProperty = classType.GetField("Info", BindingFlags.Static | BindingFlags.Public);
-                            var info = infoProperty.GetValue(null) as CommandInfo;
-
-                            if (info.aliases.Contains(classToFound))
+                            if (info.aliases.Contains(classToFind))
                             {
                                 string aliasesList = "";
                                 int num = 0;
                                 int numWithoutComma = 5;
                                 if (info.aliases.Length < 5)
-                                {
                                     numWithoutComma = info.aliases.Length;
-                                }
 
                                 foreach (string alias in info.aliases)
                                 {
                                     num++;
                                     if (num < numWithoutComma)
-                                    {
                                         aliasesList += $"#{alias}, ";
-                                    }
                                     else if (num == numWithoutComma)
-                                    {
                                         aliasesList += $"#{alias}";
-                                    }
                                 }
                                 result = TranslationManager.GetTranslation(data.User.Lang, "help:found", data.ChannelID)
                                     .Replace("%commandName%", info.Name)
@@ -76,18 +66,15 @@ namespace butterBror
                                     .Replace("%creationDate%", info.CreationDate.ToShortDateString())
                                     .Replace("%uCooldown%", info.UserCooldown.ToString())
                                     .Replace("%gCooldown%", info.GlobalCooldown.ToString());
+
                                 break;
                             }
                         }
                     }
                     else if (data.args.Count > 1)
-                    {
                         result = TranslationManager.GetTranslation(data.User.Lang, "aFewArgs", data.ChannelID).Replace("%args%", "(command_name)");
-                    }
                     else
-                    {
                         result = TranslationManager.GetTranslation(data.User.Lang, "botInfo", data.ChannelID);
-                    }
 
 
                     return new()
@@ -103,7 +90,7 @@ namespace butterBror
                         Ephemeral = false,
                         Title = TranslationManager.GetTranslation(data.User.Lang, "dsWinterTitle", data.ChannelID),
                         Color = Color.Blue,
-                        NickNameColor = TwitchLib.Client.Enums.ChatColorPresets.DodgerBlue
+                        NickNameColor = ChatColorPresets.DodgerBlue
                     };
                 }
                 catch (Exception e)

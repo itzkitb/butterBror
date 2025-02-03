@@ -122,7 +122,7 @@ namespace butterBror
                                 long frogs = FormatUtil.ToLong(data.args[2]);
                                 string userID = NamesUtil.GetUserID(username);
 
-                                if (userID == "err")
+                                if (userID == null)
                                 {
                                     resultMessage = TranslationManager.GetTranslation(data.User.Lang, "noneExistUser", data.ChannelID)
                                         .Replace("%user%", NamesUtil.DontPingUsername(username));

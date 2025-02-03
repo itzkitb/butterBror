@@ -35,56 +35,28 @@ namespace butterBror
                     string resultMessage = "";
                     Color resultColor = Color.Green;
                     ChatColorPresets resultNicknameColor = ChatColorPresets.YellowGreen;
-                    var Task = new TasksDebugUtil();
                     bool IsError = false;
                     try
                     {
-                        Task.SetTask(1);
                         if (data.args.Count > 0)
                         {
-                            Task.SetTask(5);
                             if (data.ArgsAsString.Contains('-'))
                             {
-                                Task.SetTask(6);
                                 string[] numbers = data.ArgsAsString.Split('-');
-                                Task.SetTask(7);
                                 if (numbers.Length == 2 && int.TryParse(numbers[0], out int min) && int.TryParse(numbers[1], out int max))
-                                {
-                                    Task.SetTask(8);
-                                    Random rand = new Random();
-                                    int randomNum = rand.Next(min, max + 1);
-                                    Task.SetTask(9);
-                                    resultMessage = $"{TranslationManager.GetTranslation(data.User.Lang, "randomNum", data.ChannelID)}{randomNum}";
-                                }
+                                    resultMessage = $"{TranslationManager.GetTranslation(data.User.Lang, "randomNum", data.ChannelID)}{new Random().Next(min, max + 1)}";
                                 else
-                                {
-                                    Task.SetTask(10);
-                                    string[] words = data.ArgsAsString.Split(' ');
-                                    Random rand = new Random();
-                                    string[] shuffledWords = words.OrderBy(x => rand.Next()).ToArray();
-                                    Task.SetTask(11);
-                                    resultMessage = $"{TranslationManager.GetTranslation(data.User.Lang, "randomTxt", data.ChannelID)}{string.Join(" ", shuffledWords)}";
-                                }
+                                    resultMessage = $"{TranslationManager.GetTranslation(data.User.Lang, "randomTxt", data.ChannelID)}{string.Join(" ", [.. data.ArgsAsString.Split(' ').OrderBy(x => new Random().Next())])}";
                             }
                             else
-                            {
-                                Task.SetTask(3);
-                                string[] words = data.ArgsAsString.Split(' ');
-                                Random rand = new Random();
-                                string[] shuffledWords = words.OrderBy(x => rand.Next()).ToArray();
-                                Task.SetTask(4);
-                                resultMessage = $"{TranslationManager.GetTranslation(data.User.Lang, "randomTxt", data.ChannelID)}{string.Join(" ", shuffledWords)}";
-                            }
+                                resultMessage = $"{TranslationManager.GetTranslation(data.User.Lang, "randomTxt", data.ChannelID)}{string.Join(" ", [.. data.ArgsAsString.Split(' ').OrderBy(x => new Random().Next())])}";
                         }
                         else
-                        {
-                            Task.SetTask(2);
                             resultMessage = TranslationManager.GetTranslation(data.User.Lang, "randomTxt", data.ChannelID) + "DinoDance";
-                        }
                     }
                     catch (Exception e)
                     {
-                        ConsoleUtil.ErrorOccured(e, $"Command\\Bot\\Random#{Task.GetTask()}");
+                        ConsoleUtil.ErrorOccured(e, $"Command\\Bot\\Random");
                         IsError = true;
                     }
                     return new()

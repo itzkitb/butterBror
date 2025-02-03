@@ -39,7 +39,7 @@ namespace butterBror
                     string? url = "";
                     if (data.Platform == Platforms.Twitch)
                     {
-                        url = TextUtil.FilterText(data.ArgsAsString);
+                        url = TextUtil.CleanAscii(data.ArgsAsString);
                     }
                     else if (data.Platform == Platforms.Discord)
                     {

@@ -38,7 +38,7 @@ namespace butterBror
             static string[] study = ["study", "st", "учеба", "учится", "у"];
             static string[] poop = ["poop", "p", "😳", "туалет", "🚽"];
             static string[] shower = ["shower", "sh", "ванная", "душ"];
-            static TasksDebugUtil Tasks = new TasksDebugUtil();
+
             public static CommandReturn Index(CommandData data)
             {
                 try
@@ -110,14 +110,12 @@ namespace butterBror
                         UsersData.UserSaveData(data.UserUUID, "lastFromAfkResume", DateTime.UtcNow);
                         UsersData.UserSaveData(data.UserUUID, "fromAfkResumeTimes", 0);
                         string send = "";
-                        if (TextUtil.FilterTextWithoutSpaces(text) == "")
-                        {
+
+                        if (TextUtil.CleanAsciiWithoutSpaces(text) == "")
                             send = result;
-                        }
                         else
-                        {
                             send = result + ": " + text;
-                        }
+
                         return new()
                         {
                             Message = send,

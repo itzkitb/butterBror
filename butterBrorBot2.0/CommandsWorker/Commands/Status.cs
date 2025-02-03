@@ -46,7 +46,7 @@ namespace butterBror
                     DriveInfo driveInfo = new(driveLetter.Substring(0, 1));
                     long avalibeDiskSpace = driveInfo.AvailableFreeSpace / (1024 * 1024 * 1024); // GB
                     long diskSpace = driveInfo.TotalSize / (1024 * 1024 * 1024);
-                    int percentDiskUsed = (int)(float)(100.0 / FormatUtil.ToNumber(diskSpace.ToString()) * FormatUtil.ToNumber(avalibeDiskSpace.ToString()));
+                    int percentDiskUsed = (int)(float)(100.0 / FormatUtil.ToInt(diskSpace.ToString()) * FormatUtil.ToInt(avalibeDiskSpace.ToString()));
 
                     if (percentDiskUsed > 80)
                     {

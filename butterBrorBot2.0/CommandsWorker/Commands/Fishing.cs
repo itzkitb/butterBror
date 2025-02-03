@@ -22,7 +22,7 @@ namespace butterBror
                         int nowLocation = UsersData.UserGetData<int>(e.Command.ChatMessage.UserId, "fishLocation");
                         if (e.Command.ArgumentsAsList.Count > 1)
                         {
-                            int point = FormatUtil.ToNumber(e.Command.ArgumentsAsList.ElementAt(1));
+                            int point = FormatUtil.ToInt(e.Command.ArgumentsAsList.ElementAt(1));
                             if (point < 11 && point > 0)
                             {
                                 int distanceToLocation = 0;
@@ -41,27 +41,27 @@ namespace butterBror
                                     UsersData.UserSaveData(e.Command.ChatMessage.UserId, "fishIsMovingNow", true);
                                     int endTime = randomMultiplier * distanceToLocation;
                                     DateTime ArrivalTime = DateTime.UtcNow.AddMilliseconds(endTime);
-                                    ChatUtil.TWSendMsgReply(e.Command.ChatMessage.Channel, e.Command.ChatMessage.RoomId, TranslationManager.GetTranslation(lang, "fishMoving", "").Replace("%point%", point.ToString()).Replace("%time%", TextUtil.FormatTimeSpan(FormatUtil.GetTimeTo(ArrivalTime, DateTime.UtcNow), lang)), e.Command.ChatMessage.Id, lang, true);
+                                    ChatUtil.TwitchReplyMessage(e.Command.ChatMessage.Channel, e.Command.ChatMessage.RoomId, TranslationManager.GetTranslation(lang, "fishMoving", "").Replace("%point%", point.ToString()).Replace("%time%", TextUtil.FormatTimeSpan(FormatUtil.GetTimeTo(ArrivalTime, DateTime.UtcNow), lang)), e.Command.ChatMessage.Id, lang, true);
                                     Task task = Task.Run(() =>
                                     {
                                         Thread.Sleep(endTime);
                                         UsersData.UserSaveData(e.Command.ChatMessage.UserId, "fishIsMovingNow", true);
-                                        ChatUtil.SendMessage(UsersData.UserGetData<string>(e.Command.ChatMessage.UserId, "lastSeenChannel"), TranslationManager.GetTranslation(lang, "fishMoveEnd", "").Replace("%point%", point.ToString()).Replace("%user%", e.Command.ChatMessage.Username), NamesUtil.GetUserID(UsersData.UserGetData<string>(e.Command.ChatMessage.UserId, "lastSeenChannel")), "", lang, true);
+                                        ChatUtil.TwitchSendMessage(UsersData.UserGetData<string>(e.Command.ChatMessage.UserId, "lastSeenChannel"), TranslationManager.GetTranslation(lang, "fishMoveEnd", "").Replace("%point%", point.ToString()).Replace("%user%", e.Command.ChatMessage.Username), NamesUtil.GetUserID(UsersData.UserGetData<string>(e.Command.ChatMessage.UserId, "lastSeenChannel")), "", lang, true);
                                     });
                                 }
                                 else
                                 {
-                                    ChatUtil.TWSendMsgReply(e.Command.ChatMessage.Channel, e.Command.ChatMessage.RoomId, TranslationManager.GetTranslation(lang, "fishWrong", ""), e.Command.ChatMessage.Id, lang, true);
+                                    ChatUtil.TwitchReplyMessage(e.Command.ChatMessage.Channel, e.Command.ChatMessage.RoomId, TranslationManager.GetTranslation(lang, "fishWrong", ""), e.Command.ChatMessage.Id, lang, true);
                                 }
                             }
                             else
                             {
-                                ChatUtil.TWSendMsgReply(e.Command.ChatMessage.Channel, e.Command.ChatMessage.RoomId, TranslationManager.GetTranslation(lang, "fishWrongNum", ""), e.Command.ChatMessage.Id, lang, true);
+                                ChatUtil.TwitchReplyMessage(e.Command.ChatMessage.Channel, e.Command.ChatMessage.RoomId, TranslationManager.GetTranslation(lang, "fishWrongNum", ""), e.Command.ChatMessage.Id, lang, true);
                             }
                         }
                         else
                         {
-                            ChatUtil.TWSendMsgReply(e.Command.ChatMessage.Channel, e.Command.ChatMessage.RoomId, TranslationManager.GetTranslation(lang, "fishCurrentPlace", "").Replace("%point%", nowLocation.ToString()), e.Command.ChatMessage.Id, lang, true);
+                            ChatUtil.TwitchReplyMessage(e.Command.ChatMessage.Channel, e.Command.ChatMessage.RoomId, TranslationManager.GetTranslation(lang, "fishCurrentPlace", "").Replace("%point%", nowLocation.ToString()), e.Command.ChatMessage.Id, lang, true);
                         }
                     }
                 }

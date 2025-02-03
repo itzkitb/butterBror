@@ -38,15 +38,13 @@ namespace butterBror
                     ChatColorPresets resultNicknameColor = ChatColorPresets.HotPink;
                     if (data.args.Count >= 1)
                     {
-                        var username = TextUtil.NicknameFilter(TextUtil.FilterTextWithoutSpaces(data.args[0]));
+                        var username = TextUtil.NicknameFilter(TextUtil.CleanAsciiWithoutSpaces(data.args[0]));
                         var isSelectedUserIsNotIgnored = true;
                         var userID = NamesUtil.GetUserID(username.ToLower());
                         try
                         {
-                            if (userID != "err")
-                            {
+                            if (userID != null)
                                 isSelectedUserIsNotIgnored = !UsersData.UserGetData<bool>(userID, "isIgnored");
-                            }
                         }
                         catch (Exception) { }
                         if (username.ToLower() == Bot.BotNick.ToLower())

@@ -46,18 +46,18 @@ namespace butterBror
 
                     if (data.Platform == Platforms.Twitch)
                     {
-                        location = TextUtil.FilterText(data.ArgsAsString);
+                        location = TextUtil.CleanAscii(data.ArgsAsString);
                         if (data.TWargs.Command.ArgumentsAsList.Count >= 2)
                         {
                             if (showAlias.Contains(data.TWargs.Command.ArgumentsAsList[0].ToLower().ToString()))
                             {
                                 isShow = true;
-                                ShowID = FormatUtil.ToNumber(data.TWargs.Command.ArgumentsAsList[1].ToLower().ToString());
+                                ShowID = FormatUtil.ToInt(data.TWargs.Command.ArgumentsAsList[1].ToLower().ToString());
                             }
                             else if (pageAlias.Contains(data.TWargs.Command.ArgumentsAsList[0].ToLower().ToString()))
                             {
                                 isPage = true;
-                                Page = FormatUtil.ToNumber(data.TWargs.Command.ArgumentsAsList[1].ToLower().ToString());
+                                Page = FormatUtil.ToInt(data.TWargs.Command.ArgumentsAsList[1].ToLower().ToString());
                             }
                         }
                     }

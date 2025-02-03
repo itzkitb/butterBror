@@ -145,7 +145,7 @@ namespace butterBib
                 TwitchMessageSendData messageToSendPart2 = null;
                 ConsoleUtil.LOG("[TW] Sending a message...", "info");
                 LogWorker.Log($"[TW] A response to message {data.AnswerID} was sent to channel {data.Channel}: {data.Message}", LogWorker.LogTypes.Msg, "ButterBib\\Commands\\SendCommandReply");
-                messageToSend = TextUtil.FilterText(data.Message);
+                messageToSend = TextUtil.CleanAscii(data.Message);
 
                 if (messageToSend.Length > 1500)
                 {
@@ -198,7 +198,7 @@ namespace butterBib
                 TelegramMessageSendData messageToSendPart2 = null;
                 ConsoleUtil.LOG($"[TG] Sending a message... (Room: {(data.ChannelID == null ? "null" : data.ChannelID)}, message ID: {(data.Answer == null ? "null" : data.Answer.Id)})", "info");
                 LogWorker.Log($"[TG] A message response was sent to the {data.Channel} channel: {data.Message}", LogWorker.LogTypes.Msg, "ButterBib\\Commands\\SendCommandReply");
-                messageToSend = TextUtil.FilterText(data.Message);
+                messageToSend = TextUtil.CleanAscii(data.Message);
 
                 if (messageToSend.Length > 1500)
                 {
@@ -243,7 +243,7 @@ namespace butterBib
             {
                 ConsoleUtil.LOG("[DS] Sending a message...", "info");
                 LogWorker.Log($"[DS] A response to the command was sent to the server {data.Server}: {data.Message}", LogWorker.LogTypes.Msg, "ButterBib\\Commands\\SendDiscordReply");
-                data.Message = TextUtil.FilterText(data.Message);
+                data.Message = TextUtil.CleanAscii(data.Message);
 
                 if (data.Message.Length > 1500)
                 {

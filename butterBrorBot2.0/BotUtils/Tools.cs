@@ -21,23 +21,14 @@ using butterBib;
 using System.Drawing;
 using Telegram.Bot.Types;
 using Telegram.Bot;
+using static System.Net.Mime.MediaTypeNames;
+using System.Linq;
+using TwitchLib.Client.Models;
 
 namespace butterBror
 {
     namespace Utils
     {
-        public class TasksDebugUtil
-        {
-            private int TaskNow = 0;
-            public void SetTask(int TaskID)
-            {
-                TaskNow = 100 + TaskID;
-            }
-            public int GetTask()
-            {
-                return TaskNow;
-            }
-        }
         /// <summary>
         /// Получение токена авторизации твича
         /// </summary>
@@ -67,17 +58,11 @@ namespace butterBror
                 try
                 {
                     if (_tokenData != null && _tokenData.ExpiresAt > DateTime.Now)
-                    {
                         return _tokenData.AccessToken;
-                    }
                     if (_tokenData == null || _tokenData.RefreshToken == null)
-                    {
                         return await PerformAuthorizationFlow();
-                    }
-                    else
-                    {
-                        return await RefreshAccessToken();
-                    }
+
+                    return await RefreshAccessToken();
                 }
                 catch (Exception ex) 
                 {
@@ -107,11 +92,11 @@ namespace butterBror
 <html>
     <head>
         <meta charset='UTF-8'>
-        <title>Авторизация завершена</title>
+        <title>butterBror | Авторизация завершена</title>
     </head>
     <body>
         <h2> Готово <img src='https://static-cdn.jtvnw.net/emoticons/v2/28/default/dark/1.0' style='vertical-align: middle;'/> 👍</h2>
-		<div> Можете закрыть эту страницу кожанный мешок с костями</div>
+		<span> Можете закрыть эту страницу</span>
     </body>
 </html>";
 
@@ -120,7 +105,7 @@ namespace butterBror
                     response.ContentType = "text/html; charset=UTF-8";
                     using (var output = response.OutputStream)
                     {
-                        await output.WriteAsync(buffer, 0, buffer.Length);
+                        await output.WriteAsync(buffer);
                     }
 
                     return token.AccessToken;
@@ -140,7 +125,6 @@ namespace butterBror
                 try
                 {
                     var httpClient = new HttpClient();
-                    // Tools.LOG($"Refresh token: {_tokenData.RefreshToken}, Client id: {_clientId}, Client secret: {_clientSecret}");
                     var request = new HttpRequestMessage(HttpMethod.Post, "https://id.twitch.tv/oauth2/token")
                     {
                         Content = new StringContent($"grant_type=refresh_token&refresh_token={_tokenData.RefreshToken}&client_id={_clientId}&client_secret={_clientSecret}", Encoding.UTF8, "application/x-www-form-urlencoded")
@@ -232,7 +216,7 @@ namespace butterBror
             /// <summary>
             /// Получить код из ответа
             /// </summary>
-            private string GetCodeFromResponse(string response)
+            private static string GetCodeFromResponse(string response)
             {
                 try
                 {
@@ -243,9 +227,7 @@ namespace butterBror
                     {
                         var keyValue = part.Split('=');
                         if (keyValue[0] == "?code")
-                        {
                             return keyValue[1];
-                        }
                     }
                     return null;
                 }
@@ -266,9 +248,7 @@ namespace butterBror
                     {
                         var tokenData = JsonConvert.DeserializeObject<TokenData>(System.IO.File.ReadAllText(_databasePath));
                         if (tokenData.ExpiresAt > DateTime.Now)
-                        {
                             return tokenData;
-                        }
                     }
                     return null;
                 }
@@ -315,7 +295,7 @@ namespace butterBror
             /// <summary>
             /// Текст в число
             /// </summary>
-            public static int ToNumber(string input)
+            public static int ToInt(string input)
             {
                 try
                 {
@@ -351,17 +331,13 @@ namespace butterBror
             /// </summary>
             public static TimeSpan GetTimeTo(DateTime time, DateTime now, bool addYear = true)
             {
-                TimeSpan Return;
-                if (now < time || !addYear)
-                {
-                    Return = time - now;
-                }
+                if (now > time && addYear)
+                    time.AddYears(1);
+
+                if (now > time)
+                    return now - time;
                 else
-                {
-                    time = time.AddYears(1);
-                    Return = time - now;
-                }
-                return Return;
+                    return time - now;
             }
         }
         /// <summary>
@@ -372,45 +348,42 @@ namespace butterBror
             /// <summary>
             /// Добавить/уменьшить баланс пользователя
             /// </summary>
-            public static void SaveBalance(string userID, int plusBalance, int plusFloatBalance)
+            public static void Add(string userID, int buttersAdd, int crumbsAdd)
             {
                 try
                 {
-                    int floatBalance = 0;
-                    int balance = 0;
-                    if (GetFloatBalance(userID) != null || GetBalance(userID) != null)
+                    int crumbs = 0;
+                    int butters = 0;
+
+                    if (GetCrumbs(userID) != 0 || GetButters(userID) != 0)
                     {
-                        floatBalance = GetFloatBalance(userID) + plusFloatBalance;
-                        balance = GetBalance(userID) + plusBalance;
+                        crumbs = GetCrumbs(userID) + crumbsAdd;
+                        butters = GetButters(userID) + buttersAdd;
                     }
 
-                    BotEngine.buttersAmount += plusBalance + (float)(plusFloatBalance / 100.0);
+                    butters += crumbs / 100;
+                    crumbs = crumbs % 100;
 
-                    while (floatBalance >= 100)
-                    {
-                        balance++;
-                        floatBalance -= 100;
-                    }
-
-                    UsersData.UserSaveData(userID, "floatBalance", floatBalance, false);
-                    UsersData.UserSaveData(userID, "balance", balance, false);
+                    BotEngine.buttersAmount += buttersAdd + crumbsAdd / 100f;
+                    UsersData.UserSaveData(userID, "floatBalance", crumbs, false);
+                    UsersData.UserSaveData(userID, "balance", butters, false);
                 }
                 catch (Exception ex)
                 {
-                    ConsoleUtil.ErrorOccured(ex, $"BalanceUtil\\SaveBalance#{userID}\\{plusBalance}.{plusFloatBalance}");
+                    ConsoleUtil.ErrorOccured(ex, $"BalanceUtil\\SaveBalance#{userID}\\{buttersAdd}.{crumbsAdd}");
                 }
             }
             /// <summary>
             /// Получение бутеров пользователя
             /// </summary>
-            public static int GetBalance(string userID)
+            public static int GetButters(string userID)
             {
                 return UsersData.UserGetData<int>(userID, "balance");
             }
             /// <summary>
             /// Получение крошек пользователя
             /// </summary>
-            public static int GetFloatBalance(string userID)
+            public static int GetCrumbs(string userID)
             {
                 return UsersData.UserGetData<int>(userID, "floatBalance");
             }
@@ -423,7 +396,7 @@ namespace butterBror
             /// <summary>
             /// Вернуть пользователя из АФК
             /// </summary>
-            public static async void ReturnFromAFK(string UserID, string RoomID, string channel, string username, string message_id, Message message_reply, Platforms platform)
+            public static void ReturnFromAFK(string UserID, string RoomID, string channel, string username, string message_id, Message message_reply, Platforms platform)
             {
                 try
                 {
@@ -440,99 +413,96 @@ namespace butterBror
                     {
                         ConsoleUtil.ErrorOccured(ex, $"(NOTCRITICAL)ChatUtil\\ReturnFromAFK#{UserID}");
                     }
-                    var message = UsersData.UserGetData<string>(UserID, "afkText");
-                    if (NoBanwords.fullCheck(message, RoomID))
+
+                    string? message = UsersData.UserGetData<string>(UserID, "afkText");
+                    if (!NoBanwords.fullCheck(message, RoomID))
+                        return;
+
+                    string send = (TextUtil.CleanAsciiWithoutSpaces(message) == "" ? "" : ": " + message);
+
+                    TimeSpan timeElapsed = DateTime.UtcNow - UsersData.UserGetData<DateTime>(UserID, "afkTime");
+                    var afkType = UsersData.UserGetData<string>(UserID, "afkType");
+                    string translateKey = "";
+
+                    if (afkType == "draw")
                     {
-                        var text = "";
-                        string send = "";
-
-                        if (TextUtil.FilterTextWithoutSpaces(message) == "") send = "";
-                        else send = ": " + message;
-
-                        DateTime currentTime = DateTime.UtcNow;
-                        TimeSpan timeElapsed = currentTime - UsersData.UserGetData<DateTime>(UserID, "afkTime");
-                        string translateKey = "";
-                        var afkType = UsersData.UserGetData<string>(UserID, "afkType");
-                        if (afkType == "draw")
-                        {
-                            if (timeElapsed.TotalHours >= 2 && timeElapsed.TotalHours < 8)translateKey = "draw:2h";
-                            else if (timeElapsed.TotalHours >= 8 && timeElapsed.TotalHours < 24)translateKey = "draw:8h";
-                            else if (timeElapsed.TotalDays >= 1 && timeElapsed.TotalDays < 7)translateKey = "draw:1d";
-                            else if (timeElapsed.TotalDays >= 7 && timeElapsed.TotalDays < 31)translateKey = "draw:7d";
-                            else if (timeElapsed.TotalDays >= 31 && timeElapsed.TotalDays < 364)translateKey = "draw:1mn";
-                            else if (timeElapsed.TotalDays >= 364)translateKey = "draw:1y";
-                            else translateKey = "draw:default";
-                        }
-                        else if (afkType == "afk")
-                        {
-                            if (timeElapsed.TotalHours >= 8 && timeElapsed.TotalHours < 14)translateKey = "afk:8h";
-                            else if (timeElapsed.TotalHours >= 14 && timeElapsed.TotalDays < 1)translateKey = "afk:14h";
-                            else if (timeElapsed.TotalDays >= 1 && timeElapsed.TotalDays < 3)translateKey = "afk:1d";
-                            else if (timeElapsed.TotalDays >= 3 && timeElapsed.TotalDays < 7)translateKey = "afk:3d";
-                            else if (timeElapsed.TotalDays >= 7 && timeElapsed.TotalDays < 9)translateKey = "afk:7d";
-                            else if (timeElapsed.TotalDays >= 9 && timeElapsed.TotalDays < 31)translateKey = "afk:9d";
-                            else if (timeElapsed.TotalDays >= 31 && timeElapsed.TotalDays < 364)translateKey = "afk:1mn";
-                            else if (timeElapsed.TotalDays >= 364) translateKey = "afk:1y";
-                            else translateKey = "afk:default";
-                        }
-                        else if (afkType == "sleep")
-                        {
-                            if (timeElapsed.TotalHours >= 2 && timeElapsed.TotalHours < 5)translateKey = "sleep:2h";
-                            else if (timeElapsed.TotalHours >= 5 && timeElapsed.TotalHours < 8)translateKey = "sleep:5h";
-                            else if (timeElapsed.TotalHours >= 8 && timeElapsed.TotalHours < 12)translateKey = "sleep:8h";
-                            else if (timeElapsed.TotalHours >= 12 && timeElapsed.TotalDays < 1)translateKey = "sleep:12h";
-                            else if (timeElapsed.TotalDays >= 1 && timeElapsed.TotalDays < 3)translateKey = "sleep:1d";
-                            else if (timeElapsed.TotalDays >= 3 && timeElapsed.TotalDays < 7)translateKey = "sleep:3d";
-                            else if (timeElapsed.TotalDays >= 7 && timeElapsed.TotalDays < 31)translateKey = "sleep:7d";
-                            else if (timeElapsed.TotalDays >= 31 && timeElapsed.TotalDays < 364)translateKey = "sleep:1mn";
-                            else if (timeElapsed.TotalDays >= 364)translateKey = "sleep:1y";
-                            else translateKey = "sleep:default";
-                        }
-                        else if (afkType == "rest")
-                        {
-                            if (timeElapsed.TotalHours >= 8 && timeElapsed.TotalHours < 24)translateKey = "rest:8h";
-                            else if (timeElapsed.TotalDays >= 1 && timeElapsed.TotalDays < 7)translateKey = "rest:1d";
-                            else if (timeElapsed.TotalDays >= 7 && timeElapsed.TotalDays < 31)translateKey = "rest:7d";
-                            else if (timeElapsed.TotalDays >= 31 && timeElapsed.TotalDays < 364)translateKey = "rest:1mn";
-                            else if (timeElapsed.TotalDays >= 364)translateKey = "rest:1y";
-                            else translateKey = "rest:default";
-                        }
-                        else if (afkType == "lurk") translateKey = "lurk:default";
-                        else if (afkType == "study")
-                        {
-                            if (timeElapsed.TotalHours >= 2 && timeElapsed.TotalHours < 5)translateKey = "study:2h";
-                            else if (timeElapsed.TotalHours >= 5 && timeElapsed.TotalHours < 8)translateKey = "study:5h";
-                            else if (timeElapsed.TotalHours >= 8 && timeElapsed.TotalHours < 24)translateKey = "study:8h";
-                            else if (timeElapsed.TotalDays >= 1 && timeElapsed.TotalDays < 7)translateKey = "study:1d";
-                            else if (timeElapsed.TotalDays >= 7 && timeElapsed.TotalDays < 31)translateKey = "study:7d";
-                            else if (timeElapsed.TotalDays >= 31 && timeElapsed.TotalDays < 364)translateKey = "study:1mn";
-                            else if (timeElapsed.TotalDays >= 364)translateKey = "study:1y";
-                            else translateKey = "study:default";
-                        }
-                        else if (afkType == "poop")
-                        {
-                            if (timeElapsed.TotalMinutes >= 1 && timeElapsed.TotalHours < 1)translateKey = "poop:1m";
-                            else if (timeElapsed.TotalHours >= 1 && timeElapsed.TotalHours < 8)translateKey = "poop:1h";
-                            else if (timeElapsed.TotalHours >= 8)translateKey = "poop:8h";
-                            else translateKey = "poop:default";
-                        }
-                        else if (afkType == "shower")
-                        {
-                            if (timeElapsed.TotalMinutes >= 1 && timeElapsed.TotalMinutes < 10)translateKey = "shower:1m";
-                            else if(timeElapsed.TotalMinutes >= 10 && timeElapsed.TotalHours < 1)translateKey = "shower:10m";
-                            else if (timeElapsed.TotalHours >= 1 && timeElapsed.TotalHours < 8)translateKey = "shower:1h";
-                            else if (timeElapsed.TotalHours >= 8)translateKey = "shower:8h";
-                            else translateKey = "shower:default";
-                        }
-                        text = TranslationManager.GetTranslation(lang, translateKey, RoomID);
-                        UsersData.UserSaveData(UserID, "lastFromAfkResume", DateTime.UtcNow);
-                        UsersData.UserSaveData(UserID, "isAfk", false);
-
-                        if (platform == Platforms.Twitch)
-                            TWSendMsgReply(channel, RoomID, text.Replace("%user%", username) + send + " (" + TextUtil.FormatTimeSpan(FormatUtil.GetTimeTo(UsersData.UserGetData<DateTime>(UserID, "afkTime"), DateTime.UtcNow, false), lang) + ")", message_id, lang, true);
-                        else if (platform == Platforms.Telegram)
-                            TGMsgReply(channel, message_reply.Chat.Id, text.Replace("%user%", username) + send + " (" + TextUtil.FormatTimeSpan(FormatUtil.GetTimeTo(UsersData.UserGetData<DateTime>(UserID, "afkTime"), DateTime.UtcNow, false), lang) + ")", message_reply, lang);
+                        if (timeElapsed.TotalHours >= 2 && timeElapsed.TotalHours < 8) translateKey = "draw:2h";
+                        else if (timeElapsed.TotalHours >= 8 && timeElapsed.TotalHours < 24) translateKey = "draw:8h";
+                        else if (timeElapsed.TotalDays >= 1 && timeElapsed.TotalDays < 7) translateKey = "draw:1d";
+                        else if (timeElapsed.TotalDays >= 7 && timeElapsed.TotalDays < 31) translateKey = "draw:7d";
+                        else if (timeElapsed.TotalDays >= 31 && timeElapsed.TotalDays < 364) translateKey = "draw:1mn";
+                        else if (timeElapsed.TotalDays >= 364) translateKey = "draw:1y";
+                        else translateKey = "draw:default";
                     }
+                    else if (afkType == "afk")
+                    {
+                        if (timeElapsed.TotalHours >= 8 && timeElapsed.TotalHours < 14) translateKey = "afk:8h";
+                        else if (timeElapsed.TotalHours >= 14 && timeElapsed.TotalDays < 1) translateKey = "afk:14h";
+                        else if (timeElapsed.TotalDays >= 1 && timeElapsed.TotalDays < 3) translateKey = "afk:1d";
+                        else if (timeElapsed.TotalDays >= 3 && timeElapsed.TotalDays < 7) translateKey = "afk:3d";
+                        else if (timeElapsed.TotalDays >= 7 && timeElapsed.TotalDays < 9) translateKey = "afk:7d";
+                        else if (timeElapsed.TotalDays >= 9 && timeElapsed.TotalDays < 31) translateKey = "afk:9d";
+                        else if (timeElapsed.TotalDays >= 31 && timeElapsed.TotalDays < 364) translateKey = "afk:1mn";
+                        else if (timeElapsed.TotalDays >= 364) translateKey = "afk:1y";
+                        else translateKey = "afk:default";
+                    }
+                    else if (afkType == "sleep")
+                    {
+                        if (timeElapsed.TotalHours >= 2 && timeElapsed.TotalHours < 5) translateKey = "sleep:2h";
+                        else if (timeElapsed.TotalHours >= 5 && timeElapsed.TotalHours < 8) translateKey = "sleep:5h";
+                        else if (timeElapsed.TotalHours >= 8 && timeElapsed.TotalHours < 12) translateKey = "sleep:8h";
+                        else if (timeElapsed.TotalHours >= 12 && timeElapsed.TotalDays < 1) translateKey = "sleep:12h";
+                        else if (timeElapsed.TotalDays >= 1 && timeElapsed.TotalDays < 3) translateKey = "sleep:1d";
+                        else if (timeElapsed.TotalDays >= 3 && timeElapsed.TotalDays < 7) translateKey = "sleep:3d";
+                        else if (timeElapsed.TotalDays >= 7 && timeElapsed.TotalDays < 31) translateKey = "sleep:7d";
+                        else if (timeElapsed.TotalDays >= 31 && timeElapsed.TotalDays < 364) translateKey = "sleep:1mn";
+                        else if (timeElapsed.TotalDays >= 364) translateKey = "sleep:1y";
+                        else translateKey = "sleep:default";
+                    }
+                    else if (afkType == "rest")
+                    {
+                        if (timeElapsed.TotalHours >= 8 && timeElapsed.TotalHours < 24) translateKey = "rest:8h";
+                        else if (timeElapsed.TotalDays >= 1 && timeElapsed.TotalDays < 7) translateKey = "rest:1d";
+                        else if (timeElapsed.TotalDays >= 7 && timeElapsed.TotalDays < 31) translateKey = "rest:7d";
+                        else if (timeElapsed.TotalDays >= 31 && timeElapsed.TotalDays < 364) translateKey = "rest:1mn";
+                        else if (timeElapsed.TotalDays >= 364) translateKey = "rest:1y";
+                        else translateKey = "rest:default";
+                    }
+                    else if (afkType == "lurk") translateKey = "lurk:default";
+                    else if (afkType == "study")
+                    {
+                        if (timeElapsed.TotalHours >= 2 && timeElapsed.TotalHours < 5) translateKey = "study:2h";
+                        else if (timeElapsed.TotalHours >= 5 && timeElapsed.TotalHours < 8) translateKey = "study:5h";
+                        else if (timeElapsed.TotalHours >= 8 && timeElapsed.TotalHours < 24) translateKey = "study:8h";
+                        else if (timeElapsed.TotalDays >= 1 && timeElapsed.TotalDays < 7) translateKey = "study:1d";
+                        else if (timeElapsed.TotalDays >= 7 && timeElapsed.TotalDays < 31) translateKey = "study:7d";
+                        else if (timeElapsed.TotalDays >= 31 && timeElapsed.TotalDays < 364) translateKey = "study:1mn";
+                        else if (timeElapsed.TotalDays >= 364) translateKey = "study:1y";
+                        else translateKey = "study:default";
+                    }
+                    else if (afkType == "poop")
+                    {
+                        if (timeElapsed.TotalMinutes >= 1 && timeElapsed.TotalHours < 1) translateKey = "poop:1m";
+                        else if (timeElapsed.TotalHours >= 1 && timeElapsed.TotalHours < 8) translateKey = "poop:1h";
+                        else if (timeElapsed.TotalHours >= 8) translateKey = "poop:8h";
+                        else translateKey = "poop:default";
+                    }
+                    else if (afkType == "shower")
+                    {
+                        if (timeElapsed.TotalMinutes >= 1 && timeElapsed.TotalMinutes < 10) translateKey = "shower:1m";
+                        else if (timeElapsed.TotalMinutes >= 10 && timeElapsed.TotalHours < 1) translateKey = "shower:10m";
+                        else if (timeElapsed.TotalHours >= 1 && timeElapsed.TotalHours < 8) translateKey = "shower:1h";
+                        else if (timeElapsed.TotalHours >= 8) translateKey = "shower:8h";
+                        else translateKey = "shower:default";
+                    }
+                    string text = TranslationManager.GetTranslation(lang, translateKey, RoomID);
+                    UsersData.UserSaveData(UserID, "lastFromAfkResume", DateTime.UtcNow);
+                    UsersData.UserSaveData(UserID, "isAfk", false);
+
+                    if (platform.Equals(Platforms.Twitch))
+                        TwitchReplyMessage(channel, RoomID, text.Replace("%user%", username) + send + " (" + TextUtil.FormatTimeSpan(timeElapsed, lang) + ")", message_id, lang, true);
+                    if (platform.Equals(Platforms.Telegram))
+                        TelegramMessageReply(channel, message_reply.Chat.Id, text.Replace("%user%", username) + send + " (" + TextUtil.FormatTimeSpan(timeElapsed, lang) + ")", message_reply, lang);
                 }
                 catch (Exception ex)
                 {
@@ -543,31 +513,37 @@ namespace butterBror
             /// <summary>
             /// Отправить сообщение в чат Twitch
             /// </summary>
-            public static void SendMessage(string channel, string message, string channelID, string messageID, string lang, bool isSafeEx = false)
+            public static void TwitchSendMessage(string channel, string message, string channelID, string messageID, string lang, bool isSafeEx = false)
             {
                 try
                 {
                     ConsoleUtil.LOG("[TW] Sending a message...", "info");
                     LogWorker.Log($"[TW] A message was sent to the {channel} channel: {message}", LogWorker.LogTypes.Info, "ChatUtil\\SendMessage");
-                    if (!Bot.Client.JoinedChannels.Any(c => c.Channel == channel))
+                    message = TextUtil.CleanAscii(message);
+
+                    if (message.Length > 1500)
+                        message = TranslationManager.GetTranslation(lang, "tooLargeText", channelID);
+                    else if (message.Length > 500)
                     {
+                        int splitIndex = message.LastIndexOf(' ', 450);
+                        string part2 = string.Concat("... ", message.AsSpan(splitIndex));
+
+                        message = string.Concat(message.AsSpan(0, splitIndex), "...");
+
+                        Task task = Task.Run(() =>
+                        {
+                            Thread.Sleep(1000);
+                            TwitchSendMessage(channel, channelID, part2, messageID, lang, isSafeEx);
+                        });
+                    }
+
+                    if (!Bot.Client.JoinedChannels.Contains(new JoinedChannel(channel)))
                         Bot.Client.JoinChannel(channel);
-                    }
-                    if (Bot.Client.JoinedChannels.Any(c => c.Channel == channel))
-                    {
-                        if (isSafeEx)
-                        {
-                            Bot.Client.SendMessage(channel, message);
-                        }
-                        else if (NoBanwords.fullCheck(message, channelID))
-                        {
-                            Bot.Client.SendMessage(channel, message);
-                        }
-                        else
-                        {
-                            Bot.Client.SendReply(channel, messageID, TranslationManager.GetTranslation(lang, "cantSend", channelID));
-                        }
-                    }
+
+                    if (isSafeEx || NoBanwords.fullCheck(message, channelID))
+                        Bot.Client.SendMessage(channel, message);
+                    else
+                        Bot.Client.SendReply(channel, messageID, TranslationManager.GetTranslation(lang, "cantSend", channelID));
                 }
                 catch (Exception ex)
                 {
@@ -577,53 +553,37 @@ namespace butterBror
             /// <summary>
             /// Отправить ответ на сообщение в чат Twitch
             /// </summary>
-            public static void TWSendMsgReply(string channel, string channelID, string message, string messageID, string lang, bool isSafeEx = false)
+            public static void TwitchReplyMessage(string channel, string channelID, string message, string messageID, string lang, bool isSafeEx = false)
             {
                 try
                 {
                     ConsoleUtil.LOG("[TW] Sending a message...", "info");
                     LogWorker.Log($"[TW] A response to a message was sent to the {channel} channel: {message}", LogWorker.LogTypes.Info, "ChatUtil\\SendMsgReply");
-                    message = TextUtil.FilterText(message);
+                    message = TextUtil.CleanAscii(message);
 
                     if (message.Length > 1500)
-                    {
                         message = TranslationManager.GetTranslation(lang, "tooLargeText", channelID);
-                    }
                     else if (message.Length > 500)
                     {
                         int splitIndex = message.LastIndexOf(' ', 450);
+                        string part2 = string.Concat("... ", message.AsSpan(splitIndex));
 
-                        string part1 = message.Substring(0, splitIndex) + "...";
-                        string part2 = "... " + message.Substring(splitIndex);
-
-                        message = part1;
+                        message = string.Concat(message.AsSpan(0, splitIndex), "...");
 
                         Task task = Task.Run(() =>
                         {
                             Thread.Sleep(1000);
-                            TWSendMsgReply(channel, channelID, part2, messageID, lang, isSafeEx);
+                            TwitchReplyMessage(channel, channelID, part2, messageID, lang, isSafeEx);
                         });
                     }
 
-                    if (!Bot.Client.JoinedChannels.Any(c => c.Channel == channel))
-                    {
+                    if (!Bot.Client.JoinedChannels.Contains(new JoinedChannel(channel)))
                         Bot.Client.JoinChannel(channel);
-                    }
-                    if (Bot.Client.JoinedChannels.Any(c => c.Channel == channel))
-                    {
-                        if (isSafeEx)
-                        {
-                            Bot.Client.SendReply(channel, messageID, message);
-                        }
-                        else if (NoBanwords.fullCheck(message, channelID))
-                        {
-                            Bot.Client.SendReply(channel, messageID, message);
-                        }
-                        else
-                        {
-                            Bot.Client.SendReply(channel, messageID, TranslationManager.GetTranslation(lang, "cantSend", channelID));
-                        }
-                    }
+
+                    if (isSafeEx || NoBanwords.fullCheck(message, channelID))
+                        Bot.Client.SendReply(channel, messageID, message);
+                    else
+                        Bot.Client.SendReply(channel, messageID, TranslationManager.GetTranslation(lang, "cantSend", channelID));
                 }
                 catch (Exception ex)
                 {
@@ -631,79 +591,30 @@ namespace butterBror
                 }
             }
             /// <summary>
-            /// Отправить сообщение в чат Telegram
-            /// </summary>
-            public static void TWSendMessage(string channel, string message, long channelID, Message messageReply, string lang, bool isSafeEx = false)
-            {
-                try
-                {
-                    ConsoleUtil.LOG("[TG] Sending message...", "info");
-                    LogWorker.Log($"[TG] A message was sent to {channel}: {message}", LogWorker.LogTypes.Info, "ChatUtil\\SendMessage");
-                    if (isSafeEx || NoBanwords.fullCheck(message, "tg_" + channelID.ToString()))
-                    {
-                        Bot.TelegramClient.SendMessage(channelID, message);
-                    }
-                    else
-                    {
-                        Bot.TelegramClient.SendMessage(
-                            channelID,
-                            TranslationManager.GetTranslation(lang, "cantSend", "tg_" + channelID.ToString()),
-                            replyParameters: messageReply.MessageId
-                        );
-                    }
-                }
-                catch (Exception ex)
-                {
-                    ConsoleUtil.ErrorOccured(ex, $"[tg]ChatUtil\\SendMessage#CHNL:{channelID}\\MSG:\"{message}\"");
-                }
-            }
-            /// <summary>
             /// Отправить ответ на сообщение в чат Telegram
             /// </summary>
-            public static void TGMsgReply(string channel, long channelID, string message, Message messageReply, string lang, bool isSafeEx = false)
+            public static void TelegramMessageReply(string channel, long channelID, string message, Message messageReply, string lang, bool isSafeEx = false)
             {
                 try
                 {
                     ConsoleUtil.LOG("[TG] Sending message...", "info");
                     LogWorker.Log($"[TG] A message was sent to {channel}: {message}", LogWorker.LogTypes.Info, "ChatUtil\\SendMsgReply");
-                    message = TextUtil.FilterText(message);
 
-                    if (message.Length > 1500)
-                    {
+                    if (message.Length > 4096)
                         message = TranslationManager.GetTranslation(lang, "tooLargeText", "tg_" + channelID.ToString());
-                    }
-                    else if (message.Length > 500)
-                    {
-                        int splitIndex = message.LastIndexOf(' ', 450);
-
-                        string part1 = message.Substring(0, splitIndex) + "...";
-                        string part2 = "... " + message.Substring(splitIndex);
-
-                        message = part1;
-
-                        Task task = Task.Run(() =>
-                        {
-                            Thread.Sleep(1000);
-                            TGMsgReply(channel, channelID, part2, messageReply, lang, isSafeEx);
-                        });
-                    }
 
                     if (isSafeEx || NoBanwords.fullCheck(message, "tg_" + channelID.ToString()))
-                    {
                         Bot.TelegramClient.SendMessage(
                             channelID,
                             message,
                             replyParameters: messageReply.Id
                         );
-                    }
                     else
-                    {
                         Bot.TelegramClient.SendMessage(
                             channelID,
                             TranslationManager.GetTranslation(lang, "cantSend", "tg_" + channelID.ToString()),
                             replyParameters: messageReply.Id
                         );
-                    }
                 }
                 catch (Exception ex)
                 {
@@ -723,40 +634,33 @@ namespace butterBror
             {
                 try
                 {
-                    if (text.Contains("@"))
-                    {
-                        var selectedUser = "";
-                        string pattern = @"@(\w+)";
-                        MatchCollection matches = Regex.Matches(text, pattern);
-                        selectedUser = " @" + matches.ElementAt(0).ToString().Replace("@", "");
-                        return selectedUser;
-                    }
+                    if (!text.Contains('@'))
+                        return string.Empty;
+
+                    MatchCollection matches = Regex.Matches(text, @"@(\w+)");
+                    return " @" + matches.ElementAt(0).ToString().Replace("@", "");
                 }
                 catch (Exception ex)
                 {
                     ConsoleUtil.ErrorOccured(ex, $"NamesUtil\\GetUsernameFromText#{text}");
+                    return null;
                 }
-                return string.Empty;
             }
             /// <summary>
             /// Получить ID пользователя по никнейму
             /// </summary>
-            public static string GetUserID(string user, string executedUsername = "err")
+            public static string GetUserID(string user)
             {
                 try
                 {
                     if (System.IO.File.Exists(Bot.NicknameToIDPath + $"{user.ToLower()}.txt"))
-                    {
-                        var userID = System.IO.File.ReadAllText(Bot.NicknameToIDPath + $"{user.ToLower()}.txt");
-                        return userID;
-                    }
-                    return executedUsername;
+                        return System.IO.File.ReadAllText(Bot.NicknameToIDPath + $"{user.ToLower()}.txt");
                 }
                 catch (Exception ex)
                 {
                     ConsoleUtil.ErrorOccured(ex, $"NamesUtil\\GetUserID#{user}");
-                    return null;
                 }
+                return null;
             }
             /// <summary>
             /// Получить имя пользователя по ID
@@ -766,16 +670,13 @@ namespace butterBror
                 try
                 {
                     if (System.IO.File.Exists(Bot.IDToNicknamePath + $"{ID}.txt"))
-                    {
-                        var nick = System.IO.File.ReadAllText(Bot.IDToNicknamePath + $"{ID}.txt");
-                        return nick;
-                    }
+                        return System.IO.File.ReadAllText(Bot.IDToNicknamePath + $"{ID}.txt");
                     return executedID;
                 }
                 catch (Exception ex)
                 {
                     ConsoleUtil.ErrorOccured(ex, $"NamesUtil\\GetUsername#{ID}");
-                    return null;
+                    return executedID;
                 }
             }
             /// <summary>
@@ -783,27 +684,7 @@ namespace butterBror
             /// </summary>
             public static string DontPingUsername(string username)
             {
-                try
-                {
-                    char[] chars = username.ToCharArray();
-                    string newText = "";
-
-                    for (int i = 0; i < chars.Length; i++)
-                    {
-                        newText += chars[i];
-                        if (i != chars.Length - 1)
-                        {
-                            newText += "󠀀";
-                        }
-                    }
-
-                    return newText;
-                }
-                catch (Exception ex)
-                {
-                    ConsoleUtil.ErrorOccured(ex, $"NamesUtil\\DontPingUsername#{username}");
-                    return null;
-                }
+                return string.Join("󠀀", username);
             }
         }
         /// <summary>
@@ -821,22 +702,13 @@ namespace butterBror
             /// </summary>
             public static void LOG(string message, string channel, ConsoleColor FG = ConsoleColor.Gray, ConsoleColor BG = ConsoleColor.Black, bool WrapLine = true, bool ShowDate = true)
             {
-                try
+                OnChatLineGetted(new LogInfo()
                 {
-                    string outputMessage = message;
-                    LogInfo log = new();
-                    string EndSymbol = WrapLine?"\n":"";
-                    outputMessage = $" {(ShowDate?$"[{DateTime.Now.Hour}:{DateTime.Now.Minute}.{DateTime.Now.Second} ({DateTime.Now.Millisecond})]: ":"")}{outputMessage}{EndSymbol}";
-                    log.Message = outputMessage;
-                    log.Channel = channel;
-                    log.BackgroundColor = BG;
-                    log.ForegroundColor = FG;
-                    OnChatLineGetted(log);
-                }
-                catch (Exception ex)
-                {
-                    ErrorOccured(ex, $"ConsoleUtil\\LOG#{message}");
-                }
+                    Message = $" {(ShowDate ? $"[{DateTime.Now.Hour}:{DateTime.Now.Minute}.{DateTime.Now.Second} ({DateTime.Now.Millisecond})]: " : "")}{message}{(WrapLine ? "\n" : "")}",
+                    Channel = channel,
+                    BackgroundColor = BG,
+                    ForegroundColor = FG
+                });
             }
             public class LogInfo
             {
@@ -850,14 +722,13 @@ namespace butterBror
             /// </summary>
             public static void ErrorOccured(Exception ex, string sector)
             {
-                LogInfo log = new()
+                OnErrorOccured(new LogInfo()
                 {
-                    Message = $"Error occured: {ex.Message} | {ex.StackTrace} | {ex.Source}",
+                    Message = $"[ ERROR OCCURED ] {ex.Message} | {ex.StackTrace} | {ex.Source} | {sector}",
                     Channel = "err",
                     BackgroundColor = ConsoleColor.Red,
                     ForegroundColor = ConsoleColor.Black
-                };
-                OnErrorOccured(log);
+                });
             } 
             /// <summary>
             /// Обновление заголовка консоли
@@ -873,17 +744,7 @@ namespace butterBror
             /// </summary>
             public static string FilterCommand(string input)
             {
-                try
-                {
-                    string pattern = @"[^qwertyuiopasdfghjklzxcvbnmйцукенгшщзхъфывапролджэячсмитьбюёQWERTYUIOPASDFGHJKLZXCVBNMЙЦУКЕНГШЩЗХЪФЫВАПРОЛДЖЭЯЧСМИТЬБЮЁ1234567890%]";
-                    string result = Regex.Replace(input, pattern, "");
-                    return result;
-                }
-                catch (Exception ex)
-                {
-                    ConsoleUtil.ErrorOccured(ex, $"TextUtil\\FilterCommand#{input}");
-                    return "none";
-                }
+                return Regex.Replace(input, @"[^qwertyuiopasdfghjklzxcvbnmйцукенгшщзхъфывапролджэячсмитьбюёQWERTYUIOPASDFGHJKLZXCVBNMЙЦУКЕНГШЩЗХЪФЫВАПРОЛДЖЭЯЧСМИТЬБЮЁ1234567890%]", ""); ;
             }
             /// <summary>
             /// Сменить раскладку текста
@@ -892,32 +753,15 @@ namespace butterBror
             {
                 try
                 {
-                    string layout = "qwertyuiop[]asdfghjkl;'zxcvbnm,.";
-                    string rusLayout = "йцукенгшщзхъфывапролджэячсмитьбю";
+                    var en = "qwertyuiop[]asdfghjkl;'zxcvbnm,.";
+                    var ru = "йцукенгшщзхъфывапролджэячсмитьбю";
+                    var map = en.Zip(ru, (e, r) => new[] { (e, r), (r, e) })
+                               .SelectMany(p => p)
+                               .ToDictionary(p => p.Item1, p => p.Item2);
 
-                    char[] textArray = text.ToCharArray();
-                    for (int i = 0; i < textArray.Length; i++)
-                    {
-                        if (char.IsLetter(textArray[i]))
-                        {
-                            int index = layout.IndexOf(char.ToLower(textArray[i]));
-                            if (index != -1)
-                            {
-                                char newChar = char.IsUpper(textArray[i]) ? char.ToUpper(rusLayout[index]) : rusLayout[index];
-                                textArray[i] = newChar;
-                            }
-                            else
-                            {
-                                index = rusLayout.IndexOf(char.ToLower(textArray[i]));
-                                if (index != -1)
-                                {
-                                    char newChar = char.IsUpper(textArray[i]) ? char.ToUpper(layout[index]) : layout[index];
-                                    textArray[i] = newChar;
-                                }
-                            }
-                        }
-                    }
-                    return new string(textArray);
+                    return string.Concat(text.Select(c =>
+                        char.IsLetter(c) && map.TryGetValue(char.ToLower(c), out var m)
+                            ? char.IsUpper(c) ? char.ToUpper(m) : m : c));
                 }
                 catch (Exception ex)
                 {
@@ -928,102 +772,45 @@ namespace butterBror
             /// <summary>
             /// Фильтровать текст от ASCII
             /// </summary>
-            public static string FilterText(string input)
+            public static string CleanAscii(string input)
             {
-                try
-                {
-                    string pattern = @"[^A-Za-zА-Яа-яёЁ\uD800-\uDB7F\uDB80-\uDFFF\u2705☀⛵⚙〽️❄❗🌫️🌨️⚖️⏺️⛈️🗻🌧️🌥️☁️⛅🌤️☀️ ⬛󠀀°.?/\\,·':;}{\][()*+-`~%$#@&№!»—«|]";
-                    string filteredText = Regex.Replace(input, pattern, "");
+                if (string.IsNullOrEmpty(input)) return input;
 
-                    return filteredText;
-                }
-                catch (Exception ex)
-                {
-                    ConsoleUtil.ErrorOccured(ex, $"TextUtil\\FilterText#{input}");
-                    return null;
-                }
+                return new string(input
+                    .Where(c => c > 31 && c != 127)  // Сохраняем печатаемые ASCII (32-126) и все не-ASCII
+                    .ToArray());
             }
             /// <summary>
             /// Фильтровать текст от ASCII без пробелов
             /// </summary>
-            public static string FilterTextWithoutSpaces(string input)
+            public static string CleanAsciiWithoutSpaces(string input)
             {
-                try
-                {
-                    string pattern = @"[^A-Za-zА-Яа-яёЁ\uD800-\uDB7F\uDB80-\uDFFF\u2705☀⛵⚙⏺️❗⚖️〽️❄°.?/\\,·':;}{\][()*+-`~%$#@&№!»—«]";
-                    string filteredText = Regex.Replace(input, pattern, "");
-
-                    return filteredText;
-                }
-                catch (Exception ex)
-                {
-                    ConsoleUtil.ErrorOccured(ex, $"TextUtil\\FilterTextWithoutSpaces#{input}");
-                    return null;
-                }
+                return CleanAscii(input).Replace(" ", "");
             }
             /// <summary>
             /// Удалить дублирующиеся символы из текста
             /// </summary>
             public static string RemoveDuplicateLetters(string text)
             {
-                try
-                {
-                    StringBuilder result = new StringBuilder();
-                    for (int i = 0; i < text.Length; i++)
-                    {
-                        if (i == 0 || text[i] != text[i - 1])
-                        {
-                            result.Append(text[i]);
-                        }
-                    }
-                    return result.ToString();
-                }
-                catch (Exception ex)
-                {
-                    ConsoleUtil.ErrorOccured(ex, $"TextUtil\\RemoveDuplicateLetters#{text}");
-                    return string.Empty;
-                }
+                return text.Aggregate(new StringBuilder(), (sb, c) =>
+                    sb.Length == 0 || c != sb[^1] ? sb.Append(c) : sb).ToString();
             }
             /// <summary>
             /// Фильтровать никнейм
             /// </summary>
             public static string NicknameFilter(string input)
             {
-                try
-                {
-                    string pattern = @"[^A-Za-z0-9_-]";
-                    string filteredText = Regex.Replace(input, pattern, "");
-
-                    return filteredText;
-                }
-                catch (Exception ex)
-                {
-                    ConsoleUtil.ErrorOccured(ex, $"TextUtil\\NicknameFilter#{input}");
-                    return null;
-                }
+                return Regex.Replace(input, @"[^A-Za-z0-9_-]", "");
             }
             /// <summary>
             /// Сократить координаты
             /// </summary>
             public static string ShortenCoordinate(string coordinate)
             {
-                try
-                {
-                    char direction = coordinate[coordinate.Length - 1];
-                    string numberPart = coordinate.Substring(0, coordinate.Length - 1);
-                    if (double.TryParse(numberPart, NumberStyles.Float, CultureInfo.InvariantCulture, out double number))
-                    {
-                        number = Math.Round(number, 1);
-                        return $"{number.ToString(CultureInfo.InvariantCulture)}{direction}";
-                    }
-                    else
-                        throw new ArgumentException("Invalid coordinate format");
-                }
-                catch (Exception ex)
-                {
-                    ConsoleUtil.ErrorOccured(ex, $"TextUtil\\ShortenCoordinate#{coordinate}");
-                    return null;
-                }
+                if (double.TryParse(coordinate[..^1], NumberStyles.Float, CultureInfo.InvariantCulture, out double number))
+                    return $"{Math.Round(number, 1).ToString(CultureInfo.InvariantCulture)}{coordinate[^1]}";
+                else
+                    throw new ArgumentException("Invalid coordinate format");
             }
             /// <summary>
             /// Вывести время до
@@ -1036,20 +823,16 @@ namespace butterBror
                     DateTime now = DateTime.UtcNow;
                     DateTime winterStart = new(now.Year, startTime.Month, startTime.Day);
                     DateTime winterEnd = new(now.Year + endYearAdd, endTime.Month, endTime.Day);
-                    winterEnd = winterEnd.AddDays(-1);
+                    winterEnd.AddDays(-1);
                     DateTime winter = now < winterStart ? winterStart : winterEnd;
                     if (now < winterStart)
-                    {
                         return TranslationManager.GetTranslation(lang, $"to{type}", channelID)
                             .Replace("%time%", FormatTimeSpan(FormatUtil.GetTimeTo(winter, now), lang))
                             .Replace("%sUser%", selectedUser);
-                    }
                     else
-                    {
                         return TranslationManager.GetTranslation(lang, $"toEndOf{type}", channelID)
                             .Replace("%time%", FormatTimeSpan(FormatUtil.GetTimeTo(winter, now), lang))
                             .Replace("%sUser%", selectedUser);
-                    }
                 }
                 catch (Exception ex)
                 {
@@ -1062,32 +845,27 @@ namespace butterBror
             /// </summary>
             public static string FormatTimeSpan(TimeSpan timeSpan, string lang)
             {
-                try
-                {
-                    int days = Math.Abs(timeSpan.Days);
-                    int hours = Math.Abs(timeSpan.Hours);
-                    int minutes = Math.Abs(timeSpan.Minutes);
-                    int seconds = Math.Abs(timeSpan.Seconds);
+                int days = Math.Abs(timeSpan.Days);
+                int hours = Math.Abs(timeSpan.Hours);
+                int minutes = Math.Abs(timeSpan.Minutes);
+                int seconds = Math.Abs(timeSpan.Seconds);
 
-                    string days_str = $"{days} {(days % 10 == 1 && days % 100 != 11 ? TranslationManager.GetTranslation(lang, "day", "") : days % 10 >= 2 && days % 10 <= 4 && (days % 100 < 10 || days % 100 >= 20) ? TranslationManager.GetTranslation(lang, "days1", "") : TranslationManager.GetTranslation(lang, "days2", ""))}.";
-                    string hours_str = $"{hours} {(hours % 10 == 1 ? TranslationManager.GetTranslation(lang, "hour", "") : hours % 10 >= 2 && hours % 10 <= 4 ? TranslationManager.GetTranslation(lang, "hours1", "") : TranslationManager.GetTranslation(lang, "hours2", ""))}.";
-                    string minutes_str = $"{minutes} {(minutes % 10 == 1 ? TranslationManager.GetTranslation(lang, "minute", "") : minutes % 10 >= 2 && minutes % 10 <= 4 ? TranslationManager.GetTranslation(lang, "minutes1", "") : TranslationManager.GetTranslation(lang, "minutes2", ""))}.";
-                    string seconds_str = $"{seconds} {(seconds % 10 == 1 ? TranslationManager.GetTranslation(lang, "second", "") : seconds % 10 >= 2 && seconds % 10 <= 4 ? TranslationManager.GetTranslation(lang, "seconds1", "") : TranslationManager.GetTranslation(lang, "seconds2", ""))}.";
+                string days_str = $"{days} {(days % 10 == 1 && days % 100 != 11 ? TranslationManager.GetTranslation(lang, "day", "") : days % 10 >= 2 && days % 10 <= 4 && (days % 100 < 10 || days % 100 >= 20) ? TranslationManager.GetTranslation(lang, "days1", "") : TranslationManager.GetTranslation(lang, "days2", ""))}.";
+                string hours_str = $"{hours} {(hours % 10 == 1 ? TranslationManager.GetTranslation(lang, "hour", "") : hours % 10 >= 2 && hours % 10 <= 4 ? TranslationManager.GetTranslation(lang, "hours1", "") : TranslationManager.GetTranslation(lang, "hours2", ""))}.";
+                string minutes_str = $"{minutes} {(minutes % 10 == 1 ? TranslationManager.GetTranslation(lang, "minute", "") : minutes % 10 >= 2 && minutes % 10 <= 4 ? TranslationManager.GetTranslation(lang, "minutes1", "") : TranslationManager.GetTranslation(lang, "minutes2", ""))}.";
+                string seconds_str = $"{seconds} {(seconds % 10 == 1 ? TranslationManager.GetTranslation(lang, "second", "") : seconds % 10 >= 2 && seconds % 10 <= 4 ? TranslationManager.GetTranslation(lang, "seconds1", "") : TranslationManager.GetTranslation(lang, "seconds2", ""))}.";
 
-                    if (timeSpan.TotalSeconds < 60)
-                        return seconds_str;
-                    else if (timeSpan.TotalMinutes < 60)
-                        return $"{minutes_str} {seconds_str}";
-                    else if (timeSpan.TotalHours < 24)
-                        return $"{hours_str} {minutes_str}";
-                    else
-                        return $"{days_str} {hours_str}";
-                }
-                catch (Exception ex)
-                {
-                    ConsoleUtil.ErrorOccured(ex, $"TextUtil\\FormatTimeSpan#{timeSpan}");
-                    return default;
-                }
+                if (timeSpan.TotalSeconds < 0)
+                    timeSpan = -timeSpan;
+
+                if (timeSpan.TotalSeconds < 60)
+                    return seconds_str;
+                else if (timeSpan.TotalMinutes < 60)
+                    return $"{minutes_str} {seconds_str}";
+                else if (timeSpan.TotalHours < 24)
+                    return $"{hours_str} {minutes_str}";
+                else
+                    return $"{days_str} {hours_str}";
             }
         }
         /// <summary>
@@ -1121,11 +899,10 @@ namespace butterBror
                 try
                 {
                     string[] emotes = GetEmotesForChannel(channel, service).Result;
-                    Random rand = new();
                     Dictionary<string, string> returnmsg = new();
                     if (emotes.Length > 0)
                     {
-                        string randomEmote = emotes[rand.Next(emotes.Length)];
+                        string randomEmote = emotes[new Random().Next(emotes.Length)];
                         returnmsg["status"] = "OK";
                         returnmsg["emote"] = randomEmote;
                     }
@@ -1152,10 +929,8 @@ namespace butterBror
                     ConsoleUtil.LOG($"[TW] Updating emotes for channel {channel}...", "info");
                     var emote7tvNames = await GetEmotes(channel, "7tv");
                     Bot.EmotesByChannel[channel + "7tv"] = emote7tvNames;
-                    Thread.Sleep(1000);
                     var emoteBttvNames = await GetEmotes(channel, "bttv");
                     Bot.EmotesByChannel[channel + "bttv"] = emoteBttvNames;
-                    Thread.Sleep(1000);
                     var emoteFfzNames = await GetEmotes(channel, "ffz");
                     Bot.EmotesByChannel[channel + "ffz"] = emoteFfzNames;
                     ConsoleUtil.LOG($"[TW] Emotes for the {channel} channel have been updated!", "info");
@@ -1191,7 +966,6 @@ namespace butterBror
                         var content = await response.Content.ReadAsStringAsync();
                         var json = JArray.Parse(content);
 
-                        // Получаем список имен эмоутов
                         var emoteNames = json.Select(emote => emote["code"].ToString()).ToArray();
                         return emoteNames;
                     }
@@ -1281,9 +1055,7 @@ namespace butterBror
                             else
                             {
                                 if (resetUseTimeIfCommandIsNotReseted)
-                                {
                                     UsersData.UserSaveData(userID, $"LU_{cooldownParamName}", DateTime.UtcNow);
-                                }
                                 ConsoleUtil.LOG($"User {NamesUtil.GetUsername(userID, userID)} tried to use the command, but it's on cooldown!", "info");
                                 LogWorker.Log($"User {NamesUtil.GetUsername(userID, userID)} tried to use the command, but it's on cooldown!", LogWorker.LogTypes.Warn, cooldownParamName);
                                 return false;
@@ -1296,9 +1068,7 @@ namespace butterBror
                         }
                     }
                     else
-                    {
                         return true;
-                    }
                 }
                 catch (Exception ex)
                 {
@@ -1311,8 +1081,7 @@ namespace butterBror
             {
                 try
                 {
-                    DateTime lastUserUse = UsersData.UserGetData<DateTime>(userID, $"LU_{cooldownParamName}");
-                    return TimeSpan.FromSeconds(userSecondsCooldown) - (DateTime.UtcNow - lastUserUse);
+                    return TimeSpan.FromSeconds(userSecondsCooldown) - (DateTime.UtcNow - UsersData.UserGetData<DateTime>(userID, $"LU_{cooldownParamName}"));
                 }
                 catch (Exception ex)
                 {
@@ -1333,7 +1102,8 @@ namespace butterBror
                     {
                         check = !UsersData.UserGetData<bool>(UserID, "isBanned", false) && !UsersData.UserGetData<bool>(UserID, "isIgnored", false);
                     }
-                    catch (Exception) { }
+                    catch { }
+
                     if (check)
                     {
                         string messagesSendedPath = Bot.ChannelsPath + RoomId + "/MS/";
@@ -1353,17 +1123,17 @@ namespace butterBror
                         string OutPutMessage = "";
 
                         if (System.IO.File.Exists(messagesSendedUserPath))
-                        {
-                            messagesSended = FormatUtil.ToNumber(System.IO.File.ReadAllText(messagesSendedUserPath)) + 1;
-                        }
+                            messagesSended = FormatUtil.ToInt(System.IO.File.ReadAllText(messagesSendedUserPath)) + 1;
 
                         Bot.ReadedMessages++;
 
                         if (!System.IO.File.Exists(Bot.UsersDataPath + UserID + ".json"))
                         {
                             UsersData.UserRegister(UserID, Message);
-                            if (platform == Platforms.Twitch || platform == Platforms.Telegram) OutPutMessage += $"{Room} · {Username}: ";
-                            else if (platform == Platforms.Discord) OutPutMessage += $"{Room} | {ServerChannel} · {Username}: ";
+                            if (platform == Platforms.Twitch || platform == Platforms.Telegram)
+                                OutPutMessage += $"{Room} · {Username}: ";
+                            else if (platform == Platforms.Discord)
+                                OutPutMessage += $"{Room} | {ServerChannel} · {Username}: ";
                         }
                         else
                         {
@@ -1373,19 +1143,14 @@ namespace butterBror
                                         ChatUtil.ReturnFromAFK(UserID, RoomId, Room, Username, e.ChatMessage.Id, null, platform);
                                     else if (platform == Platforms.Telegram)
                                         ChatUtil.ReturnFromAFK(UserID, RoomId, Room, Username, "", tgMessage, platform);
-                            float addToBalance = Message.Length / 6 + 1;
-                            int roundedNumber = (int)Math.Round(addToBalance, MidpointRounding.AwayFromZero);
-                            BalanceUtil.SaveBalance(UserID, 0, roundedNumber);
-                            int floatBalance = BalanceUtil.GetFloatBalance(UserID);
-                            int balance = BalanceUtil.GetBalance(UserID);
+
+                            BalanceUtil.Add(UserID, 0, (int)Math.Round((decimal)(Message.Length / 6 + 1), MidpointRounding.AwayFromZero));
+                            int floatBalance = BalanceUtil.GetCrumbs(UserID);
+                            int balance = BalanceUtil.GetButters(UserID);
                             if (platform == Platforms.Twitch || platform == Platforms.Telegram)
-                            {
-                                OutPutMessage += $"{Room} | {Username} ({messagesSended}/{balance}.{floatBalance} c.): ";
-                            }
+                                OutPutMessage += $"{Room} | {Username} ({messagesSended}/{balance}.{floatBalance} {Bot.CoinSymbol}): ";
                             else if (platform == Platforms.Discord)
-                            {
-                                OutPutMessage += $"{Room} | {ServerChannel} · {Username} ({messagesSended}/{balance}.{floatBalance} c.): ";
-                            }
+                                OutPutMessage += $"{Room} | {ServerChannel} · {Username} ({messagesSended}/{balance}.{floatBalance} {Bot.CoinSymbol}): ";
                         }
 
                         if (!UsersData.IsContainsKey("isReadedCurrency", UserID))
@@ -1399,23 +1164,16 @@ namespace butterBror
                         OutPutMessage += Message;
                         CAFUSUtil.Maintrance(UserID, Username);
 
-                        string pattern = @"@(\w+)";
-                        MatchCollection matches = Regex.Matches(Message, pattern);
-
-                        List<string> usernames = [];
-                        string path = Bot.NicknameToIDPath;
-
-                        foreach (Match match in matches)
+                        foreach (Match match in Regex.Matches(Message, @"@(\w+)"))
                         {
-                            string user = match.Groups[1].Value.Replace(",", "");
-                            string filePath = $"{path}{user}.txt";
+                            string mentionedUser = match.Groups[1].Value.Replace(",", "");
+                            string mentionedUserID = NamesUtil.GetUserID(mentionedUser);
 
-                            if (user.ToLower() != Username.ToLower() && System.IO.File.Exists(filePath))
+                            if (mentionedUser.ToLower() != Username.ToLower() && mentionedUserID != null)
                             {
-                                string userID = System.IO.File.ReadAllText(filePath);
-                                BalanceUtil.SaveBalance(UserID, 0, 5);
-                                BalanceUtil.SaveBalance(userID, 0, 8);
-                                OutPutMessage += $" ({user} +8) ({Username} +2)";
+                                BalanceUtil.Add(mentionedUserID, 0, Bot.AddingCoinsToTheMentionedUser);
+                                BalanceUtil.Add(UserID, 0, Bot.AddingCoinsToTheMentioningUser);
+                                OutPutMessage += $" ({mentionedUser} +{Bot.AddingCoinsToTheMentionedUser}) ({Username} +{Bot.AddingCoinsToTheMentioningUser})";
                             }
                         }
                         UsersData.UserSaveData(UserID, "lastSeenMessage", Message, false);
@@ -1522,25 +1280,18 @@ namespace butterBror
                 try
                 {
                     code = "using butterBror;\r\nusing butterBib;\r\nusing System;\r\nusing System.Runtime;\r\npublic class MyClass {\r\n    static void Main()\r\n    {\r\n        // What are you doing here?\r\n    }\r\n    public static string Execute()\r\n    { \r\n    " + code + "\r\n    }\r\n}";
-                    SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(code);
-                    Compilation compilation = CSharpCompilation.Create("MyAssembly")
-                        .AddSyntaxTrees(syntaxTree)
-                        .AddReferences(MetadataReference.CreateFromFile(typeof(object).Assembly.Location))
-                        .AddReferences(MetadataReference.CreateFromFile(Assembly.GetExecutingAssembly().Location));
-
                     using var stream = new MemoryStream();
-                    EmitResult result = compilation.Emit(stream);
+                    EmitResult result = CSharpCompilation.Create("MyAssembly")
+                        .AddSyntaxTrees(CSharpSyntaxTree.ParseText(code))
+                        .AddReferences(MetadataReference.CreateFromFile(typeof(object).Assembly.Location))
+                        .AddReferences(MetadataReference.CreateFromFile(Assembly.GetExecutingAssembly().Location)).Emit(stream);
+
                     if (!result.Success)
-                    {
                         throw new Exception(string.Join(", ", result.Diagnostics.Select(diagnostic => diagnostic.GetMessage())));
-                    }
 
                     stream.Seek(0, SeekOrigin.Begin);
-                    Assembly assembly = Assembly.Load(stream.ToArray());
-                    Type type = assembly.GetType("MyClass");
-                    MethodInfo method = type.GetMethod("Execute");
-                    string result2 = (string)method.Invoke(null, new object[] { });
-                    return result2;
+                    string result_str = (string)Assembly.Load(stream.ToArray()).GetType("MyClass").GetMethod("Execute").Invoke(null, new object[] { });
+                    return result_str;
                 }
                 catch (Exception ex)
                 {
@@ -1596,23 +1347,15 @@ namespace butterBror
                                 using var response = await client.SendAsync(request);
                                 if (response.IsSuccessStatusCode)
                                 {
-                                    var body = await response.Content.ReadAsStringAsync();
-                                    string json = body;
-
-                                    var result = JsonConvert.DeserializeObject<GPTData>(json);
-
-                                    string resultText = result.text;
-                                    string model = result.model;
+                                    var result = JsonConvert.DeserializeObject<GPTData>(await response.Content.ReadAsStringAsync());
                                     client.Dispose();
 
-                                    return [ resultText, model ];
+                                    return [result.text, result.model];
                                 }
                                 else
                                 {
                                     if (ip_attempt >= ips.Length)
-                                    {
                                         return [TranslationManager.GetTranslation(data.User.Lang, "gptERR", data.ChannelID)];
-                                    }
                                     ip_attempt++;
                                     var err = $"ОШИБКА API GPT ({ips.ElementAt(ip_attempt)}): #{response.StatusCode}, {response.ReasonPhrase}";
                                     LogWorker.Log(err, LogWorker.LogTypes.Err, $"APIUtils\\GPT#{data.UserUUID}");
@@ -1658,10 +1401,7 @@ namespace butterBror
                                 if (response.IsSuccessStatusCode)
                                 {
                                     response.EnsureSuccessStatusCode();
-                                    var body = await response.Content.ReadAsStringAsync();
-                                    string json = body;
-
-                                    var weatherData = JsonConvert.DeserializeObject<WeatherData>(json);
+                                    var weatherData = JsonConvert.DeserializeObject<WeatherData>(await response.Content.ReadAsStringAsync());
                                     success = true;
                                     return weatherData;
                                 }
@@ -1727,7 +1467,6 @@ namespace butterBror
                                 {
                                     Data++;
                                     DataManager.SaveData(Bot.APIUseDataPath, $"{DateTime.UtcNow.Day}{DateTime.UtcNow.Month}{DateTime.UtcNow.Year}" + ip, Data);
-                                    var client = new HttpClient();
                                     var request = new HttpRequestMessage
                                     {
                                         Method = HttpMethod.Get,
@@ -1738,7 +1477,7 @@ namespace butterBror
                                 { "X-RapidAPI-Host", "ai-weather-by-meteosource.p.rapidapi.com" },
                             },
                                     };
-                                    using var response = await client.SendAsync(request);
+                                    using var response = await new HttpClient().SendAsync(request);
                                     if (response.IsSuccessStatusCode)
                                     {
                                         var body = await response.Content.ReadAsStringAsync();
@@ -1954,35 +1693,29 @@ namespace butterBror
             {
                 public static async Task<byte[]> DownloadImageAsync(string imageUrl)
                 {
-                    using (HttpClient client = new HttpClient())
-                    {
-                        return await client.GetByteArrayAsync(imageUrl);
-                    }
+                    using HttpClient client = new HttpClient();
+                    return await client.GetByteArrayAsync(imageUrl);
                 }
                 public static async Task<string> UploadImageToImgurAsync(byte[] imageBytes, string description, string title, string ImgurClientId, string ImgurUploadUrl)
                 {
                     try
                     {
-                        using (HttpClient client = new HttpClient())
-                        {
-                            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Client-ID", ImgurClientId);
+                        using HttpClient client = new HttpClient();
+                        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Client-ID", ImgurClientId);
 
-                            using (MultipartFormDataContent content = new MultipartFormDataContent())
-                            {
-                                ByteArrayContent byteContent = new ByteArrayContent(imageBytes);
-                                byteContent.Headers.ContentType = new MediaTypeHeaderValue("image/jpeg");
+                        using MultipartFormDataContent content = new();
+                        ByteArrayContent byteContent = new(imageBytes);
+                        byteContent.Headers.ContentType = new MediaTypeHeaderValue("image/jpeg");
 
-                                content.Add(byteContent, "image");
-                                content.Add(new StringContent(description), "description");
-                                content.Add(new StringContent(title), "title");
+                        content.Add(byteContent, "image");
+                        content.Add(new StringContent(description), "description");
+                        content.Add(new StringContent(title), "title");
 
-                                HttpResponseMessage response = await client.PostAsync(ImgurUploadUrl, content);
-                                response.EnsureSuccessStatusCode();
+                        HttpResponseMessage response = await client.PostAsync(ImgurUploadUrl, content);
+                        response.EnsureSuccessStatusCode();
 
-                                string responseString = await response.Content.ReadAsStringAsync();
-                                return responseString;
-                            }
-                        }
+                        string responseString = await response.Content.ReadAsStringAsync();
+                        return responseString;
                     }
                     catch (Exception ex)
                     {
@@ -2003,9 +1736,7 @@ namespace butterBror
                             return link;
                         }
                         else
-                        {
                             return "Upload failed.";
-                        }
                     }
                     catch (Exception ex)
                     {
@@ -2034,9 +1765,9 @@ namespace butterBror
                     // Получаем список видео из плейлиста
                     var playlistItemsRequest = youtubeService.PlaylistItems.List("contentDetails");
                     playlistItemsRequest.PlaylistId = playlistId;
-                    playlistItemsRequest.MaxResults = 50; // Максимальное количество результатов за один запрос
+                    playlistItemsRequest.MaxResults = 50;
 
-                    List<string> videoLinks = new List<string>();
+                    List<string> videoLinks = [];
 
                     PlaylistItemListResponse playlistItemResponse = new();
 
@@ -2044,26 +1775,22 @@ namespace butterBror
                     {
                         try
                         {
-                            // Получаем результаты
                             playlistItemResponse = playlistItemsRequest.Execute();
 
                             if (playlistItemResponse.Items != null && playlistItemResponse.Items.Any())
                             {
                                 foreach (var item in playlistItemResponse.Items)
                                 {
-                                    // Извлекаем URL видео из контента плейлиста
                                     var videoId = item.ContentDetails.VideoId;
                                     var videoRequest = youtubeService.Videos.List("status");
                                     videoRequest.Id = videoId;
                                     var videoResponse = videoRequest.Execute();
 
-                                    // Если есть еще видео для обработки, устанавливаем следующий ключ маркера
                                     playlistItemsRequest.PageToken = playlistItemResponse.NextPageToken;
 
                                     if (videoResponse.Items != null && videoResponse.Items.Any())
                                     {
                                         var videoItem = videoResponse.Items[0];
-                                        // Добавляем URL видео в список
                                         videoLinks.Add($"https://www.youtube.com/watch?v={videoId}");
                                     }
                                 }
@@ -2073,11 +1800,9 @@ namespace butterBror
                         {
                             ConsoleUtil.LOG("YOUTUBE PLAYLIST ERROR: " + ex.Message, "err");
                         }
-
-
                     } while (playlistItemResponse.NextPageToken != null);
 
-                    return videoLinks.ToArray();
+                    return [.. videoLinks];
                 }
                 catch (Exception ex)
                 {
@@ -2089,11 +1814,7 @@ namespace butterBror
             {
                 try
                 {
-                    WebClient client = new WebClient();
-                    string html = client.DownloadString(playlistUrl);
-
-                    Regex regex = new Regex(@"watch\?v=[a-zA-Z0-9_-]{11}");
-                    MatchCollection matches = regex.Matches(html);
+                    MatchCollection matches = new Regex(@"watch\?v=[a-zA-Z0-9_-]{11}").Matches(new WebClient().DownloadString(playlistUrl));
 
                     string[] videoLinks = new string[matches.Count];
                     int i = 0;
@@ -2126,27 +1847,18 @@ namespace butterBror
                     updateVersions.Clear();
                     if (UsersData.IsContainsKey("CAFUSV", UserID))
                     {
-                        var UserCAFUSVersion = UsersData.UserGetData<double>(UserID, "CAFUSV");
-                        if (UserCAFUSVersion < 1.0)
-                        {
+                        var version = UsersData.UserGetData<double>(UserID, "CAFUSV");
+                        if (version < 1.0)
                             CAFUS1_0(UserID);
-                        }
-                        if (UserCAFUSVersion < 1.1)
-                        {
+                        if (version < 1.1)
                             CAFUS1_1(UserID);
-                        }
-                        if (UserCAFUSVersion < 1.2)
-                        {
+                        if (version < 1.2)
                             CAFUS1_2(UserID);
-                        }
-                        if (UserCAFUSVersion < 1.3)
-                        {
+                        if (version < 1.3)
                             CAFUS1_3(UserID);
-                        }
-                        if (UserCAFUSVersion < 1.4)
-                        {
+                        if (version < 1.4)
                             CAFUS1_4(UserID);
-                        }
+
                         showUpdateText(Username);
                     }
                     else
@@ -2248,9 +1960,7 @@ namespace butterBror
                         checkedItems++;
                         versions += item;
                         if (checkedItems != updateVersions.Count)
-                        {
                             versions += ", ";
-                        }
                     }
                     ConsoleUtil.LOG($"@{UserName} CAFUS {versions} UPDATED", "cafus");
                 }
@@ -2258,9 +1968,7 @@ namespace butterBror
             private static void CheckAndWrite(string UserID, string ParamName, dynamic value)
             {
                 if (!UsersData.IsContainsKey(ParamName, UserID))
-                {
                     UsersData.UserSaveData(UserID, ParamName, value);
-                }
             }
         }
         /// <summary>
@@ -2292,9 +2000,7 @@ namespace butterBror
                     isSuccess = true;
                 }
                 else
-                {
                     isSuccess = false;
-                }
                 resultText = Pingresult(result);
             }
 

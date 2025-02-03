@@ -18,6 +18,7 @@ using TwitchLib.Client.Events;
 using TwitchLib.Client.Models;
 using TwitchLib.Communication.Clients;
 using TwitchLib.Communication.Models;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace butterBror
 {
@@ -29,8 +30,8 @@ namespace butterBror
         public static bool isRestarting = false;
         public static bool isTwitchReady = false;
         public static float buttersAmount = 0;
-        public static string botVersion = "2.1";
-        public static string patchID = "AN";
+        public static string botVersion = "2.01.1";
+        public static string patchID = "J";
         public static int buttersDollars = 0;
         public static DateTime botStartTime = new();
         public static DataManager currencyWorker = new();
@@ -39,11 +40,14 @@ namespace butterBror
         public static long tickCounter = 0;
         public static double tickDelay = 0;
         private static bool tickEnded = true;
-        public static long tiksSkiped = 0;
+        public static long tiksSkipped = 0;
         private static long oldTickCounterStatus = 0;
         public static long tps = 0;
 
-        public static void Start(string? mainPath = null, int customTickSpeed = 20)
+        private static Timer ticksTimer;
+        private static Timer secondTimer;
+
+        public static async void Start(string? mainPath = null, int customTickSpeed = 20)
         {
             ConsoleUtil.LOG($"[butterBror] Hiii!!!", "main");
             ConsoleUtil.LOG($"Engine starting...", "kernel");
@@ -84,8 +88,8 @@ namespace butterBror
                 ConsoleUtil.LOG($"Pathes setted!", "kernel");
             }
 
-            Timer ticksTimer = new(OnTick, null, 0, ticks_time);
-            Timer secondTimer = new((object? timer) =>
+            ticksTimer = new(OnTick, null, 0, ticks_time);
+            secondTimer = new((object? timer) =>
             {
                 tps = tickCounter - oldTickCounterStatus;
                 oldTickCounterStatus = tickCounter;
@@ -127,93 +131,68 @@ namespace butterBror
         }
         public static void OnTick(object? timer)
         {
-            if (tickEnded)
+            if (!tickEnded)
             {
-                Task.Run(() =>
+                tiksSkipped++;
+                return;
+            }
+
+            Task.Run(() =>
+            {
+                try
                 {
                     tickEnded = false;
-                    try
+                    DateTime startTime = DateTime.Now;
+                    tickCounter++;
+                    if ((int)tickCounter % ticks == 0)
                     {
-                        DateTime startTime = DateTime.Now;
-                        tickCounter++;
-                        if (tickCounter % ticks == 0)
+                        var workTime = DateTime.Now - botStartTime;
+                        long workingAppSet = Process.GetCurrentProcess().WorkingSet64 / (1024 * 1024);
+                        ConsoleUtil.LOG($"{workTime.Days}d {workTime.Hours}h {workTime.Minutes}m, {workingAppSet} мб, 🥪 {buttersAmount}, 👥 {users}, tps: {tps}/{ticks} ({tickDelay} ms)", "status");
+
+                        if (!isRestarting && buttersAmount != 0 && users != 0 && previousButters != buttersAmount)
                         {
-                            if (!isRestarting && buttersAmount != 0 && users != 0 && previousButters != buttersAmount)
+                            var date = DateTime.UtcNow;
+                            Dictionary<string, dynamic> currencyData = new()
                             {
-                                var date = DateTime.UtcNow;
-                                Dictionary<string, dynamic> currencyData = new()
-                                {
                                     { "amount", buttersAmount },
                                     { "users", users },
                                     { "dollars", buttersDollars },
                                     { "cost", buttersDollars / buttersAmount },
                                     { "middleBalance", buttersAmount / users }
-                                };
+                            };
 
-                                DataManager.SaveData(Bot.CurrencyPath, "totalAmount", buttersAmount, false);
-                                DataManager.SaveData(Bot.CurrencyPath, "totalUsers", users, false);
-                                DataManager.SaveData(Bot.CurrencyPath, "totalDollarsInTheBank", buttersDollars, false);
+                            DataManager.SaveData(Bot.CurrencyPath, "totalAmount", buttersAmount, false);
+                            DataManager.SaveData(Bot.CurrencyPath, "totalUsers", users, false);
+                            DataManager.SaveData(Bot.CurrencyPath, "totalDollarsInTheBank", buttersDollars, false);
 
-                                DataManager.SaveData(Bot.CurrencyPath, $"[{date.Day}.{date.Month}.{date.Year}]", "", false);
-                                DataManager.SaveData(Bot.CurrencyPath, $"[{date.Day}.{date.Month}.{date.Year}] cost", float.Parse((buttersDollars / buttersAmount).ToString("0.00")), false);
-                                DataManager.SaveData(Bot.CurrencyPath, $"[{date.Day}.{date.Month}.{date.Year}] amount", buttersAmount, false);
-                                DataManager.SaveData(Bot.CurrencyPath, $"[{date.Day}.{date.Month}.{date.Year}] users", users, false);
-                                DataManager.SaveData(Bot.CurrencyPath, $"[{date.Day}.{date.Month}.{date.Year}] dollars", buttersDollars, false);
+                            DataManager.SaveData(Bot.CurrencyPath, $"[{date.Day}.{date.Month}.{date.Year}]", "", false);
+                            DataManager.SaveData(Bot.CurrencyPath, $"[{date.Day}.{date.Month}.{date.Year}] cost", float.Parse((buttersDollars / buttersAmount).ToString("0.00")), false);
+                            DataManager.SaveData(Bot.CurrencyPath, $"[{date.Day}.{date.Month}.{date.Year}] amount", buttersAmount, false);
+                            DataManager.SaveData(Bot.CurrencyPath, $"[{date.Day}.{date.Month}.{date.Year}] users", users, false);
+                            DataManager.SaveData(Bot.CurrencyPath, $"[{date.Day}.{date.Month}.{date.Year}] dollars", buttersDollars, false);
 
-                                DataManager.SaveData(Bot.CurrencyPath);
-                                previousButters = buttersAmount;
-                            }
-
-                            if (DateTime.UtcNow.Minute % 10 == 0 && DateTime.UtcNow.Second == 0)
-                            {
-                                Bot.ReserveCopyPath = Bot.ProgramPath + "bbRESERVE/" + DateTime.UtcNow.Year + DateTime.UtcNow.Month + DateTime.UtcNow.Day + "/";
-                                try
-                                {
-                                    Task.Run(Bot.StatusSender);
-                                }
-                                catch (Exception e)
-                                {
-                                    string ErrorText = $"[ STATUS TWITCH SENDER ] {e.Message} : {e.StackTrace}";
-                                    LogWorker.Log(ErrorText, LogWorker.LogTypes.Err, "BotEngine/Main");
-                                    ConsoleUtil.LOG(ErrorText, "err", ConsoleColor.Black, ConsoleColor.Red);
-                                }
-                            }
-
-                            Task.Run(static () =>
-                            {
-                                try
-                                {
-                                    var workTime = DateTime.Now - botStartTime;
-                                    Ping ping = new();
-                                    long twPing = ping.Send("twitch.tv", 250).RoundtripTime;
-                                    long dsPing = ping.Send("discord.com", 250).RoundtripTime;
-                                    long tgPing = ping.Send("t.me", 250).RoundtripTime;
-                                    long workingAppSet = Process.GetCurrentProcess().WorkingSet64 / (1024 * 1024);
-
-                                    ConsoleUtil.LOG($"{workTime.Days}d {workTime.Hours}h {workTime.Minutes}m, twitch: {twPing} ms, discord: {dsPing} ms, telegram: {tgPing} ms, {workingAppSet} мб, 🥪 {buttersAmount}, 👥 {users}, tps: {tps}/{ticks} ({tickDelay} ns)", "status");
-                                }
-                                catch (Exception e)
-                                {
-                                    string ErrorText = $"[ STATUS ERROR ] {e.Message} : {e.StackTrace}";
-                                    LogWorker.Log(ErrorText, LogWorker.LogTypes.Err, "BotEngine/Main");
-                                    ConsoleUtil.LOG(ErrorText, "kernel", ConsoleColor.Black, ConsoleColor.Red);
-                                }
-                            });
+                            DataManager.SaveData(Bot.CurrencyPath);
+                            previousButters = buttersAmount;
                         }
-                        DateTime endTime = DateTime.Now;
-                        tickDelay = (endTime - startTime).TotalNanoseconds;
+
+                        if (DateTime.UtcNow.Minute % 10 == 0 && DateTime.UtcNow.Second == 0)
+                        {
+                            Bot.ReserveCopyPath = Bot.ProgramPath + "bbRESERVE/" + DateTime.UtcNow.Year + DateTime.UtcNow.Month + DateTime.UtcNow.Day + "/";
+                            Task.Run(Bot.StatusSender);
+                        }
                     }
-                    catch (Exception e)
-                    {
-                        string ErrorText = $"[ TICK ERROR ] {e.Message} : {e.StackTrace}";
-                        LogWorker.Log(ErrorText, LogWorker.LogTypes.Err, "BotEngine/Main");
-                        ConsoleUtil.LOG(ErrorText, "kernel", ConsoleColor.Black, ConsoleColor.Red);
-                    }
+                    //ConsoleUtil.LOG($"Tick execution time: {(DateTime.Now - startTime).TotalMilliseconds}ms", "debug");
+                    tickDelay = (DateTime.Now - startTime).TotalMilliseconds;
                     tickEnded = true;
-                });
-            }
-            else
-                tiksSkiped++;
+                }
+                catch (Exception e)
+                {
+                    string ErrorText = $"[ TICK ERROR ] {e.Message} : {e.StackTrace}";
+                    LogWorker.Log(ErrorText, LogWorker.LogTypes.Err, "BotEngine/Main");
+                    ConsoleUtil.LOG(ErrorText, "kernel", ConsoleColor.Black, ConsoleColor.Red);
+                }
+            });
         }
         private static void Restart()
         {
@@ -275,9 +254,12 @@ namespace butterBror
         public static bool TimerStarted = false;
         public static bool BotAlreadyConnected = false;
         public static bool Reconnected = false;
+        public static string CoinSymbol = "🥪";
+        public static int AddingCoinsToTheMentionedUser = 8;
+        public static int AddingCoinsToTheMentioningUser = 2;
 
-        public static TwitchTokenUtil TokenGetter = new(ClientID, Secret, "database.db");
-        public static Dictionary<string, string[]> EmotesByChannel = new();
+        public static TwitchTokenUtil TokenGetter = new(ClientID, Secret, "tw_auth_keys.db");
+        public static Dictionary<string, string[]> EmotesByChannel = [];
         public static TwitchClient Client = new();
         public static DiscordSocketClient? DiscordClient;
         public static CommandService? DiscordCommands;
@@ -443,6 +425,8 @@ namespace butterBror
                 }
                 foreach (var channel in notFoundedChannels) ConsoleUtil.LOG("Can't find ID: " + channel, "err", ConsoleColor.Red);
                 BotEngine.isTwitchReady = true;
+                Client.JoinChannel(BotNick.ToLower());
+                Client.SendMessage(BotNick.ToLower(), "truckCrash Connecting to twitch...");
 
                 ConsoleUtil.LOG("Connecting to Discord...", "main");
                 var discordConfig = new DiscordSocketConfig
@@ -503,48 +487,33 @@ namespace butterBror
         {
             try
             {
-                // Сколько времени работает
-                var workTime = DateTime.Now - BotEngine.botStartTime;
-                // Пинг твича
-                PingUtil twPing = new();
-                await twPing.PingAsync("twitch.tv", 1000);
-                if (!twPing.isSuccess) ConsoleUtil.LOG("Error twitch ping: " + twPing.resultText, "err");
-                // Пинг дискорда
-                PingUtil dsPing = new();
-                await new PingUtil().PingAsync("discord.com", 1000);
-                if (!dsPing.isSuccess) ConsoleUtil.LOG("Error discord ping: " + dsPing.resultText, "err");
-                // Пинг телеграмма
-                PingUtil tgPing = new();
-                await tgPing.PingAsync("t.me", 1000);
-                if (!tgPing.isSuccess) ConsoleUtil.LOG("Error telegram ping: " + tgPing.resultText, "err");
-                // Пинг гугла
-                PingUtil glPing = new();
-                await glPing.PingAsync("192.168.1.1", 1000);
-                if (!glPing.isSuccess)
+                DateTime start = DateTime.UtcNow;
+                ConsoleUtil.LOG("Status sender started!", "kernel", ConsoleColor.Red);
+
+                Ping ping = new();
+                PingReply twitch = ping.Send("twitch.tv", 1000);
+                PingReply discord = ping.Send("discord.com", 1000);
+                PingReply telegram = ping.Send("t.me", 1000);
+                PingReply ISP = ping.Send("192.168.1.1", 1000);
+
+                if (ISP.Status != IPStatus.Success)
                 {
-                    await glPing.PingAsync("192.168.0.1", 1000);
-                    if (!glPing.isSuccess) ConsoleUtil.LOG("Error ISP ping: " + dsPing.resultText, "err");
+                    ISP = ping.Send("192.168.0.1", 1000);
+                    if (ISP.Status != IPStatus.Success) ConsoleUtil.LOG("Error ISP ping: " + ISP.Status.ToString(), "err");
                 }
-                // Память, занятая процессом
-                Process process = Process.GetCurrentProcess();
-                long workingAppSet = process.WorkingSet64 / (1024 * 1024);
-                // Подготовка сообщения
-                string message = $"/me glorp 📡 Twitch: {twPing.pingSpeed}ms | Discord: {dsPing.pingSpeed}ms | Telegram: {dsPing.pingSpeed}ms | ISP: {glPing.pingSpeed}ms | {workTime:dd\\:hh\\:mm\\.ss} | {workingAppSet}mb";
-                // Отправка сообщения
-                ChatUtil.SendMessage(BotNick, message, "", "", "", true);
-                string newToken = "";
+                long memory = Process.GetCurrentProcess().WorkingSet64 / (1024 * 1024);
+                ChatUtil.TwitchSendMessage(BotNick.ToLower(), $"/me glorp 📡 Twitch: {twitch.RoundtripTime}ms | Discord: {discord.RoundtripTime}ms | Telegram: {telegram.RoundtripTime}ms | ISP: {ISP.RoundtripTime}ms | {DateTime.Now - BotEngine.botStartTime:dd\\:hh\\:mm\\.ss} | {memory}mb", "", "", "", true);
+
                 try
                 {
-                    newToken = await TokenGetter.RefreshAccessToken();
+                    string newToken = await TokenGetter.RefreshAccessToken();
                     if (newToken != null) BotToken = newToken;
                 }
                 catch (Exception ex)
                 {
-                    string text = $"[ BOT ] ERROR REFRESHING TWITCH TOKEN!";
-                    ConsoleUtil.LOG(text, "err", BG: ConsoleColor.Red, FG: ConsoleColor.Black);
-                    LogWorker.Log(text, LogWorker.LogTypes.Err, "Bot/StatusSender");
-                    LogWorker.Log($"{ex.Message} : {ex.StackTrace}", LogWorker.LogTypes.Err, "Bot/StatusSender");
+                    ConsoleUtil.ErrorOccured(ex, "StatusSender/TokenRefresher");
                 }
+                ConsoleUtil.LOG($"Status sender ended! (In {(DateTime.UtcNow - start).TotalMilliseconds}ms)", "kernel", ConsoleColor.Red);
             }
             catch (Exception ex)
             {
@@ -552,7 +521,7 @@ namespace butterBror
                 ConsoleUtil.LOG(text, "err", ConsoleColor.Red);
                 LogWorker.Log(text, LogWorker.LogTypes.Err, "Bot/StatusSender");
             }
-        } // Отправка статус-сообщенеия в чат бота
+        }
         public static void Restart()
         {
             ConsoleUtil.LOG("Restarting...", "main");

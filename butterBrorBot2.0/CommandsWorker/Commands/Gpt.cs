@@ -39,7 +39,7 @@ namespace butterBror
                     ChatColorPresets resultNicknameColor = ChatColorPresets.YellowGreen;
                     if (NoBanwords.fullCheck(data.ArgsAsString, data.ChannelID))
                     {
-                        BalanceUtil.SaveBalance(data.UserUUID, -5, 0);
+                        BalanceUtil.Add(data.UserUUID, -5, 0);
                         string[] result = await Utils.APIUtil.GPT.GPTRequest(data);
                         if (result.ElementAt(0) == "ERR")
                         {

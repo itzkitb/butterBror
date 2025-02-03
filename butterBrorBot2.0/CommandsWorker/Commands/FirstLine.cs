@@ -42,7 +42,7 @@ namespace butterBror
                         var name = TextUtil.NicknameFilter(data.args.ElementAt(0).ToLower());
                         var userID = NamesUtil.GetUserID(name);
 
-                        if (userID == "err")
+                        if (userID == null)
                         {
                             resultMessage = TranslationManager.GetTranslation(data.User.Lang, "noneExistUser", data.ChannelID)
                                 .Replace("%user%", NamesUtil.DontPingUsername(name));

@@ -26,15 +26,15 @@ namespace butterBror
                 }
                 catch (Exception ex) 
                 {
-                    ConsoleUtil.LOG($"[COMMAND_INDEXER] INDEX ERROR FOR CLASS {classType.Name}: {ex.Message}", "main");
+                    ConsoleUtil.LOG($"[COMMAND_INDEXER] INDEX ERROR FOR CLASS {classType.Name}: {ex.Message} | {ex.StackTrace} | {ex.Source}", "main");
                 }
             }
-            ConsoleUtil.LOG($"Indexed!", "main");
+            ConsoleUtil.LOG($"Indexed! ({commandsIndex.Count} commands loaded)", "main");
         }
-        public static Dictionary<string, int> ErrorsInCommands = new();
-        public static List<CommandInfo> commandsIndex = new();
-        public static List<Type> classes = new List<Type>
-        {
+        public static Dictionary<string, int> ErrorsInCommands = [];
+        public static List<CommandInfo> commandsIndex = [];
+        public static List<Type> classes =
+        [
             typeof(Afk),
             typeof(Pinger),
             typeof(Autumn),
@@ -69,8 +69,9 @@ namespace butterBror
             typeof(Say),
             typeof(Help),
             typeof(Dev),
-            typeof(FrogGame)
-        }; // test
+            typeof(FrogGame),
+            typeof(Roulette)
+        ];
         public static void TwitchCommand(object sender, OnChatCommandReceivedArgs args)
         {
             try
@@ -331,7 +332,7 @@ namespace butterBror
 
                                             if (info.Cost != null)
                                             {
-                                                BalanceUtil.SaveBalance(data.UserUUID, -(int)(info.Cost), 0);
+                                                BalanceUtil.Add(data.UserUUID, -(int)(info.Cost), 0);
                                             }
                                         }
                                     }

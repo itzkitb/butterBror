@@ -30,7 +30,7 @@ namespace butterBror
                     string FoundSector = "";
 
                     string checkUUID = Guid.NewGuid().ToString();
-                    var message2 = TextUtil.FilterText(TextUtil.RemoveDuplicateLetters(message.Replace(" ", "").Replace("󠀀", "")));
+                    var message2 = TextUtil.CleanAscii(TextUtil.RemoveDuplicateLetters(message.Replace(" ", "").Replace("󠀀", "")));
 
                     string line = $"[{checkUUID}] Checking \"{message}\" ({message2}) (Channel ID: " + channelID + ")...";
                     ConsoleUtil.LOG(line, "nbw");

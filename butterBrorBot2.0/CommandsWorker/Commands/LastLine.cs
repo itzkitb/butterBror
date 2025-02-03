@@ -45,7 +45,7 @@ namespace butterBror
                         var bages = "";
                         if (message != null)
                         {
-                            if (userID != "err")
+                            if (userID != null)
                             {
                                 if (name != Bot.Client.TwitchUsername.ToLower())
                                 {

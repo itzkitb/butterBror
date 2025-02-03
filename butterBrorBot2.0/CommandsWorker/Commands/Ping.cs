@@ -96,7 +96,7 @@ namespace butterBror
                                     .Replace("%max_tps%", BotEngine.ticks.ToString())
                                     .Replace("%tick_delay%", BotEngine.tickDelay.ToString())
                                     .Replace("%tick_counted%", BotEngine.tickCounter.ToString())
-                                    .Replace("%skiped_ticks%", BotEngine.tiksSkiped.ToString());
+                                    .Replace("%skiped_ticks%", BotEngine.tiksSkipped.ToString());
                     }
 
                     return new()

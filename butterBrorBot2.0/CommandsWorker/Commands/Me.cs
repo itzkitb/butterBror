@@ -35,10 +35,10 @@ namespace butterBror
                 {
                     bool checked_msg = false;
                     string resultMessage = "";
-                    if (TextUtil.FilterTextWithoutSpaces(data.ArgsAsString) != "")
+                    if (TextUtil.CleanAsciiWithoutSpaces(data.ArgsAsString) != "")
                     {
                         string[] blockedEntries = ["/", "$", "#", "+", "-"];
-                        string meMessage = TextUtil.FilterText(data.ArgsAsString);
+                        string meMessage = TextUtil.CleanAscii(data.ArgsAsString);
                         while (!checked_msg)
                         {
                             checked_msg = true;
