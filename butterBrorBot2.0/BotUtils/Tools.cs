@@ -1,80 +1,85 @@
-﻿using Google.Apis.Services;
-using Google.Apis.YouTube.v3.Data;
+﻿using butterBror.Utils.DataManagers;
+using DankDB;
+using Google.Apis.Services;
 using Google.Apis.YouTube.v3;
-using Newtonsoft.Json.Linq;
-using Newtonsoft.Json;
-using System.Globalization;
-using System.Net.Http.Headers;
-using System.Net.NetworkInformation;
-using System.Net;
-using System.Text;
-using System.Text.RegularExpressions;
-using TwitchLib.Client.Events;
-using TwitchLib.Client.Enums;
-using System.Diagnostics;
-using butterBror.Utils.DataManagers;
-using System.Reflection;
+using Google.Apis.YouTube.v3.Data;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
-using butterBib;
-using System.Drawing;
-using Telegram.Bot.Types;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System.Diagnostics;
+using System.Globalization;
+using System.Net;
+using System.Net.Http.Headers;
+using System.Net.NetworkInformation;
+using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Web;
 using Telegram.Bot;
-using static System.Net.Mime.MediaTypeNames;
-using System.Linq;
+using Telegram.Bot.Types;
+using TwitchLib.Client.Enums;
+using TwitchLib.Client.Events;
 using TwitchLib.Client.Models;
+using System.Windows;
+using System.Management;
+using System.Collections.Concurrent;
+using System.Threading;
+using System.Text.Json;
 
 namespace butterBror
 {
     namespace Utils
     {
         /// <summary>
-        /// Получение токена авторизации твича
+        /// Getting a Twitch Authorization Token
         /// </summary>
-        public class TwitchTokenUtil
+        public class TwitchToken
         {
-            private readonly string _clientId;
-            private readonly string _clientSecret;
-            private readonly string _redirectUri;
-            private readonly string _databasePath;
-            private TokenData _tokenData;
+            private static string _clientId;
+            private static string _clientSecret;
+            private static string _redirectUri;
+            private static string _databasePath;
             /// <summary>
-            /// Получение токена авторизации твича
+            /// Getting a Twitch Authorization Token
             /// </summary>
-            public TwitchTokenUtil(string clientId, string clientSecret, string databasePath)
+            public TwitchToken(string clientId, string clientSecret, string databasePath)
             {
                 _clientId = clientId;
                 _clientSecret = clientSecret;
                 _redirectUri = "http://localhost:12121/";
                 _databasePath = databasePath;
-                _tokenData = LoadTokenData();
             }
             /// <summary>
-            /// Получение токена авторизации твича
+            /// Getting a Twitch Authorization Token
             /// </summary>
-            public async Task<string> GetTokenAsync()
+            public static async Task<TokenData> GetTokenAsync()
             {
+                Engine.Statistics.functions_used.Add();
                 try
                 {
-                    if (_tokenData != null && _tokenData.ExpiresAt > DateTime.Now)
-                        return _tokenData.AccessToken;
-                    if (_tokenData == null || _tokenData.RefreshToken == null)
+                    var token = LoadTokenData();
+                    if (token != null && token.ExpiresAt > DateTime.Now)
+                        return token;
+                    if (token == null || string.IsNullOrEmpty(token.RefreshToken))
                         return await PerformAuthorizationFlow();
 
-                    return await RefreshAccessToken();
+                    return await RefreshAccessToken(token);
                 }
-                catch (Exception ex) 
+                catch (Exception ex)
                 {
-                    ConsoleUtil.ErrorOccured(ex, "TwitchTokenUtil\\GetTokenAsync");
+                    Console.WriteError(ex, "TwitchTokenUtil\\GetTokenAsync");
                     return null;
                 }
             }
             /// <summary>
-            /// Поток выполнения авторизации
+            /// Authorization execution flow
             /// </summary>
-            private async Task<string> PerformAuthorizationFlow()
+            private static async Task<TokenData> PerformAuthorizationFlow()
             {
+                Engine.Statistics.functions_used.Add();
                 try
                 {
                     using var listener = new HttpListener();
@@ -85,18 +90,17 @@ namespace butterBror
                     var token = await ExchangeCodeForTokenAsync(authorizationCode);
                     SaveTokenData(token);
 
-                    // Возвращаем HTML-страницу клиенту
                     var context = await listener.GetContextAsync();
                     var response = context.Response;
                     string responseString = @"
 <html>
     <head>
         <meta charset='UTF-8'>
-        <title>butterBror | Авторизация завершена</title>
+        <title>Authorization completed</title>
     </head>
     <body>
-        <h2> Готово <img src='https://static-cdn.jtvnw.net/emoticons/v2/28/default/dark/1.0' style='vertical-align: middle;'/> 👍</h2>
-		<span> Можете закрыть эту страницу</span>
+        <h2> Ready <img src='https://static-cdn.jtvnw.net/emoticons/v2/28/default/dark/1.0' style='vertical-align: middle;'/> 👍</h2>
+		<span> You can close this page</span>
     </body>
 </html>";
 
@@ -108,26 +112,31 @@ namespace butterBror
                         await output.WriteAsync(buffer);
                     }
 
-                    return token.AccessToken;
+                    return token;
                 }
                 catch (Exception ex)
                 {
-                    ConsoleUtil.ErrorOccured(ex, "TwitchTokenUtil\\PerformAuthorizationFlow");
+                    Console.WriteError(ex, "TwitchTokenUtil\\PerformAuthorizationFlow");
                     return null;
                 }
             }
 
             /// <summary>
-            /// Обновление токена авторизации
+            /// Refreshing the authorization token
             /// </summary>
-            public async Task<string> RefreshAccessToken()
+            public static async Task<TokenData> RefreshAccessToken(TokenData token)
             {
+                Engine.Statistics.functions_used.Add();
                 try
                 {
-                    var httpClient = new HttpClient();
+                    Console.WriteLine("[TW-AUTH-UTIL] Refreshing token...", "info");
+                    if (token == null || string.IsNullOrEmpty(token.RefreshToken))
+                        return await PerformAuthorizationFlow();
+
+                    using var httpClient = new HttpClient();
                     var request = new HttpRequestMessage(HttpMethod.Post, "https://id.twitch.tv/oauth2/token")
                     {
-                        Content = new StringContent($"grant_type=refresh_token&refresh_token={_tokenData.RefreshToken}&client_id={_clientId}&client_secret={_clientSecret}", Encoding.UTF8, "application/x-www-form-urlencoded")
+                        Content = new StringContent($"grant_type=refresh_token&refresh_token={token.RefreshToken}&client_id={_clientId}&client_secret={_clientSecret}", Encoding.UTF8, "application/x-www-form-urlencoded")
                     };
 
                     var response = await httpClient.SendAsync(request);
@@ -136,30 +145,33 @@ namespace butterBror
                     if (response.IsSuccessStatusCode)
                     {
                         var tokenResponse = JsonConvert.DeserializeObject<TokenResponse>(responseContent);
-                        _tokenData.AccessToken = tokenResponse.access_token;
-                        _tokenData.ExpiresAt = DateTime.Now.AddSeconds(tokenResponse.expires_in);
-                        SaveTokenData(_tokenData);
-                        return tokenResponse.access_token;
+                        token.AccessToken = tokenResponse.access_token;
+                        token.ExpiresAt = DateTime.Now.AddSeconds(tokenResponse.expires_in);
+                        SaveTokenData(token);
+                        Console.WriteLine("[TW-AUTH-UTIL] Token refreshed!", "info");
+                        return token;
                     }
                     else
                     {
-                        ConsoleUtil.LOG($"[TW] Error updating token: {responseContent}", "err", ConsoleColor.Black, ConsoleColor.Red);
+                        Console.WriteLine($"[TW-AUTH-UTIL] Error updating token: {responseContent}", "err", ConsoleColor.Black, ConsoleColor.Red);
                         return null;
                     }
                 }
                 catch (Exception ex)
                 {
-                    ConsoleUtil.ErrorOccured(ex, "TwitchTokenUtil\\RefreshAccessToken");
+                    Console.WriteError(ex, "TwitchTokenUtil\\RefreshAccessToken");
                     return null;
                 }
             }
             /// <summary>
-            /// Открытие ссылки на авторизацию в браузере
+            /// Opening the authorization link in the browser
             /// </summary>
-            private async Task<string> GetAuthorizationCodeAsync(HttpListener listener)
+            private static async Task<string> GetAuthorizationCodeAsync(HttpListener listener)
             {
+                Engine.Statistics.functions_used.Add();
                 try
                 {
+                    Console.WriteLine("[TW-AUTH-UTIL] Getting auth data...", "info");
                     var url = $"https://id.twitch.tv/oauth2/authorize?client_id={_clientId}&redirect_uri={_redirectUri}&response_type=code&scope=user:manage:chat_color+chat:edit+chat:read";
                     var psi = new ProcessStartInfo
                     {
@@ -171,23 +183,26 @@ namespace butterBror
                     var context = await listener.GetContextAsync();
                     var request = context.Request;
                     var code = GetCodeFromResponse(request.Url.Query);
+                    Console.WriteLine("[TW-AUTH-UTIL] Auth data getted", "info");
 
                     return code;
                 }
                 catch (Exception ex)
                 {
-                    ConsoleUtil.ErrorOccured(ex, "TwitchTokenUtil\\GetAuthorizationCodeAsync");
+                    Console.WriteError(ex, "TwitchTokenUtil\\GetAuthorizationCodeAsync");
                     return null;
                 }
             }
             /// <summary>
-            /// Код обмена для токена
+            /// Exchange code for token
             /// </summary>
-            private async Task<TokenData> ExchangeCodeForTokenAsync(string code)
+            private static async Task<TokenData> ExchangeCodeForTokenAsync(string code)
             {
+                Engine.Statistics.functions_used.Add();
                 try
                 {
-                    var httpClient = new HttpClient();
+                    Console.WriteLine("[TW-AUTH-UTIL] Getting exchange code...", "info");
+                    using var httpClient = new HttpClient();
                     var request = new HttpRequestMessage(HttpMethod.Post, "https://id.twitch.tv/oauth2/token")
                     {
                         Content = new StringContent($"client_id={_clientId}&client_secret={_clientSecret}&redirect_uri={_redirectUri}&grant_type=authorization_code&code={code}", Encoding.UTF8, "application/x-www-form-urlencoded")
@@ -199,78 +214,66 @@ namespace butterBror
                     if (response.IsSuccessStatusCode)
                     {
                         var tokenResponse = JsonConvert.DeserializeObject<TokenResponse>(responseContent);
+                        Console.WriteLine("[TW-AUTH-UTIL] Getted exchange code!", "info");
                         return new TokenData { AccessToken = tokenResponse.access_token, ExpiresAt = DateTime.Now.AddSeconds(tokenResponse.expires_in), RefreshToken = tokenResponse.refresh_token };
                     }
                     else
                     {
-                        ConsoleUtil.LOG($"[TW] Error receiving token: {responseContent}", "err");
+                        Console.WriteLine($"[TW-AUTH-UTIL] Error receiving exchange token: {responseContent}", "err");
                         return null;
                     }
                 }
                 catch (Exception ex)
                 {
-                    ConsoleUtil.ErrorOccured(ex, "TwitchTokenUtil\\ExchangeCodeForTokenAsync");
+                    Console.WriteError(ex, "TwitchTokenUtil\\ExchangeCodeForTokenAsync");
                     return null;
                 }
             }
             /// <summary>
-            /// Получить код из ответа
+            /// Get code from response
             /// </summary>
-            private static string GetCodeFromResponse(string response)
+            private static string GetCodeFromResponse(string query)
             {
+                Engine.Statistics.functions_used.Add();
+                var queryParams = HttpUtility.ParseQueryString(query);
+                return queryParams["code"];
+            }
+            /// <summary>
+            /// Load token from database
+            /// </summary>
+            private static TokenData LoadTokenData()
+            {
+                Engine.Statistics.functions_used.Add();
                 try
                 {
-                    var uri = new Uri($"http://localhost:8080/tauth{response}");
-                    var query = uri.Query;
-                    var queryParts = query.Split('&');
-                    foreach (var part in queryParts)
+                    if (FileUtil.FileExists(_databasePath))
                     {
-                        var keyValue = part.Split('=');
-                        if (keyValue[0] == "?code")
-                            return keyValue[1];
+                        var json = FileUtil.GetFileContent(_databasePath);
+                        if (string.IsNullOrEmpty(json)) return null;
+                        var tokenData = JsonConvert.DeserializeObject<TokenData>(json);
+                        Console.WriteLine("[TW-AUTH-UTIL] Token data loaded!", "info");
+                        return tokenData?.ExpiresAt > DateTime.Now ? tokenData : null;
                     }
                     return null;
                 }
-                catch (Exception ex)
+                catch
                 {
-                    ConsoleUtil.ErrorOccured(ex, "TwitchTokenUtil\\GetCodeFromResponse");
                     return null;
                 }
             }
             /// <summary>
-            /// Загрузить токена из базы данных
+            /// Save token to database
             /// </summary>
-            private TokenData LoadTokenData()
+            private static void SaveTokenData(TokenData tokenData)
             {
+                Engine.Statistics.functions_used.Add();
                 try
                 {
-                    if (System.IO.File.Exists(_databasePath))
-                    {
-                        var tokenData = JsonConvert.DeserializeObject<TokenData>(System.IO.File.ReadAllText(_databasePath));
-                        if (tokenData.ExpiresAt > DateTime.Now)
-                            return tokenData;
-                    }
-                    return null;
+                    FileUtil.SaveFileContent(_databasePath, JsonConvert.SerializeObject(tokenData));
                 }
                 catch (Exception ex)
                 {
-                    ConsoleUtil.ErrorOccured(ex, "TwitchTokenUtil\\LoadTokenData");
-                    return null;
-                }
-            }
-            /// <summary>
-            /// Сохранить токен в базу данных
-            /// </summary>
-            private void SaveTokenData(TokenData tokenData)
-            {
-                try
-                {
-                    System.IO.File.WriteAllText(_databasePath, JsonConvert.SerializeObject(tokenData));
-                    _tokenData = tokenData;
-                }
-                catch (Exception ex)
-                {
-                    ConsoleUtil.ErrorOccured(ex, "TwitchTokenUtil\\SaveTokenData");
+                    Console.WriteError(ex, "TwitchTokenUtil\\SaveTokenData");
                 }
             }
 
@@ -280,7 +283,7 @@ namespace butterBror
                 public int expires_in { get; set; }
                 public string refresh_token { get; set; }
             }
-            private class TokenData
+            public class TokenData
             {
                 public string AccessToken { get; set; }
                 public DateTime ExpiresAt { get; set; }
@@ -288,49 +291,32 @@ namespace butterBror
             }
         }
         /// <summary>
-        /// Утилита для форматов
+        /// Utility for formats
         /// </summary>
-        public class FormatUtil
+        public class Format
         {
             /// <summary>
-            /// Текст в число
+            /// Text to number
             /// </summary>
             public static int ToInt(string input)
             {
-                try
-                {
-                    string pattern = @"[^-1234567890]";
-                    int result = Int32.Parse(Regex.Replace(input, pattern, ""));
-                    return result;
-                }
-                catch (Exception ex)
-                {
-                    ConsoleUtil.ErrorOccured(ex, $"FormatUtil\\ToNumber#{input}");
-                    return 0;
-                }
+                Engine.Statistics.functions_used.Add();
+                return Int32.Parse(Regex.Replace(input, @"[^-1234567890]", ""));
             }
             /// <summary>
-            /// Текст в число long
+            /// Text to long number
             /// </summary>
             public static long ToLong(string input)
             {
-                try
-                {
-                    string pattern = @"[^-1234567890]";
-                    long result = long.Parse(Regex.Replace(input, pattern, ""));
-                    return result;
-                }
-                catch (Exception ex)
-                {
-                    ConsoleUtil.ErrorOccured(ex, $"FormatUtil\\ToLong#{input}");
-                    return 0;
-                }
+                Engine.Statistics.functions_used.Add();
+                return long.Parse(Regex.Replace(input, @"[^-1234567890]", ""));
             }
             /// <summary>
-            /// Получить кол-во времени до
+            /// Get the amount of time until
             /// </summary>
             public static TimeSpan GetTimeTo(DateTime time, DateTime now, bool addYear = true)
             {
+                Engine.Statistics.functions_used.Add();
                 if (now > time && addYear)
                     time.AddYears(1);
 
@@ -341,188 +327,175 @@ namespace butterBror
             }
         }
         /// <summary>
-        /// Утилита для балансов
+        /// Balance Utility
         /// </summary>
-        public class BalanceUtil
+        public class Balance
         {
             /// <summary>
-            /// Добавить/уменьшить баланс пользователя
+            /// Add/reduce user balance
             /// </summary>
-            public static void Add(string userID, int buttersAdd, int crumbsAdd)
+            public static void Add(string userID, int buttersAdd, int crumbsAdd, Platforms platform)
             {
-                try
+                Engine.Statistics.functions_used.Add();
+                int crumbs = GetBalanceFloat(userID, platform) + crumbsAdd;
+                int butters = GetBalance(userID, platform) + buttersAdd;
+
+                Engine.coins += buttersAdd + crumbsAdd / 100f;
+                while (crumbs > 100)
                 {
-                    int crumbs = 0;
-                    int butters = 0;
-
-                    if (GetCrumbs(userID) != 0 || GetButters(userID) != 0)
-                    {
-                        crumbs = GetCrumbs(userID) + crumbsAdd;
-                        butters = GetButters(userID) + buttersAdd;
-                    }
-
-                    butters += crumbs / 100;
-                    crumbs = crumbs % 100;
-
-                    BotEngine.buttersAmount += buttersAdd + crumbsAdd / 100f;
-                    UsersData.UserSaveData(userID, "floatBalance", crumbs, false);
-                    UsersData.UserSaveData(userID, "balance", butters, false);
+                    crumbs -= 100;
+                    butters += 1;
                 }
-                catch (Exception ex)
-                {
-                    ConsoleUtil.ErrorOccured(ex, $"BalanceUtil\\SaveBalance#{userID}\\{buttersAdd}.{crumbsAdd}");
-                }
+                UsersData.Save(userID, "floatBalance", crumbs, platform);
+                UsersData.Save(userID, "balance", butters, platform);
             }
             /// <summary>
-            /// Получение бутеров пользователя
+            /// Getting user balance
             /// </summary>
-            public static int GetButters(string userID)
+            public static int GetBalance(string userID, Platforms platform)
             {
-                return UsersData.UserGetData<int>(userID, "balance");
+                Engine.Statistics.functions_used.Add();
+                return UsersData.Get<int>(userID, "balance", platform);
             }
             /// <summary>
-            /// Получение крошек пользователя
+            /// Getting user balance float
             /// </summary>
-            public static int GetCrumbs(string userID)
+            public static int GetBalanceFloat(string userID, Platforms platform)
             {
-                return UsersData.UserGetData<int>(userID, "floatBalance");
+                Engine.Statistics.functions_used.Add();
+                return UsersData.Get<int>(userID, "floatBalance", platform);
             }
         }
         /// <summary>
-        /// Утилита для чата
+        /// Chat utility
         /// </summary>
-        public class ChatUtil
+        public class Chat
         {
             /// <summary>
-            /// Вернуть пользователя из АФК
+            /// Return user from AFK
             /// </summary>
             public static void ReturnFromAFK(string UserID, string RoomID, string channel, string username, string message_id, Message message_reply, Platforms platform)
             {
+                Engine.Statistics.functions_used.Add();
+                var language = "ru";
+
                 try
                 {
-                    var lang = "ru";
-
-                    try
-                    {
-                        if (UsersData.UserGetData<string>(UserID, "language") == default)
-                            UsersData.UserSaveData(UserID, "language", "ru");
-                        else
-                            lang = UsersData.UserGetData<string>(UserID, "language");
-                    }
-                    catch (Exception ex)
-                    {
-                        ConsoleUtil.ErrorOccured(ex, $"(NOTCRITICAL)ChatUtil\\ReturnFromAFK#{UserID}");
-                    }
-
-                    string? message = UsersData.UserGetData<string>(UserID, "afkText");
-                    if (!NoBanwords.fullCheck(message, RoomID))
-                        return;
-
-                    string send = (TextUtil.CleanAsciiWithoutSpaces(message) == "" ? "" : ": " + message);
-
-                    TimeSpan timeElapsed = DateTime.UtcNow - UsersData.UserGetData<DateTime>(UserID, "afkTime");
-                    var afkType = UsersData.UserGetData<string>(UserID, "afkType");
-                    string translateKey = "";
-
-                    if (afkType == "draw")
-                    {
-                        if (timeElapsed.TotalHours >= 2 && timeElapsed.TotalHours < 8) translateKey = "draw:2h";
-                        else if (timeElapsed.TotalHours >= 8 && timeElapsed.TotalHours < 24) translateKey = "draw:8h";
-                        else if (timeElapsed.TotalDays >= 1 && timeElapsed.TotalDays < 7) translateKey = "draw:1d";
-                        else if (timeElapsed.TotalDays >= 7 && timeElapsed.TotalDays < 31) translateKey = "draw:7d";
-                        else if (timeElapsed.TotalDays >= 31 && timeElapsed.TotalDays < 364) translateKey = "draw:1mn";
-                        else if (timeElapsed.TotalDays >= 364) translateKey = "draw:1y";
-                        else translateKey = "draw:default";
-                    }
-                    else if (afkType == "afk")
-                    {
-                        if (timeElapsed.TotalHours >= 8 && timeElapsed.TotalHours < 14) translateKey = "afk:8h";
-                        else if (timeElapsed.TotalHours >= 14 && timeElapsed.TotalDays < 1) translateKey = "afk:14h";
-                        else if (timeElapsed.TotalDays >= 1 && timeElapsed.TotalDays < 3) translateKey = "afk:1d";
-                        else if (timeElapsed.TotalDays >= 3 && timeElapsed.TotalDays < 7) translateKey = "afk:3d";
-                        else if (timeElapsed.TotalDays >= 7 && timeElapsed.TotalDays < 9) translateKey = "afk:7d";
-                        else if (timeElapsed.TotalDays >= 9 && timeElapsed.TotalDays < 31) translateKey = "afk:9d";
-                        else if (timeElapsed.TotalDays >= 31 && timeElapsed.TotalDays < 364) translateKey = "afk:1mn";
-                        else if (timeElapsed.TotalDays >= 364) translateKey = "afk:1y";
-                        else translateKey = "afk:default";
-                    }
-                    else if (afkType == "sleep")
-                    {
-                        if (timeElapsed.TotalHours >= 2 && timeElapsed.TotalHours < 5) translateKey = "sleep:2h";
-                        else if (timeElapsed.TotalHours >= 5 && timeElapsed.TotalHours < 8) translateKey = "sleep:5h";
-                        else if (timeElapsed.TotalHours >= 8 && timeElapsed.TotalHours < 12) translateKey = "sleep:8h";
-                        else if (timeElapsed.TotalHours >= 12 && timeElapsed.TotalDays < 1) translateKey = "sleep:12h";
-                        else if (timeElapsed.TotalDays >= 1 && timeElapsed.TotalDays < 3) translateKey = "sleep:1d";
-                        else if (timeElapsed.TotalDays >= 3 && timeElapsed.TotalDays < 7) translateKey = "sleep:3d";
-                        else if (timeElapsed.TotalDays >= 7 && timeElapsed.TotalDays < 31) translateKey = "sleep:7d";
-                        else if (timeElapsed.TotalDays >= 31 && timeElapsed.TotalDays < 364) translateKey = "sleep:1mn";
-                        else if (timeElapsed.TotalDays >= 364) translateKey = "sleep:1y";
-                        else translateKey = "sleep:default";
-                    }
-                    else if (afkType == "rest")
-                    {
-                        if (timeElapsed.TotalHours >= 8 && timeElapsed.TotalHours < 24) translateKey = "rest:8h";
-                        else if (timeElapsed.TotalDays >= 1 && timeElapsed.TotalDays < 7) translateKey = "rest:1d";
-                        else if (timeElapsed.TotalDays >= 7 && timeElapsed.TotalDays < 31) translateKey = "rest:7d";
-                        else if (timeElapsed.TotalDays >= 31 && timeElapsed.TotalDays < 364) translateKey = "rest:1mn";
-                        else if (timeElapsed.TotalDays >= 364) translateKey = "rest:1y";
-                        else translateKey = "rest:default";
-                    }
-                    else if (afkType == "lurk") translateKey = "lurk:default";
-                    else if (afkType == "study")
-                    {
-                        if (timeElapsed.TotalHours >= 2 && timeElapsed.TotalHours < 5) translateKey = "study:2h";
-                        else if (timeElapsed.TotalHours >= 5 && timeElapsed.TotalHours < 8) translateKey = "study:5h";
-                        else if (timeElapsed.TotalHours >= 8 && timeElapsed.TotalHours < 24) translateKey = "study:8h";
-                        else if (timeElapsed.TotalDays >= 1 && timeElapsed.TotalDays < 7) translateKey = "study:1d";
-                        else if (timeElapsed.TotalDays >= 7 && timeElapsed.TotalDays < 31) translateKey = "study:7d";
-                        else if (timeElapsed.TotalDays >= 31 && timeElapsed.TotalDays < 364) translateKey = "study:1mn";
-                        else if (timeElapsed.TotalDays >= 364) translateKey = "study:1y";
-                        else translateKey = "study:default";
-                    }
-                    else if (afkType == "poop")
-                    {
-                        if (timeElapsed.TotalMinutes >= 1 && timeElapsed.TotalHours < 1) translateKey = "poop:1m";
-                        else if (timeElapsed.TotalHours >= 1 && timeElapsed.TotalHours < 8) translateKey = "poop:1h";
-                        else if (timeElapsed.TotalHours >= 8) translateKey = "poop:8h";
-                        else translateKey = "poop:default";
-                    }
-                    else if (afkType == "shower")
-                    {
-                        if (timeElapsed.TotalMinutes >= 1 && timeElapsed.TotalMinutes < 10) translateKey = "shower:1m";
-                        else if (timeElapsed.TotalMinutes >= 10 && timeElapsed.TotalHours < 1) translateKey = "shower:10m";
-                        else if (timeElapsed.TotalHours >= 1 && timeElapsed.TotalHours < 8) translateKey = "shower:1h";
-                        else if (timeElapsed.TotalHours >= 8) translateKey = "shower:8h";
-                        else translateKey = "shower:default";
-                    }
-                    string text = TranslationManager.GetTranslation(lang, translateKey, RoomID);
-                    UsersData.UserSaveData(UserID, "lastFromAfkResume", DateTime.UtcNow);
-                    UsersData.UserSaveData(UserID, "isAfk", false);
-
-                    if (platform.Equals(Platforms.Twitch))
-                        TwitchReplyMessage(channel, RoomID, text.Replace("%user%", username) + send + " (" + TextUtil.FormatTimeSpan(timeElapsed, lang) + ")", message_id, lang, true);
-                    if (platform.Equals(Platforms.Telegram))
-                        TelegramMessageReply(channel, message_reply.Chat.Id, text.Replace("%user%", username) + send + " (" + TextUtil.FormatTimeSpan(timeElapsed, lang) + ")", message_reply, lang);
+                    if (UsersData.Get<string>(UserID, "language", platform) == default)
+                        UsersData.Save(UserID, "language", "ru", platform);
+                    else
+                        language = UsersData.Get<string>(UserID, "language", platform);
                 }
                 catch (Exception ex)
                 {
-                    ConsoleUtil.ErrorOccured(ex, $"ChatUtil\\ReturnFromAFK#{UserID}");
+                    Console.WriteError(ex, $"(NOTCRITICAL)ChatUtil\\ReturnFromAFK#{UserID}");
                 }
+
+                string? message = UsersData.Get<string>(UserID, "afkText", platform);
+                if (!NoBanwords.Check(message, RoomID, platform))
+                    return;
+
+                string send = (TextUtil.CleanAsciiWithoutSpaces(message) == "" ? "" : ": " + message);
+
+                TimeSpan timeElapsed = DateTime.UtcNow - UsersData.Get<DateTime>(UserID, "afkTime", platform);
+                var afkType = UsersData.Get<string>(UserID, "afkType", platform);
+                string translateKey = "";
+
+                if (afkType == "draw")
+                {
+                    if (timeElapsed.TotalHours >= 2 && timeElapsed.TotalHours < 8) translateKey = "draw:2h";
+                    else if (timeElapsed.TotalHours >= 8 && timeElapsed.TotalHours < 24) translateKey = "draw:8h";
+                    else if (timeElapsed.TotalDays >= 1 && timeElapsed.TotalDays < 7) translateKey = "draw:1d";
+                    else if (timeElapsed.TotalDays >= 7 && timeElapsed.TotalDays < 31) translateKey = "draw:7d";
+                    else if (timeElapsed.TotalDays >= 31 && timeElapsed.TotalDays < 364) translateKey = "draw:1mn";
+                    else if (timeElapsed.TotalDays >= 364) translateKey = "draw:1y";
+                    else translateKey = "draw:default";
+                }
+                else if (afkType == "afk")
+                {
+                    if (timeElapsed.TotalHours >= 8 && timeElapsed.TotalHours < 14) translateKey = "default:8h";
+                    else if (timeElapsed.TotalHours >= 14 && timeElapsed.TotalDays < 1) translateKey = "default:14h";
+                    else if (timeElapsed.TotalDays >= 1 && timeElapsed.TotalDays < 3) translateKey = "default:1d";
+                    else if (timeElapsed.TotalDays >= 3 && timeElapsed.TotalDays < 7) translateKey = "default:3d";
+                    else if (timeElapsed.TotalDays >= 7 && timeElapsed.TotalDays < 9) translateKey = "default:7d";
+                    else if (timeElapsed.TotalDays >= 9 && timeElapsed.TotalDays < 31) translateKey = "default:9d";
+                    else if (timeElapsed.TotalDays >= 31 && timeElapsed.TotalDays < 364) translateKey = "default:1mn";
+                    else if (timeElapsed.TotalDays >= 364) translateKey = "default:1y";
+                    else translateKey = "default";
+                }
+                else if (afkType == "sleep")
+                {
+                    if (timeElapsed.TotalHours >= 2 && timeElapsed.TotalHours < 5) translateKey = "sleep:2h";
+                    else if (timeElapsed.TotalHours >= 5 && timeElapsed.TotalHours < 8) translateKey = "sleep:5h";
+                    else if (timeElapsed.TotalHours >= 8 && timeElapsed.TotalHours < 12) translateKey = "sleep:8h";
+                    else if (timeElapsed.TotalHours >= 12 && timeElapsed.TotalDays < 1) translateKey = "sleep:12h";
+                    else if (timeElapsed.TotalDays >= 1 && timeElapsed.TotalDays < 3) translateKey = "sleep:1d";
+                    else if (timeElapsed.TotalDays >= 3 && timeElapsed.TotalDays < 7) translateKey = "sleep:3d";
+                    else if (timeElapsed.TotalDays >= 7 && timeElapsed.TotalDays < 31) translateKey = "sleep:7d";
+                    else if (timeElapsed.TotalDays >= 31 && timeElapsed.TotalDays < 364) translateKey = "sleep:1mn";
+                    else if (timeElapsed.TotalDays >= 364) translateKey = "sleep:1y";
+                    else translateKey = "sleep:default";
+                }
+                else if (afkType == "rest")
+                {
+                    if (timeElapsed.TotalHours >= 8 && timeElapsed.TotalHours < 24) translateKey = "rest:8h";
+                    else if (timeElapsed.TotalDays >= 1 && timeElapsed.TotalDays < 7) translateKey = "rest:1d";
+                    else if (timeElapsed.TotalDays >= 7 && timeElapsed.TotalDays < 31) translateKey = "rest:7d";
+                    else if (timeElapsed.TotalDays >= 31 && timeElapsed.TotalDays < 364) translateKey = "rest:1mn";
+                    else if (timeElapsed.TotalDays >= 364) translateKey = "rest:1y";
+                    else translateKey = "rest:default";
+                }
+                else if (afkType == "lurk") translateKey = "lurk:default";
+                else if (afkType == "study")
+                {
+                    if (timeElapsed.TotalHours >= 2 && timeElapsed.TotalHours < 5) translateKey = "study:2h";
+                    else if (timeElapsed.TotalHours >= 5 && timeElapsed.TotalHours < 8) translateKey = "study:5h";
+                    else if (timeElapsed.TotalHours >= 8 && timeElapsed.TotalHours < 24) translateKey = "study:8h";
+                    else if (timeElapsed.TotalDays >= 1 && timeElapsed.TotalDays < 7) translateKey = "study:1d";
+                    else if (timeElapsed.TotalDays >= 7 && timeElapsed.TotalDays < 31) translateKey = "study:7d";
+                    else if (timeElapsed.TotalDays >= 31 && timeElapsed.TotalDays < 364) translateKey = "study:1mn";
+                    else if (timeElapsed.TotalDays >= 364) translateKey = "study:1y";
+                    else translateKey = "study:default";
+                }
+                else if (afkType == "poop")
+                {
+                    if (timeElapsed.TotalMinutes >= 1 && timeElapsed.TotalHours < 1) translateKey = "poop:1m";
+                    else if (timeElapsed.TotalHours >= 1 && timeElapsed.TotalHours < 8) translateKey = "poop:1h";
+                    else if (timeElapsed.TotalHours >= 8) translateKey = "poop:8h";
+                    else translateKey = "poop:default";
+                }
+                else if (afkType == "shower")
+                {
+                    if (timeElapsed.TotalMinutes >= 1 && timeElapsed.TotalMinutes < 10) translateKey = "shower:1m";
+                    else if (timeElapsed.TotalMinutes >= 10 && timeElapsed.TotalHours < 1) translateKey = "shower:10m";
+                    else if (timeElapsed.TotalHours >= 1 && timeElapsed.TotalHours < 8) translateKey = "shower:1h";
+                    else if (timeElapsed.TotalHours >= 8) translateKey = "shower:8h";
+                    else translateKey = "shower:default";
+                }
+                string text = TranslationManager.GetTranslation(language, "afk:" + translateKey, RoomID, platform); // FIX AA0
+                UsersData.Save(UserID, "lastFromAfkResume", DateTime.UtcNow, platform);
+                UsersData.Save(UserID, "isAfk", false, platform);
+
+                if (platform.Equals(Platforms.Twitch))
+                    TwitchReply(channel, RoomID, text.Replace("%user%", username) + send + " (" + TextUtil.FormatTimeSpan(timeElapsed, language) + ")", message_id, language, true);
+                if (platform.Equals(Platforms.Telegram))
+                    TelegramReply(channel, message_reply.Chat.Id, text.Replace("%user%", username) + send + " (" + TextUtil.FormatTimeSpan(timeElapsed, language) + ")", message_reply, language);
             }
 
             /// <summary>
-            /// Отправить сообщение в чат Twitch
+            /// Send a message to Twitch chat
             /// </summary>
-            public static void TwitchSendMessage(string channel, string message, string channelID, string messageID, string lang, bool isSafeEx = false)
+            public static void TwitchSend(string channel, string message, string channelID, string messageID, string lang, bool isSafeEx = false)
             {
+                Engine.Statistics.functions_used.Add();
                 try
                 {
-                    ConsoleUtil.LOG("[TW] Sending a message...", "info");
+                    Console.WriteLine("[TW] Sending a message...", "info");
                     LogWorker.Log($"[TW] A message was sent to the {channel} channel: {message}", LogWorker.LogTypes.Info, "ChatUtil\\SendMessage");
                     message = TextUtil.CleanAscii(message);
 
                     if (message.Length > 1500)
-                        message = TranslationManager.GetTranslation(lang, "tooLargeText", channelID);
+                        message = TranslationManager.GetTranslation(lang, "error:too_large_text", channelID, Platforms.Twitch);
                     else if (message.Length > 500)
                     {
                         int splitIndex = message.LastIndexOf(' ', 450);
@@ -533,36 +506,37 @@ namespace butterBror
                         Task task = Task.Run(() =>
                         {
                             Thread.Sleep(1000);
-                            TwitchSendMessage(channel, channelID, part2, messageID, lang, isSafeEx);
+                            TwitchSend(channel, channelID, part2, messageID, lang, isSafeEx);
                         });
                     }
 
-                    if (!Bot.Client.JoinedChannels.Contains(new JoinedChannel(channel)))
-                        Bot.Client.JoinChannel(channel);
+                    if (!Maintenance.twitch_client.JoinedChannels.Contains(new JoinedChannel(channel)))
+                        Maintenance.twitch_client.JoinChannel(channel);
 
-                    if (isSafeEx || NoBanwords.fullCheck(message, channelID))
-                        Bot.Client.SendMessage(channel, message);
+                    if (isSafeEx || NoBanwords.Check(message, channelID, Platforms.Twitch))
+                        Maintenance.twitch_client.SendMessage(channel, message);
                     else
-                        Bot.Client.SendReply(channel, messageID, TranslationManager.GetTranslation(lang, "cantSend", channelID));
+                        Maintenance.twitch_client.SendReply(channel, messageID, TranslationManager.GetTranslation(lang, "error:message_could_not_be_sent", channelID, Platforms.Twitch));
                 }
                 catch (Exception ex)
                 {
-                    ConsoleUtil.ErrorOccured(ex, $"ChatUtil\\SendMessage#CHNL:{channelID}\\MSG:\"{message}\"");
+                    Console.WriteError(ex, $"ChatUtil\\SendMessage#CHNL:{channelID}\\MSG:\"{message}\"");
                 }
             }
             /// <summary>
-            /// Отправить ответ на сообщение в чат Twitch
+            /// Reply to a message in Twitch chat
             /// </summary>
-            public static void TwitchReplyMessage(string channel, string channelID, string message, string messageID, string lang, bool isSafeEx = false)
+            public static void TwitchReply(string channel, string channelID, string message, string messageID, string lang, bool isSafeEx = false)
             {
+                Engine.Statistics.functions_used.Add();
                 try
                 {
-                    ConsoleUtil.LOG("[TW] Sending a message...", "info");
+                    Console.WriteLine("[TW] Sending a message...", "info");
                     LogWorker.Log($"[TW] A response to a message was sent to the {channel} channel: {message}", LogWorker.LogTypes.Info, "ChatUtil\\SendMsgReply");
                     message = TextUtil.CleanAscii(message);
 
                     if (message.Length > 1500)
-                        message = TranslationManager.GetTranslation(lang, "tooLargeText", channelID);
+                        message = TranslationManager.GetTranslation(lang, "error:too_large_text", channelID, Platforms.Twitch);
                     else if (message.Length > 500)
                     {
                         int splitIndex = message.LastIndexOf(' ', 450);
@@ -573,65 +547,67 @@ namespace butterBror
                         Task task = Task.Run(() =>
                         {
                             Thread.Sleep(1000);
-                            TwitchReplyMessage(channel, channelID, part2, messageID, lang, isSafeEx);
+                            TwitchReply(channel, channelID, part2, messageID, lang, isSafeEx);
                         });
                     }
 
-                    if (!Bot.Client.JoinedChannels.Contains(new JoinedChannel(channel)))
-                        Bot.Client.JoinChannel(channel);
+                    if (!Maintenance.twitch_client.JoinedChannels.Contains(new JoinedChannel(channel)))
+                        Maintenance.twitch_client.JoinChannel(channel);
 
-                    if (isSafeEx || NoBanwords.fullCheck(message, channelID))
-                        Bot.Client.SendReply(channel, messageID, message);
+                    if (isSafeEx || NoBanwords.Check(message, channelID, Platforms.Twitch))
+                        Maintenance.twitch_client.SendReply(channel, messageID, message);
                     else
-                        Bot.Client.SendReply(channel, messageID, TranslationManager.GetTranslation(lang, "cantSend", channelID));
+                        Maintenance.twitch_client.SendReply(channel, messageID, TranslationManager.GetTranslation(lang, "error:message_could_not_be_sent", channelID, Platforms.Twitch));
                 }
                 catch (Exception ex)
                 {
-                    ConsoleUtil.ErrorOccured(ex, $"ChatUtil\\SendMsgReply#CHNL:{channelID}\\MSG:\"{message}\"");
+                    Console.WriteError(ex, $"ChatUtil\\SendMsgReply#CHNL:{channelID}\\MSG:\"{message}\"");
                 }
             }
             /// <summary>
-            /// Отправить ответ на сообщение в чат Telegram
+            /// Reply to a message in Telegram chat
             /// </summary>
-            public static void TelegramMessageReply(string channel, long channelID, string message, Message messageReply, string lang, bool isSafeEx = false)
+            public static void TelegramReply(string channel, long channelID, string message, Message messageReply, string lang, bool isSafeEx = false)
             {
+                Engine.Statistics.functions_used.Add();
                 try
                 {
-                    ConsoleUtil.LOG("[TG] Sending message...", "info");
+                    Console.WriteLine("[TG] Sending message...", "info");
                     LogWorker.Log($"[TG] A message was sent to {channel}: {message}", LogWorker.LogTypes.Info, "ChatUtil\\SendMsgReply");
 
                     if (message.Length > 4096)
-                        message = TranslationManager.GetTranslation(lang, "tooLargeText", "tg_" + channelID.ToString());
+                        message = TranslationManager.GetTranslation(lang, "error:too_large_text", channelID.ToString(), Platforms.Telegram);
 
-                    if (isSafeEx || NoBanwords.fullCheck(message, "tg_" + channelID.ToString()))
-                        Bot.TelegramClient.SendMessage(
+                    if (isSafeEx || NoBanwords.Check(message, channelID.ToString(), Platforms.Telegram))
+                        Maintenance.telegram_client.SendMessage(
                             channelID,
                             message,
                             replyParameters: messageReply.Id
                         );
                     else
-                        Bot.TelegramClient.SendMessage(
+                        Maintenance.telegram_client.SendMessage(
                             channelID,
-                            TranslationManager.GetTranslation(lang, "cantSend", "tg_" + channelID.ToString()),
+                            TranslationManager.GetTranslation(lang, "error:message_could_not_be_sent", channelID.ToString(), Platforms.Telegram),
                             replyParameters: messageReply.Id
                         );
                 }
                 catch (Exception ex)
                 {
-                    ConsoleUtil.ErrorOccured(ex, $"[tg]ChatUtil\\SendMsgReply#CHNL:{channelID}\\MSG:\"{message}\"");
+                    Console.WriteError(ex, $"[tg]ChatUtil\\SendMsgReply#CHNL:{channelID}\\MSG:\"{message}\"");
                 }
             }
         }
         /// <summary>
-        /// Утилита для никнеймов
+        /// Nickname utility
         /// </summary>
-        public class NamesUtil
+        public class Names
         {
             /// <summary>
-            /// Получение никнейма из текста
+            /// Getting a nickname from text
             /// </summary>
             public static string GetUsernameFromText(string text)
             {
+                Engine.Statistics.functions_used.Add();
                 try
                 {
                     if (!text.Contains('@'))
@@ -642,75 +618,157 @@ namespace butterBror
                 }
                 catch (Exception ex)
                 {
-                    ConsoleUtil.ErrorOccured(ex, $"NamesUtil\\GetUsernameFromText#{text}");
+                    Console.WriteError(ex, $"NamesUtil\\GetUsernameFromText#{text}");
                     return null;
                 }
             }
             /// <summary>
-            /// Получить ID пользователя по никнейму
+            /// Get user ID by nickname
             /// </summary>
-            public static string GetUserID(string user)
+            public static string GetUserID(string user, Platforms platform)
             {
+                Engine.Statistics.functions_used.Add();
+
+                string key      = user.ToLowerInvariant();
+                string dir      = Path.Combine(Maintenance.path_n2id, Platform.strings[(int)platform]);
+                string filePath = Path.Combine(dir, key + ".txt");
+
                 try
                 {
-                    if (System.IO.File.Exists(Bot.NicknameToIDPath + $"{user.ToLower()}.txt"))
-                        return System.IO.File.ReadAllText(Bot.NicknameToIDPath + $"{user.ToLower()}.txt");
+                    if (FileUtil.FileExists(filePath))
+                        return FileUtil.GetFileContent(filePath);
+
+                    // Twitch API
+                    if (platform is Platforms.Twitch)
+                    {
+                        if (string.IsNullOrEmpty(Maintenance.twitch_client_id) || string.IsNullOrEmpty(Maintenance.token_twitch.AccessToken))
+                            return null;
+
+                        using var client = new HttpClient();
+                        client.DefaultRequestHeaders.Add("Client-ID", Maintenance.twitch_client_id);
+                        client.DefaultRequestHeaders.Authorization =
+                            new AuthenticationHeaderValue("Bearer", Maintenance.token_twitch.AccessToken);
+
+                        var uri = new Uri($"https://api.twitch.tv/helix/users?login={Uri.EscapeDataString(user)}");
+                        using var response = client.GetAsync(uri).Result;
+                        if (!response.IsSuccessStatusCode)
+                            return null;
+
+                        var json = response.Content.ReadAsStringAsync().Result;
+                        var obj = JObject.Parse(json);
+                        var data = obj["data"] as JArray;
+                        if (data != null && data.Count > 0)
+                        {
+                            string id = data[0]["id"]?.ToString();
+                            if (!string.IsNullOrEmpty(id))
+                            {
+                                Directory.CreateDirectory(dir);
+                                FileUtil.SaveFileContent(filePath, id);
+                                return id;
+                            }
+                        }
+                    }
                 }
                 catch (Exception ex)
                 {
-                    ConsoleUtil.ErrorOccured(ex, $"NamesUtil\\GetUserID#{user}");
+                    Console.WriteError(ex, $"NamesUtil\\GetUserID#{user}");
                 }
+
+                // Not found
                 return null;
             }
+
             /// <summary>
-            /// Получить имя пользователя по ID
+            /// Get username by ID
             /// </summary>
-            public static string GetUsername(string ID, string executedID)
+            public static string GetUsername(string ID, Platforms platform)
             {
+                Engine.Statistics.functions_used.Add();
+
+                string dir      = Path.Combine(Maintenance.path_id2n, Platform.strings[(int)platform]);
+                string filePath = Path.Combine(dir, ID + ".txt");
+
                 try
                 {
-                    if (System.IO.File.Exists(Bot.IDToNicknamePath + $"{ID}.txt"))
-                        return System.IO.File.ReadAllText(Bot.IDToNicknamePath + $"{ID}.txt");
-                    return executedID;
+                    if (FileUtil.FileExists(filePath))
+                        return FileUtil.GetFileContent(filePath);
+
+                    // API
+                    if (platform is Platforms.Twitch)
+                    {
+                        if (string.IsNullOrEmpty(Maintenance.twitch_client_id) ||
+                            string.IsNullOrEmpty(Maintenance.token_twitch.AccessToken))
+                        {
+                            return null;
+                        }
+
+                        using var client = new HttpClient();
+                        client.DefaultRequestHeaders.Add("Client-ID", Maintenance.twitch_client_id);
+                        client.DefaultRequestHeaders.Authorization =
+                            new AuthenticationHeaderValue("Bearer", Maintenance.token_twitch.AccessToken);
+
+                        var uri = new Uri($"https://api.twitch.tv/helix/users?id={Uri.EscapeDataString(ID)}");
+                        using var response = client.GetAsync(uri).Result;
+                        if (!response.IsSuccessStatusCode)
+                            return null;
+
+                        var json = response.Content.ReadAsStringAsync().Result;
+                        var obj = JObject.Parse(json);
+                        var data = obj["data"] as JArray;
+                        if (data != null && data.Count > 0)
+                        {
+                            string login = data[0]["login"]?.ToString();
+                            if (!string.IsNullOrEmpty(login))
+                            {
+                                Directory.CreateDirectory(dir);
+                                FileUtil.SaveFileContent(filePath, login);
+                                return login;
+                            }
+                        }
+                    }
                 }
                 catch (Exception ex)
                 {
-                    ConsoleUtil.ErrorOccured(ex, $"NamesUtil\\GetUsername#{ID}");
-                    return executedID;
+                    Console.WriteError(ex, $"NamesUtil\\GetUsername#{ID}");
                 }
+
+                return null;
             }
+
             /// <summary>
-            /// Добавить в текст невидимые символы, чтобы не пинговать чатеров
+            /// Add invisible characters to text to avoid pinging chatters
             /// </summary>
-            public static string DontPingUsername(string username)
+            public static string DontPing(string username)
             {
+                Engine.Statistics.functions_used.Add();
                 return string.Join("󠀀", username);
             }
         }
         /// <summary>
-        /// Утилита для консоли
+        /// Console utility
         /// </summary>
-        public class ConsoleUtil
+        public class Console
         {
-            public delegate void ConsoleHandler(LogInfo line);
-            public static event ConsoleHandler OnChatLineGetted;
+            public delegate void ConsoleHandler(LineInfo line);
+            public static event ConsoleHandler on_chat_line;
 
-            public delegate void ErrorHandler(LogInfo line);
-            public static event ErrorHandler OnErrorOccured;
+            public delegate void ErrorHandler(LineInfo line);
+            public static event ErrorHandler error_occured;
             /// <summary>
-            /// Вывести текст в консоль
+            /// Output text to console
             /// </summary>
-            public static void LOG(string message, string channel, ConsoleColor FG = ConsoleColor.Gray, ConsoleColor BG = ConsoleColor.Black, bool WrapLine = true, bool ShowDate = true)
+            public static void WriteLine(string message, string channel, ConsoleColor FG = ConsoleColor.Gray, ConsoleColor BG = ConsoleColor.Black)
             {
-                OnChatLineGetted(new LogInfo()
+                Engine.Statistics.functions_used.Add();
+                on_chat_line(new LineInfo()
                 {
-                    Message = $" {(ShowDate ? $"[{DateTime.Now.Hour}:{DateTime.Now.Minute}.{DateTime.Now.Second} ({DateTime.Now.Millisecond})]: " : "")}{message}{(WrapLine ? "\n" : "")}",
+                    Message = $"[{DateTime.Now.Hour}:{DateTime.Now.Minute}.{DateTime.Now.Second} ({DateTime.Now.Millisecond}):{message}\n",
                     Channel = channel,
                     BackgroundColor = BG,
                     ForegroundColor = FG
                 });
             }
-            public class LogInfo
+            public class LineInfo
             {
                 public string Message { get; set; }
                 public ConsoleColor ForegroundColor { get; set; }
@@ -718,39 +776,39 @@ namespace butterBror
                 public string Channel { get; set; }
             }
             /// <summary>
-            /// Вывести ошибку в консоль
+            /// Output error to console
             /// </summary>
-            public static void ErrorOccured(Exception ex, string sector)
+            public static void WriteError(Exception ex, string sector)
             {
-                OnErrorOccured(new LogInfo()
+                Engine.Statistics.functions_used.Add();
+                error_occured(new LineInfo()
                 {
-                    Message = $"[ ERROR OCCURED ] {ex.Message} | {ex.StackTrace} | {ex.Source} | {sector}",
+                    Message = $"[ ERROR ] {ex.Message} \nSTACKTRACE: {ex.StackTrace}\nSOURCE: {ex.Source}\nSECTOR: {sector}",
                     Channel = "err",
                     BackgroundColor = ConsoleColor.Red,
                     ForegroundColor = ConsoleColor.Black
                 });
-            } 
-            /// <summary>
-            /// Обновление заголовка консоли
-            /// </summary>
+            }
         }
         /// <summary>
-        /// Утилита для текста
+        /// Text Utility
         /// </summary>
         public class TextUtil
         {
             /// <summary>
-            /// Фильтровать название комманды
+            /// Filter command name
             /// </summary>
             public static string FilterCommand(string input)
             {
+                Engine.Statistics.functions_used.Add();
                 return Regex.Replace(input, @"[^qwertyuiopasdfghjklzxcvbnmйцукенгшщзхъфывапролджэячсмитьбюёQWERTYUIOPASDFGHJKLZXCVBNMЙЦУКЕНГШЩЗХЪФЫВАПРОЛДЖЭЯЧСМИТЬБЮЁ1234567890%]", ""); ;
             }
             /// <summary>
-            /// Сменить раскладку текста
+            /// Change text layout
             /// </summary>
             public static string ChangeLayout(string text)
             {
+                Engine.Statistics.functions_used.Add();
                 try
                 {
                     var en = "qwertyuiop[]asdfghjkl;'zxcvbnm,.";
@@ -765,95 +823,103 @@ namespace butterBror
                 }
                 catch (Exception ex)
                 {
-                    ConsoleUtil.ErrorOccured(ex, $"TextUtil\\ChangeLayout#{text}");
+                    Console.WriteError(ex, $"TextUtil\\ChangeLayout#{text}");
                     return null;
                 }
             }
             /// <summary>
-            /// Фильтровать текст от ASCII
+            /// Filter text from ASCII
             /// </summary>
             public static string CleanAscii(string input)
             {
+                Engine.Statistics.functions_used.Add();
                 if (string.IsNullOrEmpty(input)) return input;
 
                 return new string(input
-                    .Where(c => c > 31 && c != 127)  // Сохраняем печатаемые ASCII (32-126) и все не-ASCII
+                    .Where(c => c > 31 && c != 127)
                     .ToArray());
             }
             /// <summary>
-            /// Фильтровать текст от ASCII без пробелов
+            /// Filter text from ASCII without spaces
             /// </summary>
             public static string CleanAsciiWithoutSpaces(string input)
             {
+                Engine.Statistics.functions_used.Add();
                 return CleanAscii(input).Replace(" ", "");
             }
             /// <summary>
-            /// Удалить дублирующиеся символы из текста
+            /// Remove duplicate characters from text
             /// </summary>
-            public static string RemoveDuplicateLetters(string text)
+            public static string RemoveDuplicates(string text)
             {
+                Engine.Statistics.functions_used.Add();
                 return text.Aggregate(new StringBuilder(), (sb, c) =>
                     sb.Length == 0 || c != sb[^1] ? sb.Append(c) : sb).ToString();
             }
             /// <summary>
-            /// Фильтровать никнейм
+            /// Filter nickname
             /// </summary>
-            public static string NicknameFilter(string input)
+            public static string UsernameFilter(string input)
             {
+                Engine.Statistics.functions_used.Add();
                 return Regex.Replace(input, @"[^A-Za-z0-9_-]", "");
             }
             /// <summary>
-            /// Сократить координаты
+            /// Reduce coordinates
             /// </summary>
+            /// <exception cref="ArgumentException"></exception>
             public static string ShortenCoordinate(string coordinate)
             {
+                Engine.Statistics.functions_used.Add();
                 if (double.TryParse(coordinate[..^1], NumberStyles.Float, CultureInfo.InvariantCulture, out double number))
                     return $"{Math.Round(number, 1).ToString(CultureInfo.InvariantCulture)}{coordinate[^1]}";
                 else
                     throw new ArgumentException("Invalid coordinate format");
             }
             /// <summary>
-            /// Вывести время до
+            /// Print time until
             /// </summary>
-            public static string TimeTo(DateTime startTime, DateTime endTime, string type, int endYearAdd, string lang, string argsText, string channelID)
+            public static string TimeTo(DateTime startTime, DateTime endTime, string type, int endYearAdd, string lang, string argsText, string channelID, Platforms platform)
             {
+                Engine.Statistics.functions_used.Add();
                 try
                 {
-                    var selectedUser = NamesUtil.GetUsernameFromText(argsText);
+                    var selectedUser = Names.GetUsernameFromText(argsText);
                     DateTime now = DateTime.UtcNow;
                     DateTime winterStart = new(now.Year, startTime.Month, startTime.Day);
                     DateTime winterEnd = new(now.Year + endYearAdd, endTime.Month, endTime.Day);
                     winterEnd.AddDays(-1);
                     DateTime winter = now < winterStart ? winterStart : winterEnd;
                     if (now < winterStart)
-                        return TranslationManager.GetTranslation(lang, $"to{type}", channelID)
-                            .Replace("%time%", FormatTimeSpan(FormatUtil.GetTimeTo(winter, now), lang))
-                            .Replace("%sUser%", selectedUser);
+                        return ArgumentsReplacement(TranslationManager.GetTranslation(lang, $"command:{type}:start", channelID, platform),
+                            new(){ { "time", FormatTimeSpan(Format.GetTimeTo(winter, now), lang) },
+                            { "sUser", selectedUser } });
                     else
-                        return TranslationManager.GetTranslation(lang, $"toEndOf{type}", channelID)
-                            .Replace("%time%", FormatTimeSpan(FormatUtil.GetTimeTo(winter, now), lang))
-                            .Replace("%sUser%", selectedUser);
+                        return ArgumentsReplacement(TranslationManager.GetTranslation(lang, $"command:{type}:end", channelID, platform),
+                            new(){ { "time", FormatTimeSpan(Format.GetTimeTo(winter, now), lang) },
+                            { "sUser", selectedUser } });
                 }
                 catch (Exception ex)
                 {
-                    ConsoleUtil.ErrorOccured(ex, $"TextUtil\\TimeTo#start:{startTime}, end:{endTime}, type:{type}, endYearAdd:{endYearAdd}");
+                    Console.WriteError(ex, $"TextUtil\\TimeTo#start:{startTime}, end:{endTime}, type:{type}, endYearAdd:{endYearAdd}");
                     return null;
                 }
             }
             /// <summary>
-            /// Форматировать время в текст
+            /// Format time to text
             /// </summary>
             public static string FormatTimeSpan(TimeSpan timeSpan, string lang)
             {
+                Engine.Statistics.functions_used.Add();
                 int days = Math.Abs(timeSpan.Days);
                 int hours = Math.Abs(timeSpan.Hours);
                 int minutes = Math.Abs(timeSpan.Minutes);
                 int seconds = Math.Abs(timeSpan.Seconds);
 
-                string days_str = $"{days} {(days % 10 == 1 && days % 100 != 11 ? TranslationManager.GetTranslation(lang, "day", "") : days % 10 >= 2 && days % 10 <= 4 && (days % 100 < 10 || days % 100 >= 20) ? TranslationManager.GetTranslation(lang, "days1", "") : TranslationManager.GetTranslation(lang, "days2", ""))}.";
-                string hours_str = $"{hours} {(hours % 10 == 1 ? TranslationManager.GetTranslation(lang, "hour", "") : hours % 10 >= 2 && hours % 10 <= 4 ? TranslationManager.GetTranslation(lang, "hours1", "") : TranslationManager.GetTranslation(lang, "hours2", ""))}.";
-                string minutes_str = $"{minutes} {(minutes % 10 == 1 ? TranslationManager.GetTranslation(lang, "minute", "") : minutes % 10 >= 2 && minutes % 10 <= 4 ? TranslationManager.GetTranslation(lang, "minutes1", "") : TranslationManager.GetTranslation(lang, "minutes2", ""))}.";
-                string seconds_str = $"{seconds} {(seconds % 10 == 1 ? TranslationManager.GetTranslation(lang, "second", "") : seconds % 10 >= 2 && seconds % 10 <= 4 ? TranslationManager.GetTranslation(lang, "seconds1", "") : TranslationManager.GetTranslation(lang, "seconds2", ""))}.";
+                string days_str = $"{days} {TranslationManager.GetTranslation(lang, "text:day", "", Platforms.Twitch)}.";
+                string hours_str = $"{hours} {TranslationManager.GetTranslation(lang, "text:hour", "", Platforms.Twitch)}.";
+                string minutes_str = $"{minutes} {TranslationManager.GetTranslation(lang, "text:minute", "", Platforms.Twitch)}.";
+                string seconds_str = $"{seconds} {TranslationManager.GetTranslation(lang, "text:second", "", Platforms.Twitch)}.";
 
                 if (timeSpan.TotalSeconds < 0)
                     timeSpan = -timeSpan;
@@ -867,690 +933,872 @@ namespace butterBror
                 else
                     return $"{days_str} {hours_str}";
             }
-        }
-        /// <summary>
-        /// Утилита для эмоутов
-        /// </summary>
-        public class EmotesUtil
-        {
             /// <summary>
-            /// Получение эмоутов канала из кэша
+            /// Replaces arguments
             /// </summary>
-            public static async Task<string[]?> GetEmotesForChannel(string channel, string service)
+            /// <param name="original"></param>
+            /// <param name="argument"></param>
+            /// <param name="replace"></param>
+            /// <returns></returns>
+            public static string ArgumentsReplacement(string original, Dictionary<string, string> replacements)
             {
-                try
-                {
-                    if (Bot.EmotesByChannel.ContainsKey(channel + service))
-                        return Bot.EmotesByChannel[channel + service];
-                    else
-                        return null;
-                }
-                catch (Exception ex)
-                {
-                    ConsoleUtil.ErrorOccured(ex, $"EmotesUtil\\GetEmotesForChannel#{channel}\\{service}");
-                    return null;
-                }
-            }
-            /// <summary>
-            /// Вывести рандомный эмоут канала
-            /// </summary>
-            public static Dictionary<string, string> RandomEmote(string channel, string service)
-            {
-                try
-                {
-                    string[] emotes = GetEmotesForChannel(channel, service).Result;
-                    Dictionary<string, string> returnmsg = new();
-                    if (emotes.Length > 0)
-                    {
-                        string randomEmote = emotes[new Random().Next(emotes.Length)];
-                        returnmsg["status"] = "OK";
-                        returnmsg["emote"] = randomEmote;
-                    }
-                    else
-                    {
-                        returnmsg["status"] = "BAD";
-                        returnmsg["emote"] = "";
-                    }
-                    return returnmsg;
-                }
-                catch (Exception ex)
-                {
-                    ConsoleUtil.ErrorOccured(ex, $"EmotesUtil\\RandomEmote#{channel}\\{service}");
-                    return null;
-                }
-            }
-            /// <summary>
-            /// Обновить эмоут канала
-            /// </summary>
-            public static async Task EmoteUpdate(string channel)
-            {
-                try
-                {
-                    ConsoleUtil.LOG($"[TW] Updating emotes for channel {channel}...", "info");
-                    var emote7tvNames = await GetEmotes(channel, "7tv");
-                    Bot.EmotesByChannel[channel + "7tv"] = emote7tvNames;
-                    var emoteBttvNames = await GetEmotes(channel, "bttv");
-                    Bot.EmotesByChannel[channel + "bttv"] = emoteBttvNames;
-                    var emoteFfzNames = await GetEmotes(channel, "ffz");
-                    Bot.EmotesByChannel[channel + "ffz"] = emoteFfzNames;
-                    ConsoleUtil.LOG($"[TW] Emotes for the {channel} channel have been updated!", "info");
-                }
-                catch (Exception ex)
-                {
-                    ConsoleUtil.ErrorOccured(ex, $"EmotesUtil\\EmoteUpdate#{channel}");
-                }
-            }
-            /// <summary>
-            /// Получение эмоутов канала
-            /// </summary>
-            public static async Task<string[]> GetEmotes(string channel, string services)
-            {
-                try
-                {
-                    ConsoleUtil.LOG($"[TW] Receiving {services} emotes for channel {channel}...", "info");
-                    var client = new HttpClient();
-                    var request = new HttpRequestMessage
-                    {
-                        Method = HttpMethod.Get,
-                        RequestUri = new Uri($"https://emotes.adamcy.pl/v1/channel/{channel}/emotes/{services}"),
-                        Headers =
-                {
-                    { "Accept", "application/json" },
-                },
-                    };
+                string result = original;
 
-                    using var response = await client.SendAsync(request);
-                    if (response.IsSuccessStatusCode)
-                    {
-                        ConsoleUtil.LOG($"[TW] Emotes received for channel {channel}!", "info");
-                        var content = await response.Content.ReadAsStringAsync();
-                        var json = JArray.Parse(content);
-
-                        var emoteNames = json.Select(emote => emote["code"].ToString()).ToArray();
-                        return emoteNames;
-                    }
-                    else
-                    {
-                        ConsoleUtil.LOG($"[TW] Error receiving emotes for channel {channel}!", "err");
-                        string[] empty = [];
-                        return empty;
-                    }
-                }
-                catch (Exception ex)
+                foreach (var replace in replacements)
                 {
-                    ConsoleUtil.ErrorOccured(ex, $"EmotesUtil\\GetEmotes#{channel}\\{services}");
-                    return null;
+                    result = result.Replace($"%{replace.Key}%", replace.Value);
                 }
+
+                return result;
+            }
+            /// <summary>
+            /// Replaces argument
+            /// </summary>
+            /// <param name="original"></param>
+            /// <param name="argument"></param>
+            /// <param name="replace"></param>
+            /// <returns></returns>
+            public static string ArgumentReplacement(string original, string key, string value)
+            {
+                return original.Replace($"%{key}%", value);
+            }
+
+            public static string CheckNull(string input)
+            {
+                if (input is null)
+                    return "null";
+                return input;
             }
         }
         /// <summary>
-        /// Утилита для комманд
+        /// Utility for emotes
         /// </summary>
-        public class CommandUtil
+        public class Emotes
         {
             /// <summary>
-            /// Обработать выполнение команды
+            /// Getting channel emotes from cache
+            /// </summary>
+            private static readonly SemaphoreSlim cache_lock = new(1, 1);
+
+            public static async Task<List<string>?> GetEmotesForChannel(string channel, string channel_id)
+            {
+                Engine.Statistics.functions_used.Add();
+                try
+                {
+                    if (Maintenance.channels_7tv_emotes.TryGetValue(channel_id, out var cached) &&
+                        DateTime.UtcNow < cached.expiration)
+                    {
+                        return cached.emotes;
+                    }
+
+                    await cache_lock.WaitAsync();
+                    try
+                    {
+                        if (Maintenance.channels_7tv_emotes.TryGetValue(channel_id, out cached) &&
+                            DateTime.UtcNow < cached.expiration)
+                        {
+                            return cached.emotes;
+                        }
+
+                        var emotes = await GetEmotes(channel);
+                        Maintenance.channels_7tv_emotes[channel_id] = (emotes, DateTime.UtcNow.Add(Maintenance.CacheTTL));
+                        return emotes;
+                    }
+                    finally
+                    {
+                        cache_lock.Release();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteError(ex, $"EmotesUtil\\GetEmotesForChannel#{channel}");
+                    return null;
+                }
+            }
+
+            public static async Task<string> RandomEmote(string channel, string channel_id)
+            {
+                Engine.Statistics.functions_used.Add();
+                try
+                {
+                    var emotes = await GetEmotesForChannel(channel, channel_id);
+                    return emotes?.Count > 0
+                        ? emotes[(new Random()).Next(emotes.Count)]
+                        : null;
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteError(ex, $"EmotesUtil\\RandomEmote#{channel}");
+                    return null;
+                }
+            }
+
+            public static async Task EmoteUpdate(string channel, string channel_id)
+            {
+                Engine.Statistics.functions_used.Add();
+                try
+                {
+                    var emotes = await GetEmotes(channel);
+                    Maintenance.channels_7tv_emotes[channel_id] = (emotes, DateTime.UtcNow.Add(Maintenance.CacheTTL));
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteError(ex, $"EmotesUtil\\EmoteUpdate#{channel}");
+                }
+            }
+
+            public static async Task<List<string>> GetEmotes(string channel)
+            {
+                Engine.Statistics.functions_used.Add();
+                try
+                {
+                    if (Maintenance.userSearchCache.TryGetValue(channel, out var userCache) &&
+                        DateTime.UtcNow < userCache.expiration)
+                    {
+                        return await GetEmotesFromCache(userCache.userId);
+                    }
+
+                    var userId = Maintenance.sevenTvService.SearchUser(channel, Maintenance.token_7tv).Result;
+                    if (string.IsNullOrEmpty(userId))
+                    {
+                        Console.WriteLine($"[7tv] {channel} doesn't exist on 7tv!", "info");
+                        return new List<string>();
+                    }
+
+                    Maintenance.userSearchCache[channel] = (userId, DateTime.UtcNow.Add(Maintenance.CacheTTL));
+                    return await GetEmotesFromCache(userId);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteError(ex, $"EmotesUtil\\GetEmotes#{channel}");
+                    return new List<string>();
+                }
+            }
+
+            private static async Task<List<string>> GetEmotesFromCache(string userId)
+            {
+                Engine.Statistics.functions_used.Add();
+                var emote = await Maintenance.sevenTv.GetUser(userId);
+                if (emote?.connections?[0].emote_set?.emotes == null)
+                {
+                    Console.WriteLine($"[7tv] No emotes found for user {userId}", "info");
+                    return new List<string>();
+                }
+
+                return emote.connections[0].emote_set.emotes.Select(e => e.name).ToList();
+            }
+        }
+        /// <summary>
+        /// Command Utility
+        /// </summary>
+        public class Command
+        {
+            /// <summary>
+            /// Get arguments or null
+            /// </summary>
+            public static string GetArgument(List<string> args, int index)
+            {
+                Engine.Statistics.functions_used.Add();
+                if (args.Count > index)
+                    return args[index];
+                return null;
+            }
+
+            /// <summary>
+            /// Get named arguments or null
+            /// </summary>
+            public static string GetArgument(List<string> args, string arg_name)
+            {
+                Engine.Statistics.functions_used.Add();
+                foreach (string arg in args)
+                {
+                    if (arg.StartsWith(arg_name + ":")) return arg.Replace(arg_name + ":", "");
+                }
+                return null;
+            }
+
+            /// <summary>
+            /// Process command execution
             /// </summary>
             public static void ExecutedCommand(CommandData data)
             {
+                Engine.Statistics.functions_used.Add();
                 try
                 {
-                    var info = $"Executed command {data.Name} (User: {data.User.Name}, full message: \"{data.Name} {data.ArgsAsString}\", arguments: \"{data.ArgsAsString}\", command: \"{data.Name}\")";
-                    LogWorker.Log(info, LogWorker.LogTypes.Info, $"CommandUtil\\executedCommand#{data.Name}");
-                    ConsoleUtil.LOG(info, "info");
-                    BotEngine.completedCommands++;
+                    var info = $"Executed command {data.name} (User: {data.user.username}, full message: \"{data.name} {data.arguments_string}\", arguments: \"{data.arguments_string}\", command: \"{data.name}\")";
+                    LogWorker.Log(info, LogWorker.LogTypes.Info, $"CommandUtil\\executedCommand#{data.name}");
+                    Console.WriteLine(info, "info");
+                    Engine.completed_commands++;
                 }
                 catch (Exception ex)
                 {
-                    ConsoleUtil.ErrorOccured(ex, $"CommandUtil\\executedCommand");
+                    Console.WriteError(ex, $"CommandUtil\\executedCommand");
                 }
             }
             /// <summary>
-            /// Проверка команд нв кулдаун
+            /// Checking commands for cooldown
             /// </summary>
-            public static bool IsNotOnCooldown(int userSecondsCooldown, int globalCooldown, string cooldownParamName, string userID, string roomID, bool resetUseTimeIfCommandIsNotReseted = true, bool ignoreUserVIP = false, bool ignoreGlobalCooldown = false)
+            public static bool CheckCooldown(
+                int userSecondsCooldown,
+                int globalCooldown,
+                string cooldownParamName,
+                string userID,
+                string roomID,
+                Platforms platform,
+                bool resetUseTimeIfCommandIsNotReseted = true,
+                bool ignoreUserVIP = false,
+                bool ignoreGlobalCooldown = false
+            )
             {
+                Engine.Statistics.functions_used.Add();
+
                 try
                 {
-                    if (!(UsersData.UserGetData<bool>(userID, "isBotModerator") || UsersData.UserGetData<bool>(userID, "isBotDev")) || ignoreUserVIP)
+                    // VIP or dev/mod bypass
+                    bool isVipOrStaff = UsersData.Get<bool>(userID, "isBotModerator", platform)
+                                        || UsersData.Get<bool>(userID, "isBotDev", platform);
+                    if (isVipOrStaff && !ignoreUserVIP)
+                        return true;
+
+                    string userKey = $"LU_{cooldownParamName}";
+                    string channelPath = Path.Combine(Maintenance.path_channels, Platform.strings[(int)platform], roomID);
+                    string cddFile = Path.Combine(channelPath, "CDD.json");
+
+                    DateTime now = DateTime.UtcNow;
+
+                    // First user use
+                    if (!UsersData.Contains(userKey, userID, platform))
                     {
-                        if (UsersData.IsContainsKey($"LU_{cooldownParamName}", userID))
-                        {
-                            DateTime lastUserUse = UsersData.UserGetData<DateTime>(userID, $"LU_{cooldownParamName}");
-                            TimeSpan timeAfterUse = DateTime.UtcNow - lastUserUse;
-                            if (timeAfterUse.TotalSeconds >= userSecondsCooldown)
-                            {
-                                UsersData.UserSaveData(userID, $"LU_{cooldownParamName}", DateTime.UtcNow);
-                                if (!System.IO.File.Exists(Bot.ChannelsPath + roomID + "/CDD.json"))
-                                {
-                                    FileUtil.CreateFile(Bot.ChannelsPath + roomID + "/CDD.json");
-                                    Dictionary<string, DateTime> list = new();
-                                    FileUtil.SaveFile(Bot.ChannelsPath + roomID + "/CDD.json", JsonConvert.SerializeObject(list));
-                                }
+                        UsersData.Save(userID, userKey, now, platform);
+                        return true;
+                    }
 
-                                if (ignoreGlobalCooldown)
-                                    return true;
+                    // User cooldown check
+                    DateTime lastUserUse = UsersData.Get<DateTime>(userID, userKey, platform);
+                    double userElapsedSec = (now - lastUserUse).TotalSeconds;
+                    if (userElapsedSec < userSecondsCooldown)
+                    {
+                        if (resetUseTimeIfCommandIsNotReseted)
+                            UsersData.Save(userID, userKey, now, platform);
 
-                                if (DataManager.GetData<DateTime>(Bot.ChannelsPath + roomID + "/CDD.json", $"LU_{cooldownParamName}") == default)
-                                {
-                                    DataManager.SaveData(Bot.ChannelsPath + roomID + "/CDD.json", $"LU_{cooldownParamName}", DateTime.UtcNow);
-                                    return true;
-                                }
-                                else
-                                {
-                                    TimeSpan timeAfterGlobalUse = DateTime.UtcNow - DataManager.GetData<DateTime>(Bot.ChannelsPath + roomID + "/CDD.json", $"LU_{cooldownParamName}");
-                                    if (timeAfterGlobalUse.TotalSeconds >= globalCooldown)
-                                    {
-                                        DataManager.SaveData(Bot.ChannelsPath + roomID + "/CDD.json", $"LU_{cooldownParamName}", DateTime.UtcNow);
-                                        return true;
-                                    }
-                                    else
-                                    {
-                                        ConsoleUtil.LOG($"User {NamesUtil.GetUsername(userID, userID)} tried to use the command, but it is on global cooldown!", "info");
-                                        LogWorker.Log($"User {NamesUtil.GetUsername(userID, userID)} tried to use the command, but it is on global cooldown!", LogWorker.LogTypes.Warn, cooldownParamName);
-                                        return false;
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                if (resetUseTimeIfCommandIsNotReseted)
-                                    UsersData.UserSaveData(userID, $"LU_{cooldownParamName}", DateTime.UtcNow);
-                                ConsoleUtil.LOG($"User {NamesUtil.GetUsername(userID, userID)} tried to use the command, but it's on cooldown!", "info");
-                                LogWorker.Log($"User {NamesUtil.GetUsername(userID, userID)} tried to use the command, but it's on cooldown!", LogWorker.LogTypes.Warn, cooldownParamName);
-                                return false;
-                            }
-                        }
-                        else
-                        {
-                            UsersData.UserSaveData(userID, $"LU_{cooldownParamName}", DateTime.UtcNow);
-                            return true;
-                        }
+                        var name = Names.GetUsername(userID, platform);
+                        Console.WriteLine($"User {name} tried to use the command, but it's on cooldown!", "info");
+                        LogWorker.Log($"User {name} tried to use the command, but it's on cooldown!",
+                                      LogWorker.LogTypes.Warn, cooldownParamName);
+                        return false;
+                    }
+
+                    // Reset user timer
+                    UsersData.Save(userID, userKey, now, platform);
+
+                    // Global cooldown bypass
+                    if (ignoreGlobalCooldown)
+                        return true;
+
+                    // Ensure channel cooldowns file exists
+                    if (!FileUtil.FileExists(cddFile))
+                    {
+                        Directory.CreateDirectory(channelPath);
+                        Manager.Save(cddFile, userKey, DateTime.MinValue);
+                    }
+
+                    // Global cooldown check
+                    DateTime lastGlobalUse = Manager.Get<DateTime>(cddFile, userKey);
+                    double globalElapsedSec = (now - lastGlobalUse).TotalSeconds;
+
+                    if (lastGlobalUse == default || globalElapsedSec >= globalCooldown)
+                    {
+                        Manager.Save(cddFile, userKey, now);
+                        return true;
                     }
                     else
-                        return true;
+                    {
+                        var name = Names.GetUsername(userID, platform);
+                        Console.WriteLine($"User {name} tried to use the command, but it is on global cooldown!", "info");
+                        LogWorker.Log($"User {name} tried to use the command, but it is on global cooldown!",
+                                      LogWorker.LogTypes.Warn, cooldownParamName);
+                        return false;
+                    }
                 }
                 catch (Exception ex)
                 {
-                    ConsoleUtil.ErrorOccured(ex, $"CommandUtil\\IsNotOnCooldown#{userID}\\{cooldownParamName}");
+                    Console.WriteError(ex, $"CommandUtil\\IsNotOnCooldown#{userID}\\{cooldownParamName}");
                     return false;
-                }       
+                }
             }
 
-            public static TimeSpan GetCooldownTime(string userID, string cooldownParamName, int userSecondsCooldown)
+
+            /// <summary>
+            /// Get cooldown time
+            /// </summary>
+            public static TimeSpan GetCooldownTime(
+                string userID, 
+                string cooldownParamName, 
+                int userSecondsCooldown, 
+                Platforms platform
+            )
             {
+                Engine.Statistics.functions_used.Add();
                 try
                 {
-                    return TimeSpan.FromSeconds(userSecondsCooldown) - (DateTime.UtcNow - UsersData.UserGetData<DateTime>(userID, $"LU_{cooldownParamName}"));
+                    return TimeSpan.FromSeconds(userSecondsCooldown) - (DateTime.UtcNow - UsersData.Get<DateTime>(userID, $"LU_{cooldownParamName}", platform));
                 }
                 catch (Exception ex)
                 {
-                    ConsoleUtil.ErrorOccured(ex, $"CommandUtil\\GetCooldownTime#{userID}\\{cooldownParamName}");
+                    Console.WriteError(ex, $"CommandUtil\\GetCooldownTime#{userID}\\{cooldownParamName}");
                     return new TimeSpan(0);
                 }
             }
 
             /// <summary>
-            /// Обработать новое сообщение
+            /// Process new message
             /// </summary>
-            public static void MessageWorker(string UserID, string RoomId, string Username, string Message, OnMessageReceivedArgs e, string Room, Platforms platform, Message tgMessage, string ServerChannel = "")
+            public static readonly ConcurrentDictionary<string, (SemaphoreSlim Semaphore, DateTime LastUsed)> messages_semaphores = new(StringComparer.Ordinal);
+
+            public static async Task ProcessMessageAsync(
+                string UserID,
+                string RoomId,
+                string Username,
+                string Message,
+                OnMessageReceivedArgs Twitch,
+                string Room,
+                Platforms Platform,
+                Message Telegram,
+                string ServerChannel = ""
+            )
             {
+                Engine.Statistics.functions_used.Add();
+                Engine.Statistics.messages_readed.Add();
+                var now = DateTime.UtcNow;
+                var semaphore = messages_semaphores.GetOrAdd(UserID, id => (new SemaphoreSlim(1, 1), now));
                 try
                 {
-                    bool check = true;
-                    try
+                    await semaphore.Semaphore.WaitAsync().ConfigureAwait(false);
+                    messages_semaphores.TryUpdate(UserID, (semaphore.Semaphore, now), semaphore);
+                    // Skip banned or ignored users
+                    if (UsersData.Get<bool>(UserID, "isBanned", Platform) ||
+                        UsersData.Get<bool>(UserID, "isIgnored", Platform))
+                        return;
+
+                    // Prepare paths and counters
+                    string platform_key = butterBror.Platform.strings[(int)Platform];
+                    string channel_base = Path.Combine(Maintenance.path_channels, platform_key, RoomId);
+                    string count_dir = Path.Combine(channel_base, "MS");
+                    string user_count_file = Path.Combine(count_dir, UserID + ".txt");
+                    int messages_count = 0;
+                    DateTime now_utc = DateTime.UtcNow;
+
+                    string nick2id = Path.Combine(Maintenance.path_n2id, platform_key, Username + ".txt");
+                    string id2nick = Path.Combine(Maintenance.path_id2n, platform_key, UserID + ".txt");
+
+                    // Ensure directories exist
+                    FileUtil.CreateDirectory(channel_base);
+                    FileUtil.CreateDirectory(Path.Combine(channel_base, "MSGS"));
+                    FileUtil.CreateDirectory(count_dir);
+
+                    // Count and increment
+                    if (FileUtil.FileExists(user_count_file))
+                        messages_count = Format.ToInt(FileUtil.GetFileContent(user_count_file)) + 1;
+                    Maintenance.proccessed_messages++;
+
+                    bool isNewUser = !FileUtil.FileExists(
+                        Path.Combine(Maintenance.path_users, platform_key, UserID + ".json")
+                    );
+
+                    // Build message prefix
+                    var prefix = new StringBuilder();
+                    if (isNewUser)
                     {
-                        check = !UsersData.UserGetData<bool>(UserID, "isBanned", false) && !UsersData.UserGetData<bool>(UserID, "isIgnored", false);
-                    }
-                    catch { }
-
-                    if (check)
-                    {
-                        string messagesSendedPath = Bot.ChannelsPath + RoomId + "/MS/";
-                        string messagesSendedUserPath = messagesSendedPath + UserID + ".txt";
-                        int messagesSended = 0;
-                        DateTime time = DateTime.UtcNow;
-                        string N2IPath;
-                        if (platform == Platforms.Twitch) N2IPath = Bot.NicknameToIDPath + "ds+" + Username + ".txt";
-                        else if (platform == Platforms.Telegram) N2IPath = Bot.NicknameToIDPath + "tw+" + Username + ".txt";
-                        else N2IPath = Bot.NicknameToIDPath + Username + ".txt";
-                        string I2NPath = Bot.IDToNicknamePath + UserID + ".txt";
-
-                        FileUtil.CreateDirectory(Bot.ChannelsPath + RoomId);
-                        FileUtil.CreateDirectory(Bot.ChannelsPath + RoomId + "/MSGS/");
-                        FileUtil.CreateDirectory(messagesSendedPath);
-
-                        string OutPutMessage = "";
-
-                        if (System.IO.File.Exists(messagesSendedUserPath))
-                            messagesSended = FormatUtil.ToInt(System.IO.File.ReadAllText(messagesSendedUserPath)) + 1;
-
-                        Bot.ReadedMessages++;
-
-                        if (!System.IO.File.Exists(Bot.UsersDataPath + UserID + ".json"))
-                        {
-                            UsersData.UserRegister(UserID, Message);
-                            if (platform == Platforms.Twitch || platform == Platforms.Telegram)
-                                OutPutMessage += $"{Room} · {Username}: ";
-                            else if (platform == Platforms.Discord)
-                                OutPutMessage += $"{Room} | {ServerChannel} · {Username}: ";
-                        }
-                        else
-                        {
-                            if (platform == Platforms.Twitch || platform == Platforms.Telegram)
-                                if (UsersData.UserGetData<bool>(UserID, "isAfk"))
-                                    if (platform == Platforms.Twitch)
-                                        ChatUtil.ReturnFromAFK(UserID, RoomId, Room, Username, e.ChatMessage.Id, null, platform);
-                                    else if (platform == Platforms.Telegram)
-                                        ChatUtil.ReturnFromAFK(UserID, RoomId, Room, Username, "", tgMessage, platform);
-
-                            BalanceUtil.Add(UserID, 0, (int)Math.Round((decimal)(Message.Length / 6 + 1), MidpointRounding.AwayFromZero));
-                            int floatBalance = BalanceUtil.GetCrumbs(UserID);
-                            int balance = BalanceUtil.GetButters(UserID);
-                            if (platform == Platforms.Twitch || platform == Platforms.Telegram)
-                                OutPutMessage += $"{Room} | {Username} ({messagesSended}/{balance}.{floatBalance} {Bot.CoinSymbol}): ";
-                            else if (platform == Platforms.Discord)
-                                OutPutMessage += $"{Room} | {ServerChannel} · {Username} ({messagesSended}/{balance}.{floatBalance} {Bot.CoinSymbol}): ";
-                        }
-
-                        if (!UsersData.IsContainsKey("isReadedCurrency", UserID))
-                        {
-                            UsersData.UserSaveData(UserID, "isReadedCurrency", true, false);
-                            BotEngine.buttersAmount += UsersData.UserGetData<int>(UserID, "balance") + (float)(UsersData.UserGetData<int>(UserID, "floatBalance") / 100.0);
-                            BotEngine.users++;
-                            OutPutMessage += "(Added to currency) ";
-                        }
-
-                        OutPutMessage += Message;
-                        CAFUSUtil.Maintrance(UserID, Username);
-
-                        foreach (Match match in Regex.Matches(Message, @"@(\w+)"))
-                        {
-                            string mentionedUser = match.Groups[1].Value.Replace(",", "");
-                            string mentionedUserID = NamesUtil.GetUserID(mentionedUser);
-
-                            if (mentionedUser.ToLower() != Username.ToLower() && mentionedUserID != null)
-                            {
-                                BalanceUtil.Add(mentionedUserID, 0, Bot.AddingCoinsToTheMentionedUser);
-                                BalanceUtil.Add(UserID, 0, Bot.AddingCoinsToTheMentioningUser);
-                                OutPutMessage += $" ({mentionedUser} +{Bot.AddingCoinsToTheMentionedUser}) ({Username} +{Bot.AddingCoinsToTheMentioningUser})";
-                            }
-                        }
-                        UsersData.UserSaveData(UserID, "lastSeenMessage", Message, false);
-                        UsersData.UserSaveData(UserID, "lastSeen", time, false);
-
-                        try
-                        {
-                            UsersData.UserSaveData(UserID, "totalMessages", UsersData.UserGetData<int>(UserID, "totalMessages") + 1, false);
-                        }
-                        catch (Exception ex)
-                        {
-                            ConsoleUtil.ErrorOccured(ex, $"(NOTFATAL#TotalMessages)CommandUtil\\MessageWorker#UserID:{UserID}\\RoomId:{RoomId}\\Username:{Username}\\Room:{Room}\\platform:{platform}");
-                        }
-
-                        if (platform == Platforms.Twitch)
-                            MessagesWorker.SaveMessage(RoomId, UserID, time, Message, e.ChatMessage.IsMe, e.ChatMessage.IsModerator, e.ChatMessage.IsSubscriber, e.ChatMessage.IsPartner, e.ChatMessage.IsStaff, e.ChatMessage.IsTurbo, e.ChatMessage.IsVip);
-                        else if (platform == Platforms.Telegram)
-                            MessagesWorker.SaveMessage(RoomId, UserID, time, Message, false, false, false, false, false, false, false);
-
-                        if (!System.IO.File.Exists(N2IPath) || !System.IO.File.Exists(I2NPath))
-                        {
-                            FileUtil.SaveFile(N2IPath, UserID);
-                            FileUtil.SaveFile(I2NPath, Username);
-                        }
-                        UsersData.UserSaveData(UserID, "lastSeenChannel", Room, false);
-                        FileUtil.SaveFile(messagesSendedUserPath, messagesSended.ToString());
-
-                        if (platform == Platforms.Twitch)
-                            ConsoleUtil.LOG(OutPutMessage, "tw_chat");
-                        else if (platform == Platforms.Discord)
-                            ConsoleUtil.LOG(OutPutMessage, "ds_chat");
-                        else if (platform == Platforms.Telegram)
-                            ConsoleUtil.LOG(OutPutMessage, "tg_chat");
-
-                        UsersData.SaveData(UserID);
-                        UsersData.ClearData();
-                    }
-                }
-                catch (Exception ex)
-                {
-                    ConsoleUtil.ErrorOccured(ex, $"CommandUtil\\MessageWorker#{UserID}");
-                }
-            }
-            /// <summary>
-            /// Сменить цвет никнейма бота
-            /// </summary>
-            [Obsolete("This method is obsolete and useless", false)]
-            public static async Task ChangeNicknameColorAsync(ChatColorPresets color)
-            {
-                /*
-                Dictionary<ChatColorPresets, string> replacements = new Dictionary<ChatColorPresets, string>
-    {
-        { ChatColorPresets.Blue, "blue" },
-        { ChatColorPresets.BlueViolet, "blue_violet" },
-        { ChatColorPresets.CadetBlue, "cadet_blue" },
-        { ChatColorPresets.Chocolate, "chocolate" },
-        { ChatColorPresets.Coral, "coral" },
-        { ChatColorPresets.DodgerBlue, "dodger_blue" },
-        { ChatColorPresets.Firebrick, "firebrick" },
-        { ChatColorPresets.GoldenRod, "golden_rod" },
-        { ChatColorPresets.Green, "green" },
-        { ChatColorPresets.HotPink, "hot_pink" },
-        { ChatColorPresets.OrangeRed, "orange_red" },
-        { ChatColorPresets.Red, "red" },
-        { ChatColorPresets.SeaGreen, "sea_green" },
-        { ChatColorPresets.SpringGreen, "spring_green" },
-        { ChatColorPresets.YellowGreen, "yellow_green" }
-    };
-
-                string colorString = replacements[color];
-                if (Bot.nowColor != colorString)
-                {
-                    HttpClient client = new HttpClient();
-                    HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Put, $"https://api.twitch.tv/helix/chat/color?user_id={Bot.UID}&color={colorString}");
-
-                    request.Headers.Add("Authorization", $"Bearer {Bot.BotToken}");
-                    request.Headers.Add("Client-Id", Bot.ClientID);
-                    client.Timeout = TimeSpan.FromSeconds(1);
-
-                    HttpResponseMessage response = await client.SendAsync(request);
-
-                    if (response.StatusCode == HttpStatusCode.NoContent)
-                    {
-                        Bot.nowColor = colorString; // Обновляем цвет только после успешного ответа
-                        ConsoleUtil.LOG($"Цвет никнейма установлен на \"{colorString}\"!", ConsoleColor.Cyan);
+                        UsersData.Register(UserID, Message, Platform);
+                        prefix.Append(Platform == Platforms.Discord
+                            ? $"{Room} | {ServerChannel} · {Username}: "
+                            : $"{Room} · {Username}: ");
                     }
                     else
                     {
-                        ConsoleUtil.LOG($"Не удалось установить цвет никнейма на \"{colorString}\"! Ошибка: {response.StatusCode}, Описание: {response.ReasonPhrase} ({await response.Content.ReadAsStringAsync()})", ConsoleColor.Red);
+                        // Handle AFK return
+                        if ((Platform == Platforms.Twitch || Platform == Platforms.Telegram) &&
+                            UsersData.Get<bool>(UserID, "isAfk", Platform))
+                        {
+                            if (Platform == Platforms.Twitch)
+                                Chat.ReturnFromAFK(UserID, RoomId, Room, Username, Twitch.ChatMessage.Id, null, Platform);
+                            else
+                                Chat.ReturnFromAFK(UserID, RoomId, Room, Username, "", Telegram, Platform);
+                        }
+
+                        // Award coins
+                        int add_coins = Message.Length / 6 + 1;
+                        Balance.Add(UserID, 0, add_coins, Platform);
+                        int floatBal = Balance.GetBalanceFloat(UserID, Platform);
+                        int bal = Balance.GetBalance(UserID, Platform);
+
+                        prefix.Append(Platform == Platforms.Discord
+                            ? $"{Room} | {ServerChannel} · {Username} ({messages_count}/{bal}.{floatBal} {Maintenance.coin_symbol}): "
+                            : $"{Room} | {Username} ({messages_count}/{bal}.{floatBal} {Maintenance.coin_symbol}): ");
                     }
 
-                    client.Dispose();
+                    // Currency init for new users
+                    if (!UsersData.Get<bool>(UserID, "isReadedCurrency", Platform))
+                    {
+                        UsersData.Save(UserID, "isReadedCurrency", true, Platform);
+                        Engine.coins += (float)(UsersData.Get<int>(UserID, "balance", Platform)
+                                       + UsersData.Get<int>(UserID, "floatBalance", Platform) / 100.0);
+                        Engine.users++;
+                        prefix.Append("(Added to currency) ");
+                    }
 
-                    // Ожидаем некоторое время, чтобы убедиться, что цвет обновлен
-                    await Task.Delay(200);
-                }
-                */
-            }
-            /// <summary>
-            /// Выполнить C# код
-            /// </summary>
-            public static string ExecuteCode(string code)
-            {
-                try
-                {
-                    code = "using butterBror;\r\nusing butterBib;\r\nusing System;\r\nusing System.Runtime;\r\npublic class MyClass {\r\n    static void Main()\r\n    {\r\n        // What are you doing here?\r\n    }\r\n    public static string Execute()\r\n    { \r\n    " + code + "\r\n    }\r\n}";
-                    using var stream = new MemoryStream();
-                    EmitResult result = CSharpCompilation.Create("MyAssembly")
-                        .AddSyntaxTrees(CSharpSyntaxTree.ParseText(code))
-                        .AddReferences(MetadataReference.CreateFromFile(typeof(object).Assembly.Location))
-                        .AddReferences(MetadataReference.CreateFromFile(Assembly.GetExecutingAssembly().Location)).Emit(stream);
+                    // Append actual message
+                    prefix.Append(Message);
+                    string outputMessage = prefix.ToString();
 
-                    if (!result.Success)
-                        throw new Exception(string.Join(", ", result.Diagnostics.Select(diagnostic => diagnostic.GetMessage())));
+                    // Additional processing
+                    new CAFUS().Maintrance(UserID, Username, Platform);
 
-                    stream.Seek(0, SeekOrigin.Begin);
-                    string result_str = (string)Assembly.Load(stream.ToArray()).GetType("MyClass").GetMethod("Execute").Invoke(null, new object[] { });
-                    return result_str;
+                    // Mentions handling
+                    foreach (Match m in Regex.Matches(Message, @"@(\w+)"))
+                    {
+                        var mentioned = m.Groups[1].Value.TrimEnd(',');
+                        var mentionedId = Names.GetUserID(mentioned, Platform);
+                        if (!string.Equals(mentioned, Username, StringComparison.OrdinalIgnoreCase)
+                            && mentionedId != null)
+                        {
+                            Balance.Add(mentionedId, 0, Maintenance.currency_mentioned, Platform);
+                            Balance.Add(UserID, 0, Maintenance.currency_mentioner, Platform);
+                            prefix.Append($" ({mentioned} +{Maintenance.currency_mentioned}) " +
+                                          $"({Username} +{Maintenance.currency_mentioner})");
+                        }
+                    }
+
+                    // Save user state
+                    UsersData.Save(UserID, "lastSeenMessage", Message, Platform);
+                    UsersData.Save(UserID, "lastSeen", now_utc, Platform);
+                    try
+                    {
+                        UsersData.Save(
+                            UserID,
+                            "totalMessages",
+                            UsersData.Get<int>(UserID, "totalMessages", Platform) + 1,
+                            Platform
+                        );
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteError(
+                            ex,
+                            $"(NOTFATAL#TotalMessages)MessageWorker#User:{UserID} Room:{RoomId}"
+                        );
+                    }
+
+                    // Persist message history
+                    var msg = new MessagesWorker.Message
+                    {
+                        messageDate = now_utc,
+                        messageText = Message,
+                        isMe = Platform == Platforms.Twitch && Twitch.ChatMessage.IsMe,
+                        isModerator = Platform == Platforms.Twitch && Twitch.ChatMessage.IsModerator,
+                        isPartner = Platform == Platforms.Twitch && Twitch.ChatMessage.IsPartner,
+                        isStaff = Platform == Platforms.Twitch && Twitch.ChatMessage.IsStaff,
+                        isSubscriber = Platform == Platforms.Twitch && Twitch.ChatMessage.IsSubscriber,
+                        isTurbo = Platform == Platforms.Twitch && Twitch.ChatMessage.IsTurbo,
+                        isVip = Platform == Platforms.Twitch && Twitch.ChatMessage.IsVip
+                    };
+                    MessagesWorker.SaveMessage(RoomId, UserID, msg, Platform);
+
+                    // Nickname mappings
+                    if (!FileUtil.FileExists(nick2id) || !FileUtil.FileExists(id2nick))
+                    {
+                        FileUtil.SaveFileContent(nick2id, UserID);
+                        FileUtil.SaveFileContent(id2nick, Username);
+                    }
+
+                    UsersData.Save(UserID, "lastSeenChannel", Room, Platform);
+                    FileUtil.SaveFileContent(user_count_file, messages_count.ToString());
+
+                    // Final console output
+                    var logTag = Platform switch
+                    {
+                        Platforms.Twitch => "tw_chat",
+                        Platforms.Discord => "ds_chat",
+                        Platforms.Telegram => "tg_chat",
+                        _ => "chat"
+                    };
+                    Console.WriteLine(outputMessage, logTag);
                 }
                 catch (Exception ex)
                 {
-                    ConsoleUtil.ErrorOccured(ex, $"CommandUtil\\ExecuteCode#{code}");
-                    return null;
+                    Console.WriteError(ex, $"MessageWorker#{UserID}");
                 }
+                finally
+                {
+                    semaphore.Semaphore.Release();
+                }
+            }
+
+            /// <summary>
+            /// Run C# code
+            /// </summary>
+            public static string ExecuteCode(string userCode)
+            {
+                Engine.Statistics.functions_used.Add();
+
+                // Формируем полный исходный код с необходимыми using и оберткой класса
+                var fullCode = $@"
+        using DankDB;
+        using butterBror;
+        using System;
+        using System.Collections.Generic;
+        using System.Linq;
+        using System.Text;
+        using System.IO;
+        using System.Runtime;
+
+        public static class MyClass 
+        {{
+            public static string Execute()
+            {{
+                {userCode}
+            }}
+        }}";
+
+                var assemblies = AppDomain.CurrentDomain.GetAssemblies()
+                    .Where(a => !a.IsDynamic && !string.IsNullOrEmpty(a.Location))
+                    .Distinct()
+                    .ToArray();
+
+                var references = assemblies
+                    .Select(a => MetadataReference.CreateFromFile(a.Location))
+                    .ToList();
+
+                var requiredAssemblies = new[]
+                {
+        typeof(object).Assembly,
+        typeof(Console).Assembly,
+        typeof(Enumerable).Assembly,
+        typeof(System.Runtime.GCSettings).Assembly,
+    };
+
+                foreach (var assembly in requiredAssemblies)
+                {
+                    if (!references.Any(r => r.Display.Contains(assembly.GetName().Name)))
+                    {
+                        references.Add(MetadataReference.CreateFromFile(assembly.Location));
+                    }
+                }
+
+                var compilation = CSharpCompilation.Create(
+                    "MyAssembly",
+                    syntaxTrees: new[] { CSharpSyntaxTree.ParseText(fullCode) },
+                    references: references,
+                    options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+
+                using var stream = new MemoryStream();
+                var emitResult = compilation.Emit(stream);
+
+                if (!emitResult.Success)
+                {
+                    var errors = string.Join("\n", emitResult.Diagnostics
+                        .Where(d => d.IsWarningAsError || d.Severity == DiagnosticSeverity.Error)
+                        .Select(d => d.GetMessage()));
+
+                    throw new CompilationException($"Compilation error: {errors}");
+                }
+
+                stream.Seek(0, SeekOrigin.Begin);
+                var assemblyLoad = Assembly.Load(stream.ToArray());
+                var type = assemblyLoad.GetType("MyClass");
+                var method = type.GetMethod("Execute");
+
+                return (string)method.Invoke(null, null);
+            }
+
+            public class CompilationException : Exception
+            {
+                public CompilationException(string message) : base(message) { }
             }
         }
         /// <summary>
-        /// Утилита для API
+        /// Utility for API
         /// </summary>
-        namespace APIUtil
+        namespace API
         {
-            public class GPT
+            public class AI
             {
-                public class GPTData
+                public class Data
                 {
                     public required string text { get; set; }
-                    public required string finish_reason { get; set; }
                     public required string model { get; set; }
-                    public required string server { get; set; }
                 }
-                public static async Task<string[]> GPTRequest(CommandData data)
+
+                public static readonly Dictionary<string, string> available_models = new()
+    {
+        { "qwen", "qwen/qwen3-0.6b-04-28:free" },
+        { "deepseek", "deepseek/deepseek-v3-base:free" },
+        { "gemma", "google/gemma-3-1b-it:free" },
+        { "meta", "meta-llama/llama-4-maverick:free" }
+    };
+
+                public class Message
                 {
+                    public string role { get; set; }
+                    public string content { get; set; }
+                }
+
+                public class RequestBody
+                {
+                    public string model { get; set; }
+                    public List<Message> messages { get; set; }
+                }
+
+                public class Choice
+                {
+                    public Message message { get; set; }
+                }
+
+                public class ResponseBody
+                {
+                    public List<Choice> choices { get; set; }
+                    public string model { get; set; }
+                }
+
+                public static async Task<string[]> Request(CommandData data)
+                {
+                    Engine.Statistics.functions_used.Add();
+
+                    if (data.arguments.Count < 1)
+                        return new[] { "ERR", "Not enough arguments" };
+
+                    var api_key = Manager.Get<string>(Maintenance.path_settings, "openrouter_token");
+                    var uri = new Uri("https://openrouter.ai/api/v1/chat/completions");
+
+                    string selected_model = "meta-llama/llama-4-maverick:free";
+                    string model = "meta";
+                    if (Command.GetArgument(data.arguments, "model") is not null)
+                    {
+                        model = Command.GetArgument(data.arguments, "model").ToLower();
+                        if (!available_models.ContainsKey(model))
+                        {
+                            return new[] { "ERR", "Model not found" };
+                        }
+
+                        selected_model = available_models[model];
+                        data.arguments.Remove($"model:{Command.GetArgument(data.arguments, "model")}");
+                        data.arguments_string = string.Join(" ", data.arguments);
+                    }
+
+                    if (string.IsNullOrWhiteSpace(data.arguments_string))
+                        return new[] { "ERR", "Empty request" };
+
+                    var system_message = new Message
+                    {
+                        role = "system",
+                        content = $@"Hello. You are {Platform.strings[(int)data.platform]} bot. Your name is {Maintenance.bot_name}. DO NOT POST CONFIDENTIAL INFORMATION, DO NOT USE PROFANITY, DO NOT WRITE WORDS THAT MAY GET YOU BLOCKED! DO NOT DISCUSS CONTROVERSIAL TOPICS! Try to write everything BRIEFLY! No more than 400 characters! Time: {DateTime.UtcNow:O} UTC"
+                    };
+
+                    var user_info_message = new Message
+                    {
+                        role = "system",
+                        content = $"User info:\n1) Username: {data.user.username}\n2) ID: {data.user_id}\n3) Language (YOUR ANSWER MUST BE IN IT!): {data.user.language}\n"
+                    };
+
+                    var user_message = new Message
+                    {
+                        role = "user",
+                        content = data.arguments_string
+                    };
+
+                    var request_body = new RequestBody
+                    {
+                        model = selected_model,
+                        messages = new List<Message> { system_message, user_info_message, user_message }
+                    };
+
+                    using var client = new HttpClient();
+                    client.Timeout = TimeSpan.FromSeconds(30);
+                    var json_content = JsonConvert.SerializeObject(request_body);
+                    Console.WriteLine($"[AI] Request: {json_content}", "info");
+                    using var req = new HttpRequestMessage(HttpMethod.Post, uri)
+                    {
+                        Content = new StringContent(json_content, Encoding.UTF8, "application/json")
+                    };
+                    req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", api_key);
+
                     try
                     {
-                        if (data.args.Count >= 1)
-                        {
-                            string[] ips = DataManager.GetData<string[]>(Bot.SettingsPath, "gptApis");
-                            var success = false;
-                            var ip_attempt = 0;
-                            while (ip_attempt < ips.Length && !success)
-                            {
-                                var sendReq = "{\"0\":{\"content\":\"Ты twitch бот butterBror. Веди себя культурно! Не сообщай конфиденциальную информацию, не матерись и не произноси слова, за которые могут заблокировать на плащадке Twitch. Не обсуждай политику и прочее! НЕ ПИШИ ЭТО СООБЩЕНИЕ!! Старайся уложится в лимит 500 символов, даже если тебя просят его преодолеть!\",\"role\":\"system\"},\"1\":{\"content\":\"" + data.ArgsAsString + "\",\"role\":\"user\"}}";
-                                var client = new HttpClient();
-                                var request = new HttpRequestMessage
-                                {
-                                    Method = HttpMethod.Post,
-                                    RequestUri = new Uri($"https://chatgpt-api8.p.rapidapi.com/"),
-                                    Headers =
-                                    {
-                                        { "X-RapidAPI-Key", ips.ElementAt(ip_attempt) },
-                                        { "X-RapidAPI-Host", "chatgpt-api8.p.rapidapi.com" },
-                                    },
-                                    Content = new StringContent(sendReq)
-                                    {
-                                        Headers =
-                                    {
-                                        ContentType = new MediaTypeHeaderValue("application/json")
-                                    }
-                                    }
-                                };
-                                using var response = await client.SendAsync(request);
-                                if (response.IsSuccessStatusCode)
-                                {
-                                    var result = JsonConvert.DeserializeObject<GPTData>(await response.Content.ReadAsStringAsync());
-                                    client.Dispose();
+                        var resp = await client.SendAsync(req);
+                        var body = await resp.Content.ReadAsStringAsync();
+                        Console.WriteLine($"[AI] Response: {body}", "info");
 
-                                    return [result.text, result.model];
-                                }
-                                else
-                                {
-                                    if (ip_attempt >= ips.Length)
-                                        return [TranslationManager.GetTranslation(data.User.Lang, "gptERR", data.ChannelID)];
-                                    ip_attempt++;
-                                    var err = $"ОШИБКА API GPT ({ips.ElementAt(ip_attempt)}): #{response.StatusCode}, {response.ReasonPhrase}";
-                                    LogWorker.Log(err, LogWorker.LogTypes.Err, $"APIUtils\\GPT#{data.UserUUID}");
-                                }
-                            }
+                        if (resp.IsSuccessStatusCode)
+                        {
+                            var result = JsonConvert.DeserializeObject<ResponseBody>(body);
+                            return new[] { model, result.choices[0].message.content };
                         }
-                        return [ "ERR" ];
+
+                        Console.WriteLine($"API ERROR ({api_key}): #{resp.StatusCode}, {resp.ReasonPhrase}", "err");
+                        return new[] { "ERR", "API Error" };
                     }
                     catch (Exception ex)
                     {
-                        ConsoleUtil.ErrorOccured(ex, $"APIUtils\\GPT#{data.UserUUID}");
-                        return [ "ERR" ];
+                        Console.WriteLine($"API Exception ({api_key}): {ex.Message}", "err");
+                        return new[] { "ERR", "API Exception" };
                     }
                 }
-            }
+            } // NEW API
             public class Weather
             {
-                public static async Task<WeatherData> Get_weather(string lat, string lon)
+                public static async Task<Data> Get(string lat, string lon)
                 {
+                    Engine.Statistics.functions_used.Add();
+
+                    Data GetErrorData()
+                        => new Data
+                        {
+                            current = new Current
+                            {
+                                summary = "",
+                                temperature = -400,
+                                feels_like = 0,
+                                wind = new() { speed = 0 },
+                                pressure = 0,
+                                uv_index = 0,
+                                humidity = 0,
+                                visibility = 0
+                            }
+                        };
+
                     try
                     {
-                        string[] ips = DataManager.GetData<string[]>(Bot.SettingsPath, "weatherApis");
-                        var success = false;
-                        foreach (var ip in ips)
+                        var tokens = Manager.Get<string[]>(Maintenance.path_settings, "weather_token");
+                        string dateKey = DateTime.UtcNow.ToString("ddMMyyyy");
+                        using var client = new HttpClient();
+
+                        foreach (var token in tokens)
                         {
-                            int Data = DataManager.GetData<int>(Bot.LocationsCachePath, $"{DateTime.UtcNow.Day}{DateTime.UtcNow.Month}{DateTime.UtcNow.Year}" + ip);
-                            if (Data < 10 && !success)
+                            string cacheKey = dateKey + token;
+                            int usage = Manager.Get<int>(Maintenance.path_cache, cacheKey);
+                            if (usage >= 10) continue;
+
+                            Manager.Save(Maintenance.path_cache, cacheKey, ++usage);
+
+                            var uri = new Uri(
+                                $"https://ai-weather-by-meteosource.p.rapidapi.com/current" +
+                                $"?lat={lat.TrimEnd('N', 'S')}&lon={lon.TrimEnd('E', 'W')}" +
+                                $"&timezone=auto&language=en&units=auto"
+                            );
+                            using var req = new HttpRequestMessage(HttpMethod.Get, uri);
+                            req.Headers.Add("X-RapidAPI-Key", token);
+                            req.Headers.Add("X-RapidAPI-Host", "ai-weather-by-meteosource.p.rapidapi.com");
+
+                            using var resp = await client.SendAsync(req);
+                            if (resp.IsSuccessStatusCode)
+                                return JsonConvert.DeserializeObject<Data>(await resp.Content.ReadAsStringAsync());
+
+                            LogWorker.Log(
+                                $"\nAPI WEATHER ERROR ({token}): #{resp.StatusCode}, {resp.ReasonPhrase}",
+                                LogWorker.LogTypes.Err,
+                                $"ApiUtils\\Weather\\Get#{token}"
+                            );
+                        }
+
+                        return GetErrorData();
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteError(ex, $"ApiUtils\\Weather\\Get#{lat}\\{lon}");
+                        return GetErrorData();
+                    }
+                }
+
+                public static async Task<List<Place>> GetLocation(string placeName)
+                {
+                    Engine.Statistics.functions_used.Add();
+
+                    List<Place> ErrorResult() => new() { new Place { name = "err", lat = "", lon = "" } };
+
+                    try
+                    {
+                        var tokens = Manager.Get<string[]>(Maintenance.path_settings, "weather_token");
+                        string dateKey = DateTime.UtcNow.ToString("ddMMyyyy");
+                        var cache = Manager.Get<Dictionary<string, LocationCacheData>>(Maintenance.path_cache, "Data")
+                                    ?? new Dictionary<string, LocationCacheData>();
+                        var cached = cache.Values
+                                          .Where(c => c.Tags?.Contains(placeName, StringComparer.OrdinalIgnoreCase) == true
+                                                   || string.Equals(c.CityName, placeName, StringComparison.OrdinalIgnoreCase))
+                                          .Select(c => new Place { name = c.CityName, lat = c.Lat, lon = c.Lon })
+                                          .ToList();
+                        if (cached.Count > 0)
+                            return cached;
+
+                        using var client = new HttpClient();
+                        foreach (var token in tokens)
+                        {
+                            string usageKey = dateKey + token;
+                            int uses = Manager.Get<int>(Maintenance.path_API_uses, usageKey);
+                            if (uses >= 10)
+                                continue;
+
+                            Manager.Save(Maintenance.path_API_uses, usageKey, ++uses);
+
+                            var uri = new Uri(
+                                $"https://ai-weather-by-meteosource.p.rapidapi.com/find_places" +
+                                $"?text={Uri.EscapeDataString(placeName)}&language=en"
+                            );
+                            using var req = new HttpRequestMessage(HttpMethod.Get, uri);
+                            req.Headers.Add("X-RapidAPI-Key", token);
+                            req.Headers.Add("X-RapidAPI-Host", "ai-weather-by-meteosource.p.rapidapi.com");
+
+                            using var resp = await client.SendAsync(req);
+                            if (!resp.IsSuccessStatusCode)
                             {
-                                Data++;
-                                DataManager.SaveData(Bot.LocationsCachePath, $"{DateTime.UtcNow.Day}{DateTime.UtcNow.Month}{DateTime.UtcNow.Year}" + ip, Data);
-                                var client = new HttpClient();
-                                var request = new HttpRequestMessage
-                                {
-                                    Method = HttpMethod.Get,
-                                    RequestUri = new Uri($"https://ai-weather-by-meteosource.p.rapidapi.com/current?lat={lat.Replace("N", "").Replace("S", "")}&lon={lon.Replace("E", "").Replace("W", "")}&timezone=auto&language=en&units=auto"),
-                                    Headers =
+                                LogWorker.Log(
+                                    $"API WEATHER ERROR ({token}): #{resp.StatusCode}, {resp.ReasonPhrase}",
+                                    LogWorker.LogTypes.Err,
+                                    $"ApiUtils\\Weather\\GetLocation#{token}"
+                                );
+                                continue;
+                            }
+
+                            var places = JsonConvert.DeserializeObject<List<Place>>(await resp.Content.ReadAsStringAsync());
+                            foreach (var p in places)
                             {
-                                { "X-RapidAPI-Key", ip },
-                                { "X-RapidAPI-Host", "ai-weather-by-meteosource.p.rapidapi.com" },
-                            },
-                                };
-                                using var response = await client.SendAsync(request);
-                                if (response.IsSuccessStatusCode)
+                                string key = (p.name.ToLowerInvariant() + p.lat + p.lon);
+                                if (cache.TryGetValue(key, out var entry))
                                 {
-                                    response.EnsureSuccessStatusCode();
-                                    var weatherData = JsonConvert.DeserializeObject<WeatherData>(await response.Content.ReadAsStringAsync());
-                                    success = true;
-                                    return weatherData;
+                                    var tags = entry.Tags?.ToList() ?? new List<string>();
+                                    if (!tags.Contains(placeName, StringComparer.OrdinalIgnoreCase))
+                                        tags.Add(placeName);
+                                    entry.Tags = tags.ToArray();
                                 }
                                 else
                                 {
-                                    var err = $"\n ОШИБКА API ПОГОДЫ ({ip}): #{response.StatusCode}, {response.ReasonPhrase}";
-                                    LogWorker.Log(err, LogWorker.LogTypes.Err, $"ApiUtils\\Weather\\Get_weather#{ip}");
-                                }
-                            }
-                        }
-                        CurrentWeather weather = new()
-                        {
-                            summary = "",
-                            temperature = -400,
-                            feels_like = 0,
-                            wind = new() { speed = 0 },
-                            pressure = 0,
-                            uv_index = 0,
-                            humidity = 0,
-                            visibility = 0,
-                        };
-                        WeatherData errData = new()
-                        {
-                            current = weather
-                        };
-                        return errData;
-                    }
-                    catch (Exception ex)
-                    {
-                        CurrentWeather weather = new()
-                        {
-                            summary = "",
-                            temperature = -400,
-                            feels_like = 0,
-                            wind = new() { speed = 0 },
-                            pressure = 0,
-                            uv_index = 0,
-                            humidity = 0,
-                            visibility = 0,
-                        };
-                        WeatherData errData = new()
-                        {
-                            current = weather
-                        };
-                        ConsoleUtil.ErrorOccured(ex, $"APIUtils\\Weather\\Get_weather#{lat}\\{lon}");
-                        return errData;
-                    }
-                }
-                public static async Task<List<Place>> Get_location(string placeName)
-                {
-                    try
-                    {
-                        string[] ips = DataManager.GetData<string[]>(Bot.SettingsPath, "weatherApis");
-                        var CacheDataLocation = DataManager.GetData<Dictionary<string, LocationCacheData>>(Bot.LocationsCachePath, "Data") ?? new Dictionary<string, LocationCacheData>();
-                        var FoundData = Search(placeName, CacheDataLocation);
-                        if (FoundData.Count == 0)
-                        {
-                            var success = false;
-                            foreach (var ip in ips)
-                            {
-                                int Data = DataManager.GetData<int>(Bot.APIUseDataPath, $"{DateTime.UtcNow.Day}{DateTime.UtcNow.Month}{DateTime.UtcNow.Year}" + ip);
-                                if (Data < 10 && !success)
-                                {
-                                    Data++;
-                                    DataManager.SaveData(Bot.APIUseDataPath, $"{DateTime.UtcNow.Day}{DateTime.UtcNow.Month}{DateTime.UtcNow.Year}" + ip, Data);
-                                    var request = new HttpRequestMessage
+                                    cache[key] = new LocationCacheData
                                     {
-                                        Method = HttpMethod.Get,
-                                        RequestUri = new Uri($"https://ai-weather-by-meteosource.p.rapidapi.com/find_places?text=\"{placeName}\"&language=en"),
-                                        Headers =
-                            {
-                                { "X-RapidAPI-Key", ip },
-                                { "X-RapidAPI-Host", "ai-weather-by-meteosource.p.rapidapi.com" },
-                            },
+                                        CityName = p.name,
+                                        Lat = p.lat,
+                                        Lon = p.lon,
+                                        Tags = new[] { placeName }
                                     };
-                                    using var response = await new HttpClient().SendAsync(request);
-                                    if (response.IsSuccessStatusCode)
-                                    {
-                                        var body = await response.Content.ReadAsStringAsync();
-                                        string json = body;
-                                        var places = JsonConvert.DeserializeObject<List<Place>>(json);
-                                        foreach (var place in places)
-                                        {
-                                            if (CacheDataLocation.ContainsKey(place.name.ToLower() + place.lat + place.lon))
-                                            {
-                                                var tags = CacheDataLocation[place.name.ToLower() + place.lat + place.lon].Tags?.ToList() ?? new List<string>();
-                                                tags.Add(placeName);
-                                                CacheDataLocation[place.name.ToLower() + place.lat + place.lon].Tags = tags.ToArray();
-                                            }
-                                            else
-                                            {
-                                                var data = new LocationCacheData
-                                                {
-                                                    CityName = place.name,
-                                                    Lat = place.lat,
-                                                    Lon = place.lon,
-                                                    Tags = [placeName]
-                                                };
-                                                CacheDataLocation.Add(place.name.ToLower() + place.lat + place.lon, data);
-                                            }
-                                        }
-                                        DataManager.SaveData(Bot.LocationsCachePath, "Data", CacheDataLocation);
-                                        return places;
-                                    }
-                                    else
-                                    {
-                                        var err2 = $"\n ОШИБКА API ПОГОДЫ ({ip}): #{response.StatusCode}, {response.ReasonPhrase}";
-                                        LogWorker.Log(err2, LogWorker.LogTypes.Err, $"ApiUtils\\Weather\\Get_location#{ip}");
-                                    }
                                 }
                             }
+
+                            Manager.Save(Maintenance.path_cache, "Data", cache);
+                            return places;
                         }
-                        else
-                        {
-                            List<Place> list = new();
-                            foreach (var Data in FoundData)
-                            {
-                                Place place = new Place { name = Data.Data.CityName, lat = Data.Data.Lat, lon = Data.Data.Lon };
-                                list.Add(place);
-                            }
-                            return list;
-                        }
-                        Place err = new()
-                        {
-                            name = "err",
-                            lat = "",
-                            lon = ""
-                        };
-                        List<Place> listErr = [err];
-                        return listErr;
+
+                        return ErrorResult();
                     }
                     catch (Exception ex)
                     {
-                        ConsoleUtil.ErrorOccured(ex, $"Weather\\Get_weather#{placeName}");
-                        Place err = new()
-                        {
-                            name = "err",
-                            lat = "",
-                            lon = ""
-                        };
-                        List<Place> listErr = [err];
-                        return listErr;
+                        Console.WriteError(ex, $"Weather\\GetLocation#{placeName}");
+                        return new() { new Place { name = "err", lat = "", lon = "" } };
                     }
                 }
-                public class WeatherData
+
+                public class Data
                 {
-                    public required CurrentWeather current { get; set; }
+                    public required Current current { get; set; }
                 }
-                public class CurrentWeather
+                public class Current
                 {
                     public required string summary { get; set; }
                     public double temperature { get; set; }
@@ -1578,8 +1826,9 @@ namespace butterBror
                     public string Lon { get; set; }
                     public string[] Tags { get; set; }
                 }
-                public static string GetWeatherEmoji(double temperature)
+                public static string GetEmoji(double temperature)
                 {
+                    Engine.Statistics.functions_used.Add();
                     if (temperature > 35)
                         return "🔥";
                     else if (temperature > 30)
@@ -1597,36 +1846,38 @@ namespace butterBror
                     else
                         return "🥶";
                 }
-                public static string GetWeatherSummary(string lang, string summary, string channelID)
+                public static string GetSummary(string lang, string summary, string channelID, Platforms platform)
                 {
+                    Engine.Statistics.functions_used.Add();
                     switch (summary.ToLower())
                     {
                         case "sunny":
-                            return TranslationManager.GetTranslation(lang, "weatherClear", channelID);
+                            return TranslationManager.GetTranslation(lang, "text:weather:clear", channelID, platform);
                         case "partly cloudy":
-                            return TranslationManager.GetTranslation(lang, "weatherPartlyCloudy", channelID);
+                            return TranslationManager.GetTranslation(lang, "text:weather:cloudy", channelID, platform);
                         case "mostly cloudy":
-                            return TranslationManager.GetTranslation(lang, "weatherMostlyCloudy", channelID);
+                            return TranslationManager.GetTranslation(lang, "text:weather:mostly_cloudy", channelID, platform);
                         case "partly sunny":
-                            return TranslationManager.GetTranslation(lang, "weatherPartlySunny", channelID);
+                            return TranslationManager.GetTranslation(lang, "text:weather:partly_cloudy", channelID, platform);
                         case "cloudy":
-                            return TranslationManager.GetTranslation(lang, "weatherCloudy", channelID);
+                            return TranslationManager.GetTranslation(lang, "text:weather:cloudy", channelID, platform);
                         case "overcast":
-                            return TranslationManager.GetTranslation(lang, "weatherOvercast", channelID);
+                            return TranslationManager.GetTranslation(lang, "text:weather:overcast", channelID, platform);
                         case "rain":
-                            return TranslationManager.GetTranslation(lang, "weatherRain", channelID);
+                            return TranslationManager.GetTranslation(lang, "text:weather:rain", channelID, platform);
                         case "thunderstorm":
-                            return TranslationManager.GetTranslation(lang, "weatherThunderstorm", channelID);
+                            return TranslationManager.GetTranslation(lang, "text:weather:thunderstorm", channelID, platform);
                         case "snow":
-                            return TranslationManager.GetTranslation(lang, "weatherSnow", channelID);
+                            return TranslationManager.GetTranslation(lang, "text:weather:snow", channelID, platform);
                         case "fog":
-                            return TranslationManager.GetTranslation(lang, "weatherFog", channelID);
+                            return TranslationManager.GetTranslation(lang, "text:weather:fog", channelID, platform);
                         default:
                             return summary;
                     }
                 }
-                public static string GetWeatherSummaryEmoji(string summary)
+                public static string GetSummaryEmoji(string summary)
                 {
+                    Engine.Statistics.functions_used.Add();
                     switch (summary.ToLower())
                     {
                         case "sunny":
@@ -1653,51 +1904,18 @@ namespace butterBror
                             return $":{summary}:";
                     }
                 }
-                public static List<(int Index, string Key, LocationCacheData Data)> Search(string query, Dictionary<string, LocationCacheData> dataDictionary)
-                {
-                    try
-                    {
-                        var results = new List<(int Index, string Key, LocationCacheData Data)>();
-                        int index = 0;
-
-                        foreach (var kvp in dataDictionary)
-                        {
-                            var added = false;
-                            if (kvp.Value.CityName.Contains(query, StringComparison.OrdinalIgnoreCase))
-                            {
-                                results.Add((index, kvp.Key, kvp.Value));
-                                added = true;
-                            }
-                            foreach (var tag in kvp.Value.Tags)
-                            {
-                                if (!added && tag.Contains(query, StringComparison.OrdinalIgnoreCase))
-                                {
-                                    results.Add((index, kvp.Key, kvp.Value));
-                                    added = true;
-                                }
-                            }
-                            index++;
-                        }
-
-                        return results;
-                    }
-                    catch (Exception ex)
-                    {
-                        var result = new List<(int Index, string Key, LocationCacheData Data)>();
-                        ConsoleUtil.ErrorOccured(ex, $"APIUtils\\Weather\\Search#{query}");
-                        return result;
-                    }
-                }
             }
             public class Imgur
             {
-                public static async Task<byte[]> DownloadImageAsync(string imageUrl)
+                public static async Task<byte[]> DownloadAsync(string imageUrl)
                 {
+                    Engine.Statistics.functions_used.Add();
                     using HttpClient client = new HttpClient();
                     return await client.GetByteArrayAsync(imageUrl);
                 }
-                public static async Task<string> UploadImageToImgurAsync(byte[] imageBytes, string description, string title, string ImgurClientId, string ImgurUploadUrl)
+                public static async Task<string> UploadAsync(byte[] imageBytes, string description, string title, string ImgurClientId, string ImgurUploadUrl)
                 {
+                    Engine.Statistics.functions_used.Add();
                     try
                     {
                         using HttpClient client = new HttpClient();
@@ -1719,12 +1937,13 @@ namespace butterBror
                     }
                     catch (Exception ex)
                     {
-                        ConsoleUtil.ErrorOccured(ex, $"ImgurAPI\\UploadImageToImgurAsync");
+                        Console.WriteError(ex, $"ImgurAPI\\UploadImageToImgurAsync");
                         return null;
                     }
                 }
-                public static string GetImgurLinkFromResponse(string response)
+                public static string GetLinkFromResponse(string response)
                 {
+                    Engine.Statistics.functions_used.Add();
                     try
                     {
                         JObject jsonResponse = JObject.Parse(response);
@@ -1740,29 +1959,156 @@ namespace butterBror
                     }
                     catch (Exception ex)
                     {
-                        ConsoleUtil.ErrorOccured(ex, $"ImgurAPI\\UploadImageToImgurAsync");
+                        Console.WriteError(ex, $"ImgurAPI\\UploadImageToImgurAsync");
                         return null;
                     }
                 }
             }
+            /*
+            public class Currency
+            {
+                private readonly HttpClient _httpClient = new HttpClient();
+
+                public async Task<Dictionary<string, string>> GetCurrenciesAsync()
+                {
+                    var url = "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies.json";
+
+                    var response = await _httpClient.GetAsync(url);
+                    response.EnsureSuccessStatusCode();
+
+                    var content = await response.Content.ReadAsStreamAsync();
+                    var doc = await JsonDocument.ParseAsync(content);
+                    var root = doc.RootElement;
+
+                    var currencies = new Dictionary<string, string>();
+                    foreach (var property in root.EnumerateObject())
+                    {
+                        currencies[property.Name.ToLower()] = property.Value.GetString();
+                    }
+
+                    return currencies;
+                }
+
+                private async Task<Dictionary<string, decimal>> GetExchangeRatesAsync(string baseCurrency)
+                {
+                    var url = $"https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/{baseCurrency.ToLower()}.json";
+
+                    var response = await _httpClient.GetAsync(url);
+                    response.EnsureSuccessStatusCode();
+
+                    var content = await response.Content.ReadAsStreamAsync();
+                    var doc = await JsonDocument.ParseAsync(content);
+                    var root = doc.RootElement;
+
+                    foreach (var property in root.EnumerateObject())
+                    {
+                        if (property.Name == "date") continue;
+
+                        var rates = new Dictionary<string, decimal>();
+                        foreach (var rateProperty in property.Value.EnumerateObject())
+                        {
+                            rates[rateProperty.Name.ToLower()] = (decimal)rateProperty.Value.GetDouble();
+                        }
+                        return rates;
+                    }
+
+                    throw new Exception("Не найдены курсы в ответе API");
+                }
+
+                /// <summary>
+                /// Конвертирует сумму из одной валюты в другую.
+                /// </summary>
+                /// <param name="fromCurrency">Исходная валюта (ISO-код)</param>
+                /// <param name="toCurrency">Целевая валюта (ISO-код)</param>
+                /// <param name="amount">Сумма для конвертации</param>
+                /// <returns>Конвертированная сумма</returns>
+                public async Task<decimal> ConvertAsync(string fromCurrency, string toCurrency, decimal amount)
+                {
+                    if (string.IsNullOrWhiteSpace(fromCurrency))
+                        throw new ArgumentException("Исходная валюта не может быть пустой", nameof(fromCurrency));
+                    if (string.IsNullOrWhiteSpace(toCurrency))
+                        throw new ArgumentException("Целевая валюта не может быть пустой", nameof(toCurrency));
+                    if (amount <= 0)
+                        throw new ArgumentOutOfRangeException(nameof(amount), "Сумма должна быть больше нуля");
+
+                    if (fromCurrency.Equals(toCurrency, StringComparison.OrdinalIgnoreCase))
+                        return amount;
+
+                    try
+                    {
+                        // Попробуем прямой курс
+                        var fromRates = await GetExchangeRatesAsync(fromCurrency);
+                        if (fromRates.TryGetValue(toCurrency.ToLower(), out var directRate) && directRate > 0)
+                        {
+                            return amount * directRate;
+                        }
+
+                        // Попробуем обратный курс
+                        var toRates = await GetExchangeRatesAsync(toCurrency);
+                        if (toRates.TryGetValue(fromCurrency.ToLower(), out var inverseRate) && inverseRate > 0)
+                        {
+                            return amount / inverseRate;
+                        }
+
+                        // Попробуем через USD
+                        var usdRatesFrom = await GetExchangeRatesAsync("usd");
+                        if (!usdRatesFrom.TryGetValue(fromCurrency.ToLower(), out var fromUsdRate))
+                        {
+                            var fromRates2 = await GetExchangeRatesAsync(fromCurrency);
+                            if (fromRates2.TryGetValue("usd", out var fromToUsd))
+                            {
+                                fromUsdRate = 1 / fromToUsd;
+                            }
+                            else
+                            {
+                                throw new Exception($"Нет данных для конвертации {fromCurrency} в USD");
+                            }
+                        }
+
+                        if (fromUsdRate <= 0)
+                            throw new Exception($"Курс {fromCurrency} к USD равен нулю");
+
+                        var usdRatesTo = await GetExchangeRatesAsync("usd");
+                        if (!usdRatesTo.TryGetValue(toCurrency.ToLower(), out var toUsdRate))
+                        {
+                            var toRates2 = await GetExchangeRatesAsync(toCurrency);
+                            if (toRates2.TryGetValue("usd", out var toToUsd) && toToUsd > 0)
+                            {
+                                toUsdRate = 1 / toToUsd;
+                            }
+                            else
+                            {
+                                throw new Exception($"Нет данных для конвертации {toCurrency} в USD");
+                            }
+                        }
+
+                        // Конвертируем через USD: amount * fromUsdRate (из from в USD) / toUsdRate (из to в USD)
+                        return amount * fromUsdRate / toUsdRate;
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteError(ex, "Currency/ConvertAsync");
+                    }
+                }
+            }
+            */
         }
         /// <summary>
-        /// Утилиты для ютуба
+        /// Utilities for YouTube
         /// </summary>
-        public class YTUtil
+        public class YouTube
         {
-            public static string[] GetPlaylistVideoLinks(string playlistId, string developerKey)
+            public static string[] GetPlaylistLinks(string playlistId, string developerKey)
             {
+                Engine.Statistics.functions_used.Add();
                 try
                 {
-                    // Создаем новый экземпляр сервиса YouTube
                     var youtubeService = new YouTubeService(new BaseClientService.Initializer()
                     {
                         ApplicationName = "YouTube Playlist Viewer",
                         ApiKey = developerKey
                     });
 
-                    // Получаем список видео из плейлиста
                     var playlistItemsRequest = youtubeService.PlaylistItems.List("contentDetails");
                     playlistItemsRequest.PlaylistId = playlistId;
                     playlistItemsRequest.MaxResults = 50;
@@ -1798,7 +2144,7 @@ namespace butterBror
                         }
                         catch (Exception ex)
                         {
-                            ConsoleUtil.LOG("YOUTUBE PLAYLIST ERROR: " + ex.Message, "err");
+                            Console.WriteLine("YOUTUBE PLAYLIST ERROR: " + ex.Message, "err");
                         }
                     } while (playlistItemResponse.NextPageToken != null);
 
@@ -1806,12 +2152,13 @@ namespace butterBror
                 }
                 catch (Exception ex)
                 {
-                    ConsoleUtil.ErrorOccured(ex, $"YTAPI\\GetPlaylistVideoLinks");
+                    Console.WriteError(ex, $"YTAPI\\GetPlaylistVideoLinks");
                     return null;
                 }
             }
             public static string[] GetPlaylistVideos(string playlistUrl)
             {
+                Engine.Statistics.functions_used.Add();
                 try
                 {
                     MatchCollection matches = new Regex(@"watch\?v=[a-zA-Z0-9_-]{11}").Matches(new WebClient().DownloadString(playlistUrl));
@@ -1829,238 +2176,304 @@ namespace butterBror
                 }
                 catch (Exception ex)
                 {
-                    ConsoleUtil.ErrorOccured(ex, $"YTAPI\\GetPlaylistVideos");
+                    Console.WriteError(ex, $"YTAPI\\GetPlaylistVideos");
                     return null;
                 }
             }
         }
         /// <summary>
-        /// Утилита CAFUS
+        /// CAFUS utility
         /// </summary>
-        public class CAFUSUtil
+        public class CAFUS
         {
-            static List<string> updateVersions = new();
-            public static void Maintrance(string UserID, string Username)
+            private readonly List<string> _updated = new();
+            private static readonly (double Version, Action<string, Platforms> Action)[] _migrations =
             {
+        (1.0, Migrate0),
+        (1.1, Migrate1),
+        (1.2, Migrate2),
+        (1.3, Migrate3),
+        (1.4, Migrate4)
+    };
+
+            public void Maintrance(string userId, string username, Platforms platform)
+            {
+                Engine.Statistics.functions_used.Add();
+
                 try
                 {
-                    updateVersions.Clear();
-                    if (UsersData.IsContainsKey("CAFUSV", UserID))
-                    {
-                        var version = UsersData.UserGetData<double>(UserID, "CAFUSV");
-                        if (version < 1.0)
-                            CAFUS1_0(UserID);
-                        if (version < 1.1)
-                            CAFUS1_1(UserID);
-                        if (version < 1.2)
-                            CAFUS1_2(UserID);
-                        if (version < 1.3)
-                            CAFUS1_3(UserID);
-                        if (version < 1.4)
-                            CAFUS1_4(UserID);
+                    _updated.Clear();
+                    var current = UsersData.Get<double?>(userId, "CAFUSV", platform) ?? 0.0;
 
-                        showUpdateText(Username);
-                    }
-                    else
+                    foreach (var (ver, action) in _migrations)
                     {
-                        CAFUS1_0(UserID);
-                        CAFUS1_1(UserID);
-                        CAFUS1_2(UserID);
-                        CAFUS1_3(UserID);
-                        CAFUS1_4(UserID);
-                        showUpdateText(Username);
+                        if (current < ver)
+                        {
+                            action(userId, platform);
+                            UsersData.Save(userId, "CAFUSV", ver, platform);
+                            _updated.Add(ver.ToString("0.0"));
+                        }
                     }
-                    UsersData.SaveData(UserID);
+
+                    if (_updated.Count > 0)
+                        Console.WriteLine($"@{username} CAFUS {string.Join(", ", _updated)} UPDATED", "cafus");
                 }
                 catch (Exception ex)
                 {
-                    ConsoleUtil.ErrorOccured(ex, $"CAFUS\\Maintrance");
+                    Console.WriteError(ex, "CAFUS\\Maintrance");
                 }
             }
-            private static void CAFUS1_0(string UserID)
+
+            private static void Migrate0(string uid, Platforms p)
             {
-                CheckAndWrite(UserID, "language", "ru");
-                CheckAndWrite(UserID, "userPlace", "");
-                CheckAndWrite(UserID, "afkText", "");
-                CheckAndWrite(UserID, "isAfk", false);
-                CheckAndWrite(UserID, "afkType", "");
-                CheckAndWrite(UserID, "afkTime", DateTime.UtcNow);
-                CheckAndWrite(UserID, "lastFromAfkResume", DateTime.UtcNow);
-                CheckAndWrite(UserID, "fromAfkResumeTimes", 0);
-                UsersData.UserSaveData(UserID, "CAFUSV", 1.0, false);
-                updateVersions.Add("1.0");
-            }
-            private static void CAFUS1_1(string UserID)
-            {
-                CheckAndWrite(UserID, "isBotDev", false);
-                UsersData.UserSaveData(UserID, "CAFUSV", 1.1, false);
-                updateVersions.Add("1.1");
-            }
-            private static void CAFUS1_2(string UserID)
-            {
-                CheckAndWrite(UserID, "banReason", "");
-                CheckAndWrite(UserID, "weatherAPIUsedTimes", 0);
-                CheckAndWrite(UserID, "weatherAPIResetDate", DateTime.UtcNow.AddDays(1));
-                UsersData.UserSaveData(UserID, "CAFUSV", 1.2, false);
-                updateVersions.Add("1.2");
-            }
-            private static void CAFUS1_3(string UserID)
-            {
-                CheckAndWrite(UserID, "lastSeenChannel", "");
-                CheckAndWrite(UserID, "lastFishingTime", DateTime.UtcNow);
-                CheckAndWrite(UserID, "fishLocation", 1);
-                CheckAndWrite(UserID, "fishIsMovingNow", false);
-                CheckAndWrite(UserID, "fishIsKidnapingNow", false);
-                UsersData.UserSaveData(UserID, "CAFUSV", 1.3, false);
-                updateVersions.Add("1.3");
-            }
-            private static void CAFUS1_4(string UserID)
-            {
-                Dictionary<string, int> fishInvertory = new();
-                fishInvertory["Fish"] = 0;
-                fishInvertory["Tropical Fish"] = 0;
-                fishInvertory["Blowfish"] = 0;
-                fishInvertory["Octopus"] = 0;
-                fishInvertory["Jellyfish"] = 0;
-                fishInvertory["Spiral Shell"] = 0;
-                fishInvertory["Coral"] = 0;
-                fishInvertory["Fallen Leaf"] = 0;
-                fishInvertory["Leaf Fluttering in Wind"] = 0;
-                fishInvertory["Maple Leaf"] = 0;
-                fishInvertory["Herb"] = 0;
-                fishInvertory["Lotus"] = 0;
-                fishInvertory["Squid"] = 0;
-                fishInvertory["Shrimp"] = 0;
-                fishInvertory["Lobster"] = 0;
-                fishInvertory["Crab"] = 0;
-                fishInvertory["Mans Shoe"] = 0;
-                fishInvertory["Athletic Shoe"] = 0;
-                fishInvertory["Hiking Boot"] = 0;
-                fishInvertory["Scroll"] = 0;
-                fishInvertory["Top Hat"] = 0;
-                fishInvertory["Mobile Phone"] = 0;
-                fishInvertory["Shorts"] = 0;
-                fishInvertory["Briefs"] = 0;
-                fishInvertory["Envelope"] = 0;
-                fishInvertory["Bone"] = 0;
-                fishInvertory["Canned Food"] = 0;
-                fishInvertory["Gear"] = 0;
-                CheckAndWrite(UserID, "fishInvertory", fishInvertory);
-                UsersData.UserSaveData(UserID, "CAFUSV", 1.4, false);
-                updateVersions.Add("1.4");
-            }
-            private static void showUpdateText(string UserName)
-            {
-                if (updateVersions.Count != 0)
+                Engine.Statistics.functions_used.Add();
+                var defaults = new Dictionary<string, object>
                 {
-                    string versions = "";
-                    int checkedItems = 0;
-                    foreach (var item in updateVersions)
+                    ["language"] = "ru",
+                    ["userPlace"] = "",
+                    ["afkText"] = "",
+                    ["isAfk"] = false,
+                    ["afkType"] = "",
+                    ["afkTime"] = DateTime.UtcNow,
+                    ["lastFromAfkResume"] = DateTime.UtcNow,
+                    ["fromAfkResumeTimes"] = 0
+                };
+                SaveDefaults(uid, p, defaults);
+            }
+
+            private static void Migrate1(string uid, Platforms p)
+            {
+                Engine.Statistics.functions_used.Add();
+                SaveIfMissing(uid, "isBotDev", false, p);
+            }
+
+            private static void Migrate2(string uid, Platforms p)
+            {
+                Engine.Statistics.functions_used.Add();
+                SaveIfMissing(uid, "banReason", "", p);
+                SaveIfMissing(uid, "weatherAPIUsedTimes", 0, p);
+                SaveIfMissing(uid, "weatherAPIResetDate", DateTime.UtcNow.AddDays(1), p);
+            }
+
+            private static void Migrate3(string uid, Platforms p)
+            {
+                Engine.Statistics.functions_used.Add();
+                var defaults = new Dictionary<string, object>
+                {
+                    ["lastSeenChannel"] = "",
+                    ["lastFishingTime"] = DateTime.UtcNow,
+                    ["fishLocation"] = 1,
+                    ["fishIsMovingNow"] = false,
+                    ["fishIsKidnapingNow"] = false
+                };
+                SaveDefaults(uid, p, defaults);
+            }
+
+            private static void Migrate4(string uid, Platforms p)
+            {
+                Engine.Statistics.functions_used.Add();
+                var inventory = new Dictionary<string, int>
+                {
+                    ["Fish"] = 0,
+                    ["Tropical Fish"] = 0,
+                    ["Blowfish"] = 0,
+                    ["Octopus"] = 0,
+                    ["Jellyfish"] = 0,
+                    ["Spiral Shell"] = 0,
+                    ["Coral"] = 0,
+                    ["Fallen Leaf"] = 0,
+                    ["Leaf Fluttering in Wind"] = 0,
+                    ["Maple Leaf"] = 0,
+                    ["Herb"] = 0,
+                    ["Lotus"] = 0,
+                    ["Squid"] = 0,
+                    ["Shrimp"] = 0,
+                    ["Lobster"] = 0,
+                    ["Crab"] = 0,
+                    ["Mans Shoe"] = 0,
+                    ["Athletic Shoe"] = 0,
+                    ["Hiking Boot"] = 0,
+                    ["Scroll"] = 0,
+                    ["Top Hat"] = 0,
+                    ["Mobile Phone"] = 0,
+                    ["Shorts"] = 0,
+                    ["Briefs"] = 0,
+                    ["Envelope"] = 0,
+                    ["Bone"] = 0,
+                    ["Canned Food"] = 0,
+                    ["Gear"] = 0
+                };
+                SaveIfMissing(uid, "fishInvertory", inventory, p);
+            }
+
+            private static void SaveIfMissing(string uid, string key, object value, Platforms p)
+            {
+                Engine.Statistics.functions_used.Add();
+                if (!UsersData.Contains(key, uid, p))
+                    UsersData.Save(uid, key, value, p);
+            }
+
+            private static void SaveDefaults(string uid, Platforms p, Dictionary<string, object> defaults)
+            {
+                foreach (var kv in defaults)
+                    SaveIfMissing(uid, kv.Key, kv.Value, p);
+            }
+        }
+
+
+        public class Device
+        {
+            public class Memory
+            {
+                public static ulong GetTotalMemoryBytes()
+                {
+                    Engine.Statistics.functions_used.Add();
+                    // fckin piece of sht
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                     {
-                        checkedItems++;
-                        versions += item;
-                        if (checkedItems != updateVersions.Count)
-                            versions += ", ";
+                        return GetWindowsTotalMemory();
                     }
-                    ConsoleUtil.LOG($"@{UserName} CAFUS {versions} UPDATED", "cafus");
+                    else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                    {
+                        return GetLinuxTotalMemory();
+                    }
+                    else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                    {
+                        return GetMacOSTotalMemory();
+                    }
+                    else
+                    {
+                        throw new PlatformNotSupportedException("Platform not supported");
+                    }
                 }
-            }
-            private static void CheckAndWrite(string UserID, string ParamName, dynamic value)
-            {
-                if (!UsersData.IsContainsKey(ParamName, UserID))
-                    UsersData.UserSaveData(UserID, ParamName, value);
-            }
-        }
-        /// <summary>
-        /// Утилита для интернет-пинга
-        /// </summary>
-        public class PingUtil
-        {
-            public PingReply? PingResult = default;
-            public long pingSpeed = -1;
-            public bool isSuccess = false;
-            public string resultText = "NONE";
-            public async Task PingAsync(string address, int timeout)
-            {
-                Ping ping = new();
-                PingResult = await ping.SendPingAsync(address, timeout);
-                pinged(PingResult);
-            }
-            public void Ping(string address, int timeout)
-            {
-                Ping ping = new();
-                PingResult = ping.Send(address, timeout);
-                pinged(PingResult);
-            }
-            private void pinged(PingReply result)
-            {
-                if (result.Status == IPStatus.Success)
+                private static ulong GetWindowsTotalMemory()
                 {
-                    pingSpeed = result.RoundtripTime;
-                    isSuccess = true;
+                    Engine.Statistics.functions_used.Add();
+                    var memoryStatus = new MEMORYSTATUSEX();
+                    if (GlobalMemoryStatusEx(ref memoryStatus))
+                    {
+                        return memoryStatus.ullTotalPhys;
+                    }
+                    throw new Exception("Failed to get memory information on Windows");
                 }
-                else
-                    isSuccess = false;
-                resultText = Pingresult(result);
+
+                private static ulong GetLinuxTotalMemory()
+                {
+                    Engine.Statistics.functions_used.Add();
+                    string memInfo = FileUtil.GetFileContent("/proc/meminfo");
+                    string totalMemoryLine = memInfo.Split('\n')[0];
+                    string totalMemoryValue = totalMemoryLine.Split([' '], StringSplitOptions.RemoveEmptyEntries)[1];
+                    return Convert.ToUInt64(totalMemoryValue) * 1024;
+                }
+
+                private static ulong GetMacOSTotalMemory()
+                {
+                    Engine.Statistics.functions_used.Add();
+                    var process = new Process
+                    {
+                        StartInfo = new ProcessStartInfo
+                        {
+                            FileName = "sysctl",
+                            Arguments = "-n hw.memsize",
+                            RedirectStandardOutput = true,
+                            UseShellExecute = false,
+                            CreateNoWindow = true
+                        }
+                    };
+                    process.Start();
+                    string output = process.StandardOutput.ReadToEnd();
+                    process.WaitForExit();
+                    return Convert.ToUInt64(output.Trim());
+                }
+
+                [StructLayout(LayoutKind.Sequential)]
+                private struct MEMORYSTATUSEX
+                {
+                    public uint dwLength;
+                    public uint dwMemoryLoad;
+                    public ulong ullTotalPhys;
+                    public ulong ullAvailPhys;
+                    public ulong ullTotalPageFile;
+                    public ulong ullAvailPageFile;
+                    public ulong ullTotalVirtual;
+                    public ulong ullAvailVirtual;
+                    public ulong ullAvailExtendedVirtual;
+                }
+
+                [DllImport("kernel32.dll", SetLastError = true)]
+                private static extern bool GlobalMemoryStatusEx(ref MEMORYSTATUSEX lpBuffer);
             }
 
-            public string Pingresult(PingReply result)
+            public class Drives
             {
-                switch (result.Status)
+                public static DriveInfo[] Get()
                 {
-                    case IPStatus.Success:
-                        return "Ping successful!";
-                    case IPStatus.BadDestination:
-                        return "ICMP request failed! IP address cannot receive ICMP echo requests or should never appear in the destination address field of any IP datagram.";
-                    case IPStatus.BadHeader:
-                        return "Invalid header(s)!";
-                    case IPStatus.BadOption:
-                        return "Invalid option(s)!";
-                    case IPStatus.BadRoute:
-                        return "Bad route! Failed because the target pc is not accessible.";
-                    case IPStatus.DestinationHostUnreachable:
-                        return "Host unreachable!";
-                    case IPStatus.DestinationNetworkUnreachable:
-                        return "Network unreachable!";
-                    case IPStatus.DestinationPortUnreachable:
-                        return "Port unreachable!";
-                    case IPStatus.DestinationProtocolUnreachable:
-                        return "Protocol unreachable!";
-                    case IPStatus.DestinationScopeMismatch:
-                        return "Scope mismatch! This is typically caused by a router forwarding a packet using an interface that is outside the scope of the source address.";
-                    case IPStatus.DestinationUnreachable:
-                        return "Destination unreachable!";
-                    case IPStatus.HardwareError:
-                        return "Hardware error! Check your wifi adapter!";
-                    case IPStatus.IcmpError:
-                        return "Icmp protocol error!";
-                    case IPStatus.NoResources:
-                        return "Insufficient network resources!";
-                    case IPStatus.PacketTooBig:
-                        return "Too big packet!";
-                    case IPStatus.ParameterProblem:
-                        return "Packet header processing problem!";
-                    case IPStatus.SourceQuench:
-                        return "Request discarded!";
-                    case IPStatus.TimedOut:
-                        return "Timeouted!";
-                    case IPStatus.TimeExceeded:
-                    case IPStatus.TtlExpired:
-                        return "Time exceeded! Time to Live (TTL) value reached zero, causing the forwarding node (router or gateway) to discard the packet.";
-                    case IPStatus.TtlReassemblyTimeExceeded:
-                        return "Ttl reassembly time exceeded! The packet was divided into fragments for transmission and all of the fragments were not received within the time allotted for reassembly.";
-                    case IPStatus.Unknown:
-                        return "Unknown result!";
-                    case IPStatus.UnrecognizedNextHeader:
-                        return "Unrecognized next header! Next Header field does not contain a recognized value.";
-                    default:
-                        return "Unhandled exception!";
+                    Engine.Statistics.functions_used.Add();
+                    DriveInfo[] drives = DriveInfo.GetDrives();
+                    return drives;
+                }
+            }
+
+            public class Battery
+            {
+                public static float GetBatteryCharge()
+                {
+                    float charge = -1;
+
+                    try
+                    {
+                        using (var searcher = new ManagementObjectSearcher("SELECT * FROM Win32_Battery"))
+                        {
+                            foreach (ManagementObject battery in searcher.Get())
+                            {
+                                charge = Convert.ToSingle(battery["EstimatedChargeRemaining"]);
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteError(ex, "Device/Battery/GetBatteryCharge");
+                    }
+
+                    return charge;
+                }
+
+                public static bool IsCharging()
+                {
+                    bool isCharging = false;
+
+                    try
+                    {
+                        using (var searcher = new ManagementObjectSearcher("SELECT * FROM Win32_Battery"))
+                        {
+                            foreach (ManagementObject battery in searcher.Get())
+                            {
+                                isCharging = Convert.ToInt32(battery["BatteryStatus"]) == 2;
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteError(ex, "Device/Battery/IsCharging");
+                    }
+
+                    return isCharging;
                 }
             }
         }
-        public class RemindUtil
-        {
 
+        public class Memory
+        {
+            public static double BytesToGB(long bytes)
+            {
+                Engine.Statistics.functions_used.Add();
+                return bytes / (1024.0 * 1024.0 * 1024.0);
+            }
+            public static double BytesToGB(ulong bytes)
+            {
+                Engine.Statistics.functions_used.Add();
+                return bytes / (1024.0 * 1024.0 * 1024.0);
+            }
         }
     }
 }

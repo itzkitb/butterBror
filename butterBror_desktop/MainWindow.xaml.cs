@@ -46,9 +46,9 @@ namespace butterBror_desktop
 
             Task.Run(() =>
             {
-                ConsoleUtil.OnChatLineGetted += OnChatLine;
-                ConsoleUtil.OnErrorOccured += OnError;
-                BotEngine.Start();
+                ConsoleUtil.on_chat_line += OnChatLine;
+                ConsoleUtil.error_occured += OnError;
+                Engine.Start();
             });
         }
         private void OnChatLine(ConsoleUtil.LogInfo line)
@@ -118,12 +118,12 @@ namespace butterBror_desktop
 
         private void restart_Click(object sender, RoutedEventArgs e)
         {
-            Bot.Restart();
+            Maintenance.Restart();
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            Bot.TurnOff();
+            Maintenance.TurnOff();
         }
     }
 }

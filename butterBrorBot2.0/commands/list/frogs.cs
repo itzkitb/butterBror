@@ -1,0 +1,266 @@
+﻿using butterBror.Utils;
+using butterBror.Utils.DataManagers;
+using butterBror;
+using Discord;
+using TwitchLib.Client.Enums;
+using DankDB;
+
+namespace butterBror
+{
+    public partial class Commands
+    {
+        public class FrogGame
+        {
+            public static CommandInfo Info = new()
+            {
+                name = "Frogs",
+                author = "@ItzKITb",
+                author_link = "twitch.tv/itzkitb",
+                author_avatar = "https://static-cdn.jtvnw.net/jtv_user_pictures/c3a9af55-d7af-4b4a-82de-39a4d8b296d3-profile_image-70x70.png",
+                description = new() {
+                    { "ru", "Л Я Г У Ш К А" },
+                    { "en", "F R O G" }
+                },
+                wiki_link = "https://itzkitb.lol/bot/command?q=frogs",
+                cooldown_per_user = 10,
+                cooldown_global = 1,
+                aliases = ["frog", "frg", "лягушка", "лягушки", "лягуш"],
+                arguments = "[(info)/(statistic)/(caught)/(gift [user] [frogs])]",
+                cooldown_reset = true,
+                creation_date = DateTime.Parse("13/10/2024"),
+                is_for_bot_moderator = false,
+                is_for_bot_developer = false,
+                is_for_channel_moderator = false,
+                platforms = [Platforms.Twitch, Platforms.Telegram, Platforms.Discord]
+            };
+            public CommandReturn Index(CommandData data)
+            {
+                Engine.Statistics.functions_used.Add();
+                try
+                {
+                    string return_message = "";
+                    Color return_message_color = Color.Green;
+                    string return_message_title = TranslationManager.GetTranslation(data.user.language, "dsFLTitle", data.channel_id, data.platform);
+                    ChatColorPresets return_message_nickname_color = ChatColorPresets.YellowGreen;
+                    string root_path = Maintenance.path_main + $"GAMES_DATA/{Platform.strings[(int)data.platform]}/FROGS/";
+                    string user_path = $"{root_path}{data.user_id}.json";
+
+                    FileUtil.CreateDirectory(root_path);
+                    
+                    if (!File.Exists(user_path))
+                    {
+                        Manager.CreateDatabase(user_path);
+                        Manager.Save(user_path, "frogs", 0);
+                        Manager.Save(user_path, "gifted", 0);
+                        Manager.Save(user_path, "received", 0);
+                    }
+
+                    long balance = Manager.Get<long>(user_path, "frogs");
+                    long gifted = Manager.Get<long>(user_path, "gifted");
+                    long received = Manager.Get<long>(user_path, "received");
+                    string[] info_aliases = ["info", "i"];
+                    string[] statistic_aliases = ["statistic", "stat", "s"];
+                    string[] caught_aliases = ["caught", "c"];
+                    string[] gift_aliases = ["gift", "g"];
+                    string[] top_aliases = ["top", "t"];
+
+                    if (data.arguments != null && data.arguments.Count > 0)
+                    {
+                        if (info_aliases.Contains(data.arguments[0].ToLower()))
+                        {
+                            return_message = TranslationManager.GetTranslation(data.user.language, "command:frog:info", data.channel_id, data.platform);
+                        }
+                        else if (statistic_aliases.Contains(data.arguments[0].ToLower()))
+                        {
+                            return_message = TranslationManager.GetTranslation(data.user.language, "command:frog:statistic", data.channel_id, data.platform)
+                                .Replace("%frogs%", balance.ToString())
+                                .Replace("%frogs_gifted%", gifted.ToString())
+                                .Replace("%frogs_received%", received.ToString());
+                        }
+                        else if (caught_aliases.Contains(data.arguments[0].ToLower()))
+                        {
+                            if (Command.CheckCooldown(3600, 0, "frogs_reseter", data.user_id, data.channel_id, data.platform, false, true, true))
+                            {
+                                Random rand = new Random();
+                                long frog_caught_type = rand.Next(0, 4);
+                                long frogs_caughted = rand.Next(1, 11);
+
+                                if (frog_caught_type == 0)
+                                    frogs_caughted = rand.Next(1, 11);
+                                else if (frog_caught_type <= 2)
+                                    frogs_caughted = rand.Next(11, 101);
+                                else if (frog_caught_type == 3)
+                                    frogs_caughted = rand.Next(101, 1001);
+
+                                string text = GetFrogRange(frogs_caughted);
+
+                                if (text == "error:range")
+                                {
+                                    return_message = TranslationManager.GetTranslation(data.user.language, "command:frog:error:range", data.channel_id, data.platform);
+                                    return_message_nickname_color = ChatColorPresets.Red;
+                                }
+                                else
+                                {
+                                    return_message = TranslationManager.GetTranslation(data.user.language, "command:frog:caught", data.channel_id, data.platform)
+                                        .Replace("%action%", TranslationManager.GetTranslation(data.user.language, $"command:frog:won:{text}", data.channel_id, data.platform))
+                                        .Replace("%old_frogs_count%", balance.ToString())
+                                        .Replace("%new_frogs_count%", (balance + frogs_caughted).ToString())
+                                        .Replace("%added_count%", frogs_caughted.ToString());
+                                    Manager.Save(user_path, "frogs", balance + frogs_caughted);
+                                }
+                            }
+                            else
+                            {
+                                return_message = TranslationManager.GetTranslation(data.user.language, "command:frog:error:caught", data.channel_id, data.platform)
+                                    .Replace("%time%", TextUtil.FormatTimeSpan(Command.GetCooldownTime(data.user_id, "frogs_reseter", 3600, data.platform), data.user.language));
+                                return_message_nickname_color = ChatColorPresets.Red;
+                            }
+                        }
+                        else if (gift_aliases.Contains(data.arguments[0].ToLower()))
+                        {
+                            if (data.arguments.Count > 2)
+                            {
+                                string username = data.arguments[1].ToLower();
+                                long frogs = Utils.Format.ToLong(data.arguments[2]);
+                                string user_id = Names.GetUserID(username, data.platform);
+
+                                if (user_id == null)
+                                {
+                                    return_message = TextUtil.ArgumentReplacement(TranslationManager.GetTranslation(data.user.language, "error:user_not_found", data.channel_id, data.platform),
+                                        "%user%", Names.DontPing(username));
+                                    return_message_nickname_color = ChatColorPresets.Red;
+                                    return_message_color = Color.Red;
+                                }
+                                else if (frogs == 0)
+                                {
+                                    return_message = TranslationManager.GetTranslation(data.user.language, "command:frog:gift:error:zero", data.channel_id, data.platform);
+                                    return_message_nickname_color = ChatColorPresets.Red;
+                                    return_message_color = Color.Red;
+                                }
+                                else if (frogs < 0)
+                                {
+                                    return_message = TranslationManager.GetTranslation(data.user.language, "command:frog:gift:error:lowerThanZero", data.channel_id, data.platform);
+                                    return_message_nickname_color = ChatColorPresets.Red;
+                                    return_message_color = Color.Red;
+                                }
+                                else if (balance >= frogs)
+                                {
+                                    return_message = TranslationManager.GetTranslation(data.user.language, "command:frog:gift", data.channel_id, data.platform)
+                                        .Replace("%frogs%", frogs.ToString())
+                                        .Replace("%gift_user%", Names.DontPing(username));
+                                    string gift_user_path = $"{root_path}{user_id}.json";
+
+                                    if (!File.Exists(gift_user_path))
+                                    {
+                                        Manager.CreateDatabase(gift_user_path);
+                                        Manager.Save(gift_user_path, "frogs", 0);
+                                        Manager.Save(gift_user_path, "gifted", 0);
+                                        Manager.Save(gift_user_path, "received", 0);
+                                    }
+
+                                    long gift_user_frogs_balance = Manager.Get<long>(gift_user_path, "frogs");
+                                    long gift_user_received = Manager.Get<long>(gift_user_path, "received");
+
+                                    Manager.Save(gift_user_path, "frogs", gift_user_frogs_balance + frogs);
+                                    Manager.Save(gift_user_path, "received", gift_user_received + frogs);
+                                    Manager.Save(user_path, "frogs", balance - frogs);
+                                    Manager.Save(user_path, "gifted", gifted + frogs);
+                                }
+                                else
+                                {
+                                    return_message = TranslationManager.GetTranslation(data.user.language, "frog:gift:error:noFrogs", data.channel_id, data.platform);
+                                    return_message_nickname_color = ChatColorPresets.Red;
+                                }
+                            }
+                            else
+                            {
+                                return_message = TextUtil.ArgumentReplacement(TranslationManager.GetTranslation(data.user.language, "error:not_enough_arguments", data.channel_id, data.platform),
+                                    "command_example", "#frog gift [user] [frogs]");
+                                return_message_nickname_color = ChatColorPresets.Red;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        return_message = TextUtil.ArgumentReplacement(TranslationManager.GetTranslation(data.user.language, "error:not_enough_arguments", data.channel_id, data.platform),
+                                    "command_example", $"#frog {Info.arguments}");
+                        return_message_nickname_color = ChatColorPresets.Red;
+                        return_message_color = Color.Red;
+                    }
+
+                    return new()
+                    {
+                        message = return_message,
+                        safe_execute = true,
+                        description = "",
+                        author = "",
+                        image_link = "",
+                        thumbnail_link = "",
+                        footer = "",
+                        is_embed = true,
+                        is_ephemeral = false,
+                        title = return_message_title,
+                        embed_color = return_message_color,
+                        nickname_color = return_message_nickname_color
+                    };
+                }
+                catch (Exception e)
+                {
+                    return new ()
+                    {
+                        message = "",
+                        safe_execute = false,
+                        description = "",
+                        author = "",
+                        image_link = "",
+                        thumbnail_link = "",
+                        footer = "",
+                        is_embed = true,
+                        is_ephemeral = false,
+                        title = "",
+                        embed_color = Color.Green,
+                        nickname_color = ChatColorPresets.YellowGreen,
+                        is_error = true,
+                        exception = e
+                    };
+                }
+            }
+
+            string GetFrogRange(long number)
+            {
+                var ranges = new Dictionary<string, Tuple<long, long>>
+                    {
+                        {"1", Tuple.Create(1L, 1L)},
+                        {"2", Tuple.Create(2L, 2L)},
+                        {"3", Tuple.Create(3L, 3L)},
+                        {"4-6", Tuple.Create(4L, 6L)},
+                        {"7-10", Tuple.Create(7L, 10L)},
+                        {"11", Tuple.Create(11L, 11L)},
+                        {"12-25", Tuple.Create(12L, 25L)},
+                        {"26-50", Tuple.Create(26L, 50L)},
+                        {"51-75", Tuple.Create(51L, 75L)},
+                        {"76-100", Tuple.Create(76L, 100L)},
+                        {"101-200", Tuple.Create(101L, 200L)},
+                        {"201-300", Tuple.Create(201L, 300L)},
+                        {"301-400", Tuple.Create(301L, 400L)},
+                        {"401-500", Tuple.Create(401L, 500L)},
+                        {"501-600", Tuple.Create(501L, 600L)},
+                        {"601-700", Tuple.Create(601L, 700L)},
+                        {"701-800", Tuple.Create(701L, 800L)},
+                        {"801-900", Tuple.Create(801L, 900L)},
+                        {"901-1000", Tuple.Create(901L, 1000L)},
+                    };
+
+                foreach (var range in ranges)
+                {
+                    if (number >= range.Value.Item1 && number <= range.Value.Item2)
+                    {
+                        return range.Key;
+                    }
+                }
+
+                return "error:range";
+            }
+        }
+    }
+}
