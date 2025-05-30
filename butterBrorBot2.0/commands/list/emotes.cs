@@ -15,30 +15,31 @@ namespace butterBror
         {
             public static CommandInfo Info = new()
             {
-                name = "Emotes",
-                author = "@ItzKITb",
-                author_link = "twitch.tv/itzkitb",
-                author_avatar = "https://static-cdn.jtvnw.net/jtv_user_pictures/c3a9af55-d7af-4b4a-82de-39a4d8b296d3-profile_image-70x70.png",
-                description = new()
+                Name = "Emotes",
+                Author = "@ItzKITb",
+                AuthorLink = "twitch.tv/itzkitb",
+                AuthorAvatar = "https://static-cdn.jtvnw.net/jtv_user_pictures/c3a9af55-d7af-4b4a-82de-39a4d8b296d3-profile_image-70x70.png",
+                Description = new()
                 {
                     { "ru", "Работа с 7tv эмоутами" },
                     { "en", "Working with 7tv emotes" }
                 },
-                wiki_link = "https://itzkitb.lol/bot/command?q=emote",
-                cooldown_per_user = 5,
-                cooldown_global = 2,
-                aliases = ["emote", "emotes", "эмоут", "эмоуты", "7tv", "seventv", "семьтелефизоров", "7тв"],
-                arguments = "(update/random/add {name} (as:{name}, from:{channel})/delete {name}/rename {old_name} {new_name})",
-                cooldown_reset = false,
-                creation_date = DateTime.Parse("07/04/2024"),
-                is_for_bot_moderator = false,
-                is_for_bot_developer = false,
-                is_for_channel_moderator = false,
-                platforms = [Platforms.Twitch]
+                WikiLink = "https://itzkitb.lol/bot/command?q=emote",
+                CooldownPerUser = 5,
+                CooldownPerChannel = 2,
+                Aliases = ["emote", "emotes", "эмоут", "эмоуты", "7tv", "seventv", "семьтелефизоров", "7тв"],
+                Arguments = "(update/random/add {name} (as:{name}, from:{channel})/delete {name}/rename {old_name} {new_name})",
+                CooldownReset = false,
+                CreationDate = DateTime.Parse("07/04/2024"),
+                IsForBotModerator = false,
+                IsForBotDeveloper = false,
+                IsForChannelModerator = false,
+                Platforms = [Platforms.Twitch]
             };
             public async Task<CommandReturn> Index(CommandData data)
             {
                 Engine.Statistics.functions_used.Add();
+                CommandReturn commandReturn = new CommandReturn();
 
                 try
                 {
@@ -47,7 +48,6 @@ namespace butterBror
                     string[] addAlias = ["add", "добавить", "д", "a"];
                     string[] deleteAlias = ["remove", "delete", "удалить", "у", "d"];
                     string[] renameAlias = ["rename", "переименовать", "ren", "re", "п"];
-                    string resultMessage = "";
 
                     if (data.arguments.Count > 0)
                     {
@@ -56,94 +56,64 @@ namespace butterBror
                             if (UsersData.Get<bool>(data.user_id, "isBotDev", data.platform) || UsersData.Get<bool>(data.user_id, "isBotModerator", data.platform) || (bool)data.user.channel_moderator || (bool)data.user.channel_broadcaster)
                             {
                                 await Utils.Emotes.EmoteUpdate(data.channel, data.channel_id);
-                                resultMessage = TranslationManager.GetTranslation(data.user.language, "command:emotes:7tv:updated", data.channel_id, data.platform)
-                                    .Replace("%emotes%", Maintenance.channels_7tv_emotes[data.channel_id].emotes.Count().ToString());
+                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:emotes:7tv:updated", data.channel_id, data.platform)
+                                    .Replace("%emotes%", Maintenance.channels_7tv_emotes[data.channel_id].emotes.Count().ToString()));
                             }
                             else
-                                resultMessage = TranslationManager.GetTranslation(data.user.language, "error:not_enough_rights", data.channel_id, data.platform);
+                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:not_enough_rights", data.channel_id, data.platform));
                         }
                         else if (randomAlias.Contains(GetArgument(data.arguments, 0)))
                         {
                             if (!Maintenance.channels_7tv_emotes.ContainsKey(data.channel_id)) await Utils.Emotes.EmoteUpdate(data.channel, data.channel_id);
                             var randomEmote = Utils.Emotes.RandomEmote(data.channel, data.channel_id);
                             if (randomEmote != null)
-                                resultMessage = TranslationManager.GetTranslation(data.user.language, "command:emotes:7tv:random", data.channel_id, data.platform)
-                                    .Replace("%emote%", randomEmote.Result);
+                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:emotes:7tv:random", data.channel_id, data.platform)
+                                    .Replace("%emote%", randomEmote.Result));
                             else
-                                resultMessage = TranslationManager.GetTranslation(data.user.language, "command:emotes:7tv:empty", data.channel_id, data.platform);
+                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:emotes:7tv:empty", data.channel_id, data.platform));
                         }
                         else if ((bool)data.user.bot_moderator || (bool)data.user.channel_moderator || (bool)data.user.channel_broadcaster || (bool)data.user.bot_developer)
                         {
                             if (addAlias.Contains(GetArgument(data.arguments, 0)))
                             {
-                                resultMessage = await ProcessAddEmote(data);
+                                commandReturn.SetMessage(await ProcessAddEmote(data));
                             }
                             else if (deleteAlias.Contains(GetArgument(data.arguments, 0)))
                             {
-                                resultMessage = await ProcessDeleteEmote(data);
+                                commandReturn.SetMessage(await ProcessDeleteEmote(data));
                             }
                             else if (renameAlias.Contains(GetArgument(data.arguments, 0)))
                             {
-                                resultMessage = await ProcessRenameEmote(data);
+                                commandReturn.SetMessage(await ProcessRenameEmote(data));
                             }
                         }
                         else if (addAlias.Contains(GetArgument(data.arguments, 0)) || deleteAlias.Contains(GetArgument(data.arguments, 0)) || renameAlias.Contains(GetArgument(data.arguments, 0)))
                         {
-                            resultMessage = TranslationManager.GetTranslation(data.user.language, "error:not_enough_rights", data.channel_id, data.platform);
+                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:not_enough_rights", data.channel_id, data.platform));
                         }
                     }
                     else
                     {
                         if (Maintenance.channels_7tv_emotes.ContainsKey(data.channel_id))
-                            resultMessage = TranslationManager.GetTranslation(data.user.language, "command:emotes:7tv:info", data.channel_id, data.platform)
-                                .Replace("%emotes%", Maintenance.channels_7tv_emotes[data.channel_id].emotes.Count().ToString());
+                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:emotes:7tv:info", data.channel_id, data.platform)
+                                .Replace("%emotes%", Maintenance.channels_7tv_emotes[data.channel_id].emotes.Count().ToString()));
                         else
                         {
                             await Utils.Emotes.EmoteUpdate(data.channel, data.channel_id);
                             if (Maintenance.channels_7tv_emotes[data.channel_id].emotes.Count > 0)
-                                resultMessage = TranslationManager.GetTranslation(data.user.language, "command:emotes:7tv:info", data.channel_id, data.platform)
-                                    .Replace("%emotes%", Maintenance.channels_7tv_emotes[data.channel_id].emotes.Count().ToString());
+                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:emotes:7tv:info", data.channel_id, data.platform)
+                                    .Replace("%emotes%", Maintenance.channels_7tv_emotes[data.channel_id].emotes.Count().ToString()));
                             else
-                                resultMessage = TranslationManager.GetTranslation(data.user.language, "command:emotes:7tv:empty", data.channel_id, data.platform);
+                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:emotes:7tv:empty", data.channel_id, data.platform));
                         }
                     }
-
-                    return new()
-                    {
-                        message = resultMessage,
-                        safe_execute = false,
-                        description = "",
-                        author = "",
-                        image_link = "",
-                        thumbnail_link = "",
-                        footer = "",
-                        is_embed = true,
-                        is_ephemeral = false,
-                        title = "",
-                        embed_color = (Discord.Color)Color.Green,
-                        nickname_color = ChatColorPresets.YellowGreen
-                    };
                 }
                 catch (Exception e)
                 {
-                    return new()
-                    {
-                        message = "",
-                        safe_execute = false,
-                        description = "",
-                        author = "",
-                        image_link = "",
-                        thumbnail_link = "",
-                        footer = "",
-                        is_embed = true,
-                        is_ephemeral = false,
-                        title = "",
-                        embed_color = (Discord.Color)Color.Green,
-                        nickname_color = ChatColorPresets.YellowGreen,
-                        is_error = true,
-                        exception = e
-                    };
+                    commandReturn.SetError(e);
                 }
+
+                return commandReturn;
             }
 
             #region 7tv Is Shit

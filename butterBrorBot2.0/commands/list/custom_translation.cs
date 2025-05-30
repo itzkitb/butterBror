@@ -11,36 +11,35 @@ namespace butterBror
         {
             public static CommandInfo Info = new()
             {
-                name = "CustomTranslation",
-                author = "@ItzKITb",
-                author_link = "twitch.tv/itzkitb",
-                author_avatar = "https://static-cdn.jtvnw.net/jtv_user_pictures/c3a9af55-d7af-4b4a-82de-39a4d8b296d3-profile_image-70x70.png",
-                description = new()
+                Name = "CustomTranslation",
+                Author = "@ItzKITb",
+                AuthorLink = "twitch.tv/itzkitb",
+                AuthorAvatar = "https://static-cdn.jtvnw.net/jtv_user_pictures/c3a9af55-d7af-4b4a-82de-39a4d8b296d3-profile_image-70x70.png",
+                Description = new()
                 {
                     { "ru", "Кастомизируй свой канал смешными сообщениями, не будь занудой!" },
                     { "en", "Customize your channel with funny messages, don't be a bore!" }
                 },
-                wiki_link = "https://itzkitb.lol/bot/command?q=customtranslation",
-                cooldown_per_user = 10,
-                cooldown_global = 5,
-                aliases = ["CustomTranslation", "ct", "кастомныйперевод", "кп"],
-                arguments = "(set [paramName] [en/ru] [text])/(get [paramName] [en/ru])/(original [paramName] [en/ru])/(reset [paramName] [en/ru])",
-                cooldown_reset = true,
-                creation_date = DateTime.Parse("08/05/2024"),
-                is_for_bot_moderator = false,
-                is_for_bot_developer = false,
-                is_for_channel_moderator = false,
-                platforms = [Platforms.Twitch, Platforms.Telegram, Platforms.Discord]
+                WikiLink = "https://itzkitb.lol/bot/command?q=customtranslation",
+                CooldownPerUser = 10,
+                CooldownPerChannel = 5,
+                Aliases = ["CustomTranslation", "ct", "кастомныйперевод", "кп"],
+                Arguments = "(set [paramName] [en/ru] [text])/(get [paramName] [en/ru])/(original [paramName] [en/ru])/(reset [paramName] [en/ru])",
+                CooldownReset = true,
+                CreationDate = DateTime.Parse("08/05/2024"),
+                IsForBotModerator = false,
+                IsForBotDeveloper = false,
+                IsForChannelModerator = false,
+                Platforms = [Platforms.Twitch, Platforms.Telegram, Platforms.Discord],
+                is_on_development = true
             };
             public CommandReturn Index(CommandData data)
             {
                 Engine.Statistics.functions_used.Add();
+                CommandReturn commandReturn = new CommandReturn();
+
                 try
                 {
-                    Color resultColor = Color.Green;
-                    ChatColorPresets resultNicknameColor = ChatColorPresets.YellowGreen;
-
-                    string resultMessage = "";
                     string[] setAliases = ["set", "s", "установить", "сет", "с", "у"];
                     string[] getAliases = ["get", "g", "гет", "получить", "п", "г"];
                     string[] originalAliases = ["original", "оригинал", "о", "o"];
@@ -70,9 +69,8 @@ namespace butterBror
                                         string text = string.Join(' ', textArgs);
                                         if (uneditableitems.Contains(paramName))
                                         {
-                                            resultMessage = TranslationManager.GetTranslation(data.user.language, "error:translation_secured", "", data.platform);
-                                            resultNicknameColor = ChatColorPresets.Red;
-                                            resultColor = Color.Red;
+                                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:translation_secured", "", data.platform));
+                                            commandReturn.SetColor(ChatColorPresets.Red);
                                         }
                                         else
                                         {
@@ -81,56 +79,52 @@ namespace butterBror
                                                 if (TranslationManager.SetCustomTranslation(paramName, text, data.channel_id, lang, data.platform))
                                                 {
                                                     TranslationManager.UpdateTranslation(lang, data.channel_id, data.platform);
-                                                    resultMessage = TextUtil.ArgumentReplacement(TranslationManager.GetTranslation(data.user.language, "command:custom_translation:set", "", data.platform),
-                                                        "key", paramName);
+                                                    commandReturn.SetMessage(TextUtil.ArgumentReplacement(TranslationManager.GetTranslation(data.user.language, "command:custom_translation:set", "", data.platform),
+                                                        "key", paramName));
                                                 }
                                                 else
                                                 {
-                                                    resultMessage = TranslationManager.GetTranslation(data.user.language, "error:translation_set", "", data.platform);
-                                                    resultNicknameColor = ChatColorPresets.Red;
-                                                    resultColor = Color.Red;
+                                                    commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:translation_set", "", data.platform));
+                                                    commandReturn.SetColor(ChatColorPresets.Red);
                                                 }
                                             }
                                             else
                                             {
-                                                resultMessage = TranslationManager.GetTranslation(data.user.language, "error:translation_key_is_not_exist", "", data.platform);
-                                                resultNicknameColor = ChatColorPresets.GoldenRod;
-                                                resultColor = Color.Gold;
+                                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:translation_key_is_not_exist", "", data.platform));
+                                                commandReturn.SetColor(ChatColorPresets.GoldenRod);
                                             }
                                         }
                                     }
                                     else
                                     {
-                                        resultMessage = TextUtil.ArgumentReplacement(TranslationManager.GetTranslation(data.user.language, "error:not_enough_arguments", "", data.platform),
-                                            "command_example", "#ct set [paramName] [en/ru] [text]");
-                                        resultNicknameColor = ChatColorPresets.Red;
-                                        resultColor = Color.Red;
+                                        commandReturn.SetMessage(TextUtil.ArgumentReplacement(TranslationManager.GetTranslation(data.user.language, "error:not_enough_arguments", "", data.platform),
+                                            "command_example", "#ct set [paramName] [en/ru] [text]"));
+                                        commandReturn.SetColor(ChatColorPresets.Red);
                                     }
                                 }
                                 else if (getAliases.Contains(arg1) && ((bool)data.user.channel_moderator || (bool)data.user.channel_broadcaster || (bool)data.user.bot_moderator))
                                 {
                                     if (TranslationManager.TranslateContains(paramName))
                                     {
-                                        resultMessage = TextUtil.ArgumentsReplacement(TranslationManager.GetTranslation(data.user.language, "command:custom_translation:get", "", data.platform),
+                                        commandReturn.SetMessage(TextUtil.ArgumentsReplacement(TranslationManager.GetTranslation(data.user.language, "command:custom_translation:get", "", data.platform),
                                             new(){
                                                 { "key", paramName },
                                                 { "translation", TranslationManager.GetTranslation(lang, paramName, data.channel_id, data.platform) }
-                                            });
+                                            }));
                                     }
                                     else
                                     {
-                                        resultMessage = TranslationManager.GetTranslation(data.user.language, "error:translation_key_is_not_exist", "", data.platform);
-                                        resultNicknameColor = ChatColorPresets.GoldenRod;
-                                        resultColor = Color.Gold;
+                                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:translation_key_is_not_exist", "", data.platform));
+                                        commandReturn.SetColor(ChatColorPresets.GoldenRod);
                                     }
                                 }
                                 else if (originalAliases.Contains(arg1))
                                 {
-                                    resultMessage = TextUtil.ArgumentsReplacement(TranslationManager.GetTranslation(data.user.language, "command:custom_translation:original", "", data.platform),
+                                    commandReturn.SetMessage(TextUtil.ArgumentsReplacement(TranslationManager.GetTranslation(data.user.language, "command:custom_translation:original", "", data.platform),
                                         new(){
                                             { "key", paramName },
                                             { "translation", TranslationManager.GetTranslation(lang, paramName, string.Empty, data.platform) }
-                                       });
+                                       }));
                                 }
                                 else if (deleteAliases.Contains(arg1) && ((bool)data.user.channel_moderator || (bool)data.user.channel_broadcaster || (bool)data.user.bot_moderator))
                                 {
@@ -138,85 +132,50 @@ namespace butterBror
                                     {
                                         if (TranslationManager.DeleteCustomTranslation(paramName, data.channel_id, lang, data.platform))
                                         {
-                                            resultMessage = TextUtil.ArgumentReplacement(TranslationManager.GetTranslation(data.user.language, "command:custom_translation:delete", "", data.platform), "key", paramName);
+                                            commandReturn.SetMessage(TextUtil.ArgumentReplacement(TranslationManager.GetTranslation(data.user.language, "command:custom_translation:delete", "", data.platform), "key", paramName));
                                             TranslationManager.UpdateTranslation(lang, data.channel_id, data.platform);
                                         }
                                         else
                                         {
-                                            resultMessage = TranslationManager.GetTranslation(data.user.language, "error:translation_delete", "", data.platform);
-                                            resultNicknameColor = ChatColorPresets.Red;
-                                            resultColor = Color.Red;
+                                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:translation_delete", "", data.platform));
+                                            commandReturn.SetColor(ChatColorPresets.Red);
                                         }
                                     }
                                     else
                                     {
-                                        resultMessage = TranslationManager.GetTranslation(data.user.language, "error:translation_key_is_not_exist", "", data.platform);
-                                        resultNicknameColor = ChatColorPresets.GoldenRod;
-                                        resultColor = Color.Gold;
+                                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:translation_key_is_not_exist", "", data.platform));
+                                        commandReturn.SetColor(ChatColorPresets.GoldenRod);
                                     }
                                 }
                             }
                             else
                             {
-                                resultMessage = TextUtil.ArgumentsReplacement(TranslationManager.GetTranslation(data.user.language, "error:translation_lang_is_not_exist", "", data.platform),
+                                commandReturn.SetMessage(TextUtil.ArgumentsReplacement(TranslationManager.GetTranslation(data.user.language, "error:translation_lang_is_not_exist", "", data.platform),
                                         new(){
                                             { "lang", lang },
                                             { "langs", string.Join(", ", langs) }
-                                       });
-                                resultNicknameColor = ChatColorPresets.Red;
-                                resultColor = Color.Red;
+                                       }));
+                                commandReturn.SetColor(ChatColorPresets.Red);
                             }
                         }
                         catch (Exception ex)
                         {
-                            resultMessage = TranslationManager.GetTranslation(data.user.language, "error:unknown", data.channel, data.platform);
-                            resultNicknameColor = ChatColorPresets.Red;
-                            resultColor = Color.Red;
+                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:unknown", data.channel, data.platform));
+                            commandReturn.SetColor(ChatColorPresets.Red);
                         }
                     }
                     else
                     {
-                        resultMessage = TextUtil.ArgumentReplacement(TranslationManager.GetTranslation(data.user.language, "error:not_enough_arguments", "", data.platform), "command_example", "#ct set [paramName] [en/ru] [text]");
-                        resultNicknameColor = ChatColorPresets.Red;
-                        resultColor = Color.Red;
+                        commandReturn.SetMessage(TextUtil.ArgumentReplacement(TranslationManager.GetTranslation(data.user.language, "error:not_enough_arguments", "", data.platform), "command_example", "#ct set [paramName] [en/ru] [text]"));
+                        commandReturn.SetColor(ChatColorPresets.Red);
                     }
-
-                    return new()
-                    {
-                        message = resultMessage,
-                        safe_execute = false,
-                        description = "",
-                        author = "",
-                        image_link = "",
-                        thumbnail_link = "",
-                        footer = "",
-                        is_embed = false,
-                        is_ephemeral = false,
-                        title = "",
-                        embed_color = resultColor,
-                        nickname_color = resultNicknameColor
-                    };
                 }
                 catch (Exception e)
                 {
-                    return new()
-                    {
-                        message = "",
-                        safe_execute = false,
-                        description = "",
-                        author = "",
-                        image_link = "",
-                        thumbnail_link = "",
-                        footer = "",
-                        is_embed = true,
-                        is_ephemeral = false,
-                        title = "",
-                        embed_color = Color.Green,
-                        nickname_color = ChatColorPresets.YellowGreen,
-                        is_error = true,
-                        exception = e
-                    };
+                    commandReturn.SetError(e);
                 }
+
+                return commandReturn;
             }
         }
     }

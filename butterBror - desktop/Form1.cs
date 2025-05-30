@@ -40,6 +40,8 @@ namespace butterBror___desktop
         {
             InitializeComponent();
 
+            this.Text = "butterBror";
+
             cache_reads.Controls.Add(cache_read_chart);
             cache_writes.Controls.Add(cache_write_chart);
             files_read.Controls.Add(files_read_chart);
@@ -58,9 +60,6 @@ namespace butterBror___desktop
             consoles.Add("err", errors_console);
             consoles.Add("main", main_console);
             consoles.Add("discord", info_console);
-            consoles.Add("tw_chat", chat_console);
-            consoles.Add("ds_chat", chat_console);
-            consoles.Add("tg_chat", chat_console);
             consoles.Add("cafus", cafus_console);
             consoles.Add("nbw", nbw_console);
 
@@ -94,7 +93,7 @@ namespace butterBror___desktop
             {
                 if (this.IsDisposed) return;
 
-                long ram = Process.GetCurrentProcess().WorkingSet64 / 1024 / 1024;
+                long ram = Process.GetCurrentProcess().PrivateMemorySize64 / 1024 / 1024;
 
                 this.Invoke((MethodInvoker)delegate
                 {
@@ -160,11 +159,6 @@ namespace butterBror___desktop
                 values.RemoveAt(0);
             }
             chart.UpdateValues(values);
-        }
-
-        private void chat_console_Click(object sender, EventArgs e)
-        {
-            Clipboard.SetText(chat_console.Text);
         }
 
         private void kernel_console_Click(object sender, EventArgs e)

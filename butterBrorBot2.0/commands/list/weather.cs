@@ -17,30 +17,32 @@ namespace butterBror
         {
             public static CommandInfo Info = new()
             {
-                name = "Weather",
-                author = "@ItzKITb",
-                author_link = "twitch.tv/itzkitb",
-                author_avatar = "https://static-cdn.jtvnw.net/jtv_user_pictures/c3a9af55-d7af-4b4a-82de-39a4d8b296d3-profile_image-70x70.png",
-                description = new()
+                Name = "Weather",
+                Author = "@ItzKITb",
+                AuthorLink = "twitch.tv/itzkitb",
+                AuthorAvatar = "https://static-cdn.jtvnw.net/jtv_user_pictures/c3a9af55-d7af-4b4a-82de-39a4d8b296d3-profile_image-70x70.png",
+                Description = new()
                 {
                     { "ru", "Узнать погоду в городе" },
                     { "en", "Find out the weather in the city" }
                 },
-                wiki_link = "https://itzkitb.ru/bot/command?name=weather",
-                cooldown_per_user = 10,
-                cooldown_global = 5,
-                aliases = ["weather", "погода", "wthr", "пгд", "пугода"],
-                arguments = "(city name)",
-                cooldown_reset = false,
-                creation_date = DateTime.Parse("07/04/2024"),
-                is_for_bot_moderator = false,
-                is_for_bot_developer = false,
-                is_for_channel_moderator = false,
-                platforms = [Platforms.Twitch, Platforms.Telegram, Platforms.Discord]
+                WikiLink = "https://itzkitb.ru/bot/command?name=weather",
+                CooldownPerUser = 10,
+                CooldownPerChannel = 5,
+                Aliases = ["weather", "погода", "wthr", "пгд", "пугода"],
+                Arguments = "(city name)",
+                CooldownReset = false,
+                CreationDate = DateTime.Parse("07/04/2024"),
+                IsForBotModerator = false,
+                IsForBotDeveloper = false,
+                IsForChannelModerator = false,
+                Platforms = [Platforms.Twitch, Platforms.Telegram, Platforms.Discord]
             };
             public CommandReturn Index(CommandData data)
             {
                 Engine.Statistics.functions_used.Add();
+                CommandReturn commandReturn = new CommandReturn();
+
                 try
                 {
                     string[] show_alias = ["show", "s", "показать", "п"];
@@ -56,11 +58,6 @@ namespace butterBror
                     string? setLocation = "";
                     long page = 0;
                     long show_place_id = 0;
-
-                    string result_message = "";
-                    string result_message_title = "";
-                    Color result_color = Color.Green;
-                    ChatColorPresets result_nickname_color = ChatColorPresets.YellowGreen;
 
                     if (data.platform is Platforms.Twitch || data.platform is Platforms.Telegram)
                     {
@@ -160,26 +157,21 @@ namespace butterBror
                                     }
                                 }
                                 locationPage = (locationPage + "\n").Replace(", \n", "");
-                                result_message = TranslationManager.GetTranslation(data.user.language, "command:weather:a_few_places", data.channel_id, data.platform)
+                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:weather:a_few_places", data.channel_id, data.platform)
                                     .Replace("%places%", locationPage)
                                     .Replace("%page%", page.ToString())
-                                    .Replace("%pages%", maxPages.ToString());
-                                result_message_title = TranslationManager.GetTranslation(data.user.language, "discord:weather:a_few_places:title", data.channel_id, data.platform);
+                                    .Replace("%pages%", maxPages.ToString()));
                             }
                             else
                             {
-                                result_message = TranslationManager.GetTranslation(data.user.language, "error:page_not_found", data.channel_id, data.platform);
-                                result_message_title = TranslationManager.GetTranslation(data.user.language, "discord:weather:a_few_places:title", data.channel_id, data.platform);
-                                result_color = Color.Red;
-                                result_nickname_color = ChatColorPresets.Red;
+                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:page_not_found", data.channel_id, data.platform));
+                                commandReturn.SetColor(ChatColorPresets.Red);
                             }
                         }
                         else
                         {
-                            result_message = TranslationManager.GetTranslation(data.user.language, "error:no_pages", data.channel_id, data.platform);
-                            result_message_title = TranslationManager.GetTranslation(data.user.language, "discord:weather:a_few_places:title", data.channel_id, data.platform);
-                            result_color = Color.Red;
-                            result_nickname_color = ChatColorPresets.Red;
+                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:no_pages", data.channel_id, data.platform));
+                            commandReturn.SetColor(ChatColorPresets.Red);
                         }
                     }
                     else if (is_show_action)
@@ -213,7 +205,7 @@ namespace butterBror
                                 var result = weather.Result.current;
                                 if (result.temperature != -400)
                                 {
-                                    result_message = TranslationManager.GetTranslation(data.user.language, "command:weather", data.channel_id, data.platform)
+                                    commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:weather", data.channel_id, data.platform)
                                         .Replace("%emote%", GetEmoji(result.temperature))
                                         .Replace("%name%", weatherResultLocations[(int)show_place_id - 1].name)
                                         .Replace("%temperature%", result.temperature.ToString())
@@ -224,31 +216,24 @@ namespace butterBror
                                         .Replace("%uvIndex%", result.uv_index.ToString())
                                         .Replace("%humidity%", result.humidity.ToString())
                                         .Replace("%visibility%", result.visibility.ToString())
-                                        .Replace("%skyEmote%", GetSummaryEmoji(result.summary.ToString()));
-                                    result_message_title = TranslationManager.GetTranslation(data.user.language, "discord:weather:title", data.channel_id, data.platform);
+                                        .Replace("%skyEmote%", GetSummaryEmoji(result.summary.ToString())));
                                 }
                                 else
                                 {
-                                    result_message = TranslationManager.GetTranslation(data.user.language, "error:place_not_found", data.channel_id, data.platform);
-                                    result_message_title = TranslationManager.GetTranslation(data.user.language, "discord:error:title", data.channel_id, data.platform);
-                                    result_color = Color.Red;
-                                    result_nickname_color = ChatColorPresets.Red;
+                                    commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:place_not_found", data.channel_id, data.platform));
+                                    commandReturn.SetColor(ChatColorPresets.Red);
                                 }
                             }
                             else
                             {
-                                result_message = TranslationManager.GetTranslation(data.user.language, "error:page_not_found", data.channel_id, data.platform);
-                                result_message_title = TranslationManager.GetTranslation(data.user.language, "discord:error:title", data.channel_id, data.platform);
-                                result_color = Color.Red;
-                                result_nickname_color = ChatColorPresets.Red;
+                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:page_not_found", data.channel_id, data.platform));
+                                commandReturn.SetColor(ChatColorPresets.Red);
                             }
                         }
                         else
                         {
-                            result_message = TranslationManager.GetTranslation(data.user.language, "error:no_pages", data.channel_id, data.platform);
-                            result_message_title = TranslationManager.GetTranslation(data.user.language, "discord:error:title", data.channel_id, data.platform);
-                            result_color = Color.Red;
-                            result_nickname_color = ChatColorPresets.Red;
+                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:no_pages", data.channel_id, data.platform));
+                            commandReturn.SetColor(ChatColorPresets.Red);
                         }
                     }
                     else if (is_set_action)
@@ -256,10 +241,8 @@ namespace butterBror
                         var places = GetLocation(setLocation).Result;
                         if (places.Count == 0 || places[0].name == "err")
                         {
-                            result_message = TranslationManager.GetTranslation(data.user.language, "error:place_not_found", data.channel_id, data.platform);
-                            result_message_title = TranslationManager.GetTranslation(data.user.language, "discord:error:title", data.channel_id, data.platform);
-                            result_color = Color.Red;
-                            result_nickname_color = ChatColorPresets.Red;
+                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:place_not_found", data.channel_id, data.platform));
+                            commandReturn.SetColor(ChatColorPresets.Red);
                         }
                         else
                         {
@@ -268,25 +251,20 @@ namespace butterBror
                             UsersData.Save(data.user_id, "userLat", first.lat, data.platform);
                             UsersData.Save(data.user_id, "userLon", first.lon, data.platform);
 
-                            result_message = TranslationManager.GetTranslation(data.user.language, "command:weather:set_location", data.channel_id, data.platform, new Dictionary<string, string> { { "%city%", first.name } });
-                            result_message_title = TranslationManager.GetTranslation(data.user.language, "discord:weather:title", data.channel_id, data.platform);
-                            result_color = Color.Green;
-                            result_nickname_color = ChatColorPresets.YellowGreen;
+                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:weather:set_location", data.channel_id, data.platform, new Dictionary<string, string> { { "%city%", first.name } }));
+                            commandReturn.SetColor(ChatColorPresets.YellowGreen);
                         }
                     }
                     else if (is_get_action)
                     {
                         if (UsersData.Get<string>(data.user_id, "userPlace", data.platform) is not "")
                         {
-                            result_message = TranslationManager.GetTranslation(data.user.language, "command:weather:get_location", data.channel_id, data.platform, new() { { "city", UsersData.Get<string>(data.user_id, "userPlace", data.platform) } });
-                            result_message_title = TranslationManager.GetTranslation(data.user.language, "discord:weather:title", data.channel_id, data.platform);
+                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:weather:get_location", data.channel_id, data.platform, new() { { "city", UsersData.Get<string>(data.user_id, "userPlace", data.platform) } }));
                         }
                         else
                         {
-                            result_message = TranslationManager.GetTranslation(data.user.language, "error:location_not_set", data.channel_id, data.platform);
-                            result_message_title = TranslationManager.GetTranslation(data.user.language, "discord:error:title", data.channel_id, data.platform);
-                            result_color = Color.Red;
-                            result_nickname_color = ChatColorPresets.Red;
+                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:location_not_set", data.channel_id, data.platform));
+                            commandReturn.SetColor(ChatColorPresets.Red);
                         }
                     }
                     else
@@ -299,7 +277,7 @@ namespace butterBror
                                 var result = weather.Result.current;
                                 if (result.temperature != -400)
                                 {
-                                    result_message = TranslationManager.GetTranslation(data.user.language, "command:weather", data.channel_id, data.platform)
+                                    commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:weather", data.channel_id, data.platform)
                                         .Replace("%emote%", GetEmoji(result.temperature))
                                         .Replace("%name%", UsersData.Get<string>(data.user_id, "userPlace", data.platform))
                                         .Replace("%temperature%", result.temperature.ToString())
@@ -310,23 +288,18 @@ namespace butterBror
                                         .Replace("%uvIndex%", result.uv_index.ToString())
                                         .Replace("%humidity%", result.humidity.ToString())
                                         .Replace("%visibility%", result.visibility.ToString())
-                                        .Replace("%skyEmote%", GetSummaryEmoji(result.summary.ToString()));
-                                    result_message_title = TranslationManager.GetTranslation(data.user.language, "discord:weather:title", data.channel_id, data.platform);
+                                        .Replace("%skyEmote%", GetSummaryEmoji(result.summary.ToString())));
                                 }
                                 else
                                 {
-                                    result_message = TranslationManager.GetTranslation(data.user.language, "error:place_not_found", data.channel_id, data.platform);
-                                    result_message_title = TranslationManager.GetTranslation(data.user.language, "discord:error:title", data.channel_id, data.platform);
-                                    result_color = Color.Red;
-                                    result_nickname_color = ChatColorPresets.Red;
+                                    commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:place_not_found", data.channel_id, data.platform));
+                                    commandReturn.SetColor(ChatColorPresets.Red);
                                 }
                             }
                             else
                             {
-                                result_message = TranslationManager.GetTranslation(data.user.language, "error:location_not_set", data.channel_id, data.platform);
-                                result_message_title = TranslationManager.GetTranslation(data.user.language, "discord:error:title", data.channel_id, data.platform);
-                                result_color = Color.Red;
-                                result_nickname_color = ChatColorPresets.Red;
+                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:location_not_set", data.channel_id, data.platform));
+                                commandReturn.SetColor(ChatColorPresets.Red);
                             }
                         }
                         else
@@ -336,19 +309,15 @@ namespace butterBror
                                 var result_location = GetLocation(location).Result;
                                 if (result_location.Count == 0)
                                 {
-                                    result_message = TranslationManager.GetTranslation(data.user.language, "error:place_not_found", data.channel_id, data.platform);
-                                    result_message_title = TranslationManager.GetTranslation(data.user.language, "discord:error:title", data.channel_id, data.platform);
-                                    result_color = Color.Red;
-                                    result_nickname_color = ChatColorPresets.Red;
+                                    commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:place_not_found", data.channel_id, data.platform));
+                                    commandReturn.SetColor(ChatColorPresets.Red);
                                 }
                                 else if (result_location.Count == 1)
                                 {
                                     if (result_location.ElementAt(0).name == "err")
                                     {
-                                        result_message = TranslationManager.GetTranslation(data.user.language, "error:place_not_found", data.channel_id, data.platform);
-                                        result_message_title = TranslationManager.GetTranslation(data.user.language, "discord:error:title", data.channel_id, data.platform);
-                                        result_color = Color.Red;
-                                        result_nickname_color = ChatColorPresets.Red;
+                                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:place_not_found", data.channel_id, data.platform));
+                                        commandReturn.SetColor(ChatColorPresets.Red);
                                     }
                                     else
                                     {
@@ -357,7 +326,7 @@ namespace butterBror
                                         var result = weather.Result.current;
                                         if (result.temperature != -400)
                                         {
-                                            result_message = TranslationManager.GetTranslation(data.user.language, "command:weather", data.channel_id, data.platform)
+                                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:weather", data.channel_id, data.platform)
                                                 .Replace("%emote%", GetEmoji(result.temperature))
                                                 .Replace("%name%", result_location[0].name)
                                                 .Replace("%temperature%", result.temperature.ToString())
@@ -368,15 +337,12 @@ namespace butterBror
                                                 .Replace("%uvIndex%", result.uv_index.ToString())
                                                 .Replace("%humidity%", result.humidity.ToString())
                                                 .Replace("%visibility%", result.visibility.ToString())
-                                                .Replace("%skyEmote%", GetSummaryEmoji(result.summary.ToString()));
-                                            result_message_title = TranslationManager.GetTranslation(data.user.language, "discord:weather:title", data.channel_id, data.platform);
+                                                .Replace("%skyEmote%", GetSummaryEmoji(result.summary.ToString())));
                                         }
                                         else
                                         {
-                                            result_message = TranslationManager.GetTranslation(data.user.language, "error:place_not_found", data.channel_id, data.platform);
-                                            result_message_title = TranslationManager.GetTranslation(data.user.language, "discord:error:title", data.channel_id, data.platform);
-                                            result_color = Color.Red;
-                                            result_nickname_color = ChatColorPresets.Red;
+                                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:place_not_found", data.channel_id, data.platform));
+                                            commandReturn.SetColor(ChatColorPresets.Red);
                                         }
                                     }
                                 }
@@ -410,59 +376,27 @@ namespace butterBror
                                         }
                                     }
                                     locationPage = (locationPage + "\n").Replace(", \n", "");
-                                    result_message = TranslationManager.GetTranslation(data.user.language, "command:weather:a_few_places", data.channel_id, data.platform)
+                                    commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:weather:a_few_places", data.channel_id, data.platform)
                                         .Replace("%places%", locationPage)
                                         .Replace("%page%", "1")
-                                        .Replace("%pages%", maxPage.ToString());
-                                    result_message_title = TranslationManager.GetTranslation(data.user.language, "discord:weather:a_few_places:title", data.channel_id, data.platform);
+                                        .Replace("%pages%", maxPage.ToString()));
                                 }
                             }
                             catch (Exception ex)
                             {
                                 LogWorker.Log(ex.Message, LogWorker.LogTypes.Err, "command\\Weather\\Index");
-                                result_message = TranslationManager.GetTranslation(data.user.language, "error:place_not_found", data.channel_id, data.platform);
-                                result_message_title = TranslationManager.GetTranslation(data.user.language, "discord:error:title", data.channel_id, data.platform);
-                                result_color = Color.Red;
-                                result_nickname_color = ChatColorPresets.Red;
+                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:place_not_found", data.channel_id, data.platform));
+                                commandReturn.SetColor(ChatColorPresets.Red);
                             }
                         }
                     }
-                    return new()
-                    {
-                        message = result_message,
-                        safe_execute = false,
-                        description = "",
-                        author = "",
-                        image_link = "",
-                        thumbnail_link = "",
-                        footer = "",
-                        is_embed = false,
-                        is_ephemeral = false,
-                        title = result_message_title,
-                        embed_color = result_color,
-                        nickname_color = result_nickname_color
-                    };
                 }
                 catch (Exception e)
                 {
-                    return new()
-                    {
-                        message = "",
-                        safe_execute = false,
-                        description = "",
-                        author = "",
-                        image_link = "",
-                        thumbnail_link = "",
-                        footer = "",
-                        is_embed = true,
-                        is_ephemeral = false,
-                        title = "",
-                        embed_color = Color.Green,
-                        nickname_color = ChatColorPresets.YellowGreen,
-                        is_error = true,
-                        exception = e
-                    };
+                    commandReturn.SetError(e);
                 }
+
+                return commandReturn;
             }
         }
     }

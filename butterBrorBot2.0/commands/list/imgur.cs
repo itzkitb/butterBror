@@ -11,35 +11,34 @@ namespace butterBror
         {
             public static CommandInfo Info = new()
             {
-                name = "UploadToImgur",
-                author = "@ItzKITb",
-                author_link = "twitch.tv/itzkitb",
-                author_avatar = "https://static-cdn.jtvnw.net/jtv_user_pictures/c3a9af55-d7af-4b4a-82de-39a4d8b296d3-profile_image-70x70.png",
-                description = new() { 
+                Name = "UploadToImgur",
+                Author = "@ItzKITb",
+                AuthorLink = "twitch.tv/itzkitb",
+                AuthorAvatar = "https://static-cdn.jtvnw.net/jtv_user_pictures/c3a9af55-d7af-4b4a-82de-39a4d8b296d3-profile_image-70x70.png",
+                Description = new() { 
                     { "ru", "Загрузить картинку на imgur.com" }, 
                     { "en", "Upload image to imgur.com" } 
                 },
-                wiki_link = "https://itzkitb.lol/bot/command?q=imguruploader",
-                cooldown_per_user = 30,
-                cooldown_global = 1,
-                aliases = ["ui", "imgur", "upload", "uploadimage", "загрузитькартинку", "зк", "imguruploadimage"],
-                arguments = "[image url]",
-                cooldown_reset = true,
-                creation_date = DateTime.Parse("07/04/2024"),
-                is_for_bot_moderator = false,
-                is_for_bot_developer = false,
-                is_for_channel_moderator = false,
-                platforms = [Platforms.Twitch, Platforms.Telegram, Platforms.Discord]
+                WikiLink = "https://itzkitb.lol/bot/command?q=imguruploader",
+                CooldownPerUser = 30,
+                CooldownPerChannel = 1,
+                Aliases = ["ui", "imgur", "upload", "uploadimage", "загрузитькартинку", "зк", "imguruploadimage"],
+                Arguments = "[image url]",
+                CooldownReset = true,
+                CreationDate = DateTime.Parse("07/04/2024"),
+                IsForBotModerator = false,
+                IsForBotDeveloper = false,
+                IsForChannelModerator = false,
+                Platforms = [Platforms.Twitch, Platforms.Telegram, Platforms.Discord]
             };
 
             public CommandReturn Index(CommandData data)
             {
                 Engine.Statistics.functions_used.Add();
+                CommandReturn commandReturn = new CommandReturn();
+
                 try
                 {
-                    Color resultColor = Color.Red;
-                    ChatColorPresets resultNicknameColor = ChatColorPresets.YellowGreen;
-
                     string? url = "";
                     if (data.platform == Platforms.Twitch)
                     {
@@ -49,7 +48,7 @@ namespace butterBror
                     {
                         url = data.discord_arguments["url"];
                     }
-                    string resultMessage = "";
+
                     if (url != "")
                     {
                         int stage = 0;
@@ -65,7 +64,7 @@ namespace butterBror
                             string response = responseTask.Result;
                             stage++;
                             string link = Utils.API.Imgur.GetLinkFromResponse(response);
-                            resultMessage = TranslationManager.GetTranslation(data.user.language, "command:imgur:uploaded", data.channel_id, data.platform).Replace("%link%", link);
+                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:imgur:uploaded", data.channel_id, data.platform).Replace("%link%", link));
                         }
                         catch (Exception ex)
                         {
@@ -85,50 +84,21 @@ namespace butterBror
                                     errorTranslation = "error:unhandled";
                                     break;
                             }
-                            resultMessage = TranslationManager.GetTranslation(data.user.language, errorTranslation, data.channel_id, data.platform);
+                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, errorTranslation, data.channel_id, data.platform));
                             Utils.Console.WriteError(ex, errorTranslation);
                         }
                     }
                     else
                     {
-                        resultMessage = TranslationManager.GetTranslation(data.user.language, "error:not_enough_arguments", data.channel_id, data.platform).Replace("%command_example%", "imguruploadimage [url]");
+                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:not_enough_arguments", data.channel_id, data.platform).Replace("%command_example%", "imguruploadimage [url]"));
                     }
-                    return new()
-                    {
-                        message = resultMessage,
-                        safe_execute = true,
-                        description = "",
-                        author = "",
-                        image_link = "",
-                        thumbnail_link = "",
-                        footer = "",
-                        is_embed = false,
-                        is_ephemeral = false,
-                        title = "",
-                        embed_color = resultColor,
-                        nickname_color = resultNicknameColor
-                    };
                 }
                 catch (Exception e)
                 {
-                    return new()
-                    {
-                        message = "",
-                        safe_execute = false,
-                        description = "",
-                        author = "",
-                        image_link = "",
-                        thumbnail_link = "",
-                        footer = "",
-                        is_embed = true,
-                        is_ephemeral = false,
-                        title = "",
-                        embed_color = Color.Green,
-                        nickname_color = ChatColorPresets.YellowGreen,
-                        is_error = true,
-                        exception = e
-                    };
+                    commandReturn.SetError(e);
                 }
+
+                return commandReturn;
             }
         }
     }

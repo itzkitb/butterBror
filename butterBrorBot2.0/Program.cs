@@ -34,11 +34,11 @@ namespace butterBror
         public  static int      users              = 0;
         public  static bool     restarting         = false;
         public  static bool     ready              = false;
-        public  static float    coins              = 0;
+        public  static float    Coins              = 0;
         public  static string   version            = "2.15";
-        public  static string   patch              = "A";
+        public  static string   patch              = "C";
         public  static string   previous_version;
-        public  static int      coin_dollars       = 0;
+        public  static int      BankDollars       = 0;
         public  static DateTime start_time         = new();
         private static float    last_coin_amount   = 0;
         public  static int      ticks              = 20;
@@ -49,6 +49,12 @@ namespace butterBror
         private static long     last_tick_count    = 0;
         public  static long     ticks_per_second   = 0;
         private static long     last_send_tick     = 0;
+
+        private static PerformanceCounter cpu = new PerformanceCounter("Processor", "% Processor Time", "_Total");
+        public static decimal cpu_counter = 0;
+        public static long    tps_counter = 0;
+        public static long    cpu_counter_items = 0;
+        public static long    tps_counter_items = 0;
 
         private class DankDB_previous_statistics
         {
@@ -113,6 +119,7 @@ namespace butterBror
         public static async void Start(string? mainPath = null, int customTickSpeed = 20)
         {
             Engine.Statistics.functions_used.Add();
+            cpu.NextValue();
 
             ticks = customTickSpeed;
             if (customTickSpeed > 1000)
@@ -212,6 +219,15 @@ namespace butterBror
             {
                 ticks_per_second = ticks_counter - last_tick_count;
                 last_tick_count  = ticks_counter;
+
+                tps_counter += ticks_per_second;
+                tps_counter_items++;
+
+                if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+                {
+                    cpu_counter += (decimal)cpu.NextValue();
+                    cpu_counter_items++;
+                }
             }, null, 0, 1000);
             Utils.Console.WriteLine($"TPS counter successfully started", "kernel");
 
@@ -270,31 +286,31 @@ namespace butterBror
 
                 DateTime startTime = DateTime.Now;
 
-                if (!restarting && coins != 0 && users != 0 && last_coin_amount != coins)
+                if (!restarting && Coins != 0 && users != 0 && last_coin_amount != Coins)
                 {
                     var date = DateTime.UtcNow;
                     Dictionary<string, dynamic> currencyData = new()
                             {
-                                    { "amount", coins },
+                                    { "amount", Coins },
                                     { "users", users },
-                                    { "dollars", coin_dollars },
-                                    { "cost", coin_dollars / coins },
-                                    { "middleBalance", coins / users }
+                                    { "dollars", BankDollars },
+                                    { "cost", BankDollars / Coins },
+                                    { "middleBalance", Coins / users }
                             };
 
                     if (!Maintenance.path_currency.IsNullOrEmpty())
                     {
-                        Manager.Save(Maintenance.path_currency, "totalAmount", coins);
+                        Manager.Save(Maintenance.path_currency, "totalAmount", Coins);
                         Manager.Save(Maintenance.path_currency, "totalUsers", users);
-                        Manager.Save(Maintenance.path_currency, "totalDollarsInTheBank", coin_dollars);
+                        Manager.Save(Maintenance.path_currency, "totalDollarsInTheBank", BankDollars);
                         Manager.Save(Maintenance.path_currency, $"[{date.Day}.{date.Month}.{date.Year}]", "");
-                        Manager.Save(Maintenance.path_currency, $"[{date.Day}.{date.Month}.{date.Year}] cost", (coin_dollars / coins));
-                        Manager.Save(Maintenance.path_currency, $"[{date.Day}.{date.Month}.{date.Year}] amount", coins);
+                        Manager.Save(Maintenance.path_currency, $"[{date.Day}.{date.Month}.{date.Year}] cost", (BankDollars / Coins));
+                        Manager.Save(Maintenance.path_currency, $"[{date.Day}.{date.Month}.{date.Year}] amount", Coins);
                         Manager.Save(Maintenance.path_currency, $"[{date.Day}.{date.Month}.{date.Year}] users", users);
-                        Manager.Save(Maintenance.path_currency, $"[{date.Day}.{date.Month}.{date.Year}] dollars", coin_dollars);
+                        Manager.Save(Maintenance.path_currency, $"[{date.Day}.{date.Month}.{date.Year}] dollars", BankDollars);
                     }
 
-                    last_coin_amount = coins;
+                    last_coin_amount = Coins;
                 }
 
                 if (DateTime.UtcNow.Minute % 10 == 0 && DateTime.UtcNow.Second == 0 && ticks_counter - last_send_tick > ticks)
@@ -408,6 +424,7 @@ namespace butterBror
         public static string telegram_url = "telegram.org";
         public static string twitch_url   = "twitch.tv";
         public static string discord_url  = "discord.com";
+        public static string seventv_url  = "7tv.app";
 
         public static string?  bot_name;
         public static string?  twitch_client_id;
@@ -436,8 +453,6 @@ namespace butterBror
         public  static ITelegramBotClient?     telegram_client;
         private static DateTime                bot_start_time              = DateTime.UtcNow;
         private static CancellationTokenSource telegram_cancellation_token = new CancellationTokenSource();
-        private static PerformanceCounter      cpu_counter                 = new PerformanceCounter("Processor", "% Processor Time", "_Total");
-        
 
         public static SevenTV.SevenTV                                                                sevenTv             = new SevenTV.SevenTV();
         public static SevenTvService                                                                 sevenTvService      = new SevenTvService(new HttpClient());
@@ -450,7 +465,6 @@ namespace butterBror
         public static async void Start(int ThreadID)
         {
             Engine.Statistics.functions_used.Add();
-            cpu_counter.NextValue();
             bot_start_time            = DateTime.UtcNow;
             Thread.CurrentThread.Name = ThreadID.ToString();
             Engine.ready              = false;
@@ -458,8 +472,8 @@ namespace butterBror
             // START
             if (FileUtil.FileExists(path_currency))
             {
-                Engine.coins = Manager.Get<float>(path_currency, "totalAmount");
-                Engine.coin_dollars = Manager.Get<int>(path_currency, "totalDollarsInTheBank");
+                Engine.Coins = Manager.Get<float>(path_currency, "totalAmount");
+                Engine.BankDollars = Manager.Get<int>(path_currency, "totalDollarsInTheBank");
                 Engine.users = Manager.Get<int>(path_currency, "totalUsers");
             }
 
@@ -632,19 +646,19 @@ namespace butterBror
                 .AddSingleton(discord_command_service)
                 .BuildServiceProvider();
 
-            discord_client.Log += DiscordEventHandler.LogAsync;
-            discord_client.JoinedGuild += DiscordEventHandler.ConnectToGuilt;
+            discord_client.Log += discord_events.LogAsync;
+            discord_client.JoinedGuild += discord_events.ConnectToGuilt;
             discord_client.Ready += DiscordWorker.ReadyAsync;
             discord_client.MessageReceived += DiscordWorker.MessageReceivedAsync;
-            discord_client.SlashCommandExecuted += DiscordEventHandler.SlashCommandHandler;
-            discord_client.ApplicationCommandCreated += DiscordEventHandler.ApplicationCommandCreated;
-            discord_client.ApplicationCommandDeleted += DiscordEventHandler.ApplicationCommandDeleted;
-            discord_client.ApplicationCommandUpdated += DiscordEventHandler.ApplicationCommandUpdated;
-            discord_client.ChannelCreated += DiscordEventHandler.ChannelCreated;
-            discord_client.ChannelDestroyed += DiscordEventHandler.ChannelDeleted;
-            discord_client.ChannelUpdated += DiscordEventHandler.ChannelUpdated;
-            discord_client.Connected += DiscordEventHandler.Connected;
-            discord_client.ButtonExecuted += DiscordEventHandler.ButtonTouched;
+            discord_client.SlashCommandExecuted += discord_events.SlashCommandHandler;
+            discord_client.ApplicationCommandCreated += discord_events.ApplicationCommandCreated;
+            discord_client.ApplicationCommandDeleted += discord_events.ApplicationCommandDeleted;
+            discord_client.ApplicationCommandUpdated += discord_events.ApplicationCommandUpdated;
+            discord_client.ChannelCreated += discord_events.ChannelCreated;
+            discord_client.ChannelDestroyed += discord_events.ChannelDeleted;
+            discord_client.ChannelUpdated += discord_events.ChannelUpdated;
+            discord_client.Connected += discord_events.Connected;
+            discord_client.ButtonExecuted += discord_events.ButtonTouched;
 
             await DiscordWorker.RegisterCommandsAsync();
             await discord_client.LoginAsync(TokenType.Bot, token_discord);
@@ -671,9 +685,10 @@ namespace butterBror
                 Utils.Console.WriteLine("[TW] Status sender started!", "kernel", ConsoleColor.Red);
 
                 System.Net.NetworkInformation.Ping ping = new();
-                PingReply twitch = ping.Send("twitch.tv", 1000);
-                PingReply discord = ping.Send("discord.com", 1000);
-                PingReply telegram = ping.Send("t.me", 1000);
+                PingReply twitch = ping.Send(twitch_url, 1000);
+                PingReply discord = ping.Send(discord_url, 1000);
+                long telegram = await Utils.API.Telegram.Ping();
+                PingReply sevenTV = ping.Send(seventv_url, 1000);
                 PingReply ISP = ping.Send("192.168.1.1", 1000);
 
                 if (ISP.Status != IPStatus.Success)
@@ -682,19 +697,25 @@ namespace butterBror
                     if (ISP.Status != IPStatus.Success) Utils.Console.WriteLine("[TW] Error ISP ping: " + ISP.Status.ToString(), "err");
                 }
 
-                long memory = Process.GetCurrentProcess().WorkingSet64 / (1024 * 1024);
+                long memory = Process.GetCurrentProcess().PrivateMemorySize64 / (1024 * 1024);
 
                 Utils.Chat.TwitchSend(bot_name.ToLower(), $"/me glorp 📡 Twitch: {twitch.RoundtripTime}ms | " +
                     $"Discord: {discord.RoundtripTime}ms | " +
-                    $"Telegram: {telegram.RoundtripTime}ms | " +
+                    $"Telegram: {telegram}ms | " +
+                    $"7tv: {sevenTV.RoundtripTime}ms | " + 
                     $"ISP: {ISP.RoundtripTime}ms | " +
                     $"⌚ {DateTime.Now - Engine.start_time:dd\\:hh\\:mm\\.ss} | " +
                     $"📦 {memory}mb | " +
                     $"🔋 {Battery.GetBatteryCharge()}% ({Battery.IsCharging()}) | " +
-                    $"🔥 {cpu_counter.NextValue():0.00}% | " +
-                    $"TPS: {Engine.ticks_per_second} | " +
+                    $"🔥 {Engine.cpu_counter/Engine.cpu_counter_items:0.00}% | " +
+                    $"TPS: {(decimal)Engine.tps_counter/Engine.tps_counter_items:0.00} | " +
                     $"TT: {Engine.ticks_counter} | " +
                     $"ST: {Engine.skipped_ticks}", "", "", "", true);
+
+                Engine.cpu_counter = 0;
+                Engine.cpu_counter_items = 0;
+                Engine.tps_counter = 0;
+                Engine.tps_counter_items = 0;
 
                 try
                 {
@@ -932,6 +953,11 @@ namespace butterBror
                 if (!(message is SocketUserMessage msg) || message.Author.IsBot) return;
                 OnMessageReceivedArgs e = default;
                 await Command.ProcessMessageAsync(message.Author.Id.ToString(), ((SocketGuildChannel)message.Channel).Guild.Id.ToString(), message.Author.Username.ToLower(), message.Content, e, ((SocketGuildChannel)message.Channel).Guild.Name, Platforms.Discord, null, message.Channel.ToString());
+                
+                if (message.Content.StartsWith(Maintenance.executor))
+                {
+                    Commands.Discord(message);
+                }
             }
             catch (Exception ex)
             {
@@ -944,7 +970,7 @@ namespace butterBror
             try
             {
                 Maintenance.discord_client.Ready += RegisterSlashCommands;
-                Maintenance.discord_client.MessageReceived += DiscordEventHandler.HandleCommandAsync;
+                Maintenance.discord_client.MessageReceived += discord_events.HandleCommandAsync;
                 await Maintenance.discord_command_service.AddModulesAsync(assembly: Assembly.GetEntryAssembly(), services: Maintenance.discord_service_provider);
             }
             catch (Exception ex)
@@ -976,98 +1002,7 @@ namespace butterBror
             Utils.Console.WriteLine("[DS] All commands are registered!", "discord");
         }
     }
-    public class DiscordEventHandler
-    {
-        public static Task LogAsync(LogMessage log)
-        {
-            Engine.Statistics.functions_used.Add();
-            try
-            {
-                Utils.Console.WriteLine(log.ToString().Replace("\n", " ").Replace("\r", ""), "discord");
-                return Task.CompletedTask;
-            }
-            catch (Exception ex)
-            {
-                Utils.Console.WriteError(ex, $"DiscordEventHandler\\LogAsync#{log.Message}");
-                return Task.CompletedTask;
-            }
-        }
-        public static async Task ConnectToGuilt(SocketGuild g)
-        {
-            Engine.Statistics.functions_used.Add();
-            Utils.Console.WriteLine($"[DS] Connected to a server: {g.Name}", "discord");
-            Maintenance.connected_servers++;
-        }
-        public static async Task HandleCommandAsync(SocketMessage arg)
-        {
-            Engine.Statistics.functions_used.Add();
-            try
-            {
-                var message = arg as SocketUserMessage;
-                if (message == null || message.Author.IsBot) return;
-
-                int argPos = 0;
-                if (message.HasCharPrefix(Maintenance.executor, ref argPos))
-                {
-                    var context = new SocketCommandContext(Maintenance.discord_client, message);
-                    var result = await Maintenance.discord_command_service.ExecuteAsync(context, argPos, Maintenance.discord_service_provider);
-                    if (!result.IsSuccess)
-                    {
-                        Utils.Console.WriteLine(result.ErrorReason, "discord", ConsoleColor.Red);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Utils.Console.WriteError(ex, $"DiscordEventHandler\\HandleCommandAsync");
-            }
-        }
-        public static async Task SlashCommandHandler(SocketSlashCommand command)
-        {
-            Engine.Statistics.functions_used.Add();
-            Commands.Discord(command);
-        }
-        public static async Task ApplicationCommandCreated(SocketApplicationCommand e)
-        {
-            Engine.Statistics.functions_used.Add();
-            Utils.Console.WriteLine("[DS] The command has been created: /" + e.Name + " (" + e.Description + ")", "info");
-        }
-        public static async Task ApplicationCommandDeleted(SocketApplicationCommand e)
-        {
-            Engine.Statistics.functions_used.Add();
-            Utils.Console.WriteLine("[DS] Command deleted: /" + e.Name + " (" + e.Description + ")", "info");
-        }
-        public static async Task ApplicationCommandUpdated(SocketApplicationCommand e)
-        {
-            Engine.Statistics.functions_used.Add();
-            Utils.Console.WriteLine("[DS] Command updated: /" + e.Name + " (" + e.Description + ")", "info");
-        }
-        public static async Task ChannelCreated(SocketChannel e)
-        {
-            Engine.Statistics.functions_used.Add();
-            Utils.Console.WriteLine("[DS] New channel created: " + e.Id, "discord");
-        }
-        public static async Task ChannelDeleted(SocketChannel e)
-        {
-            Engine.Statistics.functions_used.Add();
-            Utils.Console.WriteLine("[DS] The channel has been deleted: " + e.Id, "discord");
-        }
-        public static async Task ChannelUpdated(SocketChannel e, SocketChannel a)
-        {
-            Engine.Statistics.functions_used.Add();
-            Utils.Console.WriteLine("[DS] Channel updated: " + e.Id + "/" + a.Id, "discord");
-        }
-        public static async Task Connected()
-        {
-            Engine.Statistics.functions_used.Add();
-            Utils.Console.WriteLine("[DS] Connected!", "discord");
-        }
-        public static async Task ButtonTouched(SocketMessageComponent e)
-        {
-            Engine.Statistics.functions_used.Add();
-            Utils.Console.WriteLine($"[DS] A button was pressed. User: {e.User}, Button ID: {e.Id}, Server: {((SocketGuildChannel)e.Channel).Guild.Name}", "info");
-        }
-    }
+    
     public class TelegramWorker
     {
         public static async Task UpdateHandler(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
@@ -1103,14 +1038,14 @@ namespace butterBror
                 else if (message.Text == "/ping" || message.Text == "/ping@" + meData.Username)
                 {
                     var workTime = DateTime.Now - Engine.start_time;
-                    PingReply reply = new System.Net.NetworkInformation.Ping().Send(Maintenance.telegram_url, 1000);
+                    long reply = await Utils.API.Telegram.Ping();
                     string returnMessage = TranslationManager.GetTranslation(lang, "command:ping", chat.Id.ToString(), Platforms.Telegram, new(){
                         { "version", Engine.version },
                         { "workTime", TextUtil.FormatTimeSpan(workTime, lang) },
                         { "tabs", Maintenance.channels_list.Length.ToString() },
                         { "loadedCMDs", Commands.commands.Count().ToString() },
                         { "completedCMDs", Engine.completed_commands.ToString() },
-                        { "ping", reply.RoundtripTime.ToString() }
+                        { "ping", reply.ToString() }
                     });
                     await botClient.SendMessage(
                         chat.Id,

@@ -12,22 +12,22 @@ namespace butterBror
         {
             public static CommandInfo Info = new()
             {
-                name = "Afk",
-                author = "@ItzKITb",
-                author_link = "twitch.tv/itzkitb",
-                author_avatar = "https://static-cdn.jtvnw.net/jtv_user_pictures/c3a9af55-d7af-4b4a-82de-39a4d8b296d3-profile_image-70x70.png",
-                description = new(){ { "ru", "Эта комманда поможет вам уйти из чата в афк." }, { "en", "This command will help you leave the chat and go afk." } },
-                wiki_link = "https://itzkitb.lol/bot/command?q=afk",
-                cooldown_per_user = 20,
-                cooldown_global = 1,
-                aliases = ["draw", "drw", "d", "рисовать", "рис", "р", "afk", "афк", "sleep", "goodnight", "gn", "slp", "s", "спать", "храп", "хррр", "с", "rest", "nap", "r", "отдых", "отдохнуть", "о", "lurk", "l", "наблюдатьизтени", "спрятаться", "study", "st", "учеба", "учится", "у", "poop", "p", "туалет", "shower", "sh", "ванная", "душ"],
-                arguments = "(message)",
-                cooldown_reset = true,
-                is_for_bot_moderator = false,
-                is_for_bot_developer = false,
-                is_for_channel_moderator = false,
-                creation_date = DateTime.Parse("04/07/2024"),
-                platforms = [Platforms.Twitch, Platforms.Telegram]
+                Name = "Afk",
+                Author = "@ItzKITb",
+                AuthorLink = "twitch.tv/itzkitb",
+                AuthorAvatar = "https://static-cdn.jtvnw.net/jtv_user_pictures/c3a9af55-d7af-4b4a-82de-39a4d8b296d3-profile_image-70x70.png",
+                Description = new(){ { "ru", "Эта комманда поможет вам уйти из чата в афк." }, { "en", "This command will help you leave the chat and go afk." } },
+                WikiLink = "https://itzkitb.lol/bot/command?q=afk",
+                CooldownPerUser = 20,
+                CooldownPerChannel = 1,
+                Aliases = ["draw", "drw", "d", "рисовать", "рис", "р", "afk", "афк", "sleep", "goodnight", "gn", "slp", "s", "спать", "храп", "хррр", "с", "rest", "nap", "r", "отдых", "отдохнуть", "о", "lurk", "l", "наблюдатьизтени", "спрятаться", "study", "st", "учеба", "учится", "у", "poop", "p", "туалет", "shower", "sh", "ванная", "душ"],
+                Arguments = "(message)",
+                CooldownReset = true,
+                IsForBotModerator = false,
+                IsForBotDeveloper = false,
+                IsForChannelModerator = false,
+                CreationDate = DateTime.Parse("04/07/2024"),
+                Platforms = [Platforms.Twitch, Platforms.Telegram]
             };
             // AFK
             static string[] draw = ["draw", "drw", "d", "рисовать", "рис", "р"];
@@ -76,34 +76,22 @@ namespace butterBror
                 }
                 catch (Exception e)
                 {
-                    return new()
-                    {
-                        message = "",
-                        safe_execute = false,
-                        description = "",
-                        author = "",
-                        image_link = "",
-                        thumbnail_link = "",
-                        footer = "",
-                        is_embed = true,
-                        is_ephemeral = false,
-                        title = "",
-                        embed_color = Color.Green,
-                        nickname_color = ChatColorPresets.YellowGreen,
-                        is_error = true,
-                        exception = e
-                    };
+                    CommandReturn commandReturn = new CommandReturn();
+                    commandReturn.SetError(e);
+                    return commandReturn;
                 }
             }
             public static CommandReturn GoToAfk(CommandData data, string afkType)
             {
                 Engine.Statistics.functions_used.Add();
+                CommandReturn commandReturn = new CommandReturn();
+
                 try
                 {
                     string result = TranslationManager.GetTranslation(data.user.language, $"command:afk:{afkType}:start", data.channel_id, data.platform).Replace("%user%", data.user.username);
                     string text = data.arguments_string;
 
-                    if (NoBanwords.Check(text, data.channel_id, data.platform))
+                    if (new NoBanwords().Check(text, data.channel_id, data.platform))
                     {
                         UsersData.Save(data.user_id, "isAfk", true, data.platform);
                         UsersData.Save(data.user_id, "afkText", text, data.platform);
@@ -112,68 +100,22 @@ namespace butterBror
                         UsersData.Save(data.user_id, "lastFromAfkResume", DateTime.UtcNow, data.platform);
                         UsersData.Save(data.user_id, "fromAfkResumeTimes", 0, data.platform);
 
-                        string send = "";
-
                         if (TextUtil.CleanAsciiWithoutSpaces(text) == "")
-                            send = result;
+                            commandReturn.SetMessage(result);
                         else
-                            send = result + ": " + text;
-
-                        return new()
-                        {
-                            message = send,
-                            safe_execute = false,
-                            description = "",
-                            author = "",
-                            image_link = "",
-                            thumbnail_link = "",
-                            footer = "",
-                            is_embed = false,
-                            is_ephemeral = false,
-                            title = "",
-                            embed_color = Color.Green,
-                            nickname_color = TwitchLib.Client.Enums.ChatColorPresets.YellowGreen,
-                        };
+                            commandReturn.SetMessage(result + ": " + text);
                     }
                     else
                     {
-                        return new()
-                        {
-                            message = TranslationManager.GetTranslation(data.user.language, "error:message_could_not_be_sent", data.channel_id, data.platform),
-                            safe_execute = false,
-                            description = "",
-                            author = "",
-                            image_link = "",
-                            thumbnail_link = "",
-                            footer = "",
-                            is_embed = false,
-                            is_ephemeral = false,
-                            title = "",
-                            embed_color = Color.Green,
-                            nickname_color = TwitchLib.Client.Enums.ChatColorPresets.YellowGreen,
-                        };
+                        
                     }
                 }
                 catch (Exception e)
                 {
-                    return new()
-                    {
-                        message = "",
-                        safe_execute = false,
-                        description = "",
-                        author = "",
-                        image_link = "",
-                        thumbnail_link = "",
-                        footer = "",
-                        is_embed = true,
-                        is_ephemeral = false,
-                        title = "",
-                        embed_color = Color.Green,
-                        nickname_color = ChatColorPresets.YellowGreen,
-                        is_error = true,
-                        exception = e
-                    };
+                    commandReturn.SetError(e);
                 }
+
+                return commandReturn;
             }
         }
     }

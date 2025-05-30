@@ -1,11 +1,8 @@
 ﻿using butterBror.Utils.DataManagers;
+using DankDB;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Collections.Concurrent;
-using System.Net.NetworkInformation;
-using System.Text;
-using System.Text.RegularExpressions;
-using DankDB;
 
 namespace butterBror
 {
@@ -16,11 +13,12 @@ namespace butterBror
         /// </summary>
         public class NoBanwords
         {
-            private static Dictionary<string, string> FoundedBanWords = new();
+            private readonly ConcurrentDictionary<string, string> FoundedBanWords = new();
+
             /// <summary>
             /// Полная проверка
             /// </summary>
-            public static bool Check(string message, string channelID, Platforms platform)
+            public bool Check(string message, string channelID, Platforms platform)
             {
                 Engine.Statistics.functions_used.Add();
                 try
@@ -30,12 +28,11 @@ namespace butterBror
                     DateTime start_time = DateTime.UtcNow;
 
                     string check_UUID = Guid.NewGuid().ToString();
-                    string cleared_message_without_repeats = TextUtil.RemoveDuplicates(TextUtil.CleanAsciiWithoutSpaces(message.ToLower()));
-                    string cleared_message = TextUtil.CleanAsciiWithoutSpaces(message.ToLower());
-                    string cleared_message_without_repeats_changed_layout = TextUtil.ChangeLayout(TextUtil.RemoveDuplicates(TextUtil.CleanAsciiWithoutSpaces(message.ToLower())));
-                    string cleared_message_changed_layout = TextUtil.ChangeLayout(TextUtil.CleanAsciiWithoutSpaces(message.ToLower()));
 
-                    Console.WriteLine($"[{check_UUID}] Checking \"{message}\" ({cleared_message_without_repeats}) (Channel ID: " + channelID + ")...", "nbw");
+                    string cleared_message = TextUtil.CleanAsciiWithoutSpaces(message.ToLower());
+                    string cleared_message_without_repeats = TextUtil.RemoveDuplicates(cleared_message);
+                    string cleared_message_without_repeats_changed_layout = TextUtil.ChangeLayout(cleared_message_without_repeats);
+                    string cleared_message_changed_layout = TextUtil.ChangeLayout(cleared_message);
 
                     string banned_words_path = Maintenance.path_blacklist_words;
                     string channel_banned_words_path = Maintenance.path_channels + Platform.strings[(int)platform] + "/" + channelID + "/BANWORDS.json";
@@ -47,7 +44,16 @@ namespace butterBror
                     if (FileUtil.FileExists(channel_banned_words_path))
                         banned_words.AddRange(Manager.Get<List<string>>(channel_banned_words_path, "list"));
 
-                    (bool, string) check_result = RunCheck(channelID, check_UUID, banned_words, single_banwords, replacements, cleared_message_without_repeats, cleared_message_without_repeats, cleared_message, cleared_message_changed_layout);
+
+                    (bool, string) check_result = RunCheck(channelID,
+                        check_UUID,
+                        banned_words,
+                        single_banwords,
+                        replacements,
+                        cleared_message_without_repeats,
+                        cleared_message_without_repeats,
+                        cleared_message,
+                        cleared_message_changed_layout);
 
                     failed = !check_result.Item1;
                     sector = check_result.Item2;
@@ -64,8 +70,8 @@ namespace butterBror
                 }
             }
 
-            private static (bool, string) RunCheck(string channelID, string check_UUID, List<string> banned_words, 
-                List<string> single_banwords, Dictionary<string, string> replacements, string cleared_message_without_repeats, 
+            private (bool, string) RunCheck(string channelID, string check_UUID, List<string> banned_words,
+                List<string> single_banwords, Dictionary<string, string> replacements, string cleared_message_without_repeats,
                 string cleared_message_without_repeats_changed_layout, string cleared_message, string cleared_message_changed_layout)
             {
                 bool processed = false;
@@ -101,42 +107,48 @@ namespace butterBror
             /// <summary>
             /// Проверка текста
             /// </summary>
-            private static bool CheckBanWords(string message, string channelID, string check_UUID, List<string> banned_words, List<string> single_banwords)
+            private bool CheckBanWords(string message, string channelID, string check_UUID, List<string> banned_words, List<string> single_banwords)
             {
                 Engine.Statistics.functions_used.Add();
                 try
                 {
-                    foreach (string word in banned_words)
+                    var banword_found = banned_words.AsParallel().Any(word =>
                     {
-                        if (message.Contains(word, StringComparison.CurrentCultureIgnoreCase))
+                        if (message.Contains(word, StringComparison.OrdinalIgnoreCase))
                         {
-                            FoundedBanWords.Add(check_UUID, word);
-                            return false;
+                            FoundedBanWords.TryAdd(check_UUID, word);
+                            return true;
                         }
-                    }
+                        return false;
+                    });
 
-                    foreach (string word in single_banwords)
+                    if (banword_found) return false;
+
+                    var single_banword_found = banned_words.AsParallel().Any(word =>
                     {
-                        if (message.ToLower().Equals(word.ToLower()))
+                        if (message.Equals(word, StringComparison.OrdinalIgnoreCase))
                         {
-                            FoundedBanWords.Add(check_UUID, word);
-                            return false;
+                            FoundedBanWords.TryAdd(check_UUID, word);
+                            return true;
                         }
-                    }
+                        return false;
+                    });
+
+                    if (single_banword_found) return false;
 
                     return true;
                 }
                 catch (Exception ex)
                 {
                     Console.WriteError(ex, $"NOBANWORDS\\CheckBannedWords#{channelID}\\{message}");
-                    FoundedBanWords.Add(check_UUID, "CHECK ERROR");
+                    FoundedBanWords.TryAdd(check_UUID, "CHECK ERROR");
                     return false;
                 }
             }
             /// <summary>
             /// Включить в текст замены и перепроверить
             /// </summary>
-            private static bool CheckReplacements(string message, string ChannelID, string check_UUID, List<string> banned_words, List<string> single_banwords, Dictionary<string, string> replacements)
+            private bool CheckReplacements(string message, string ChannelID, string check_UUID, List<string> banned_words, List<string> single_banwords, Dictionary<string, string> replacements)
             {
                 Engine.Statistics.functions_used.Add();
                 try
@@ -189,7 +201,7 @@ namespace butterBror
                     {
                         if (replacements is not null) customValue = TextUtil.ArgumentsReplacement(customValue, replacements);
                         return customValue;
-                    }   
+                    }
 
                     if (translations[userLang].TryGetValue(key, out var defaultVal))
                     {
@@ -338,6 +350,7 @@ namespace butterBror
                 }
             }
         }
+
         namespace DataManagers
         {
             /// <summary>
@@ -586,7 +599,7 @@ namespace butterBror
                 /// <summary>
                 /// Сохранение нового сообщения в базу данных бота
                 /// </summary>
-                public static async void SaveMessage(string channelID, string userID, Message newMessage, Platforms platform)
+                public static async Task SaveMessage(string channelID, string userID, Message newMessage, Platforms platform)
                 {
                     Engine.Statistics.functions_used.Add();
                     try
@@ -613,7 +626,7 @@ namespace butterBror
                                 else messages = Manager.Get<List<Message>>(user_messages_path, "messages");
                             }
                         }
-                        
+
                         if (!File.Exists(first_message_path + userID + ".txt") && messages.Count > 0)
                         {
                             Message FirstMessage = messages.Last();
@@ -624,6 +637,8 @@ namespace butterBror
                         if (messages.Count > max_messages) messages = messages.Take(max_messages - 1).ToList();
 
                         Manager.Save(user_messages_path, "messages", messages);
+
+                        return;
                     }
                     catch (Exception ex)
                     {
@@ -633,7 +648,7 @@ namespace butterBror
                 /// <summary>
                 /// Получение определенного сообщения из базы данных бота
                 /// </summary>
-                public static Message? GetMessage(string channelID, string userID, Platforms platform, bool isGetCustomNumber = false, int customNumber = 0)
+                public static async Task<Message> GetMessage(string channelID, string userID, Platforms platform, bool isGetCustomNumber = false, int customNumber = 0)
                 {
                     Engine.Statistics.functions_used.Add();
                     try
@@ -678,7 +693,7 @@ namespace butterBror
             /// </summary>
             public static class FileUtil
             {
-                private static readonly LruCache<string, string> _fileCache = new(1000);
+                private static readonly LruCache<string, string> _fileCache = new(100);
 
                 public static void CreateDirectory(string directoryPath)
                 {

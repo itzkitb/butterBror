@@ -55,12 +55,6 @@
             groupBox7 = new GroupBox();
             panel8 = new Panel();
             info_console = new Label();
-            groupBox8 = new GroupBox();
-            panel9 = new Panel();
-            chat_console = new Label();
-            groupBox9 = new GroupBox();
-            panel10 = new Panel();
-            cafus_console = new Label();
             tableLayoutPanel2 = new TableLayoutPanel();
             ram_status = new GroupBox();
             cpu_status = new GroupBox();
@@ -70,6 +64,9 @@
             version = new Label();
             label1 = new Label();
             pictureBox1 = new PictureBox();
+            groupBox9 = new GroupBox();
+            panel10 = new Panel();
+            cafus_console = new Label();
             panel1.SuspendLayout();
             panel3.SuspendLayout();
             groupBox1.SuspendLayout();
@@ -86,13 +83,11 @@
             panel7.SuspendLayout();
             groupBox7.SuspendLayout();
             panel8.SuspendLayout();
-            groupBox8.SuspendLayout();
-            panel9.SuspendLayout();
-            groupBox9.SuspendLayout();
-            panel10.SuspendLayout();
             tableLayoutPanel2.SuspendLayout();
             panel2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
+            groupBox9.SuspendLayout();
+            panel10.SuspendLayout();
             SuspendLayout();
             // 
             // panel1
@@ -124,7 +119,7 @@
             groupBox1.Controls.Add(filesGrid);
             groupBox1.Dock = DockStyle.Top;
             groupBox1.ForeColor = SystemColors.Control;
-            groupBox1.Location = new Point(8, 1614);
+            groupBox1.Location = new Point(8, 1054);
             groupBox1.Name = "groupBox1";
             groupBox1.Size = new Size(1093, 300);
             groupBox1.TabIndex = 1;
@@ -225,7 +220,7 @@
             groupBox2.ForeColor = SystemColors.Control;
             groupBox2.Location = new Point(8, 334);
             groupBox2.Name = "groupBox2";
-            groupBox2.Size = new Size(1093, 1280);
+            groupBox2.Size = new Size(1093, 720);
             groupBox2.TabIndex = 2;
             groupBox2.TabStop = false;
             groupBox2.Text = "Консоли";
@@ -235,22 +230,21 @@
             tableLayoutPanel1.ColumnCount = 2;
             tableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
             tableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+            tableLayoutPanel1.Controls.Add(groupBox9, 1, 2);
             tableLayoutPanel1.Controls.Add(groupBox3, 0, 0);
             tableLayoutPanel1.Controls.Add(groupBox4, 1, 0);
             tableLayoutPanel1.Controls.Add(groupBox5, 0, 1);
             tableLayoutPanel1.Controls.Add(groupBox6, 1, 1);
             tableLayoutPanel1.Controls.Add(groupBox7, 0, 2);
-            tableLayoutPanel1.Controls.Add(groupBox8, 1, 2);
-            tableLayoutPanel1.Controls.Add(groupBox9, 0, 3);
             tableLayoutPanel1.Dock = DockStyle.Fill;
             tableLayoutPanel1.Location = new Point(3, 19);
             tableLayoutPanel1.Name = "tableLayoutPanel1";
-            tableLayoutPanel1.RowCount = 4;
+            tableLayoutPanel1.RowCount = 3;
             tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 25F));
             tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 25F));
             tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 25F));
             tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 25F));
-            tableLayoutPanel1.Size = new Size(1087, 1258);
+            tableLayoutPanel1.Size = new Size(1087, 698);
             tableLayoutPanel1.TabIndex = 1;
             // 
             // groupBox3
@@ -260,7 +254,7 @@
             groupBox3.ForeColor = SystemColors.Control;
             groupBox3.Location = new Point(3, 3);
             groupBox3.Name = "groupBox3";
-            groupBox3.Size = new Size(537, 308);
+            groupBox3.Size = new Size(537, 226);
             groupBox3.TabIndex = 1;
             groupBox3.TabStop = false;
             groupBox3.Text = "KERNEL";
@@ -272,7 +266,7 @@
             panel4.Dock = DockStyle.Fill;
             panel4.Location = new Point(3, 19);
             panel4.Name = "panel4";
-            panel4.Size = new Size(531, 286);
+            panel4.Size = new Size(531, 204);
             panel4.TabIndex = 1;
             // 
             // kernel_console
@@ -292,7 +286,7 @@
             groupBox4.ForeColor = SystemColors.Control;
             groupBox4.Location = new Point(546, 3);
             groupBox4.Name = "groupBox4";
-            groupBox4.Size = new Size(538, 308);
+            groupBox4.Size = new Size(538, 226);
             groupBox4.TabIndex = 2;
             groupBox4.TabStop = false;
             groupBox4.Text = "Главная";
@@ -304,7 +298,7 @@
             panel5.Dock = DockStyle.Fill;
             panel5.Location = new Point(3, 19);
             panel5.Name = "panel5";
-            panel5.Size = new Size(532, 286);
+            panel5.Size = new Size(532, 204);
             panel5.TabIndex = 2;
             // 
             // main_console
@@ -322,9 +316,9 @@
             groupBox5.Controls.Add(panel6);
             groupBox5.Dock = DockStyle.Fill;
             groupBox5.ForeColor = SystemColors.Control;
-            groupBox5.Location = new Point(3, 317);
+            groupBox5.Location = new Point(3, 235);
             groupBox5.Name = "groupBox5";
-            groupBox5.Size = new Size(537, 308);
+            groupBox5.Size = new Size(537, 226);
             groupBox5.TabIndex = 3;
             groupBox5.TabStop = false;
             groupBox5.Text = "Ошибки";
@@ -336,7 +330,7 @@
             panel6.Dock = DockStyle.Fill;
             panel6.Location = new Point(3, 19);
             panel6.Name = "panel6";
-            panel6.Size = new Size(531, 286);
+            panel6.Size = new Size(531, 204);
             panel6.TabIndex = 3;
             // 
             // errors_console
@@ -354,9 +348,9 @@
             groupBox6.Controls.Add(panel7);
             groupBox6.Dock = DockStyle.Fill;
             groupBox6.ForeColor = SystemColors.Control;
-            groupBox6.Location = new Point(546, 317);
+            groupBox6.Location = new Point(546, 235);
             groupBox6.Name = "groupBox6";
-            groupBox6.Size = new Size(538, 308);
+            groupBox6.Size = new Size(538, 226);
             groupBox6.TabIndex = 4;
             groupBox6.TabStop = false;
             groupBox6.Text = "NoBanWords";
@@ -368,7 +362,7 @@
             panel7.Dock = DockStyle.Fill;
             panel7.Location = new Point(3, 19);
             panel7.Name = "panel7";
-            panel7.Size = new Size(532, 286);
+            panel7.Size = new Size(532, 204);
             panel7.TabIndex = 3;
             // 
             // nbw_console
@@ -386,9 +380,9 @@
             groupBox7.Controls.Add(panel8);
             groupBox7.Dock = DockStyle.Fill;
             groupBox7.ForeColor = SystemColors.Control;
-            groupBox7.Location = new Point(3, 631);
+            groupBox7.Location = new Point(3, 467);
             groupBox7.Name = "groupBox7";
-            groupBox7.Size = new Size(537, 308);
+            groupBox7.Size = new Size(537, 228);
             groupBox7.TabIndex = 5;
             groupBox7.TabStop = false;
             groupBox7.Text = "Информация";
@@ -400,7 +394,7 @@
             panel8.Dock = DockStyle.Fill;
             panel8.Location = new Point(3, 19);
             panel8.Name = "panel8";
-            panel8.Size = new Size(531, 286);
+            panel8.Size = new Size(531, 206);
             panel8.TabIndex = 3;
             // 
             // info_console
@@ -412,70 +406,6 @@
             info_console.Size = new Size(0, 14);
             info_console.TabIndex = 0;
             info_console.Click += info_console_Click;
-            // 
-            // groupBox8
-            // 
-            groupBox8.Controls.Add(panel9);
-            groupBox8.Dock = DockStyle.Fill;
-            groupBox8.ForeColor = SystemColors.Control;
-            groupBox8.Location = new Point(546, 631);
-            groupBox8.Name = "groupBox8";
-            groupBox8.Size = new Size(538, 308);
-            groupBox8.TabIndex = 6;
-            groupBox8.TabStop = false;
-            groupBox8.Text = "Чат";
-            // 
-            // panel9
-            // 
-            panel9.AutoScroll = true;
-            panel9.Controls.Add(chat_console);
-            panel9.Dock = DockStyle.Fill;
-            panel9.Location = new Point(3, 19);
-            panel9.Name = "panel9";
-            panel9.Size = new Size(532, 286);
-            panel9.TabIndex = 3;
-            // 
-            // chat_console
-            // 
-            chat_console.AutoSize = true;
-            chat_console.Font = new Font("Consolas", 9F);
-            chat_console.Location = new Point(0, 0);
-            chat_console.Name = "chat_console";
-            chat_console.Size = new Size(0, 14);
-            chat_console.TabIndex = 0;
-            chat_console.Click += chat_console_Click;
-            // 
-            // groupBox9
-            // 
-            groupBox9.Controls.Add(panel10);
-            groupBox9.Dock = DockStyle.Fill;
-            groupBox9.ForeColor = SystemColors.Control;
-            groupBox9.Location = new Point(3, 945);
-            groupBox9.Name = "groupBox9";
-            groupBox9.Size = new Size(537, 310);
-            groupBox9.TabIndex = 7;
-            groupBox9.TabStop = false;
-            groupBox9.Text = "CAFUS";
-            // 
-            // panel10
-            // 
-            panel10.AutoScroll = true;
-            panel10.Controls.Add(cafus_console);
-            panel10.Dock = DockStyle.Fill;
-            panel10.Location = new Point(3, 19);
-            panel10.Name = "panel10";
-            panel10.Size = new Size(531, 288);
-            panel10.TabIndex = 3;
-            // 
-            // cafus_console
-            // 
-            cafus_console.AutoSize = true;
-            cafus_console.Font = new Font("Consolas", 9F);
-            cafus_console.Location = new Point(0, 0);
-            cafus_console.Name = "cafus_console";
-            cafus_console.Size = new Size(0, 14);
-            cafus_console.TabIndex = 0;
-            cafus_console.Click += cafus_console_Click;
             // 
             // tableLayoutPanel2
             // 
@@ -583,6 +513,37 @@
             pictureBox1.TabIndex = 0;
             pictureBox1.TabStop = false;
             // 
+            // groupBox9
+            // 
+            groupBox9.Controls.Add(panel10);
+            groupBox9.Dock = DockStyle.Fill;
+            groupBox9.ForeColor = SystemColors.Control;
+            groupBox9.Location = new Point(546, 467);
+            groupBox9.Name = "groupBox9";
+            groupBox9.Size = new Size(538, 228);
+            groupBox9.TabIndex = 8;
+            groupBox9.TabStop = false;
+            groupBox9.Text = "CAFUS";
+            // 
+            // panel10
+            // 
+            panel10.AutoScroll = true;
+            panel10.Controls.Add(cafus_console);
+            panel10.Dock = DockStyle.Fill;
+            panel10.Location = new Point(3, 19);
+            panel10.Name = "panel10";
+            panel10.Size = new Size(532, 206);
+            panel10.TabIndex = 3;
+            // 
+            // cafus_console
+            // 
+            cafus_console.AutoSize = true;
+            cafus_console.Font = new Font("Consolas", 9F);
+            cafus_console.Location = new Point(0, 0);
+            cafus_console.Name = "cafus_console";
+            cafus_console.Size = new Size(0, 14);
+            cafus_console.TabIndex = 0;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
@@ -612,16 +573,13 @@
             groupBox7.ResumeLayout(false);
             panel8.ResumeLayout(false);
             panel8.PerformLayout();
-            groupBox8.ResumeLayout(false);
-            panel9.ResumeLayout(false);
-            panel9.PerformLayout();
-            groupBox9.ResumeLayout(false);
-            panel10.ResumeLayout(false);
-            panel10.PerformLayout();
             tableLayoutPanel2.ResumeLayout(false);
             panel2.ResumeLayout(false);
             panel2.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).EndInit();
+            groupBox9.ResumeLayout(false);
+            panel10.ResumeLayout(false);
+            panel10.PerformLayout();
             ResumeLayout(false);
         }
 
@@ -648,8 +606,6 @@
         private GroupBox groupBox5;
         private GroupBox groupBox6;
         private GroupBox groupBox7;
-        private GroupBox groupBox8;
-        private GroupBox groupBox9;
         private Label kernel_console;
         private Panel panel4;
         private Panel panel5;
@@ -660,14 +616,13 @@
         private Label nbw_console;
         private Panel panel8;
         private Label info_console;
-        private Panel panel9;
-        private Label chat_console;
-        private Panel panel10;
-        private Label cafus_console;
         private Label version;
         private GroupBox messages_per_second;
         private TableLayoutPanel tableLayoutPanel2;
         private GroupBox ram_status;
         private GroupBox cpu_status;
+        private GroupBox groupBox9;
+        private Panel panel10;
+        private Label cafus_console;
     }
 }

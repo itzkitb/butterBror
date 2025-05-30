@@ -7,7 +7,6 @@ using TwitchLib.Client.Enums;
 using TwitchLib.Client.Events;
 using System.Linq.Expressions;
 using static butterBror.Utils.TextUtil;
-using System.Collections.Concurrent;
 
 namespace butterBror
 {
@@ -58,7 +57,8 @@ namespace butterBror
             typeof(Roulette),
             typeof(Name),
             typeof(Translation),
-            typeof(SetLocation)
+            typeof(SetLocation),
+            typeof(Cookie)
         ];
 
         public static List<CommandHandler> commandHandlers = new();
@@ -175,57 +175,73 @@ namespace butterBror
             return Expression.Lambda(call, instanceParam, dataParam).Compile();
         }
 
-        public static async void Twitch(object sender, OnChatCommandReceivedArgs args)
+        public static async void Twitch(object sender, OnChatCommandReceivedArgs command)
         {
             Engine.Statistics.functions_used.Add();
             try
             {
+                string CommandName = command.Command.CommandText;
+                List<string> CommandArguments = command.Command.ArgumentsAsList;
+                string CommandArgumentsAsString = command.Command.ArgumentsAsString;
+
+                if (CommandName == string.Empty && CommandArguments.Count > 0)
+                {
+                    CommandName = CommandArguments[0];
+                    CommandArguments = CommandArguments.Skip(1).ToList();
+                    CommandArgumentsAsString = string.Join(" ", CommandArguments);
+                }
+                else if (CommandName == string.Empty && CommandArguments.Count == 0)
+                {
+                    return;
+                }
+
                 UserData user = new()
                 {
-                    id = args.Command.ChatMessage.UserId,
+                    id = command.Command.ChatMessage.UserId,
                     language = "ru",
-                    username = args.Command.ChatMessage.Username,
-                    channel_moderator = args.Command.ChatMessage.IsModerator,
-                    channel_broadcaster = args.Command.ChatMessage.IsBroadcaster
+                    username = command.Command.ChatMessage.Username,
+                    channel_moderator = command.Command.ChatMessage.IsModerator,
+                    channel_broadcaster = command.Command.ChatMessage.IsBroadcaster
                 };
-                Guid CommandExecutionUuid = Guid.NewGuid();
+
                 CommandData data = new()
                 {
-                    name = args.Command.CommandText.ToLower(),
-                    user_id = args.Command.ChatMessage.UserId,
-                    arguments = args.Command.ArgumentsAsList,
-                    arguments_string = args.Command.ArgumentsAsString,
-                    channel = args.Command.ChatMessage.Channel,
-                    channel_id = args.Command.ChatMessage.RoomId,
-                    message_id = args.Command.ChatMessage.Id,
+                    name = CommandName.ToLower(),
+                    user_id = command.Command.ChatMessage.UserId,
+                    arguments = CommandArguments,
+                    arguments_string = CommandArgumentsAsString,
+                    channel = command.Command.ChatMessage.Channel,
+                    channel_id = command.Command.ChatMessage.RoomId,
+                    message_id = command.Command.ChatMessage.Id,
                     platform = Platforms.Twitch,
                     user = user,
-                    twitch_arguments = args,
-                    command_instance_id = CommandExecutionUuid.ToString()
+                    twitch_arguments = command,
+                    command_instance_id = Guid.NewGuid().ToString()
                 };
-                if (args.Command.ChatMessage.ChatReply != null)
+
+                if (command.Command.ChatMessage.ChatReply != null)
                 {
-                    string[] trimedReplyText = args.Command.ChatMessage.ChatReply.ParentMsgBody.Split(' ');
+                    string[] trimedReplyText = command.Command.ChatMessage.ChatReply.ParentMsgBody.Split(' ');
                     data.arguments.AddRange(trimedReplyText);
-                    data.arguments_string = data.arguments_string + args.Command.ChatMessage.ChatReply.ParentMsgBody;
+                    data.arguments_string = data.arguments_string + command.Command.ChatMessage.ChatReply.ParentMsgBody;
                 }
                 await Run(data);
             }
             catch (Exception ex)
             {
-                Utils.Console.WriteError(ex, $"Command\\TwitchCommand#Command:{args.Command.CommandText}\\FullMessage:{args.Command.ChatMessage}");
+                Utils.Console.WriteError(ex, $"Command\\TwitchCommand#Command:{command.Command.CommandText}\\FullMessage:{command.Command.ChatMessage}");
             }
         }
-        public static async void Discord(SocketSlashCommand dsCmd)
+        public static async void Discord(SocketSlashCommand command)
         {
             Engine.Statistics.functions_used.Add();
             try
             {
                 UserData user = new()
                 {
-                    id = dsCmd.User.Id.ToString(),
+                    id = command.User.Id.ToString(),
                     language = "ru",
-                    username = dsCmd.User.Username
+                    username = command.User.Username
                 };
                 Guid RequestUuid = Guid.NewGuid();
                 Guid CommandExecutionUuid = Guid.NewGuid();
@@ -233,7 +249,7 @@ namespace butterBror
                 string ArgsAsString = "";
                 Dictionary<string, dynamic> argsDS = new();
                 List<string> args = new();
-                foreach (var info in dsCmd.Data.Options)
+                foreach (var info in command.Data.Options)
                 {
                     ArgsAsString += info.Value.ToString();
                     argsDS.Add(info.Name, info.Value);
@@ -242,13 +258,15 @@ namespace butterBror
 
                 CommandData data = new()
                 {
-                    name = dsCmd.CommandName.ToLower(),
-                    user_id = dsCmd.User.Id.ToString(),
+                    name = command.CommandName.ToLower(),
+                    user_id = command.User.Id.ToString(),
                     discord_arguments = argsDS,
-                    channel = ((SocketGuildChannel)dsCmd.Channel).Guild.Name,
-                    channel_id = ((SocketGuildChannel)dsCmd.Channel).Guild.Id.ToString(),
+                    channel = command.Channel.Name,
+                    channel_id = command.Channel.Id.ToString(),
+                    server = ((SocketGuildChannel)command.Channel).Guild.Name,
+                    server_id = ((SocketGuildChannel)command.Channel).Guild.Id.ToString(),
                     platform = Platforms.Discord,
-                    discord_command_base = dsCmd,
+                    discord_command_base = command,
                     user = user,
                     arguments_string = ArgsAsString,
                     arguments = args,
@@ -258,7 +276,56 @@ namespace butterBror
             }
             catch (Exception ex)
             {
-                Utils.Console.WriteError(ex, $"Command\\DiscordCommand#Command:{dsCmd.CommandName}");
+                Utils.Console.WriteError(ex, $"Command\\DiscordCommand#Command:{command.CommandName}");
+            }
+        }
+
+        public static async void Discord(SocketMessage message)
+        {
+            Engine.Statistics.functions_used.Add();
+            try
+            {
+                string CommandName = message.Content.Split(' ')[0].Remove(0, 1);
+                List<string> CommandArguments = message.Content.Split(' ').Skip(1).ToList();
+                string CommandArgumentsAsString = string.Join(' ', CommandArguments);
+
+                if (CommandName == string.Empty && CommandArguments.Count > 0)
+                {
+                    CommandName = CommandArguments[0];
+                    CommandArguments = CommandArguments.Skip(1).ToList();
+                    CommandArgumentsAsString = string.Join(" ", CommandArguments);
+                }
+                else if (CommandName == string.Empty && CommandArguments.Count == 0)
+                {
+                    return;
+                }
+
+                UserData user = new()
+                {
+                    id = message.Author.Id.ToString(),
+                    language = "ru",
+                    username = message.Author.Username
+                };
+
+                CommandData data = new()
+                {
+                    name = CommandName,
+                    user_id = message.Author.Id.ToString(),
+                    channel = message.Channel.Name,
+                    channel_id = message.Channel.Id.ToString(),
+                    server = ((SocketGuildChannel)message.Channel).Guild.Name,
+                    server_id = ((SocketGuildChannel)message.Channel).Guild.Id.ToString(),
+                    platform = Platforms.Discord,
+                    user = user,
+                    arguments_string = CommandArgumentsAsString,
+                    arguments = CommandArguments,
+                    command_instance_id = Guid.NewGuid().ToString()
+                };
+                await Run(data);
+            }
+            catch (Exception ex)
+            {
+                Utils.Console.WriteError(ex, $"Command\\DiscordCommand#CommandFromChat");
             }
         }
 
@@ -352,37 +419,24 @@ namespace butterBror
 
                 foreach (var handler in command_handlers_list)
                 {
-                    if (handler.info.aliases.Contains(command))
+                    if (handler.info.Aliases.Contains(command))
                     {
                         command_founded = true;
 
-                        if (handler.info.is_for_bot_developer && !(bool)data.user.bot_developer ||
-                            handler.info.is_for_bot_moderator && !(bool)data.user.bot_moderator ||
-                            (data.platform == Platforms.Twitch && handler.info.is_for_channel_moderator && !(bool)data.user.channel_moderator))
+                        if (handler.info.IsForBotDeveloper && !(bool)data.user.bot_developer ||
+                            handler.info.IsForBotModerator && !(bool)data.user.bot_moderator ||
+                            (data.platform == Platforms.Twitch && handler.info.IsForChannelModerator && !(bool)data.user.channel_moderator))
                             break;
 
-                        if (!Command.CheckCooldown(handler.info.cooldown_per_user, handler.info.cooldown_global, handler.info.name,
-                            data.user.id, data.channel_id, data.platform, handler.info.cooldown_reset))
+                        if (!Command.CheckCooldown(handler.info.CooldownPerUser, handler.info.CooldownPerChannel, handler.info.Name,
+                            data.user.id, data.channel_id, data.platform, handler.info.CooldownReset))
                             break;
 
                         if (handler.info.is_on_development)
                         {
-                            result = new()
-                            {
-                                message = TranslationManager.GetTranslation(data.user.language, "text:tech_works", data.user_id, data.platform),
-                                safe_execute = true,
-                                description = "",
-                                author = "",
-                                image_link = "",
-                                thumbnail_link = "",
-                                footer = "",
-                                is_embed = true,
-                                is_ephemeral = false,
-                                title = "",
-                                embed_color = global::Discord.Color.Green,
-                                nickname_color = ChatColorPresets.YellowGreen,
-                                is_error = true
-                            };
+                            CommandReturn commandReturn = new CommandReturn();
+                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "text:tech_works", data.user_id, data.platform));
+                            result = commandReturn;
                         }
                         else
                         {
@@ -391,7 +445,7 @@ namespace butterBror
                             try
                             {
                                 var currentHandler = handler;
-                                var commandName = currentHandler.info?.name ?? "unknown_command";
+                                var commandName = currentHandler.info?.Name ?? "unknown_command";
 
                                 if (currentHandler.sync_executor != null)
                                 {
@@ -405,21 +459,21 @@ namespace butterBror
                             catch (Exception ex)
                             {
                                 throw new Exception($"Failed to execute command: \nError: {ex.Message}\nStack: {ex.StackTrace}\n" +
-                                    $"Error Location: {ex.Source}\nCommand: {handler.info.name}\nCommand Arguments: {data.arguments_string}\n" +
+                                    $"Error Location: {ex.Source}\nCommand: {handler.info.Name}\nCommand Arguments: {data.arguments_string}\n" +
                                     $"User: {data.user.username} (#{data.user_id})");
                             }
                         }
 
                         if (result is not null)
                         {
-                            if (result.exception is null)
+                            if (result.Exception is null)
                                 System.Console.WriteLine("exeption is null");
-                            else if (result.is_error)
+                            else if (result.IsError)
                                 throw new Exception($"Command failed: " +
-                                    $"\nError: {CheckNull(result.exception.Message)}" +
-                                    $"\nStack: {CheckNull(result.exception.StackTrace)}" +
-                                    $"\nSource: {CheckNull(result.exception.Source)}" +
-                                    $"\nCommand: {CheckNull(handler.info.name)}" +
+                                    $"\nError: {CheckNull(result.Exception.Message)}" +
+                                    $"\nStack: {CheckNull(result.Exception.StackTrace)}" +
+                                    $"\nSource: {CheckNull(result.Exception.Source)}" +
+                                    $"\nCommand: {CheckNull(handler.info.Name)}" +
                                     $"\nArgs: {CheckNull(data.arguments_string)}" +
                                     $"\nUser: {CheckNull(data.user.username)} (#{CheckNull(data.user_id)})");
 
@@ -428,42 +482,44 @@ namespace butterBror
                                 case Platforms.Twitch:
                                     SendCommandReply(new TwitchMessageSendData
                                     {
-                                        message = result.message,
+                                        message = result.Message,
                                         channel = data.channel,
                                         channel_id = data.channel_id,
                                         message_id = data.twitch_arguments.Command.ChatMessage.Id,
                                         language = data.user.language,
                                         username = data.user.username,
-                                        safe_execute = result.safe_execute,
-                                        nickname_color = result.nickname_color
+                                        safe_execute = result.IsSafe,
+                                        nickname_color = result.BotNameColor
                                     });
                                     break;
                                 case Platforms.Discord:
                                     SendCommandReply(new DiscordCommandSendData
                                     {
-                                        message = result.message,
-                                        title = result.title,
-                                        description = result.description,
-                                        embed_color = (Discord.Color?)result.embed_color,
-                                        is_embed = result.is_embed,
-                                        is_ephemeral = result.is_ephemeral,
-                                        server = data.channel,
-                                        server_id = data.channel_id,
+                                        message = result.Message,
+                                        title = result.Title,
+                                        description = result.Description,
+                                        embed_color = (Discord.Color?)result.EmbedColor,
+                                        is_embed = result.IsEmbed,
+                                        is_ephemeral = result.IsEphemeral,
+                                        server = data.server,
+                                        server_id = data.server_id,
                                         language = data.user.language,
-                                        safe_execute = result.safe_execute,
+                                        safe_execute = result.IsSafe,
                                         socket_command_base = data.discord_command_base,
-                                        author = result.author,
-                                        image_link = result.image_link,
-                                        thumbnail_link = result.thumbnail_link,
-                                        footer = result.footer
+                                        author = result.Author,
+                                        image_link = result.ImageLink,
+                                        thumbnail_link = result.ThumbnailLink,
+                                        footer = result.Footer,
+                                        channel_id = data.channel_id,
+                                        user_id = data.user_id
                                     });
                                     break;
                                 case Platforms.Telegram:
                                     SendCommandReply(new TelegramMessageSendData
                                     {
-                                        message = result.message,
+                                        message = result.Message,
                                         language = data.user.language,
-                                        safe_execute = result.safe_execute,
+                                        safe_execute = result.IsSafe,
                                         channel = data.channel,
                                         channel_id = data.channel_id,
                                         message_id = data.message_id,
@@ -478,7 +534,7 @@ namespace butterBror
                         }
                         else
                         {
-                            LogWorker.Log($"Empty response from {handler.info.name}", LogWorker.LogTypes.Warn, $"cmd\\{handler.info.name}");
+                            LogWorker.Log($"Empty response from {handler.info.Name}", LogWorker.LogTypes.Warn, $"cmd\\{handler.info.Name}");
                         }
                     }
                     index++;
@@ -530,11 +586,13 @@ namespace butterBror
                         is_embed = true,
                         embed_color = (Discord.Color?)System.Drawing.Color.Red,
                         is_ephemeral = true,
-                        server = data.channel,
-                        server_id = data.channel_id,
+                        server = data.server,
+                        server_id = data.server_id,
                         language = data.user.language,
                         safe_execute = true,
-                        socket_command_base = data.discord_command_base
+                        socket_command_base = data.discord_command_base,
+                        channel_id = data.channel_id,
+                        user_id = data.user_id
                     };
                     butterBror.Commands.SendCommandReply(SendData);
                 }

@@ -1,7 +1,6 @@
 ﻿using butterBror.Utils;
 using butterBror.Utils.DataManagers;
 using DankDB;
-using Microsoft.CodeAnalysis;
 using Newtonsoft.Json.Linq;
 using TwitchLib.Client.Events;
 using TwitchLib.Communication.Events;

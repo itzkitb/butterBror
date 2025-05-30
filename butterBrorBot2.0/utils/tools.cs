@@ -1,18 +1,15 @@
 ﻿using butterBror.Utils.DataManagers;
 using DankDB;
-using Google.Apis.Services;
-using Google.Apis.YouTube.v3;
-using Google.Apis.YouTube.v3.Data;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.Emit;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Globalization;
+using System.Management;
 using System.Net;
 using System.Net.Http.Headers;
-using System.Net.NetworkInformation;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -20,14 +17,8 @@ using System.Text.RegularExpressions;
 using System.Web;
 using Telegram.Bot;
 using Telegram.Bot.Types;
-using TwitchLib.Client.Enums;
 using TwitchLib.Client.Events;
 using TwitchLib.Client.Models;
-using System.Windows;
-using System.Management;
-using System.Collections.Concurrent;
-using System.Threading;
-using System.Text.Json;
 
 namespace butterBror
 {
@@ -38,19 +29,19 @@ namespace butterBror
         /// </summary>
         public class TwitchToken
         {
-            private static string _clientId;
-            private static string _clientSecret;
-            private static string _redirectUri;
-            private static string _databasePath;
+            private static string client_id;
+            private static string client_secret;
+            private static string redirect_uri;
+            private static string database_path;
             /// <summary>
             /// Getting a Twitch Authorization Token
             /// </summary>
-            public TwitchToken(string clientId, string clientSecret, string databasePath)
+            public TwitchToken(string client_id, string client_secret, string database_path)
             {
-                _clientId = clientId;
-                _clientSecret = clientSecret;
-                _redirectUri = "http://localhost:12121/";
-                _databasePath = databasePath;
+                TwitchToken.client_id = client_id;
+                TwitchToken.client_secret = client_secret;
+                redirect_uri = "http://localhost:12121/";
+                TwitchToken.database_path = database_path;
             }
             /// <summary>
             /// Getting a Twitch Authorization Token
@@ -83,7 +74,7 @@ namespace butterBror
                 try
                 {
                     using var listener = new HttpListener();
-                    listener.Prefixes.Add(_redirectUri);
+                    listener.Prefixes.Add(redirect_uri);
                     listener.Start();
 
                     var authorizationCode = await GetAuthorizationCodeAsync(listener);
@@ -136,7 +127,7 @@ namespace butterBror
                     using var httpClient = new HttpClient();
                     var request = new HttpRequestMessage(HttpMethod.Post, "https://id.twitch.tv/oauth2/token")
                     {
-                        Content = new StringContent($"grant_type=refresh_token&refresh_token={token.RefreshToken}&client_id={_clientId}&client_secret={_clientSecret}", Encoding.UTF8, "application/x-www-form-urlencoded")
+                        Content = new StringContent($"grant_type=refresh_token&refresh_token={token.RefreshToken}&client_id={client_id}&client_secret={client_secret}", Encoding.UTF8, "application/x-www-form-urlencoded")
                     };
 
                     var response = await httpClient.SendAsync(request);
@@ -172,7 +163,7 @@ namespace butterBror
                 try
                 {
                     Console.WriteLine("[TW-AUTH-UTIL] Getting auth data...", "info");
-                    var url = $"https://id.twitch.tv/oauth2/authorize?client_id={_clientId}&redirect_uri={_redirectUri}&response_type=code&scope=user:manage:chat_color+chat:edit+chat:read";
+                    var url = $"https://id.twitch.tv/oauth2/authorize?client_id={client_id}&redirect_uri={redirect_uri}&response_type=code&scope=user:manage:chat_color+chat:edit+chat:read";
                     var psi = new ProcessStartInfo
                     {
                         FileName = url,
@@ -205,7 +196,7 @@ namespace butterBror
                     using var httpClient = new HttpClient();
                     var request = new HttpRequestMessage(HttpMethod.Post, "https://id.twitch.tv/oauth2/token")
                     {
-                        Content = new StringContent($"client_id={_clientId}&client_secret={_clientSecret}&redirect_uri={_redirectUri}&grant_type=authorization_code&code={code}", Encoding.UTF8, "application/x-www-form-urlencoded")
+                        Content = new StringContent($"client_id={client_id}&client_secret={client_secret}&redirect_uri={redirect_uri}&grant_type=authorization_code&code={code}", Encoding.UTF8, "application/x-www-form-urlencoded")
                     };
 
                     var response = await httpClient.SendAsync(request);
@@ -246,9 +237,9 @@ namespace butterBror
                 Engine.Statistics.functions_used.Add();
                 try
                 {
-                    if (FileUtil.FileExists(_databasePath))
+                    if (FileUtil.FileExists(database_path))
                     {
-                        var json = FileUtil.GetFileContent(_databasePath);
+                        var json = FileUtil.GetFileContent(database_path);
                         if (string.IsNullOrEmpty(json)) return null;
                         var tokenData = JsonConvert.DeserializeObject<TokenData>(json);
                         Console.WriteLine("[TW-AUTH-UTIL] Token data loaded!", "info");
@@ -269,7 +260,7 @@ namespace butterBror
                 Engine.Statistics.functions_used.Add();
                 try
                 {
-                    FileUtil.SaveFileContent(_databasePath, JsonConvert.SerializeObject(tokenData));
+                    FileUtil.SaveFileContent(database_path, JsonConvert.SerializeObject(tokenData));
                 }
                 catch (Exception ex)
                 {
@@ -337,15 +328,22 @@ namespace butterBror
             public static void Add(string userID, int buttersAdd, int crumbsAdd, Platforms platform)
             {
                 Engine.Statistics.functions_used.Add();
-                int crumbs = GetBalanceFloat(userID, platform) + crumbsAdd;
+                int crumbs = GetSubbalance(userID, platform) + crumbsAdd;
                 int butters = GetBalance(userID, platform) + buttersAdd;
 
-                Engine.coins += buttersAdd + crumbsAdd / 100f;
+                Engine.Coins += buttersAdd + crumbsAdd / 100f;
                 while (crumbs > 100)
                 {
                     crumbs -= 100;
                     butters += 1;
                 }
+
+                while (crumbs < 0)
+                {
+                    crumbs += 100;
+                    butters -= 1;
+                }
+
                 UsersData.Save(userID, "floatBalance", crumbs, platform);
                 UsersData.Save(userID, "balance", butters, platform);
             }
@@ -360,7 +358,7 @@ namespace butterBror
             /// <summary>
             /// Getting user balance float
             /// </summary>
-            public static int GetBalanceFloat(string userID, Platforms platform)
+            public static int GetSubbalance(string userID, Platforms platform)
             {
                 Engine.Statistics.functions_used.Add();
                 return UsersData.Get<int>(userID, "floatBalance", platform);
@@ -392,7 +390,7 @@ namespace butterBror
                 }
 
                 string? message = UsersData.Get<string>(UserID, "afkText", platform);
-                if (!NoBanwords.Check(message, RoomID, platform))
+                if (!new NoBanwords().Check(message, RoomID, platform))
                     return;
 
                 string send = (TextUtil.CleanAsciiWithoutSpaces(message) == "" ? "" : ": " + message);
@@ -513,7 +511,7 @@ namespace butterBror
                     if (!Maintenance.twitch_client.JoinedChannels.Contains(new JoinedChannel(channel)))
                         Maintenance.twitch_client.JoinChannel(channel);
 
-                    if (isSafeEx || NoBanwords.Check(message, channelID, Platforms.Twitch))
+                    if (isSafeEx || new NoBanwords().Check(message, channelID, Platforms.Twitch))
                         Maintenance.twitch_client.SendMessage(channel, message);
                     else
                         Maintenance.twitch_client.SendReply(channel, messageID, TranslationManager.GetTranslation(lang, "error:message_could_not_be_sent", channelID, Platforms.Twitch));
@@ -554,7 +552,7 @@ namespace butterBror
                     if (!Maintenance.twitch_client.JoinedChannels.Contains(new JoinedChannel(channel)))
                         Maintenance.twitch_client.JoinChannel(channel);
 
-                    if (isSafeEx || NoBanwords.Check(message, channelID, Platforms.Twitch))
+                    if (isSafeEx || new NoBanwords().Check(message, channelID, Platforms.Twitch))
                         Maintenance.twitch_client.SendReply(channel, messageID, message);
                     else
                         Maintenance.twitch_client.SendReply(channel, messageID, TranslationManager.GetTranslation(lang, "error:message_could_not_be_sent", channelID, Platforms.Twitch));
@@ -578,7 +576,7 @@ namespace butterBror
                     if (message.Length > 4096)
                         message = TranslationManager.GetTranslation(lang, "error:too_large_text", channelID.ToString(), Platforms.Telegram);
 
-                    if (isSafeEx || NoBanwords.Check(message, channelID.ToString(), Platforms.Telegram))
+                    if (isSafeEx || new NoBanwords().Check(message, channelID.ToString(), Platforms.Telegram))
                         Maintenance.telegram_client.SendMessage(
                             channelID,
                             message,
@@ -625,12 +623,12 @@ namespace butterBror
             /// <summary>
             /// Get user ID by nickname
             /// </summary>
-            public static string GetUserID(string user, Platforms platform)
+            public static string GetUserID(string user, Platforms platform, bool requestAPI = false)
             {
                 Engine.Statistics.functions_used.Add();
 
-                string key      = user.ToLowerInvariant();
-                string dir      = Path.Combine(Maintenance.path_n2id, Platform.strings[(int)platform]);
+                string key = user.ToLowerInvariant();
+                string dir = Path.Combine(Maintenance.path_n2id, Platform.strings[(int)platform]);
                 string filePath = Path.Combine(dir, key + ".txt");
 
                 try
@@ -639,7 +637,7 @@ namespace butterBror
                         return FileUtil.GetFileContent(filePath);
 
                     // Twitch API
-                    if (platform is Platforms.Twitch)
+                    if (platform is Platforms.Twitch && requestAPI)
                     {
                         if (string.IsNullOrEmpty(Maintenance.twitch_client_id) || string.IsNullOrEmpty(Maintenance.token_twitch.AccessToken))
                             return null;
@@ -681,11 +679,11 @@ namespace butterBror
             /// <summary>
             /// Get username by ID
             /// </summary>
-            public static string GetUsername(string ID, Platforms platform)
+            public static string GetUsername(string ID, Platforms platform, bool requestAPI = false)
             {
                 Engine.Statistics.functions_used.Add();
 
-                string dir      = Path.Combine(Maintenance.path_id2n, Platform.strings[(int)platform]);
+                string dir = Path.Combine(Maintenance.path_id2n, Platform.strings[(int)platform]);
                 string filePath = Path.Combine(dir, ID + ".txt");
 
                 try
@@ -694,7 +692,7 @@ namespace butterBror
                         return FileUtil.GetFileContent(filePath);
 
                     // API
-                    if (platform is Platforms.Twitch)
+                    if (platform is Platforms.Twitch && requestAPI)
                     {
                         if (string.IsNullOrEmpty(Maintenance.twitch_client_id) ||
                             string.IsNullOrEmpty(Maintenance.token_twitch.AccessToken))
@@ -1157,8 +1155,12 @@ namespace butterBror
                     // VIP or dev/mod bypass
                     bool isVipOrStaff = UsersData.Get<bool>(userID, "isBotModerator", platform)
                                         || UsersData.Get<bool>(userID, "isBotDev", platform);
+
                     if (isVipOrStaff && !ignoreUserVIP)
+                    {
+                        Console.WriteLine($"Cooldown info A: {isVipOrStaff}, {ignoreUserVIP}", "info");
                         return true;
+                    }
 
                     string userKey = $"LU_{cooldownParamName}";
                     string channelPath = Path.Combine(Maintenance.path_channels, Platform.strings[(int)platform], roomID);
@@ -1167,9 +1169,10 @@ namespace butterBror
                     DateTime now = DateTime.UtcNow;
 
                     // First user use
-                    if (!UsersData.Contains(userKey, userID, platform))
+                    if (!UsersData.Contains(userID, userKey, platform))
                     {
                         UsersData.Save(userID, userKey, now, platform);
+                        Console.WriteLine($"Cooldown info B: First user key {userKey}", "info");
                         return true;
                     }
 
@@ -1193,7 +1196,10 @@ namespace butterBror
 
                     // Global cooldown bypass
                     if (ignoreGlobalCooldown)
+                    {
+                        Console.WriteLine($"Cooldown info C: {ignoreGlobalCooldown}", "info");
                         return true;
+                    }
 
                     // Ensure channel cooldowns file exists
                     if (!FileUtil.FileExists(cddFile))
@@ -1209,6 +1215,7 @@ namespace butterBror
                     if (lastGlobalUse == default || globalElapsedSec >= globalCooldown)
                     {
                         Manager.Save(cddFile, userKey, now);
+                        Console.WriteLine($"Cooldown info D: {lastGlobalUse}, {globalElapsedSec}, {globalCooldown}", "info");
                         return true;
                     }
                     else
@@ -1217,6 +1224,8 @@ namespace butterBror
                         Console.WriteLine($"User {name} tried to use the command, but it is on global cooldown!", "info");
                         LogWorker.Log($"User {name} tried to use the command, but it is on global cooldown!",
                                       LogWorker.LogTypes.Warn, cooldownParamName);
+
+                        Console.WriteLine($"Cooldown info E: {lastGlobalUse}, {globalElapsedSec}, {globalCooldown}", "info");
                         return false;
                     }
                 }
@@ -1232,9 +1241,9 @@ namespace butterBror
             /// Get cooldown time
             /// </summary>
             public static TimeSpan GetCooldownTime(
-                string userID, 
-                string cooldownParamName, 
-                int userSecondsCooldown, 
+                string userID,
+                string cooldownParamName,
+                int userSecondsCooldown,
                 Platforms platform
             )
             {
@@ -1329,7 +1338,7 @@ namespace butterBror
                         // Award coins
                         int add_coins = Message.Length / 6 + 1;
                         Balance.Add(UserID, 0, add_coins, Platform);
-                        int floatBal = Balance.GetBalanceFloat(UserID, Platform);
+                        int floatBal = Balance.GetSubbalance(UserID, Platform);
                         int bal = Balance.GetBalance(UserID, Platform);
 
                         prefix.Append(Platform == Platforms.Discord
@@ -1341,7 +1350,7 @@ namespace butterBror
                     if (!UsersData.Get<bool>(UserID, "isReadedCurrency", Platform))
                     {
                         UsersData.Save(UserID, "isReadedCurrency", true, Platform);
-                        Engine.coins += (float)(UsersData.Get<int>(UserID, "balance", Platform)
+                        Engine.Coins += (float)(UsersData.Get<int>(UserID, "balance", Platform)
                                        + UsersData.Get<int>(UserID, "floatBalance", Platform) / 100.0);
                         Engine.users++;
                         prefix.Append("(Added to currency) ");
@@ -1402,7 +1411,7 @@ namespace butterBror
                         isTurbo = Platform == Platforms.Twitch && Twitch.ChatMessage.IsTurbo,
                         isVip = Platform == Platforms.Twitch && Twitch.ChatMessage.IsVip
                     };
-                    MessagesWorker.SaveMessage(RoomId, UserID, msg, Platform);
+                    await MessagesWorker.SaveMessage(RoomId, UserID, msg, Platform);
 
                     // Nickname mappings
                     if (!FileUtil.FileExists(nick2id) || !FileUtil.FileExists(id2nick))
@@ -1531,11 +1540,19 @@ namespace butterBror
 
                 public static readonly Dictionary<string, string> available_models = new()
     {
-        { "qwen", "qwen/qwen3-0.6b-04-28:free" },
+        { "qwen", "qwen/qwen3-30b-a3b:free" },
         { "deepseek", "deepseek/deepseek-v3-base:free" },
         { "gemma", "google/gemma-3-1b-it:free" },
         { "meta", "meta-llama/llama-4-maverick:free" }
     };
+                public static readonly Dictionary<string, TimeSpan> models_timeout = new()
+    {
+        { "qwen", TimeSpan.FromSeconds(240) },
+        { "deepseek", TimeSpan.FromSeconds(240) },
+        { "gemma", TimeSpan.FromSeconds(60) },
+        { "meta", TimeSpan.FromSeconds(60) }
+    };
+                public static readonly List<string> generating_models = new() { "qwen", "deepseek" };
 
                 public class Message
                 {
@@ -1560,50 +1577,45 @@ namespace butterBror
                     public string model { get; set; }
                 }
 
-                public static async Task<string[]> Request(CommandData data)
+                public static async Task<string[]> Request(string request, string umodel, Platforms platform, string username, string userID, string lang)
                 {
                     Engine.Statistics.functions_used.Add();
-
-                    if (data.arguments.Count < 1)
-                        return new[] { "ERR", "Not enough arguments" };
 
                     var api_key = Manager.Get<string>(Maintenance.path_settings, "openrouter_token");
                     var uri = new Uri("https://openrouter.ai/api/v1/chat/completions");
 
                     string selected_model = "meta-llama/llama-4-maverick:free";
                     string model = "meta";
-                    if (Command.GetArgument(data.arguments, "model") is not null)
+                    if (umodel is not null)
                     {
-                        model = Command.GetArgument(data.arguments, "model").ToLower();
+                        model = umodel.ToLower();
                         if (!available_models.ContainsKey(model))
                         {
                             return new[] { "ERR", "Model not found" };
                         }
 
                         selected_model = available_models[model];
-                        data.arguments.Remove($"model:{Command.GetArgument(data.arguments, "model")}");
-                        data.arguments_string = string.Join(" ", data.arguments);
                     }
 
-                    if (string.IsNullOrWhiteSpace(data.arguments_string))
+                    if (string.IsNullOrWhiteSpace(request))
                         return new[] { "ERR", "Empty request" };
 
                     var system_message = new Message
                     {
                         role = "system",
-                        content = $@"Hello. You are {Platform.strings[(int)data.platform]} bot. Your name is {Maintenance.bot_name}. DO NOT POST CONFIDENTIAL INFORMATION, DO NOT USE PROFANITY, DO NOT WRITE WORDS THAT MAY GET YOU BLOCKED! DO NOT DISCUSS CONTROVERSIAL TOPICS! Try to write everything BRIEFLY! No more than 400 characters! Time: {DateTime.UtcNow:O} UTC"
+                        content = $@"Hello. You are bot on platform: {Platform.strings[(int)platform]}. Your name is {Maintenance.bot_name}. DO NOT POST CONFIDENTIAL INFORMATION, DO NOT USE PROFANITY, DO NOT WRITE WORDS THAT MAY GET YOU BLOCKED! DO NOT DISCUSS CONTROVERSIAL TOPICS! Try to write everything BRIEFLY! Try NOT TO WRITE MORE THAN 500 CHARACTERS! Shorten your text! Time: {DateTime.UtcNow:O} UTC"
                     };
 
                     var user_info_message = new Message
                     {
                         role = "system",
-                        content = $"User info:\n1) Username: {data.user.username}\n2) ID: {data.user_id}\n3) Language (YOUR ANSWER MUST BE IN IT!): {data.user.language}\n"
+                        content = $"User info:\n1) Username: {username}\n2) ID: {userID}\n3) Language (YOUR ANSWER MUST BE IN IT unless the user says otherwise!): {lang}\n"
                     };
 
                     var user_message = new Message
                     {
                         role = "user",
-                        content = data.arguments_string
+                        content = request
                     };
 
                     var request_body = new RequestBody
@@ -1613,9 +1625,8 @@ namespace butterBror
                     };
 
                     using var client = new HttpClient();
-                    client.Timeout = TimeSpan.FromSeconds(30);
+                    client.Timeout = models_timeout[model];
                     var json_content = JsonConvert.SerializeObject(request_body);
-                    Console.WriteLine($"[AI] Request: {json_content}", "info");
                     using var req = new HttpRequestMessage(HttpMethod.Post, uri)
                     {
                         Content = new StringContent(json_content, Encoding.UTF8, "application/json")
@@ -1626,7 +1637,6 @@ namespace butterBror
                     {
                         var resp = await client.SendAsync(req);
                         var body = await resp.Content.ReadAsStringAsync();
-                        Console.WriteLine($"[AI] Response: {body}", "info");
 
                         if (resp.IsSuccessStatusCode)
                         {
@@ -1964,6 +1974,31 @@ namespace butterBror
                     }
                 }
             }
+
+            public class Telegram
+            {
+                public static async Task<long> Ping()
+                {
+                    var client = new HttpClient();
+                    client.Timeout = TimeSpan.FromSeconds(1);
+                    var stopwatch = new Stopwatch();
+                    string url = "https://telegram.org/robots.txt";
+
+                    try
+                    {
+                        stopwatch.Start();
+                        var response = await client.GetAsync(url);
+                        stopwatch.Stop();
+
+                        return stopwatch.ElapsedMilliseconds;
+                    }
+                    catch (Exception ex)
+                    {
+                        return -1;
+                    }
+                }
+            }
+
             /*
             public class Currency
             {
@@ -2098,64 +2133,6 @@ namespace butterBror
         /// </summary>
         public class YouTube
         {
-            public static string[] GetPlaylistLinks(string playlistId, string developerKey)
-            {
-                Engine.Statistics.functions_used.Add();
-                try
-                {
-                    var youtubeService = new YouTubeService(new BaseClientService.Initializer()
-                    {
-                        ApplicationName = "YouTube Playlist Viewer",
-                        ApiKey = developerKey
-                    });
-
-                    var playlistItemsRequest = youtubeService.PlaylistItems.List("contentDetails");
-                    playlistItemsRequest.PlaylistId = playlistId;
-                    playlistItemsRequest.MaxResults = 50;
-
-                    List<string> videoLinks = [];
-
-                    PlaylistItemListResponse playlistItemResponse = new();
-
-                    do
-                    {
-                        try
-                        {
-                            playlistItemResponse = playlistItemsRequest.Execute();
-
-                            if (playlistItemResponse.Items != null && playlistItemResponse.Items.Any())
-                            {
-                                foreach (var item in playlistItemResponse.Items)
-                                {
-                                    var videoId = item.ContentDetails.VideoId;
-                                    var videoRequest = youtubeService.Videos.List("status");
-                                    videoRequest.Id = videoId;
-                                    var videoResponse = videoRequest.Execute();
-
-                                    playlistItemsRequest.PageToken = playlistItemResponse.NextPageToken;
-
-                                    if (videoResponse.Items != null && videoResponse.Items.Any())
-                                    {
-                                        var videoItem = videoResponse.Items[0];
-                                        videoLinks.Add($"https://www.youtube.com/watch?v={videoId}");
-                                    }
-                                }
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            Console.WriteLine("YOUTUBE PLAYLIST ERROR: " + ex.Message, "err");
-                        }
-                    } while (playlistItemResponse.NextPageToken != null);
-
-                    return [.. videoLinks];
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteError(ex, $"YTAPI\\GetPlaylistVideoLinks");
-                    return null;
-                }
-            }
             public static string[] GetPlaylistVideos(string playlistUrl)
             {
                 Engine.Statistics.functions_used.Add();
