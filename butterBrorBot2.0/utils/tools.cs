@@ -17,6 +17,7 @@ using System.Text.RegularExpressions;
 using System.Web;
 using Telegram.Bot;
 using Telegram.Bot.Types;
+using TwitchLib.Client.Enums;
 using TwitchLib.Client.Events;
 using TwitchLib.Client.Models;
 
@@ -301,6 +302,24 @@ namespace butterBror
             {
                 Engine.Statistics.functions_used.Add();
                 return long.Parse(Regex.Replace(input, @"[^-1234567890]", ""));
+            }
+
+            /// <summary>
+            /// Text to ulong number
+            /// </summary>
+            public static ulong ToUlong(string input)
+            {
+                Engine.Statistics.functions_used.Add();
+                return ulong.Parse(Regex.Replace(input, @"[^-1234567890]", "").Replace(",", "."));
+            }
+
+            /// <summary>
+            /// Text to double number
+            /// </summary>
+            public static double ToDouble(string input)
+            {
+                Engine.Statistics.functions_used.Add();
+                return double.Parse(Regex.Replace(input, @"[^-1234567890,.]", "").Replace(",", "."));
             }
             /// <summary>
             /// Get the amount of time until
@@ -592,6 +611,63 @@ namespace butterBror
                 catch (Exception ex)
                 {
                     Console.WriteError(ex, $"[tg]ChatUtil\\SendMsgReply#CHNL:{channelID}\\MSG:\"{message}\"");
+                }
+            }
+
+            /// <summary>
+            /// Send reply to any platform
+            /// </summary>
+            public static void SendReply(Platforms platform, string channel, string channelID, string message, string language, string username, string userID, string server, string serverID, string messageID, Message messageReply, bool isSafe = false, ChatColorPresets usernameColor = ChatColorPresets.YellowGreen)
+            {
+                switch (platform)
+                {
+                    case Platforms.Twitch:
+                        Commands.SendCommandReply(new TwitchMessageSendData
+                        {
+                            message = message,
+                            channel = channel,
+                            channel_id = channelID,
+                            message_id = messageID,
+                            language = language,
+                            username = username,
+                            safe_execute = isSafe,
+                            nickname_color = usernameColor
+                        });
+                        break;
+                    case Platforms.Discord:
+                        Commands.SendCommandReply(new DiscordCommandSendData
+                        {
+                            message = message,
+                            title = "",
+                            description = "",
+                            embed_color = Discord.Color.Green,
+                            is_embed = false,
+                            is_ephemeral = false,
+                            server = server,
+                            server_id = serverID,
+                            language = language,
+                            safe_execute = isSafe,
+                            socket_command_base = null,
+                            author = "",
+                            image_link = "",
+                            thumbnail_link = "",
+                            footer = "",
+                            channel_id = channelID,
+                            user_id = userID
+                        });
+                        break;
+                    case Platforms.Telegram:
+                        Commands.SendCommandReply(new TelegramMessageSendData
+                        {
+                            message = message,
+                            language = language,
+                            safe_execute = isSafe,
+                            channel = channel,
+                            channel_id = channelID,
+                            message_id = messageID,
+                            username = username
+                        });
+                        break;
                 }
             }
         }
@@ -1076,7 +1152,7 @@ namespace butterBror
             private static async Task<List<string>> GetEmotesFromCache(string userId)
             {
                 Engine.Statistics.functions_used.Add();
-                var emote = await Maintenance.sevenTv.GetUser(userId);
+                var emote = await Maintenance.sevenTv.rest.GetUser(userId);
                 if (emote?.connections?[0].emote_set?.emotes == null)
                 {
                     Console.WriteLine($"[7tv] No emotes found for user {userId}", "info");
@@ -1205,7 +1281,7 @@ namespace butterBror
                     if (!FileUtil.FileExists(cddFile))
                     {
                         Directory.CreateDirectory(channelPath);
-                        Manager.Save(cddFile, userKey, DateTime.MinValue);
+                        SafeManager.Save(cddFile, userKey, DateTime.MinValue);
                     }
 
                     // Global cooldown check
@@ -1214,7 +1290,7 @@ namespace butterBror
 
                     if (lastGlobalUse == default || globalElapsedSec >= globalCooldown)
                     {
-                        Manager.Save(cddFile, userKey, now);
+                        SafeManager.Save(cddFile, userKey, now);
                         Console.WriteLine($"Cooldown info D: {lastGlobalUse}, {globalElapsedSec}, {globalCooldown}", "info");
                         return true;
                     }
@@ -1539,20 +1615,26 @@ namespace butterBror
                 }
 
                 public static readonly Dictionary<string, string> available_models = new()
-    {
-        { "qwen", "qwen/qwen3-30b-a3b:free" },
-        { "deepseek", "deepseek/deepseek-v3-base:free" },
-        { "gemma", "google/gemma-3-1b-it:free" },
-        { "meta", "meta-llama/llama-4-maverick:free" }
-    };
+                {
+                    { "qwen", "qwen/qwen3-30b-a3b:free" },
+                    { "deepseek", "deepseek/deepseek-r1-0528-qwen3-8b:free" },
+                    { "gemma", "google/gemma-3n-e4b-it:free" },
+                    { "meta", "meta-llama/llama-3.3-8b-instruct:free" },
+                    { "microsoft", "microsoft/phi-4-reasoning-plus:free" },
+                    { "nvidia", "nvidia/llama-3.3-nemotron-super-49b-v1:free" },
+                    { "mistral", "mistralai/devstral-small:free" }
+                };
                 public static readonly Dictionary<string, TimeSpan> models_timeout = new()
-    {
-        { "qwen", TimeSpan.FromSeconds(240) },
-        { "deepseek", TimeSpan.FromSeconds(240) },
-        { "gemma", TimeSpan.FromSeconds(60) },
-        { "meta", TimeSpan.FromSeconds(60) }
-    };
-                public static readonly List<string> generating_models = new() { "qwen", "deepseek" };
+                {
+                    { "qwen", TimeSpan.FromSeconds(240) },
+                    { "deepseek", TimeSpan.FromSeconds(240) },
+                    { "microsoft", TimeSpan.FromSeconds(240) },
+                    { "gemma", TimeSpan.FromSeconds(60) },
+                    { "meta", TimeSpan.FromSeconds(60) },
+                    { "nvidia", TimeSpan.FromSeconds(60) },
+                    { "mistral", TimeSpan.FromSeconds(60) }
+                };
+                public static readonly List<string> generating_models = new() { "qwen", "deepseek", "microsoft" };
 
                 public class Message
                 {
@@ -1564,6 +1646,7 @@ namespace butterBror
                 {
                     public string model { get; set; }
                     public List<Message> messages { get; set; }
+                    public double repetition_penalty { get; set; }
                 }
 
                 public class Choice
@@ -1577,15 +1660,16 @@ namespace butterBror
                     public string model { get; set; }
                 }
 
-                public static async Task<string[]> Request(string request, string umodel, Platforms platform, string username, string userID, string lang)
+                public static async Task<string[]> Request(string request, string umodel, Platforms platform, string username, string userID, string lang, double repetitionPenalty, bool chatHistory = true)
                 {
                     Engine.Statistics.functions_used.Add();
 
+                    DateTime requestTime = DateTime.UtcNow;
                     var api_key = Manager.Get<string>(Maintenance.path_settings, "openrouter_token");
                     var uri = new Uri("https://openrouter.ai/api/v1/chat/completions");
 
                     string selected_model = "meta-llama/llama-4-maverick:free";
-                    string model = "meta";
+                    string model = "qwen";
                     if (umodel is not null)
                     {
                         model = umodel.ToLower();
@@ -1603,13 +1687,13 @@ namespace butterBror
                     var system_message = new Message
                     {
                         role = "system",
-                        content = $@"Hello. You are bot on platform: {Platform.strings[(int)platform]}. Your name is {Maintenance.bot_name}. DO NOT POST CONFIDENTIAL INFORMATION, DO NOT USE PROFANITY, DO NOT WRITE WORDS THAT MAY GET YOU BLOCKED! DO NOT DISCUSS CONTROVERSIAL TOPICS! Try to write everything BRIEFLY! Try NOT TO WRITE MORE THAN 500 CHARACTERS! Shorten your text! Time: {DateTime.UtcNow:O} UTC"
+                        content = $@"You are bot on platform: {Platform.strings[(int)platform]}. Your name is {Maintenance.bot_name}. DO NOT POST CONFIDENTIAL INFORMATION, DO NOT USE PROFANITY! WRITE LESS THAN 50 WORDS! SHORTEN YOUR TEXT!"
                     };
 
                     var user_info_message = new Message
                     {
                         role = "system",
-                        content = $"User info:\n1) Username: {username}\n2) ID: {userID}\n3) Language (YOUR ANSWER MUST BE IN IT unless the user says otherwise!): {lang}\n"
+                        content = $"User info:\n1) Username: {username}\n2) ID: {userID}\n3) Language (YOUR ANSWER MUST BE IN IT unless the user says otherwise!): {lang}\nCurrent date and time: {DateTime.UtcNow.ToString("dd-MM-yyyy HH:mm")} UTC"
                     };
 
                     var user_message = new Message
@@ -1618,10 +1702,23 @@ namespace butterBror
                         content = request
                     };
 
-                    var request_body = new RequestBody
+                    List<Message> messages = new List<Message> { system_message, user_info_message, user_message };
+
+                    if (chatHistory)
+                    {
+                        var history = UsersData.Get<List<string>>(userID, "gpt_history", platform);
+                        messages.Insert(0, new Message
+                        {
+                            role = "system",
+                            content = $"Chat history:\n{string.Join('\n', history)}"
+                        });
+                    }
+
+                    RequestBody request_body = new RequestBody
                     {
                         model = selected_model,
-                        messages = new List<Message> { system_message, user_info_message, user_message }
+                        messages = messages,
+                        repetition_penalty = repetitionPenalty
                     };
 
                     using var client = new HttpClient();
@@ -1641,6 +1738,21 @@ namespace butterBror
                         if (resp.IsSuccessStatusCode)
                         {
                             var result = JsonConvert.DeserializeObject<ResponseBody>(body);
+
+                            if (chatHistory)
+                            {
+                                var history = UsersData.Get<List<string>>(userID, "gpt_history", platform);
+                                history.Add($"{requestTime.ToString("dd-MM-yyyy HH:mm")} [user]: {request}");
+                                history.Add($"{DateTime.UtcNow.ToString("dd-MM-yyyy HH:mm")} [AI]: {result.choices[0].message.content}");
+
+                                if (history.Count > 10)
+                                {
+                                    history.RemoveRange(0, history.Count - 6);
+                                }
+
+                                UsersData.Save(userID, "gpt_history", chatHistory, platform);
+                            }
+
                             return new[] { model, result.choices[0].message.content };
                         }
 
@@ -1688,7 +1800,7 @@ namespace butterBror
                             int usage = Manager.Get<int>(Maintenance.path_cache, cacheKey);
                             if (usage >= 10) continue;
 
-                            Manager.Save(Maintenance.path_cache, cacheKey, ++usage);
+                            SafeManager.Save(Maintenance.path_cache, cacheKey, ++usage);
 
                             var uri = new Uri(
                                 $"https://ai-weather-by-meteosource.p.rapidapi.com/current" +
@@ -1747,7 +1859,7 @@ namespace butterBror
                             if (uses >= 10)
                                 continue;
 
-                            Manager.Save(Maintenance.path_API_uses, usageKey, ++uses);
+                            SafeManager.Save(Maintenance.path_API_uses, usageKey, ++uses);
 
                             var uri = new Uri(
                                 $"https://ai-weather-by-meteosource.p.rapidapi.com/find_places" +
@@ -1791,7 +1903,7 @@ namespace butterBror
                                 }
                             }
 
-                            Manager.Save(Maintenance.path_cache, "Data", cache);
+                            SafeManager.Save(Maintenance.path_cache, "Data", cache);
                             return places;
                         }
 
@@ -1982,17 +2094,18 @@ namespace butterBror
                     var client = new HttpClient();
                     client.Timeout = TimeSpan.FromSeconds(1);
                     var stopwatch = new Stopwatch();
-                    string url = "https://telegram.org/robots.txt";
+                    string url = "https://telegram.org/";
 
                     try
                     {
+                        var request = new HttpRequestMessage(HttpMethod.Head, url);
                         stopwatch.Start();
-                        var response = await client.GetAsync(url);
+                        var response = await client.SendAsync(request);
                         stopwatch.Stop();
 
-                        return stopwatch.ElapsedMilliseconds;
+                        return stopwatch.ElapsedMilliseconds/2;
                     }
-                    catch (Exception ex)
+                    catch
                     {
                         return -1;
                     }

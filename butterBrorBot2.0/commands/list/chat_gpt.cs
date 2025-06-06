@@ -2,6 +2,7 @@
 using butterBror;
 using Discord;
 using TwitchLib.Client.Enums;
+using butterBror.Utils.DataManagers;
 
 namespace butterBror
 {
@@ -24,7 +25,7 @@ namespace butterBror
                 CooldownPerUser = 30,
                 CooldownPerChannel = 10,
                 Aliases = ["gpt", "гпт", "chatgpt", "чатгпт", "джипити", "neuro", "нейро", "нейросеть", "neuralnetwork", "gwen", "ai", "ии"],
-                Arguments = "(text)",
+                Arguments = "[(model:gemma) (history:ignore) text/chat:clear/chat:models]",
                 CooldownReset = false,
                 CreationDate = DateTime.Parse("04/07/2024"),
                 IsForBotModerator = false,
@@ -39,7 +40,7 @@ namespace butterBror
 
                 try
                 {
-                    if (new NoBanwords().Check(data.arguments_string, data.channel_id, data.platform))
+                    if (Command.GetArgument(data.arguments, "chat") is null)
                     {
                         float currency = Engine.BankDollars / Engine.Coins;
                         float cost = 0.5f / currency;
@@ -58,7 +59,9 @@ namespace butterBror
                                 Utils.Balance.Add(data.user_id, coins, subcoins, data.platform);
 
                                 string request = data.arguments_string;
-                                string model = null;
+                                string model = "qwen";
+                                double repetitionPenalty = 1;
+                                bool useHistory = true;
 
                                 if (Command.GetArgument(data.arguments, "model") is not null)
                                 {
@@ -66,7 +69,38 @@ namespace butterBror
                                     request = request.Replace($"model:{model}", "");
                                 }
 
-                                string[] result = await Utils.API.AI.Request(request, model, data.platform, data.user.username, data.user_id, data.user.language);
+                                if (Command.GetArgument(data.arguments, "repetition_penalty") is not null)
+                                {
+                                    try
+                                    {
+                                        repetitionPenalty = Utils.Format.ToDouble(Command.GetArgument(data.arguments, "repetition_penalty"));
+                                        request = request.Replace($"repetition_penalty:{repetitionPenalty}", "");
+
+                                        if (repetitionPenalty > 2) repetitionPenalty = 2;
+                                    }
+                                    catch { }
+                                }
+
+                                if (Command.GetArgument(data.arguments, "history") is "ignore")
+                                {
+                                    useHistory = false;
+                                    request = request.Replace("history:ignore", "");
+                                }
+
+                                if (!UsersData.Contains(data.user.id, "gpt_history", data.platform)) UsersData.Save(data.user.id, "gpt_history", Array.Empty<List<string>>(), data.platform);
+
+                                if (Utils.API.AI.generating_models.Contains(model, StringComparer.OrdinalIgnoreCase))
+                                {
+                                    Chat.SendReply(data.platform, data.channel, data.channel_id,
+                                        TranslationManager.GetTranslation(data.user.language, "command:gpt:generating", data.channel_id, data.platform),
+                                        data.user.language, data.user.username, data.user.id,
+                                        data.server, data.server_id, data.message_id,
+                                        data.telegram_message, true
+                                        );
+                                }
+
+                                string[] result = await Utils.API.AI.Request(request, model, data.platform, data.user.username, data.user_id, data.user.language, repetitionPenalty, useHistory);
+                                
                                 if (result[0] == "ERR")
                                 {
                                     commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:AI_error", data.channel_id, data.platform, new() { { "reason", result[1] } }));
@@ -85,7 +119,25 @@ namespace butterBror
                     }
                     else
                     {
-                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:message_could_not_be_sent", data.channel_id, data.platform));
+                        string argument = Command.GetArgument(data.arguments, "chat").ToLower();
+                        if (argument is "clear")
+                        {
+                            UsersData.Save(data.user.id, "gpt_history", Array.Empty<List<string>>(), data.platform);
+                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:gpt:cleared", data.channel_id, data.platform));
+                        }
+                        else if (argument is "models")
+                        {
+                            List<string> models = Utils.API.AI.available_models.Select(model => model.Key).ToList();
+
+                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:gpt:models", data.channel_id, data.platform, new()
+                            {
+                                { "list", string.Join(",", models) }
+                            }));
+                        }
+                        else
+                        {
+                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:no_arguments", data.channel_id, data.platform));
+                        }
                     }
                 }
                 catch (Exception e)

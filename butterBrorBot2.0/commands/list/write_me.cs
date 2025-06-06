@@ -48,12 +48,12 @@ namespace butterBror
                         {
                             while (meMessage.StartsWith(' '))
                             {
-                                meMessage = (string)meMessage.Skip(1);
+                                meMessage = string.Join("", meMessage.Skip(1)); // AB6 fix
                             }
 
                             if (meMessage.StartsWith('!'))
                             {
-                                meMessage = "❗" + meMessage.Skip(1);
+                                meMessage = "❗" + string.Join("", meMessage.Skip(1)); // AB6 fix
                                 break;
                             }
 
@@ -61,10 +61,12 @@ namespace butterBror
                             {
                                 if (meMessage.StartsWith(blockedEntry))
                                 {
-                                    meMessage = (string)meMessage.Skip(blockedEntry.Length);
+                                    meMessage = string.Join("", meMessage.Skip(blockedEntry.Length)); // AB6 fix
                                     break;
                                 }
                             }
+
+                            break; // AB5 fix
                         }
                         commandReturn.SetMessage($"/me \u2063 {meMessage}");
                     }

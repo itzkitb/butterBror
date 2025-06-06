@@ -23,7 +23,7 @@ namespace butterBror
                 WikiLink = "https://itzkitb.ru/bot/command?name=help",
                 CooldownPerUser = 120,
                 CooldownPerChannel = 10,
-                Aliases = ["help", "info", "помощь", "hlp"],
+                Aliases = ["help", "помощь", "hlp"],
                 Arguments = "(command name)",
                 CooldownReset = false,
                 CreationDate = DateTime.Parse("09/12/2024"),
@@ -60,9 +60,9 @@ namespace butterBror
                                 {
                                     num++;
                                     if (num < numWithoutComma)
-                                        aliasesList += $"#{alias}, ";
+                                        aliasesList += $"{Maintenance.executor}{alias}, ";
                                     else if (num == numWithoutComma)
-                                        aliasesList += $"#{alias}";
+                                        aliasesList += $"{Maintenance.executor}{alias}";
                                 }
                                 commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:help", data.channel_id, data.platform)
                                     .Replace("%commandName%", info.Name)

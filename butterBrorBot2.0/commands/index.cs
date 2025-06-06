@@ -58,7 +58,8 @@ namespace butterBror
             typeof(Name),
             typeof(Translation),
             typeof(SetLocation),
-            typeof(Cookie)
+            typeof(Cookie),
+            typeof(Currency)
         ];
 
         public static List<CommandHandler> commandHandlers = new();

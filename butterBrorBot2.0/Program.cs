@@ -36,7 +36,7 @@ namespace butterBror
         public  static bool     ready              = false;
         public  static float    Coins              = 0;
         public  static string   version            = "2.15";
-        public  static string   patch              = "C";
+        public  static string   patch              = "G";
         public  static string   previous_version;
         public  static int      BankDollars       = 0;
         public  static DateTime start_time         = new();
@@ -300,14 +300,14 @@ namespace butterBror
 
                     if (!Maintenance.path_currency.IsNullOrEmpty())
                     {
-                        Manager.Save(Maintenance.path_currency, "totalAmount", Coins);
-                        Manager.Save(Maintenance.path_currency, "totalUsers", users);
-                        Manager.Save(Maintenance.path_currency, "totalDollarsInTheBank", BankDollars);
-                        Manager.Save(Maintenance.path_currency, $"[{date.Day}.{date.Month}.{date.Year}]", "");
-                        Manager.Save(Maintenance.path_currency, $"[{date.Day}.{date.Month}.{date.Year}] cost", (BankDollars / Coins));
-                        Manager.Save(Maintenance.path_currency, $"[{date.Day}.{date.Month}.{date.Year}] amount", Coins);
-                        Manager.Save(Maintenance.path_currency, $"[{date.Day}.{date.Month}.{date.Year}] users", users);
-                        Manager.Save(Maintenance.path_currency, $"[{date.Day}.{date.Month}.{date.Year}] dollars", BankDollars);
+                        SafeManager.Save(Maintenance.path_currency, "totalAmount", Coins, false);
+                        SafeManager.Save(Maintenance.path_currency, "totalUsers", users, false);
+                        SafeManager.Save(Maintenance.path_currency, "totalDollarsInTheBank", BankDollars, false);
+                        SafeManager.Save(Maintenance.path_currency, $"[{date.Day}.{date.Month}.{date.Year}]", "", false);
+                        SafeManager.Save(Maintenance.path_currency, $"[{date.Day}.{date.Month}.{date.Year}] cost", (BankDollars / Coins), false);
+                        SafeManager.Save(Maintenance.path_currency, $"[{date.Day}.{date.Month}.{date.Year}] amount", Coins, false);
+                        SafeManager.Save(Maintenance.path_currency, $"[{date.Day}.{date.Month}.{date.Year}] users", users, false);
+                        SafeManager.Save(Maintenance.path_currency, $"[{date.Day}.{date.Month}.{date.Year}] dollars", BankDollars);
                     }
 
                     last_coin_amount = Coins;
@@ -389,7 +389,7 @@ namespace butterBror
             get => _main_path;
             set
             {
-                _main_path = value;
+                _main_path = value.Replace("/", "\\");
                 UpdatePaths();
             }
         }
@@ -434,7 +434,7 @@ namespace butterBror
         public static string[] channels_version_change_announcement = [];
         public static string[] channels_list       = [];
         public static int      connected_servers   = 0;
-        public static int      proccessed_messages = 0;
+        public static ulong    proccessed_messages = 0;
         public static bool     connected           = false;
         public static bool     twitch_reconnected  = false;
         public static string   coin_symbol         = "🥪";
@@ -454,12 +454,12 @@ namespace butterBror
         private static DateTime                bot_start_time              = DateTime.UtcNow;
         private static CancellationTokenSource telegram_cancellation_token = new CancellationTokenSource();
 
-        public static SevenTV.SevenTV                                                                sevenTv             = new SevenTV.SevenTV();
+        public static SevenTV.SevenTVClient                                                          sevenTv             = new SevenTV.SevenTVClient();
         public static SevenTvService                                                                 sevenTvService      = new SevenTvService(new HttpClient());
         public static ConcurrentDictionary<string, (List<string> emotes, DateTime expiration)>       channels_7tv_emotes = new();
         public static ConcurrentDictionary<string, (string setId, DateTime expiration)>              emoteSetCache       = new();
         public static ConcurrentDictionary<string, (string userId, DateTime expiration)>             userSearchCache     = new();
-        public static ConcurrentDictionary<string, (SevenTV.Types.Emote emote, DateTime expiration)> emoteCache          = new();
+        public static ConcurrentDictionary<string, (SevenTV.Types.Rest.Emote emote, DateTime expiration)> emoteCache          = new();
         public static readonly TimeSpan                                                              CacheTTL            = TimeSpan.FromMinutes(30);
 
         public static async void Start(int ThreadID)
@@ -684,7 +684,11 @@ namespace butterBror
                 DateTime start = DateTime.UtcNow;
                 Utils.Console.WriteLine("[TW] Status sender started!", "kernel", ConsoleColor.Red);
 
-                System.Net.NetworkInformation.Ping ping = new();
+                int cacheItemsBefore = Worker.cache.count;
+                long memoryBefore = Process.GetCurrentProcess().PrivateMemorySize64 / (1024 * 1024);
+                Worker.cache.Clear(TimeSpan.FromMinutes(10));
+
+                Ping ping = new();
                 PingReply twitch = ping.Send(twitch_url, 1000);
                 PingReply discord = ping.Send(discord_url, 1000);
                 long telegram = await Utils.API.Telegram.Ping();
@@ -704,13 +708,24 @@ namespace butterBror
                     $"Telegram: {telegram}ms | " +
                     $"7tv: {sevenTV.RoundtripTime}ms | " + 
                     $"ISP: {ISP.RoundtripTime}ms | " +
-                    $"⌚ {DateTime.Now - Engine.start_time:dd\\:hh\\:mm\\.ss} | " +
-                    $"📦 {memory}mb | " +
-                    $"🔋 {Battery.GetBatteryCharge()}% ({Battery.IsCharging()}) | " +
-                    $"🔥 {Engine.cpu_counter/Engine.cpu_counter_items:0.00}% | " +
+                    $"Work time: {DateTime.Now - Engine.start_time:dd\\:hh\\:mm\\.ss} | " +
+                    $"Memory: {memoryBefore}Mbyte → {memory}Mbyte | " +
+                    $"Battery: {Battery.GetBatteryCharge()}% ({Battery.IsCharging()}) | " +
+                    $"CPU: {Engine.cpu_counter/Engine.cpu_counter_items:0.00}% | " +
                     $"TPS: {(decimal)Engine.tps_counter/Engine.tps_counter_items:0.00} | " +
                     $"TT: {Engine.ticks_counter} | " +
-                    $"ST: {Engine.skipped_ticks}", "", "", "", true);
+                    $"ST: {Engine.skipped_ticks} | " +
+                    $"DankDB: {cacheItemsBefore} → {Worker.cache.count} | " +
+                    $"Emotes: {emoteCache.Count} | " +
+                    $"7tv: {channels_7tv_emotes.Count} | " +
+                    $"Emote sets: {emoteSetCache.Count} | " +
+                    $"7tv USC: {userSearchCache.Count} | " +
+                    $"Messages: {proccessed_messages} | " +
+                    $"Discord: {discord_client.Guilds.Count} | " +
+                    $"Commands: {Engine.completed_commands} | " +
+                    $"Users: {Engine.users} | " +
+                    $"Coins: {Engine.Coins:0.00} | " +
+                    $"Coin currency: ${Engine.BankDollars/Engine.Coins:0.00000000}", "", "", "", true);
 
                 Engine.cpu_counter = 0;
                 Engine.cpu_counter_items = 0;
@@ -810,49 +825,49 @@ namespace butterBror
         public static void UpdatePaths()
         {
             Engine.Statistics.functions_used.Add();
-            path_channels = Path.Combine(path_main, "CHNLS/");
-            path_users = Path.Combine(path_main, "USERSDB/");
-            path_bankdata = Path.Combine(path_main, "BANKDB/");
-            path_nicknames_data = Path.Combine(path_main, "CONVRT/");
-            path_n2id = Path.Combine(path_nicknames_data, "N2I/");
-            path_id2n = Path.Combine(path_nicknames_data, "I2N/");
-            path_settings = Path.Combine(path_main, "SETTINGS.json");
-            path_cookies = Path.Combine(path_main, "COOKIES.MDS");
-            path_translations = Path.Combine(path_main, "TRNSLT/");
-            path_translate_default = Path.Combine(path_translations, "DEFAULT/");
-            path_translate_custom = Path.Combine(path_translations, "CUSTOM/");
-            path_blacklist_words = Path.Combine(path_main, "BNWORDS.txt");
-            path_blacklist_replacements = Path.Combine(path_main, "BNWORDSREP.txt");
-            path_API_uses = Path.Combine(path_main, "API.json");
-            path_logs = Path.Combine(path_main, "LOGS.log");
-            path_errors = Path.Combine(path_main, "ERRORS.log");
-            path_cache = Path.Combine(path_main, "LOC.cache");
-            path_currency = Path.Combine(path_main, "CURR.json");
-            path_7tv_cache = Path.Combine(path_main, "7TV.json");
-            path_reserve_copies = Path.Combine(path_general, "butterbror_reserves/", $"{DateTime.UtcNow.Year}{DateTime.UtcNow.Month}{DateTime.UtcNow.Day}/", $"{DateTime.UtcNow.Hour}/");
+            path_channels = Path.Combine(path_main, "CHNLS/").Replace("/", "\\");
+            path_users = Path.Combine(path_main, "USERSDB/").Replace("/", "\\");
+            path_bankdata = Path.Combine(path_main, "BANKDB/").Replace("/", "\\");
+            path_nicknames_data = Path.Combine(path_main, "CONVRT/").Replace("/", "\\");
+            path_n2id = Path.Combine(path_nicknames_data, "N2I/").Replace("/", "\\");
+            path_id2n = Path.Combine(path_nicknames_data, "I2N/").Replace("/", "\\");
+            path_settings = Path.Combine(path_main, "SETTINGS.json").Replace("/", "\\");
+            path_cookies = Path.Combine(path_main, "COOKIES.MDS").Replace("/", "\\");
+            path_translations = Path.Combine(path_main, "TRNSLT/").Replace("/", "\\");
+            path_translate_default = Path.Combine(path_translations, "DEFAULT/").Replace("/", "\\");
+            path_translate_custom = Path.Combine(path_translations, "CUSTOM/").Replace("/", "\\");
+            path_blacklist_words = Path.Combine(path_main, "BNWORDS.txt").Replace("/", "\\");
+            path_blacklist_replacements = Path.Combine(path_main, "BNWORDSREP.txt").Replace("/", "\\");
+            path_API_uses = Path.Combine(path_main, "API.json").Replace("/", "\\");
+            path_logs = Path.Combine(path_main, "LOGS.log").Replace("/", "\\");
+            path_errors = Path.Combine(path_main, "ERRORS.log").Replace("/", "\\");
+            path_cache = Path.Combine(path_main, "LOC.cache").Replace("/", "\\");
+            path_currency = Path.Combine(path_main, "CURR.json").Replace("/", "\\");
+            path_7tv_cache = Path.Combine(path_main, "7TV.json").Replace("/", "\\");
+            path_reserve_copies = Path.Combine(path_general, "butterbror_reserves/", $"{DateTime.UtcNow.ToString("dd_MM_yyyy")}/").Replace("/", "\\");
         }
         private static void InitializeSettingsFile(string path)
         {
             Engine.Statistics.functions_used.Add();
             FileUtil.CreateFile(path);
-            Manager.Save(path, "bot_name", "");
-            Manager.Save(path, "discord_token", "");
-            Manager.Save(path, "imgur_token", "");
-            Manager.Save(path, "user_id", "");
-            Manager.Save(path, "client_id", "");
-            Manager.Save(path, "twitch_secret_token", "");
-            Manager.Save(path, "twitch_connect_message_channels", Array.Empty<string>());
-            Manager.Save(path, "twitch_reconnect_message_channels", Array.Empty<string>());
-            Manager.Save(path, "twitch_connect_channels", new[] { "First channel", "Second channel" });
+            SafeManager.Save(path, "bot_name", "", false);
+            SafeManager.Save(path, "discord_token", "", false);
+            SafeManager.Save(path, "imgur_token", "", false);
+            SafeManager.Save(path, "user_id", "", false);
+            SafeManager.Save(path, "client_id", "", false);
+            SafeManager.Save(path, "twitch_secret_token", "", false);
+            SafeManager.Save(path, "twitch_connect_message_channels", Array.Empty<string>(), false);
+            SafeManager.Save(path, "twitch_reconnect_message_channels", Array.Empty<string>(), false);
+            SafeManager.Save(path, "twitch_connect_channels", new[] { "First channel", "Second channel" }, false);
             string[] apis = { "First api", "Second api" };
-            Manager.Save(path, "weather_token", apis);
-            Manager.Save(path, "gpt_tokens", apis);
-            Manager.Save(path, "telegram_token", "");
-            Manager.Save(path, "twitch_version_message_channels", Array.Empty<string>());
-            Manager.Save(path, "7tv_token", "");
-            Manager.Save(path, "coin_symbol", "\U0001f96a");
-            Manager.Save(path, "currency_mentioned_payment", 8);
-            Manager.Save(path, "currency_mentioner_payment", 2);
+            SafeManager.Save(path, "weather_token", apis, false);
+            SafeManager.Save(path, "gpt_tokens", apis, false);
+            SafeManager.Save(path, "telegram_token", "", false);
+            SafeManager.Save(path, "twitch_version_message_channels", Array.Empty<string>(), false);
+            SafeManager.Save(path, "7tv_token", "", false);
+            SafeManager.Save(path, "coin_symbol", "\U0001f96a", false);
+            SafeManager.Save(path, "currency_mentioned_payment", 8, false);
+            SafeManager.Save(path, "currency_mentioner_payment", 2);
         }
         private static async Task LoadSettings()
         {
@@ -910,7 +925,7 @@ namespace butterBror
                     Channels7tvEmotes = new Dictionary<string, (List<string> emotes, DateTime expiration)>(),
                     EmoteSetCache = new Dictionary<string, (string setId, DateTime expiration)>(),
                     UserSearchCache = new Dictionary<string, (string userId, DateTime expiration)>(),
-                    EmoteCache = new Dictionary<string, (SevenTV.Types.Emote emote, DateTime expiration)>()
+                    EmoteCache = new Dictionary<string, (SevenTV.Types.Rest.Emote emote, DateTime expiration)>()
                 };
 
                 var data = Newtonsoft.Json.JsonConvert.DeserializeAnonymousType(json, template);
@@ -918,7 +933,7 @@ namespace butterBror
                 channels_7tv_emotes = new ConcurrentDictionary<string, (List<string>, DateTime)>(data.Channels7tvEmotes);
                 emoteSetCache = new ConcurrentDictionary<string, (string, DateTime)>(data.EmoteSetCache);
                 userSearchCache = new ConcurrentDictionary<string, (string, DateTime)>(data.UserSearchCache);
-                emoteCache = new ConcurrentDictionary<string, (SevenTV.Types.Emote, DateTime)>(data.EmoteCache);
+                emoteCache = new ConcurrentDictionary<string, (SevenTV.Types.Rest.Emote, DateTime)>(data.EmoteCache);
             }
             catch (Exception ex)
             {

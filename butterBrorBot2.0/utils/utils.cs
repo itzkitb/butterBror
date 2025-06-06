@@ -509,8 +509,9 @@ namespace butterBror
                     Engine.Statistics.functions_used.Add();
                     try
                     {
-                        FileUtil.CreateBackup(GetUserFilePath(userId, platform));
-                        Manager.Save(GetUserFilePath(userId, platform), paramName, value);
+                        string path = GetUserFilePath(userId, platform);
+                        if (FileUtil.FileExists(path)) FileUtil.CreateBackup(path);
+                        SafeManager.Save(path, paramName, value);
                     }
                     catch (Exception ex)
                     {
@@ -536,36 +537,36 @@ namespace butterBror
                 {
                     Engine.Statistics.functions_used.Add();
                     string path = GetUserFilePath(userId, platform);
-                    Manager.Save(path, "firstSeen", DateTime.UtcNow);
-                    Manager.Save(path, "firstMessage", firstMessage);
-                    Manager.Save(path, "lastSeenMessage", firstMessage);
-                    Manager.Save(path, "lastSeen", DateTime.UtcNow);
-                    Manager.Save(path, "floatBalance", 0);
-                    Manager.Save(path, "balance", 0);
-                    Manager.Save(path, "totalMessages", 0);
-                    Manager.Save(path, "miningVideocards", new JArray());
-                    Manager.Save(path, "miningProcessors", new JArray());
-                    Manager.Save(path, "lastMiningClear", DateTime.UtcNow);
-                    Manager.Save(path, "isBotModerator", false);
-                    Manager.Save(path, "isBanned", false);
-                    Manager.Save(path, "isIgnored", false);
-                    Manager.Save(path, "rating", 500);
-                    Manager.Save(path, "inventory", new JArray());
-                    Manager.Save(path, "warningLvl", 3);
-                    Manager.Save(path, "isVip", false);
-                    Manager.Save(path, "isAfk", false);
-                    Manager.Save(path, "afkText", string.Empty);
-                    Manager.Save(path, "afkType", string.Empty);
-                    Manager.Save(path, "reminders", new JObject());
-                    Manager.Save(path, "lastCookieEat", DateTime.UtcNow.AddDays(-1));
-                    Manager.Save(path, "giftedCookies", 0);
-                    Manager.Save(path, "eatedCookies", 0);
-                    Manager.Save(path, "buyedCookies", 0);
-                    Manager.Save(path, "userPlace", string.Empty);
-                    Manager.Save(path, "userLon", "0");
-                    Manager.Save(path, "userLat", "0");
-                    Manager.Save(path, "language", "ru");
-                    Manager.Save(path, "afkTime", DateTime.UtcNow);
+                    SafeManager.Save(path, "firstSeen", DateTime.UtcNow, false);
+                    SafeManager.Save(path, "firstMessage", firstMessage, false);
+                    SafeManager.Save(path, "lastSeenMessage", firstMessage, false);
+                    SafeManager.Save(path, "lastSeen", DateTime.UtcNow, false);
+                    SafeManager.Save(path, "floatBalance", 0, false);
+                    SafeManager.Save(path, "balance", 0, false);
+                    SafeManager.Save(path, "totalMessages", 0, false);
+                    SafeManager.Save(path, "miningVideocards", new JArray(), false);
+                    SafeManager.Save(path, "miningProcessors", new JArray(), false);
+                    SafeManager.Save(path, "lastMiningClear", DateTime.UtcNow, false);
+                    SafeManager.Save(path, "isBotModerator", false, false);
+                    SafeManager.Save(path, "isBanned", false, false);
+                    SafeManager.Save(path, "isIgnored", false, false);
+                    SafeManager.Save(path, "rating", 500, false);
+                    SafeManager.Save(path, "inventory", new JArray(), false);
+                    SafeManager.Save(path, "warningLvl", 3, false);
+                    SafeManager.Save(path, "isVip", false, false);
+                    SafeManager.Save(path, "isAfk", false, false);
+                    SafeManager.Save(path, "afkText", string.Empty, false);
+                    SafeManager.Save(path, "afkType", string.Empty, false);
+                    SafeManager.Save(path, "reminders", new JObject(), false);
+                    SafeManager.Save(path, "lastCookieEat", DateTime.UtcNow.AddDays(-1), false);
+                    SafeManager.Save(path, "giftedCookies", 0, false);
+                    SafeManager.Save(path, "eatedCookies", 0, false);
+                    SafeManager.Save(path, "buyedCookies", 0, false);
+                    SafeManager.Save(path, "userPlace", string.Empty, false);
+                    SafeManager.Save(path, "userLon", "0", false);
+                    SafeManager.Save(path, "userLat", "0", false);
+                    SafeManager.Save(path, "language", "ru", false);
+                    SafeManager.Save(path, "afkTime", DateTime.UtcNow);
                 }
 
                 private static string GetUserFilePath(string userId, Platforms platform)
@@ -606,6 +607,7 @@ namespace butterBror
                     {
                         string path = $"{Maintenance.path_channels}{Platform.strings[(int)platform]}/{channelID}/MSGS/";
                         string user_messages_path = $"{path}{userID}.json";
+                        if (FileUtil.FileExists(user_messages_path)) FileUtil.CreateBackup(user_messages_path);
                         string first_message_path = $"{Maintenance.path_channels}{Platform.strings[(int)platform]}/{channelID}/FM/";
                         FileUtil.CreateDirectory(first_message_path);
                         FileUtil.CreateDirectory(path);
@@ -631,12 +633,13 @@ namespace butterBror
                         {
                             Message FirstMessage = messages.Last();
                             FileUtil.SaveFileContent(first_message_path + userID + ".json", JsonConvert.SerializeObject(FirstMessage));
+                            FileUtil.CreateBackup(first_message_path + userID + ".json");
                         }
 
                         messages.Insert(0, newMessage);
                         if (messages.Count > max_messages) messages = messages.Take(max_messages - 1).ToList();
 
-                        Manager.Save(user_messages_path, "messages", messages);
+                        SafeManager.Save(user_messages_path, "messages", messages);
 
                         return;
                     }
@@ -746,8 +749,8 @@ namespace butterBror
 
                 public static void SaveFileContent(string filePath, string content)
                 {
-                    CreateBackup(filePath);
                     CreateFile(filePath);
+                    CreateBackup(filePath);
 
                     var directory = Path.GetDirectoryName(filePath);
                     if (!string.IsNullOrEmpty(directory) && !DirectoryExists(directory))
@@ -792,10 +795,10 @@ namespace butterBror
                     }
                 }
 
-                private static string GetBackupPath(string originalPath)
+                public static string GetBackupPath(string originalPath)
                 {
                     Engine.Statistics.functions_used.Add();
-                    var fileName = $"{Maintenance.path_reserve_copies}{DateTime.UtcNow.Hour}/{originalPath.Replace(Maintenance.path_main, "")}";
+                    var fileName = $"{Maintenance.path_reserve_copies}{originalPath.Replace(Maintenance.path_main, "")}";
 
                     return fileName;
                 }
@@ -814,6 +817,20 @@ namespace butterBror
                             Thread.Sleep(delay);
                         }
                     }
+                }
+            }
+            /// <summary>
+            /// Оболочка для Manager.Save с резервным копированием
+            /// </summary>
+            public static class SafeManager
+            {
+                public static void Save(string filePath, string key, object data, bool createBackup = true)
+                {
+                    if (FileUtil.FileExists(filePath) && createBackup)
+                    {
+                        FileUtil.CreateBackup(filePath);
+                    }
+                    Manager.Save(filePath, key, data);
                 }
             }
         }

@@ -92,6 +92,12 @@ namespace butterBror
                                 commandReturn.SetColor(ChatColorPresets.Red);
                             }
                         }
+                        else
+                        {
+                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:user_not_found", data.channel_id, data.platform)
+                                .Replace("%user%", Names.DontPing(name))); // Fix AB1
+                            commandReturn.SetColor(ChatColorPresets.Red); // Fix AB1
+                        }
                     }
                     else
                     {

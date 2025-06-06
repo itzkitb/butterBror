@@ -23,7 +23,7 @@ namespace butterBror
                 WikiLink = "https://itzkitb.lol/bot/command?q=customtranslation",
                 CooldownPerUser = 10,
                 CooldownPerChannel = 5,
-                Aliases = ["CustomTranslation", "ct", "кастомныйперевод", "кп"],
+                Aliases = ["customtranslation", "ct", "кастомныйперевод", "кп"],
                 Arguments = "(set [paramName] [en/ru] [text])/(get [paramName] [en/ru])/(original [paramName] [en/ru])/(reset [paramName] [en/ru])",
                 CooldownReset = true,
                 CreationDate = DateTime.Parse("08/05/2024"),

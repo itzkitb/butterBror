@@ -24,7 +24,7 @@ namespace butterBror
                 WikiLink = "https://itzkitb.lol/bot/command?q=jaba",
                 CooldownPerUser = 10,
                 CooldownPerChannel = 5,
-                Aliases = ["js", "javascript", "джава", "jaba", "supinic", "java"],
+                Aliases = ["js", "javascript", "джаваскрипт", "жс", "jabascript", "supinic"], // Fix AB0
                 Arguments = "[code]",
                 CooldownReset = false,
                 CreationDate = DateTime.Parse("07/04/2024"),

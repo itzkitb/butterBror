@@ -133,7 +133,7 @@ namespace butterBror
                                 { "date", DateTime.UtcNow }
                             };
                             Directory.CreateDirectory(Maintenance.path_general + "INVITE/");
-                            Manager.Save(Maintenance.path_general + $"INVITE/{data.user.username}.txt", $"rq{DateTime.UtcNow}", userData);
+                            SafeManager.Save(Maintenance.path_general + $"INVITE/{data.user.username}.txt", $"rq{DateTime.UtcNow}", userData);
                             commandReturn.SetMessage(TranslationManager.GetTranslation(language, "command:bot:user_verify", channel_id, data.platform));
                         }
                         else if (currency_alias.Contains(argument_one))
@@ -286,7 +286,7 @@ namespace butterBror
                                         channels.Add(newid);
                                         string[] output = [.. channels];
 
-                                        Manager.Save(Maintenance.path_settings, "twitch_connect_channels", output); // Fix AA2
+                                        SafeManager.Save(Maintenance.path_settings, "twitch_connect_channels", output); // Fix AA2
                                         Maintenance.twitch_client.JoinChannel(arguments[1]);
                                         Chat.TwitchReply(channel, channel_id, TextUtil.ArgumentReplacement(TranslationManager.GetTranslation(language, "command:bot:channel:add", channel_id, data.platform), "user", arguments[1]), message_id, language, true);
                                         Chat.TwitchSend(arguments[1], TextUtil.ArgumentReplacement(TranslationManager.GetTranslation(language, "text:added", channel_id, data.platform), "version", Engine.version), channel_id, message_id, language, true);
@@ -313,7 +313,7 @@ namespace butterBror
                                         channels.Remove(userID);
                                         string[] output = [.. channels];
 
-                                        Manager.Save(Maintenance.path_settings, "channels", output);
+                                        SafeManager.Save(Maintenance.path_settings, "channels", output);
                                         Maintenance.twitch_client.LeaveChannel(arguments[1]);
                                         Chat.TwitchReply(channel, channel_id, TextUtil.ArgumentReplacement(TranslationManager.GetTranslation(language, "command:bot:channel:delete", channel_id, data.platform), "user", arguments[1]), message_id, data.user.language, true);
                                     }
@@ -418,7 +418,22 @@ namespace butterBror
                                     TranslationManager.UpdateTranslation("en", channel_id, data.platform);
                                     commandReturn.SetMessage("MrDestructoid 👍 DO-NE!");
                                 }
+                                else
+                                {
+                                    commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:incorrect_parameters", data.channel_id, data.platform)); // Fix AA5
+                                    commandReturn.SetColor(ChatColorPresets.Red);
+                                }
                             }
+                            else
+                            {
+                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:incorrect_parameters", data.channel_id, data.platform)); // Fix AA5
+                                commandReturn.SetColor(ChatColorPresets.Red);
+                            }
+                        }
+                        else
+                        {
+                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:incorrect_parameters", data.channel_id, data.platform)); // Fix AA5
+                            commandReturn.SetColor(ChatColorPresets.Red);
                         }
                     }
                     else

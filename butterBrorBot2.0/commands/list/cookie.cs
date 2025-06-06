@@ -117,6 +117,7 @@ namespace butterBror
 
                             UsersData.Save(data.user.id, "cookie_gifted", (UsersData.Get<int>(data.user.id, "cookie_gifted", data.platform)) + 1, data.platform);
                             UsersData.Save(targetUserId, "cookie_received", (UsersData.Get<int>(targetUserId, "cookie_received", data.platform)) + 1, data.platform);
+                            UsersData.Save(targetUserId, "cookie_last_used", DateTime.UtcNow.AddDays(-1), data.platform);
 
                             var topPathLocal = $"{root_path}/TOP.json";
                             var topGifters = Manager.Get<Dictionary<string, int>>(topPathLocal, "leaderboard_gifters") ?? new Dictionary<string, int>();
@@ -132,8 +133,8 @@ namespace butterBror
 
                             topRecipients[targetUserId]++;
 
-                            Manager.Save(topPathLocal, "leaderboard_gifters", topGifters);
-                            Manager.Save(topPathLocal, "leaderboard_recipients", topRecipients);
+                            SafeManager.Save(topPathLocal, "leaderboard_gifters", topGifters, false);
+                            SafeManager.Save(topPathLocal, "leaderboard_recipients", topRecipients);
 
                             commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:cookie:gift", data.channel_id, data.platform)
                                 .Replace("%sender%", data.user.username)
@@ -143,11 +144,11 @@ namespace butterBror
                         else if (topAliases.Contains(data.arguments[0].ToLower()))
                         {
                             string topType = "eaters";
-                            if (data.arguments.Count > 2)
+                            if (data.arguments.Count >= 2)
                             {
-                                if (giftAliases.Contains(data.arguments[2].ToLower()))
+                                if (giftersAliases.Contains(data.arguments[1].ToLower()))
                                     topType = "gifters";
-                                else if (recipientsAliases.Contains(data.arguments[2].ToLower()))
+                                else if (recipientsAliases.Contains(data.arguments[1].ToLower()))
                                     topType = "recipients";
                             }
 
@@ -249,8 +250,22 @@ namespace butterBror
                     }
 
                     string[] result = await Utils.API.AI.Request(
-                        "Create a horoscope in an absurdly humorous style, where everyday situations are intertwined with fantastic and provocative advice. Start with phrases like 'The stars demand', 'The moon approves', 'The planets insist' or 'Astrological forecasts warn'. Use unexpected verbs (e.g. 'smear', 'steal', 'tame'), turn everyday objects into magical tools (the refrigerator as a portal to a parallel world, slippers as a means of teleportation), add elements of black humor and sarcasm. Include hyperbolic consequences (e.g. 'you will be arrested for singing too loudly in the shower') and absurd recommendations (e.g. 'feed your neighbors your breakfast to avoid cosmic karma'). Keep the tone light and playful, avoiding real advice or logic. Examples: 'Today you can't wash the dishes without the help of three black cats', 'Take a bottle of yogurt with you on the subway - it will protect you from energy vampires', 'Donate a toothbrush to the altar of random passers-by'. In your answer, write ONLY a prediction of 3-4 sentences, no need to break it up into different zodiac signs. ANSWER IN THE LANGUAGE OF THE USER!",
-                        null, data.platform, data.user.username, data.user.id, data.user.language
+                        @"Create original absurdly humorous texts in the style of 'horoscopes', as in the example below. Each text should contain:
+
+1. Advice/warning with an unexpected or ridiculous twist (e.g. 'Avoid people over 20 - they can be aggressive!').
+2. Elements of sarcasm, grotesqueness and a mix of unrelated topics (e.g. 'You can turn into a toad with a mustache or start selling urine at the market').
+3. Mentioning historical/pop-culture characters in meaningless scenarios.
+4. Conversational style with exclamations, jokes and provocative wording.
+Requirements:
+- Texts should be unique, do not repeat examples from the source code.
+- Maintain the structure: 3-5 sentences with abrupt transitions between ideas.
+— Add absurd recommendations ('Don't forget to rub your forehead with garlic!') and exaggerated consequences ('You may be accused of witchcraft against tomatoes').
+
+Example (just to understand the style):
+'Today, it is recommended to put on a clown costume and go online. If you have problems, hit yourself on the corner of the refrigerator. Attacks by Jedi midwives are possible!'
+
+Generate ONLY 4 sentence variations following these rules. The answer must be in the user's language! In your answer write ONLY text! DO NOT indicate sentence numbers! DO NOT write more than 4 sentences!",
+                        null, data.platform, data.user.username, data.user.id, data.user.language, 2, false
                     );
 
                     if (result[0] == "ERR")
@@ -264,13 +279,13 @@ namespace butterBror
                     UsersData.Save(data.user.id, "cookie_last_used", DateTime.UtcNow, data.platform);
 
                     var topPath = $"{root_path}/TOP.json";
-                    var top = Manager.Get<Dictionary<string, int>>(topPath, "leaderboard") ?? new Dictionary<string, int>();
+                    var top = Manager.Get<Dictionary<string, int>>(topPath, "leaderboard_eaters") ?? new Dictionary<string, int>();
 
                     if (!top.ContainsKey(data.user.id))
                         top[data.user.id] = 0;
 
                     top[data.user.id]++;
-                    Manager.Save(topPath, "leaderboard_eaters", top);
+                    SafeManager.Save(topPath, "leaderboard_eaters", top);
 
                     string horoscope = "🍪 " + result[1];
                     commandReturn.SetMessage(horoscope);

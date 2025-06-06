@@ -76,7 +76,7 @@ namespace butterBror
                                     if (name == data.user.username)
                                     {
                                         commandReturn.SetMessage(TextUtil.ArgumentsReplacement(
-                                            TranslationManager.GetTranslation(data.user.language, "command:first_message", data.channel_id, data.platform), new() {
+                                            TranslationManager.GetTranslation(data.user.language, "command:first_message:user", data.channel_id, data.platform), new() { // Fix AA8
                                             { "ago", TextUtil.FormatTimeSpan(Utils.Format.GetTimeTo(message.messageDate, DateTime.UtcNow, false), data.user.language) },
                                             { "message", message.messageText },
                                             { "bages", message_badges } }));
@@ -84,7 +84,7 @@ namespace butterBror
                                     else
                                     {
                                         commandReturn.SetMessage(TextUtil.ArgumentsReplacement(
-                                            TranslationManager.GetTranslation(data.user.language, "command:first_message:user", data.channel_id, data.platform), new() {
+                                            TranslationManager.GetTranslation(data.user.language, "command:first_message", data.channel_id, data.platform), new() { // Fix AA8
                                             { "ago", TextUtil.FormatTimeSpan(Utils.Format.GetTimeTo(message.messageDate, DateTime.UtcNow, false), data.user.language) },
                                             { "message", message.messageText },
                                             { "bages", message_badges },

@@ -49,6 +49,10 @@ namespace butterBror
                         var userId = data.user_id;
                         var language = data.user.language;
                         var username = data.user.username;
+                        var messageId = data.message_id;
+                        var telegramMessage = data.telegram_message;
+
+                        commandReturn.SetMessage(TranslationManager.GetTranslation(language, "command:vhs:wait", channelId, platform)); // fix AB4
 
                         _ = Task.Run(async () =>
                         {
@@ -64,55 +68,8 @@ namespace butterBror
                                 int index = rand.Next(videos.Length);
                                 string randomUrl = videos[index];
 
-                                switch (platform)
-                                {
-                                    case Platforms.Twitch:
-                                        TwitchMessageSendData twitchData = new()
-                                        {
-                                            message = TranslationManager.GetTranslation(language, "command:vhs", channelId, platform).Replace("%url%", randomUrl),
-                                            channel = channel,
-                                            channel_id = channelId,
-                                            message_id = data.twitch_arguments?.Command.ChatMessage.Id,
-                                            language = language,
-                                            username = username,
-                                            safe_execute = true,
-                                            nickname_color = ChatColorPresets.YellowGreen
-                                        };
-                                        SendCommandReply(twitchData);
-                                        break;
-
-                                    case Platforms.Discord:
-                                        DiscordCommandSendData discordData = new()
-                                        {
-                                            message = TranslationManager.GetTranslation(language, "command:vhs", channelId, platform).Replace("%url%", randomUrl),
-                                            description = "",
-                                            is_embed = false,
-                                            is_ephemeral = false,
-                                            server = server,
-                                            server_id = serverId,
-                                            language = language,
-                                            safe_execute = true,
-                                            socket_command_base = data.discord_command_base,
-                                            channel_id = channelId,
-                                            user_id = userId
-                                        };
-                                        SendCommandReply(discordData);
-                                        break;
-
-                                    case Platforms.Telegram:
-                                        TelegramMessageSendData telegramData = new()
-                                        {
-                                            message = TranslationManager.GetTranslation(language, "command:vhs", channelId, platform).Replace("%url%", randomUrl),
-                                            channel = channel,
-                                            channel_id = channelId,
-                                            message_id = data.twitch_arguments?.Command.ChatMessage.Id,
-                                            language = language,
-                                            username = username,
-                                            safe_execute = true
-                                        };
-                                        SendCommandReply(telegramData);
-                                        break;
-                                }
+                                Chat.SendReply(platform, channel, channelId, TranslationManager.GetTranslation(language, "command:vhs", channelId, platform).Replace("%url%", randomUrl),
+                                    language, username, userId, server, serverId, messageId, telegramMessage, true);
                             }
                             catch (Exception ex)
                             {

@@ -48,9 +48,9 @@ namespace butterBror
                     if (!File.Exists(user_path))
                     {
                         Manager.CreateDatabase(user_path);
-                        Manager.Save(user_path, "frogs", 0);
-                        Manager.Save(user_path, "gifted", 0);
-                        Manager.Save(user_path, "received", 0);
+                        SafeManager.Save(user_path, "frogs", 0, false);
+                        SafeManager.Save(user_path, "gifted", 0, false);
+                        SafeManager.Save(user_path, "received", 0);
                     }
 
                     long balance = Manager.Get<long>(user_path, "frogs");
@@ -104,7 +104,7 @@ namespace butterBror
                                         .Replace("%old_frogs_count%", balance.ToString())
                                         .Replace("%new_frogs_count%", (balance + frogs_caughted).ToString())
                                         .Replace("%added_count%", frogs_caughted.ToString()));
-                                    Manager.Save(user_path, "frogs", balance + frogs_caughted);
+                                    SafeManager.Save(user_path, "frogs", balance + frogs_caughted);
                                 }
                             }
                             else
@@ -148,18 +148,18 @@ namespace butterBror
                                     if (!File.Exists(gift_user_path))
                                     {
                                         Manager.CreateDatabase(gift_user_path);
-                                        Manager.Save(gift_user_path, "frogs", 0);
-                                        Manager.Save(gift_user_path, "gifted", 0);
-                                        Manager.Save(gift_user_path, "received", 0);
+                                        SafeManager.Save(gift_user_path, "frogs", 0, false);
+                                        SafeManager.Save(gift_user_path, "gifted", 0, false);
+                                        SafeManager.Save(gift_user_path, "received", 0);
                                     }
 
                                     long gift_user_frogs_balance = Manager.Get<long>(gift_user_path, "frogs");
                                     long gift_user_received = Manager.Get<long>(gift_user_path, "received");
 
-                                    Manager.Save(gift_user_path, "frogs", gift_user_frogs_balance + frogs);
-                                    Manager.Save(gift_user_path, "received", gift_user_received + frogs);
-                                    Manager.Save(user_path, "frogs", balance - frogs);
-                                    Manager.Save(user_path, "gifted", gifted + frogs);
+                                    SafeManager.Save(gift_user_path, "frogs", gift_user_frogs_balance + frogs, false);
+                                    SafeManager.Save(gift_user_path, "received", gift_user_received + frogs, false);
+                                    SafeManager.Save(user_path, "frogs", balance - frogs, false);
+                                    SafeManager.Save(user_path, "gifted", gifted + frogs);
                                 }
                                 else
                                 {
@@ -173,6 +173,11 @@ namespace butterBror
                                     "command_example", $"{Maintenance.executor}frog gift [user] [frogs]"));
                                 commandReturn.SetColor(ChatColorPresets.Red);
                             }
+                        }
+                        else
+                        {
+                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:incorrect_parameters", data.channel_id, data.platform)); // Fix AB7
+                            commandReturn.SetColor(ChatColorPresets.Red);
                         }
                     }
                     else

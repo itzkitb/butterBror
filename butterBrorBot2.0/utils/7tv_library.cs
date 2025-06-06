@@ -1,9 +1,9 @@
 ﻿using butterBror.Utils;
-using Microsoft.Extensions.Caching.Memory;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace butterBror.BotUtils
 {

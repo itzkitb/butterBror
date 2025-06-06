@@ -2,6 +2,7 @@
 using butterBror.Utils.DataManagers;
 using DankDB;
 using SevenTV.Types;
+using SevenTV.Types.Rest;
 using System.Drawing;
 using TwitchLib.Client.Enums;
 using V8.Net;
@@ -132,7 +133,7 @@ namespace butterBror
                             Maintenance.users_7tv_ids = new();
 
                         Maintenance.users_7tv_ids.Add(id, from_id);
-                        Manager.Save(Maintenance.path_7tv_cache, "Ids", Maintenance.users_7tv_ids);
+                        SafeManager.Save(Maintenance.path_7tv_cache, "Ids", Maintenance.users_7tv_ids);
                     }
                 }
 
@@ -242,7 +243,7 @@ namespace butterBror
                 try
                 {
                     var userId = GetUserID(channelId);
-                    var user = await Maintenance.sevenTv.GetUser(userId);
+                    var user = await Maintenance.sevenTv.rest.GetUser(userId);
                     var setId = user.connections[0].emote_set.id;
 
                     Maintenance.emoteSetCache[channelId] = (setId, DateTime.UtcNow.Add(Maintenance.CacheTTL));
@@ -264,7 +265,7 @@ namespace butterBror
                     return cached.emote;
                 }
 
-                var set = await Maintenance.sevenTv.GetEmoteSet(setId);
+                var set = await Maintenance.sevenTv.rest.GetEmoteSet(setId);
                 var emote = set.emotes.FirstOrDefault(e => e.name.Equals(emoteName));
 
                 if (emote != null)
@@ -305,7 +306,7 @@ namespace butterBror
             public async Task<string> AddEmoteFromUser(string setId, string fromUser, string emoteName, CommandData data, Platforms platform)
             {
                 var sourceUserId = GetUserID(Names.GetUserID(fromUser, Platforms.Twitch));
-                var sourceUser = await Maintenance.sevenTv.GetUser(sourceUserId);
+                var sourceUser = await Maintenance.sevenTv.rest.GetUser(sourceUserId);
                 var sourceSetId = sourceUser.connections[0].emote_set.id;
 
                 var emote = await FindEmoteInSet(sourceSetId, emoteName);

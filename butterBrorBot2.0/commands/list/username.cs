@@ -44,21 +44,21 @@ namespace butterBror
                         string name = Names.GetUsername(data.arguments[0], Platforms.Twitch);
                         if (name == data.user_id)
                         {
-                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:id", data.channel_id, data.platform).Replace("%id%", data.user_id));
+                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:name", data.channel_id, data.platform).Replace("%name%", data.user_id)); // Fix AB3
                         }
                         else if (name == null)
                         {
-                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:user_not_found", data.channel_id, data.platform).Replace("%user%", data.arguments[0]));
+                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:user_not_found", data.channel_id, data.platform).Replace("%user%", data.arguments[0])); // Fix AB3
                             commandReturn.SetColor(ChatColorPresets.CadetBlue);
                         }
                         else
                         {
-                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:id:user", data.channel_id, data.platform).Replace("%id%", name).Replace("%user%", data.arguments[0]));
+                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:name:user", data.channel_id, data.platform).Replace("%name%", name).Replace("%id%", data.arguments[0])); // Fix AB3
                         }
                     }
                     else
                     {
-                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:id", data.channel_id, data.platform).Replace("%id%", data.user_id));
+                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:name", data.channel_id, data.platform).Replace("%name%", data.user_id)); // Fix AB3
                     }
                 }
                 catch (Exception e)

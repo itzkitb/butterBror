@@ -171,7 +171,7 @@ namespace butterBror
                         list.Add(channel);
                     }
                 }
-                Manager.Save(Maintenance.path_settings, "channels", JToken.FromObject(list));
+                SafeManager.Save(Maintenance.path_settings, "channels", JToken.FromObject(list));
                 LogWorker.Log($"[TW] Bot was banned in channel @{e.Channel}!", LogWorker.LogTypes.Warn, "event2B");
                 Maintenance.twitch_client.LeaveChannel(e.Channel);
             }
