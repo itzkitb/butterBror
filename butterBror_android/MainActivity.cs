@@ -20,7 +20,7 @@ namespace butterBror_android
 
             butterBror.Utils.Console.on_chat_line += OnChatLineGetted;
             butterBror.Utils.Console.error_occured += OnErrorOccured;
-            Engine.Start();
+            Core.Start();
             System.Console.ReadLine();
         }
 

@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "butterBror - desktop", "but
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "7tv_requests_test", "7tv_requests_test\7tv_requests_test.csproj", "{75D9DF5E-245F-474F-95E3-6C63BA2E4054}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestTelegramPing", "TestTelegramPing\TestTelegramPing.csproj", "{16B206BE-1334-461F-9481-F98F24DB2742}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -64,6 +66,14 @@ Global
 		{75D9DF5E-245F-474F-95E3-6C63BA2E4054}.Release|Any CPU.Build.0 = Release|Any CPU
 		{75D9DF5E-245F-474F-95E3-6C63BA2E4054}.Release|x86.ActiveCfg = Release|Any CPU
 		{75D9DF5E-245F-474F-95E3-6C63BA2E4054}.Release|x86.Build.0 = Release|Any CPU
+		{16B206BE-1334-461F-9481-F98F24DB2742}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{16B206BE-1334-461F-9481-F98F24DB2742}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{16B206BE-1334-461F-9481-F98F24DB2742}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{16B206BE-1334-461F-9481-F98F24DB2742}.Debug|x86.Build.0 = Debug|Any CPU
+		{16B206BE-1334-461F-9481-F98F24DB2742}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{16B206BE-1334-461F-9481-F98F24DB2742}.Release|Any CPU.Build.0 = Release|Any CPU
+		{16B206BE-1334-461F-9481-F98F24DB2742}.Release|x86.ActiveCfg = Release|Any CPU
+		{16B206BE-1334-461F-9481-F98F24DB2742}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

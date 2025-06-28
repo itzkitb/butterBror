@@ -3,6 +3,7 @@ using butterBror.Utils;
 using System.Drawing;
 using TwitchLib.Client.Enums;
 using System.Collections.Generic;
+using butterBror.Utils.Tools;
 
 namespace butterBror
 {
@@ -12,35 +13,33 @@ namespace butterBror
         {
             public static CommandInfo Info = new()
             {
-                name = "Roulette",
-                author = "@ItzKITb",
-                author_link = "twitch.tv/itzkitb",
-                author_avatar = "https://static-cdn.jtvnw.net/jtv_user_pictures/c3a9af55-d7af-4b4a-82de-39a4d8b296d3-profile_image-70x70.png",
-                description = new() {
+                Name = "Roulette",
+                Author = "@ItzKITb",
+                AuthorLink = "twitch.tv/itzkitb",
+                AuthorAvatar = "https://static-cdn.jtvnw.net/jtv_user_pictures/c3a9af55-d7af-4b4a-82de-39a4d8b296d3-profile_image-70x70.png",
+                Description = new() {
                     { "ru", "Сыграйте в рулетку! Подробности: https://bit.ly/bb_roulette" },
                     { "en", "Play Roulette! Details: https://bit.ly/bb_roulette" }
                 },
-                wiki_link = "https://itzkitb.lol/bot/command?q=roulette",
-                cooldown_per_user = 5,
-                cooldown_global = 1,
-                aliases = ["gamble", "gambling", "g", "slots", "гэмблинг", "слоты"],
-                arguments = "[bid]",
-                cooldown_reset = true,
-                creation_date = DateTime.Parse("29/01/2025"),
-                is_for_bot_moderator = false,
-                is_for_bot_developer = false,
-                is_for_channel_moderator = false,
-                platforms = [Platforms.Twitch, Platforms.Telegram, Platforms.Discord]
+                WikiLink = "https://itzkitb.lol/bot/command?q=roulette",
+                CooldownPerUser = 5,
+                CooldownPerChannel = 1,
+                Aliases = ["gamble", "gambling", "g", "slots", "гэмблинг", "слоты"],
+                Arguments = "[bid]",
+                CooldownReset = true,
+                CreationDate = DateTime.Parse("29/01/2025"),
+                IsForBotModerator = false,
+                IsForBotDeveloper = false,
+                IsForChannelModerator = false,
+                Platforms = [Platforms.Twitch, Platforms.Telegram, Platforms.Discord]
             };
             public CommandReturn Index(CommandData data)
             {
-                Engine.Statistics.functions_used.Add();
+                Core.Statistics.FunctionsUsed.Add();
+                CommandReturn commandReturn = new CommandReturn();
+
                 try
                 {
-                    string resultMessage = "";
-                    Color resultColor = Color.Green;
-                    ChatColorPresets resultNicknameColor = ChatColorPresets.YellowGreen;
-
                     string[] selections = ["🟥", "🟩", "⬛"];
                     Dictionary<string, int[]> selectionsNumbers = new()
                     {
@@ -60,16 +59,15 @@ namespace butterBror
                         if (selections.Contains(data.arguments[0]))
                         {
                             int bid = Format.ToInt(data.arguments[1]);
-                            resultColor = Color.Red;
-                            resultNicknameColor = ChatColorPresets.Red;
+                            commandReturn.SetColor(ChatColorPresets.Red);
 
                             if (bid == 0)
-                                resultMessage = TranslationManager.GetTranslation(data.user.language, "error:roulette_wrong_bid", data.channel_id, data.platform);
+                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:roulette_wrong_bid", data.channel_id, data.platform));
                             else if (bid < 0)
-                                resultMessage = TranslationManager.GetTranslation(data.user.language, "error:roulette_steal", data.channel_id, data.platform);
-                            else if (Utils.Balance.GetBalance(data.user_id, data.platform) < bid)
-                                resultMessage = TranslationManager.GetTranslation(data.user.language, "error:roulette_not_enough_coins", data.channel_id, data.platform)
-                                            .Replace("%balance%", Utils.Balance.GetBalance(data.user_id, data.platform).ToString() + " " + Maintenance.coin_symbol);
+                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:roulette_steal", data.channel_id, data.platform));
+                            else if (Utils.Tools.Balance.GetBalance(data.user_id, data.platform) < bid)
+                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:roulette_not_enough_coins", data.channel_id, data.platform)
+                                            .Replace("%balance%", Utils.Tools.Balance.GetBalance(data.user_id, data.platform).ToString() + " " + Core.Bot.CoinSymbol));
                             else
                             {
                                 int moves = new Random().Next(38, 380);
@@ -84,70 +82,39 @@ namespace butterBror
 
                                 if (result_symbol.Equals(data.arguments[0]))
                                 {
-                                    resultColor = Color.Green;
-                                    resultNicknameColor = ChatColorPresets.YellowGreen;
+                                    commandReturn.SetColor(ChatColorPresets.YellowGreen);
 
                                     int win = (int)(bid * multipliers[result_symbol]);
-                                    Utils.Balance.Add(data.user_id, win, 0, data.platform);
-                                    resultMessage = TranslationManager.GetTranslation(data.user.language, "command:roulette:result:win", data.channel_id, data.platform)
+                                    Utils.Tools.Balance.Add(data.user_id, win, 0, data.platform);
+                                    commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:roulette:result:win", data.channel_id, data.platform)
                                         .Replace("%result%", result_symbol)
                                         .Replace("%result_number%", result.ToString())
-                                        .Replace("%win%", win.ToString() + " " + Maintenance.coin_symbol)
-                                        .Replace("%multipier%", multipliers[result_symbol].ToString());
+                                        .Replace("%win%", win.ToString() + " " + Core.Bot.CoinSymbol)
+                                        .Replace("%multipier%", multipliers[result_symbol].ToString()));
                                 }
                                 else
                                 {
-                                    Utils.Balance.Add(data.user_id, -bid, 0, data.platform);
-                                    resultMessage = TranslationManager.GetTranslation(data.user.language, "command:roulette:result:lose", data.channel_id, data.platform)
+                                    Utils.Tools.Balance.Add(data.user_id, -bid, 0, data.platform);
+                                    commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:roulette:result:lose", data.channel_id, data.platform)
                                         .Replace("%result%", result_symbol)
                                         .Replace("%result_number%", result.ToString())
-                                        .Replace("%lose%", bid.ToString() + " " + Maintenance.coin_symbol);
+                                        .Replace("%lose%", bid.ToString() + " " + Core.Bot.CoinSymbol));
                                 }
                             }
                         }
                         else
-                            resultMessage = TranslationManager.GetTranslation(data.user.language, "error:roulette_wrong_select", data.channel_id, data.platform);
+                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:roulette_wrong_select", data.channel_id, data.platform));
                     }
                     else
-                        resultMessage = TranslationManager.GetTranslation(data.user.language, "error:not_enough_arguments", data.channel_id, data.platform)
-                            .Replace("%command_example%", $"#roulette [🟩/🟥/⬛] [{TranslationManager.GetTranslation(data.user.language, "word:bid", data.channel_id, data.platform)}]");
-
-                    return new()
-                    {
-                        message = resultMessage,
-                        safe_execute = false,
-                        description = "",
-                        author = "",
-                        image_link = "",
-                        thumbnail_link = "",
-                        footer = "",
-                        is_embed = false,
-                        is_ephemeral = false,
-                        title = "",
-                        embed_color = resultColor,
-                        nickname_color = resultNicknameColor
-                    };
+                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:not_enough_arguments", data.channel_id, data.platform)
+                            .Replace("%command_example%", $"#roulette [🟩/🟥/⬛] [{TranslationManager.GetTranslation(data.user.language, "word:bid", data.channel_id, data.platform)}]"));
                 }
                 catch (Exception e)
                 {
-                    return new()
-                    {
-                        message = "",
-                        safe_execute = false,
-                        description = "",
-                        author = "",
-                        image_link = "",
-                        thumbnail_link = "",
-                        footer = "",
-                        is_embed = true,
-                        is_ephemeral = false,
-                        title = "",
-                        embed_color = Color.Green,
-                        nickname_color = ChatColorPresets.YellowGreen,
-                        is_error = true,
-                        exception = e
-                    };
+                    commandReturn.SetError(e);
                 }
+
+                return commandReturn;
             }
         }
     }

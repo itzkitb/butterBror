@@ -4,6 +4,8 @@ using TwitchLib.Client.Enums;
 using butterBror.Utils;
 using butterBror.Utils.DataManagers;
 using butterBror;
+using butterBror.Utils.Tools;
+using static butterBror.Utils.Things.Console;
 
 namespace butterBror
 {
@@ -13,36 +15,36 @@ namespace butterBror
         {
             public static CommandInfo Info = new()
             {
-                name = "Java",
-                author = "@ItzKITb",
-                author_link = "twitch.tv/itzkitb",
-                author_avatar = "https://static-cdn.jtvnw.net/jtv_user_pictures/c3a9af55-d7af-4b4a-82de-39a4d8b296d3-profile_image-70x70.png",
-                description = new() { 
+                Name = "Java",
+                Author = "@ItzKITb",
+                AuthorLink = "twitch.tv/itzkitb",
+                AuthorAvatar = "https://static-cdn.jtvnw.net/jtv_user_pictures/c3a9af55-d7af-4b4a-82de-39a4d8b296d3-profile_image-70x70.png",
+                Description = new() { 
                     { "ru", "{}+[]=?" },
                     { "en", "{}+[]=?" } 
                 },
-                wiki_link = "https://itzkitb.lol/bot/command?q=jaba",
-                cooldown_per_user = 10,
-                cooldown_global = 5,
-                aliases = ["js", "javascript", "джава", "jaba", "supinic", "java"],
-                arguments = "[code]",
-                cooldown_reset = false,
-                creation_date = DateTime.Parse("07/04/2024"),
-                is_for_bot_moderator = false,
-                is_for_bot_developer = false,
-                is_for_channel_moderator = false,
-                platforms = [Platforms.Twitch, Platforms.Telegram, Platforms.Discord]
+                WikiLink = "https://itzkitb.lol/bot/command?q=jaba",
+                CooldownPerUser = 10,
+                CooldownPerChannel = 5,
+                Aliases = ["js", "javascript", "джаваскрипт", "жс", "jabascript", "supinic"], // Fix AB0
+                Arguments = "[code]",
+                CooldownReset = false,
+                CreationDate = DateTime.Parse("07/04/2024"),
+                IsForBotModerator = false,
+                IsForBotDeveloper = false,
+                IsForChannelModerator = false,
+                Platforms = [Platforms.Twitch, Platforms.Telegram, Platforms.Discord]
             };
+
+            [ConsoleSector("butterBror.Commands.Java", "Index")]
             public CommandReturn Index(CommandData data)
             {
-                Engine.Statistics.functions_used.Add();
+                Core.Statistics.FunctionsUsed.Add();
+                CommandReturn commandReturn = new CommandReturn();
+
                 try
                 {
-                    string resultMessage = "";
-                    Color resultColor = Color.Green;
-                    ChatColorPresets resultNicknameColor = ChatColorPresets.YellowGreen;
-
-                    if (NoBanwords.Check(data.arguments_string, data.channel_id, data.platform))
+                    if (new NoBanwords().Check(data.arguments_string, data.channel_id, data.platform))
                     {
                         try
                         {
@@ -61,61 +63,30 @@ namespace butterBror
 
                             if (isSafe)
                             {
-                                resultMessage = TranslationManager.GetTranslation(data.user.language, "command:js", data.channel_id, data.platform)
-                                    .Replace("%result%", result.ToString());
+                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:js", data.channel_id, data.platform)
+                                    .Replace("%result%", result.ToString()));
                             }
                             else
                             {
-                                resultColor = Color.Red;
-                                resultNicknameColor = ChatColorPresets.OrangeRed;
-                                resultMessage = TranslationManager.GetTranslation(data.user.language, "error:js", data.channel_id, data.platform).Replace("%err%", "Not allowed");
+                                commandReturn.SetColor(ChatColorPresets.OrangeRed);
+                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:js", data.channel_id, data.platform).Replace("%err%", "Not allowed"));
                             }
                         }
                         catch (Exception ex)
                         {
-                            resultColor = Color.Red;
-                            resultNicknameColor = ChatColorPresets.Firebrick;
-                            resultMessage = "/me " + TranslationManager.GetTranslation(data.user.language, "error:js", data.channel_id, data.platform)
-                                .Replace("%err%", ex.Message);
-                            LogWorker.Log(ex.Message, LogWorker.LogTypes.Err, "command\\Java\\Index");
+                            commandReturn.SetColor(ChatColorPresets.Firebrick);
+                            commandReturn.SetMessage("/me " + TranslationManager.GetTranslation(data.user.language, "error:js", data.channel_id, data.platform)
+                                .Replace("%err%", ex.Message));
+                            Write(ex);
                         }
                     }
-                    return new()
-                    {
-                        message = resultMessage,
-                        safe_execute = false,
-                        description = "",
-                        author = "",
-                        image_link = "",
-                        thumbnail_link = "",
-                        footer = "",
-                        is_embed = false,
-                        is_ephemeral = false,
-                        title = "",
-                        embed_color = resultColor,
-                        nickname_color = resultNicknameColor
-                    };
                 }
                 catch (Exception e)
                 {
-                    return new()
-                    {
-                        message = "",
-                        safe_execute = false,
-                        description = "",
-                        author = "",
-                        image_link = "",
-                        thumbnail_link = "",
-                        footer = "",
-                        is_embed = true,
-                        is_ephemeral = false,
-                        title = "",
-                        embed_color = Color.Green,
-                        nickname_color = ChatColorPresets.YellowGreen,
-                        is_error = true,
-                        exception = e
-                    };
+                    commandReturn.SetError(e);
                 }
+
+                return commandReturn;
             }
         }
     }

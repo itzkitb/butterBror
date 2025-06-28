@@ -4,6 +4,7 @@ using butterBror;
 using Discord;
 using TwitchLib.Client.Enums;
 using DankDB;
+using butterBror.Utils.Tools;
 
 namespace butterBror
 {
@@ -13,36 +14,34 @@ namespace butterBror
         {
             public static CommandInfo Info = new()
             {
-                name = "Frogs",
-                author = "@ItzKITb",
-                author_link = "twitch.tv/itzkitb",
-                author_avatar = "https://static-cdn.jtvnw.net/jtv_user_pictures/c3a9af55-d7af-4b4a-82de-39a4d8b296d3-profile_image-70x70.png",
-                description = new() {
+                Name = "Frogs",
+                Author = "@ItzKITb",
+                AuthorLink = "twitch.tv/itzkitb",
+                AuthorAvatar = "https://static-cdn.jtvnw.net/jtv_user_pictures/c3a9af55-d7af-4b4a-82de-39a4d8b296d3-profile_image-70x70.png",
+                Description = new() {
                     { "ru", "Л Я Г У Ш К А" },
                     { "en", "F R O G" }
                 },
-                wiki_link = "https://itzkitb.lol/bot/command?q=frogs",
-                cooldown_per_user = 10,
-                cooldown_global = 1,
-                aliases = ["frog", "frg", "лягушка", "лягушки", "лягуш"],
-                arguments = "[(info)/(statistic)/(caught)/(gift [user] [frogs])]",
-                cooldown_reset = true,
-                creation_date = DateTime.Parse("13/10/2024"),
-                is_for_bot_moderator = false,
-                is_for_bot_developer = false,
-                is_for_channel_moderator = false,
-                platforms = [Platforms.Twitch, Platforms.Telegram, Platforms.Discord]
+                WikiLink = "https://itzkitb.lol/bot/command?q=frogs",
+                CooldownPerUser = 10,
+                CooldownPerChannel = 1,
+                Aliases = ["frog", "frg", "лягушка", "лягушки", "лягуш"],
+                Arguments = "[(info)/(statistic)/(caught)/(gift [user] [frogs])]",
+                CooldownReset = true,
+                CreationDate = DateTime.Parse("13/10/2024"),
+                IsForBotModerator = false,
+                IsForBotDeveloper = false,
+                IsForChannelModerator = false,
+                Platforms = [Platforms.Twitch, Platforms.Telegram, Platforms.Discord]
             };
             public CommandReturn Index(CommandData data)
             {
-                Engine.Statistics.functions_used.Add();
+                Core.Statistics.FunctionsUsed.Add();
+                CommandReturn commandReturn = new CommandReturn();
+
                 try
                 {
-                    string return_message = "";
-                    Color return_message_color = Color.Green;
-                    string return_message_title = TranslationManager.GetTranslation(data.user.language, "dsFLTitle", data.channel_id, data.platform);
-                    ChatColorPresets return_message_nickname_color = ChatColorPresets.YellowGreen;
-                    string root_path = Maintenance.path_main + $"GAMES_DATA/{Platform.strings[(int)data.platform]}/FROGS/";
+                    string root_path = Core.Bot.Pathes.Main + $"GAMES_DATA/{Platform.strings[(int)data.platform]}/FROGS/";
                     string user_path = $"{root_path}{data.user_id}.json";
 
                     FileUtil.CreateDirectory(root_path);
@@ -50,9 +49,9 @@ namespace butterBror
                     if (!File.Exists(user_path))
                     {
                         Manager.CreateDatabase(user_path);
-                        Manager.Save(user_path, "frogs", 0);
-                        Manager.Save(user_path, "gifted", 0);
-                        Manager.Save(user_path, "received", 0);
+                        SafeManager.Save(user_path, "frogs", 0, false);
+                        SafeManager.Save(user_path, "gifted", 0, false);
+                        SafeManager.Save(user_path, "received", 0);
                     }
 
                     long balance = Manager.Get<long>(user_path, "frogs");
@@ -68,14 +67,14 @@ namespace butterBror
                     {
                         if (info_aliases.Contains(data.arguments[0].ToLower()))
                         {
-                            return_message = TranslationManager.GetTranslation(data.user.language, "command:frog:info", data.channel_id, data.platform);
+                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:frog:info", data.channel_id, data.platform));
                         }
                         else if (statistic_aliases.Contains(data.arguments[0].ToLower()))
                         {
-                            return_message = TranslationManager.GetTranslation(data.user.language, "command:frog:statistic", data.channel_id, data.platform)
+                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:frog:statistic", data.channel_id, data.platform)
                                 .Replace("%frogs%", balance.ToString())
                                 .Replace("%frogs_gifted%", gifted.ToString())
-                                .Replace("%frogs_received%", received.ToString());
+                                .Replace("%frogs_received%", received.ToString()));
                         }
                         else if (caught_aliases.Contains(data.arguments[0].ToLower()))
                         {
@@ -96,24 +95,24 @@ namespace butterBror
 
                                 if (text == "error:range")
                                 {
-                                    return_message = TranslationManager.GetTranslation(data.user.language, "command:frog:error:range", data.channel_id, data.platform);
-                                    return_message_nickname_color = ChatColorPresets.Red;
+                                    commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:frog:error:range", data.channel_id, data.platform));
+                                    commandReturn.SetColor(ChatColorPresets.Red);
                                 }
                                 else
                                 {
-                                    return_message = TranslationManager.GetTranslation(data.user.language, "command:frog:caught", data.channel_id, data.platform)
+                                    commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:frog:caught", data.channel_id, data.platform)
                                         .Replace("%action%", TranslationManager.GetTranslation(data.user.language, $"command:frog:won:{text}", data.channel_id, data.platform))
                                         .Replace("%old_frogs_count%", balance.ToString())
                                         .Replace("%new_frogs_count%", (balance + frogs_caughted).ToString())
-                                        .Replace("%added_count%", frogs_caughted.ToString());
-                                    Manager.Save(user_path, "frogs", balance + frogs_caughted);
+                                        .Replace("%added_count%", frogs_caughted.ToString()));
+                                    SafeManager.Save(user_path, "frogs", balance + frogs_caughted);
                                 }
                             }
                             else
                             {
-                                return_message = TranslationManager.GetTranslation(data.user.language, "command:frog:error:caught", data.channel_id, data.platform)
-                                    .Replace("%time%", TextUtil.FormatTimeSpan(Command.GetCooldownTime(data.user_id, "frogs_reseter", 3600, data.platform), data.user.language));
-                                return_message_nickname_color = ChatColorPresets.Red;
+                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:frog:error:caught", data.channel_id, data.platform)
+                                    .Replace("%time%", Text.FormatTimeSpan(Command.GetCooldownTime(data.user_id, "frogs_reseter", 3600, data.platform), data.user.language)));
+                                commandReturn.SetColor(ChatColorPresets.Red);
                             }
                         }
                         else if (gift_aliases.Contains(data.arguments[0].ToLower()))
@@ -121,109 +120,80 @@ namespace butterBror
                             if (data.arguments.Count > 2)
                             {
                                 string username = data.arguments[1].ToLower();
-                                long frogs = Utils.Format.ToLong(data.arguments[2]);
+                                long frogs = Utils.Tools.Format.ToLong(data.arguments[2]);
                                 string user_id = Names.GetUserID(username, data.platform);
 
                                 if (user_id == null)
                                 {
-                                    return_message = TextUtil.ArgumentReplacement(TranslationManager.GetTranslation(data.user.language, "error:user_not_found", data.channel_id, data.platform),
-                                        "%user%", Names.DontPing(username));
-                                    return_message_nickname_color = ChatColorPresets.Red;
-                                    return_message_color = Color.Red;
+                                    commandReturn.SetMessage(Text.ArgumentReplacement(TranslationManager.GetTranslation(data.user.language, "error:user_not_found", data.channel_id, data.platform),
+                                        "%user%", Names.DontPing(username)));
+                                    commandReturn.SetColor(ChatColorPresets.Red);
                                 }
                                 else if (frogs == 0)
                                 {
-                                    return_message = TranslationManager.GetTranslation(data.user.language, "command:frog:gift:error:zero", data.channel_id, data.platform);
-                                    return_message_nickname_color = ChatColorPresets.Red;
-                                    return_message_color = Color.Red;
+                                    commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:frog:gift:error:zero", data.channel_id, data.platform));
+                                    commandReturn.SetColor(ChatColorPresets.Red);
                                 }
                                 else if (frogs < 0)
                                 {
-                                    return_message = TranslationManager.GetTranslation(data.user.language, "command:frog:gift:error:lowerThanZero", data.channel_id, data.platform);
-                                    return_message_nickname_color = ChatColorPresets.Red;
-                                    return_message_color = Color.Red;
+                                    commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:frog:gift:error:lowerThanZero", data.channel_id, data.platform));
+                                    commandReturn.SetColor(ChatColorPresets.Red);
                                 }
                                 else if (balance >= frogs)
                                 {
-                                    return_message = TranslationManager.GetTranslation(data.user.language, "command:frog:gift", data.channel_id, data.platform)
+                                    commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:frog:gift", data.channel_id, data.platform)
                                         .Replace("%frogs%", frogs.ToString())
-                                        .Replace("%gift_user%", Names.DontPing(username));
+                                        .Replace("%gift_user%", Names.DontPing(username)));
                                     string gift_user_path = $"{root_path}{user_id}.json";
 
                                     if (!File.Exists(gift_user_path))
                                     {
                                         Manager.CreateDatabase(gift_user_path);
-                                        Manager.Save(gift_user_path, "frogs", 0);
-                                        Manager.Save(gift_user_path, "gifted", 0);
-                                        Manager.Save(gift_user_path, "received", 0);
+                                        SafeManager.Save(gift_user_path, "frogs", 0, false);
+                                        SafeManager.Save(gift_user_path, "gifted", 0, false);
+                                        SafeManager.Save(gift_user_path, "received", 0);
                                     }
 
                                     long gift_user_frogs_balance = Manager.Get<long>(gift_user_path, "frogs");
                                     long gift_user_received = Manager.Get<long>(gift_user_path, "received");
 
-                                    Manager.Save(gift_user_path, "frogs", gift_user_frogs_balance + frogs);
-                                    Manager.Save(gift_user_path, "received", gift_user_received + frogs);
-                                    Manager.Save(user_path, "frogs", balance - frogs);
-                                    Manager.Save(user_path, "gifted", gifted + frogs);
+                                    SafeManager.Save(gift_user_path, "frogs", gift_user_frogs_balance + frogs, false);
+                                    SafeManager.Save(gift_user_path, "received", gift_user_received + frogs, false);
+                                    SafeManager.Save(user_path, "frogs", balance - frogs, false);
+                                    SafeManager.Save(user_path, "gifted", gifted + frogs);
                                 }
                                 else
                                 {
-                                    return_message = TranslationManager.GetTranslation(data.user.language, "frog:gift:error:noFrogs", data.channel_id, data.platform);
-                                    return_message_nickname_color = ChatColorPresets.Red;
+                                    commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "frog:gift:error:noFrogs", data.channel_id, data.platform));
+                                    commandReturn.SetColor(ChatColorPresets.Red);
                                 }
                             }
                             else
                             {
-                                return_message = TextUtil.ArgumentReplacement(TranslationManager.GetTranslation(data.user.language, "error:not_enough_arguments", data.channel_id, data.platform),
-                                    "command_example", "#frog gift [user] [frogs]");
-                                return_message_nickname_color = ChatColorPresets.Red;
+                                commandReturn.SetMessage(Text.ArgumentReplacement(TranslationManager.GetTranslation(data.user.language, "error:not_enough_arguments", data.channel_id, data.platform),
+                                    "command_example", $"{Core.Bot.Executor}frog gift [user] [frogs]"));
+                                commandReturn.SetColor(ChatColorPresets.Red);
                             }
+                        }
+                        else
+                        {
+                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:incorrect_parameters", data.channel_id, data.platform)); // Fix AB7
+                            commandReturn.SetColor(ChatColorPresets.Red);
                         }
                     }
                     else
                     {
-                        return_message = TextUtil.ArgumentReplacement(TranslationManager.GetTranslation(data.user.language, "error:not_enough_arguments", data.channel_id, data.platform),
-                                    "command_example", $"#frog {Info.arguments}");
-                        return_message_nickname_color = ChatColorPresets.Red;
-                        return_message_color = Color.Red;
+                        commandReturn.SetMessage(Text.ArgumentReplacement(TranslationManager.GetTranslation(data.user.language, "error:not_enough_arguments", data.channel_id, data.platform),
+                                    "command_example", $"#frog {Info.Arguments}"));
+                        commandReturn.SetColor(ChatColorPresets.Red);
                     }
-
-                    return new()
-                    {
-                        message = return_message,
-                        safe_execute = true,
-                        description = "",
-                        author = "",
-                        image_link = "",
-                        thumbnail_link = "",
-                        footer = "",
-                        is_embed = true,
-                        is_ephemeral = false,
-                        title = return_message_title,
-                        embed_color = return_message_color,
-                        nickname_color = return_message_nickname_color
-                    };
                 }
                 catch (Exception e)
                 {
-                    return new ()
-                    {
-                        message = "",
-                        safe_execute = false,
-                        description = "",
-                        author = "",
-                        image_link = "",
-                        thumbnail_link = "",
-                        footer = "",
-                        is_embed = true,
-                        is_ephemeral = false,
-                        title = "",
-                        embed_color = Color.Green,
-                        nickname_color = ChatColorPresets.YellowGreen,
-                        is_error = true,
-                        exception = e
-                    };
+                    commandReturn.SetError(e);
                 }
+
+                return commandReturn;
             }
 
             string GetFrogRange(long number)

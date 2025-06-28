@@ -1,11 +1,13 @@
 ﻿using butterBror.Utils;
-using Microsoft.Extensions.Caching.Memory;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Microsoft.Extensions.Caching.Memory;
+using static butterBror.Utils.Things.Console;
+using butterBror.Utils.Tools;
 
-namespace butterBror.BotUtils
+namespace butterBror.Utils
 {
     public class SevenTvService
     {
@@ -17,17 +19,18 @@ namespace butterBror.BotUtils
         };
         public SevenTvService(HttpClient httpClient)
         {
-            Engine.Statistics.functions_used.Add();
+            Core.Statistics.FunctionsUsed.Add();
             client = httpClient;
             client.BaseAddress = new Uri("https://7tv.io/v4/gql");
         }
 
+        [ConsoleSector("butterBror.Utils.SevenTvService", "SearchUser")]
         public async Task<string> SearchUser(string nickname, string bearer_token)
         {
-            Engine.Statistics.functions_used.Add();
+            Core.Statistics.FunctionsUsed.Add();
             if (cache.TryGetValue<string>($"user_{nickname}", out var cached) && cache is not null)
             {
-                Utils.Console.WriteLine($"[7tv] Getted cache data for @{nickname}", "info");
+                Write($"SevenTV - Getted cache data for @{nickname}", "info");
                 return cached;
             }
 
@@ -35,16 +38,17 @@ namespace butterBror.BotUtils
 
             if (!string.IsNullOrEmpty(result))
                 cache.Set($"user_{nickname}", result, cache_options);
-            Utils.Console.WriteLine($"[7tv] Loaded data for @{nickname} ({result is null}): {TextUtil.CheckNull(result)}", "info");
+            Write($"SevenTV - Loaded data for @{nickname} ({result is null}): {Text.CheckNull(result)}", "info");
             return result;
         }
 
+        [ConsoleSector("butterBror.Utils.SevenTvService", "SearchEmote")]
         public async Task<string> SearchEmote(string emoteName, string bearer_token)
         {
-            Engine.Statistics.functions_used.Add();
+            Core.Statistics.FunctionsUsed.Add();
             if (cache.TryGetValue<string>($"emote_{emoteName}", out var cached))
             {
-                Utils.Console.WriteLine($"[7tv] Getted cache emote {emoteName}", "info");
+                Write($"SevenTV - Getted cache data for @{emoteName}", "info");
                 return cached;
             }
 
@@ -52,13 +56,14 @@ namespace butterBror.BotUtils
 
             if (!string.IsNullOrEmpty(result))
                 cache.Set($"emote_{emoteName}", result, cache_options);
-            Utils.Console.WriteLine($"[7tv] Loaded emote {emoteName} ({result is null})", "info");
+            Write($"SevenTV - Loaded emote {emoteName} ({result is null})", "info");
             return result;
         }
 
+        [ConsoleSector("butterBror.Utils.SevenTvService", "Add")]
         public async Task<bool> Add(string set_id, string emote_name, string emote_id, string bearer_token)
         {
-            Engine.Statistics.functions_used.Add();
+            Core.Statistics.FunctionsUsed.Add();
             var request = new
             {
                 operationName = "AddEmoteToSet",
@@ -88,9 +93,10 @@ namespace butterBror.BotUtils
             return await SendRequestAsync(request, bearer_token);
         }
 
+        [ConsoleSector("butterBror.Utils.SevenTvService", "Remove")]
         public async Task<bool> Remove(string set_id, string emote_id, string bearer_token)
         {
-            Engine.Statistics.functions_used.Add();
+            Core.Statistics.FunctionsUsed.Add();
             var request = new
             {
                 operationName = "RemoveEmoteFromSet",
@@ -119,9 +125,10 @@ namespace butterBror.BotUtils
             return await SendRequestAsync(request, bearer_token);
         }
 
+        [ConsoleSector("butterBror.Utils.SevenTvService", "Rename")]
         public async Task<bool> Rename(string set_id, string new_name, string emote_id, string bearer_token)
         {
-            Engine.Statistics.functions_used.Add();
+            Core.Statistics.FunctionsUsed.Add();
             var request = new
             {
                 operationName = "RenameEmoteInSet",
@@ -151,9 +158,10 @@ namespace butterBror.BotUtils
             return await SendRequestAsync(request, bearer_token);
         }
 
+        [ConsoleSector("butterBror.Utils.SevenTvService", "SendRequestAsync")]
         private async Task<bool> SendRequestAsync(object requestData, string bearerToken)
         {
-            Engine.Statistics.functions_used.Add();
+            Core.Statistics.FunctionsUsed.Add();
             var jsonOptions = new JsonSerializerOptions
             {
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -172,7 +180,6 @@ namespace butterBror.BotUtils
             try
             {
                 var response = await client.SendAsync(request);
-                System.Console.WriteLine(Encoding.UTF8.GetString(response.Content.ReadAsByteArrayAsync().Result));
                 response.EnsureSuccessStatusCode();
                 return true;
             }
@@ -182,9 +189,10 @@ namespace butterBror.BotUtils
             }
         }
 
+        [ConsoleSector("butterBror.Utils.SevenTvService", "PerformSearchUser")]
         public async Task<string> PerformSearchUser(string nickname)
         {
-            Engine.Statistics.functions_used.Add();
+            Core.Statistics.FunctionsUsed.Add();
             var userId = Names.GetUserID(nickname, Platforms.Twitch);
             var requestUrl = "https://7tv.io/v3/gql";
 
@@ -211,20 +219,20 @@ namespace butterBror.BotUtils
                 var userResponse = JsonSerializer.Deserialize<List<UserResponse>>(responseContent);
                 var firstUser = userResponse?.FirstOrDefault()?.Data?.Users.FirstOrDefault();
 
-                Utils.Console.WriteLine($"[7tv] PerformSearchUser> USER ID ({userId}): {TextUtil.CheckNull(firstUser?.Id)}", "info");
+                Write($"SevenTV - PerformSearchUser> USER ID ({userId}): {Text.CheckNull(firstUser?.Id)}", "info");
                 return firstUser?.Id;
             }
             catch (Exception ex)
             {
-                Utils.Console.WriteError(ex, $"EmoteUtils/PerformSearchUser #{nickname}");
+                Write(ex);
                 return null;
             }
         }
 
-
+        [ConsoleSector("butterBror.Utils.SevenTvService", "PerformSearchEmote")]
         public async Task<string> PerformSearchEmote(string emoteName)
         {
-            Engine.Statistics.functions_used.Add();
+            Core.Statistics.FunctionsUsed.Add();
             var request = new
             {
                 operationName = "SearchEmotes",
@@ -316,7 +324,7 @@ namespace butterBror.BotUtils
             }
             catch (Exception ex)
             {
-                Utils.Console.WriteError(ex, $"EmoteUtils/PerformSearchEmote#{emoteName}");
+                Write(ex);
                 return null;
             }
         }

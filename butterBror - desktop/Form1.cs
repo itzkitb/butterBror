@@ -40,6 +40,8 @@ namespace butterBror___desktop
         {
             InitializeComponent();
 
+            this.Text = "butterBror";
+
             cache_reads.Controls.Add(cache_read_chart);
             cache_writes.Controls.Add(cache_write_chart);
             files_read.Controls.Add(files_read_chart);
@@ -51,23 +53,20 @@ namespace butterBror___desktop
             cpu_status.Controls.Add(cpu_status_chart);
             ram_status.Controls.Add(ram_status_chart);
 
-            version.Text = $"v. {Engine.version}{Engine.patch}";
+            version.Text = $"v. {Core.Version}{Core.Patch}";
 
             consoles.Add("kernel", kernel_console);
             consoles.Add("info", info_console);
             consoles.Add("err", errors_console);
             consoles.Add("main", main_console);
             consoles.Add("discord", info_console);
-            consoles.Add("tw_chat", chat_console);
-            consoles.Add("ds_chat", chat_console);
-            consoles.Add("tg_chat", chat_console);
             consoles.Add("cafus", cafus_console);
             consoles.Add("nbw", nbw_console);
 
             butterBror.Utils.Console.on_chat_line += chat_line;
             butterBror.Utils.Console.error_occured += on_error;
 
-            Engine.Start();
+            Core.Start();
 
             Main();
         }
@@ -94,18 +93,18 @@ namespace butterBror___desktop
             {
                 if (this.IsDisposed) return;
 
-                long ram = Process.GetCurrentProcess().WorkingSet64 / 1024 / 1024;
+                long ram = Process.GetCurrentProcess().PrivateMemorySize64 / 1024 / 1024;
 
                 this.Invoke((MethodInvoker)delegate
                 {
-                    AddChartPoint(20, ((int)Engine.Statistics.DataBase.cache_reads.Get()), cache_read_list, cache_read_chart);
-                    AddChartPoint(20, ((int)Engine.Statistics.DataBase.cache_writes.Get()), cache_write_list, cache_write_chart);
-                    AddChartPoint(20, ((int)Engine.Statistics.DataBase.file_reads.Get()), files_read_list, files_read_chart);
-                    AddChartPoint(20, ((int)Engine.Statistics.DataBase.file_writes.Get()), files_write_list, files_write_chart);
-                    AddChartPoint(20, ((int)Engine.Statistics.DataBase.checks.Get()), files_checks_list, files_checks_chart);
-                    AddChartPoint(20, ((int)Engine.Statistics.DataBase.operations.Get()), db_operations_list, db_operations_chart);
-                    AddChartPoint(60, Engine.Statistics.functions_used.Get(), operations_list, operations_chart);
-                    AddChartPoint(60, Engine.Statistics.messages_readed.Get(), messages_list, messages_chart);
+                    AddChartPoint(20, ((int)Core.Statistics.DataBase.CacheReads.Get()), cache_read_list, cache_read_chart);
+                    AddChartPoint(20, ((int)Core.Statistics.DataBase.CacheWrites.Get()), cache_write_list, cache_write_chart);
+                    AddChartPoint(20, ((int)Core.Statistics.DataBase.FileReads.Get()), files_read_list, files_read_chart);
+                    AddChartPoint(20, ((int)Core.Statistics.DataBase.FileWrites.Get()), files_write_list, files_write_chart);
+                    AddChartPoint(20, ((int)Core.Statistics.DataBase.Checks.Get()), files_checks_list, files_checks_chart);
+                    AddChartPoint(20, ((int)Core.Statistics.DataBase.Operations.Get()), db_operations_list, db_operations_chart);
+                    AddChartPoint(60, Core.Statistics.FunctionsUsed.Get(), operations_list, operations_chart);
+                    AddChartPoint(60, Core.Statistics.MessagesReaded.Get(), messages_list, messages_chart);
                     AddChartPoint(60, (int)ram, ram_status_list, ram_status_chart);
                     AddChartPoint(60, (int)cpu_counter.NextValue(), cpu_status_list, cpu_status_chart);
                 });
@@ -160,11 +159,6 @@ namespace butterBror___desktop
                 values.RemoveAt(0);
             }
             chart.UpdateValues(values);
-        }
-
-        private void chat_console_Click(object sender, EventArgs e)
-        {
-            Clipboard.SetText(chat_console.Text);
         }
 
         private void kernel_console_Click(object sender, EventArgs e)

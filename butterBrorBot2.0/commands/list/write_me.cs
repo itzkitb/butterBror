@@ -2,6 +2,7 @@
 using butterBror;
 using Discord;
 using TwitchLib.Client.Enums;
+using butterBror.Utils.Tools;
 
 
 namespace butterBror
@@ -12,101 +13,75 @@ namespace butterBror
         {
             public static CommandInfo Info = new()
             {
-                name = "Me",
-                author = "@ItzKITb",
-                author_link = "twitch.tv/itzkitb",
-                author_avatar = "https://static-cdn.jtvnw.net/jtv_user_pictures/c3a9af55-d7af-4b4a-82de-39a4d8b296d3-profile_image-70x70.png",
-                description = new()
+                Name = "Me",
+                Author = "@ItzKITb",
+                AuthorLink = "twitch.tv/itzkitb",
+                AuthorAvatar = "https://static-cdn.jtvnw.net/jtv_user_pictures/c3a9af55-d7af-4b4a-82de-39a4d8b296d3-profile_image-70x70.png",
+                Description = new()
                 {
                     { "ru", "Эта команда... Просто зачем-то существует" },
                     { "en", "This command... Just exists for some reason" }
                 },
-                wiki_link = "https://itzkitb.ru/bot/command?name=me",
-                cooldown_per_user = 15,
-                cooldown_global = 5,
-                aliases = ["me", "m", "я"],
-                arguments = "[text]",
-                cooldown_reset = true,
-                creation_date = DateTime.Parse("07/04/2024"),
-                is_for_bot_moderator = false,
-                is_for_bot_developer = false,
-                is_for_channel_moderator = false,
-                platforms = [Platforms.Twitch]
+                WikiLink = "https://itzkitb.ru/bot/command?name=me",
+                CooldownPerUser = 15,
+                CooldownPerChannel = 5,
+                Aliases = ["me", "m", "я"],
+                Arguments = "[text]",
+                CooldownReset = true,
+                CreationDate = DateTime.Parse("07/04/2024"),
+                IsForBotModerator = false,
+                IsForBotDeveloper = false,
+                IsForChannelModerator = false,
+                Platforms = [Platforms.Twitch]
             };
             public CommandReturn Index(CommandData data)
             {
-                Engine.Statistics.functions_used.Add();
+                Core.Statistics.FunctionsUsed.Add();
+                CommandReturn commandReturn = new CommandReturn();
+
                 try
                 {
-                    bool checked_msg = false;
-                    string resultMessage = "";
-                    if (TextUtil.CleanAsciiWithoutSpaces(data.arguments_string) != "")
+                    if (Text.CleanAsciiWithoutSpaces(data.arguments_string) != "")
                     {
-                        string[] blockedEntries = ["/", "$", "#", "+", "-"];
-                        string meMessage = TextUtil.CleanAscii(data.arguments_string);
-                        while (!checked_msg)
+                        string[] blockedEntries = ["/", "$", "#", "+", "-", ">", "<", "*", "\\", ";"];
+                        string meMessage = Text.CleanAscii(data.arguments_string);
+                        while (true)
                         {
-                            checked_msg = true;
-                            while (("\n" + meMessage).Contains("\n "))
+                            while (meMessage.StartsWith(' '))
                             {
-                                meMessage = ("\n" + meMessage).Replace("\n ", "");
+                                meMessage = string.Join("", meMessage.Skip(1)); // AB6 fix
                             }
-                            if (("\n" + meMessage).Contains("\n!"))
+
+                            if (meMessage.StartsWith('!'))
                             {
-                                meMessage = ("\n" + meMessage).Replace("\n!", "❗");
-                                checked_msg = false;
+                                meMessage = "❗" + string.Join("", meMessage.Skip(1)); // AB6 fix
+                                break;
                             }
+
                             foreach (string blockedEntry in blockedEntries)
                             {
-                                if (("\n" + meMessage).Contains($"\n{blockedEntry}"))
+                                if (meMessage.StartsWith(blockedEntry))
                                 {
-                                    meMessage = ("\n" + meMessage).Replace($"\n{blockedEntry}", "");
-                                    checked_msg = false;
+                                    meMessage = string.Join("", meMessage.Skip(blockedEntry.Length)); // AB6 fix
+                                    break;
                                 }
                             }
+
+                            break; // AB5 fix
                         }
-                        resultMessage = $"/me ⁣ {meMessage}";
+                        commandReturn.SetMessage($"/me \u2063 {meMessage}");
                     }
                     else
                     {
-                        resultMessage = "/me " + TranslationManager.GetTranslation(data.user.language, "text:ad", data.channel_id, data.platform);
+                        commandReturn.SetMessage("/me " + TranslationManager.GetTranslation(data.user.language, "text:ad", data.channel_id, data.platform));
                     }
-                    return new()
-                    {
-                        message = resultMessage,
-                        safe_execute = false,
-                        description = "",
-                        author = "",
-                        image_link = "",
-                        thumbnail_link = "",
-                        footer = "",
-                        is_embed = true,
-                        is_ephemeral = false,
-                        title = "",
-                        embed_color = Color.Green,
-                        nickname_color = TwitchLib.Client.Enums.ChatColorPresets.DodgerBlue
-                    };
                 }
                 catch (Exception e)
                 {
-                    return new()
-                    {
-                        message = "",
-                        safe_execute = false,
-                        description = "",
-                        author = "",
-                        image_link = "",
-                        thumbnail_link = "",
-                        footer = "",
-                        is_embed = true,
-                        is_ephemeral = false,
-                        title = "",
-                        embed_color = Color.Green,
-                        nickname_color = ChatColorPresets.YellowGreen,
-                        is_error = true,
-                        exception = e
-                    };
+                    commandReturn.SetError(e);
                 }
+
+                return commandReturn;
             }
         }
     }
