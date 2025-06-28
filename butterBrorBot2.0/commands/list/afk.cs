@@ -3,6 +3,7 @@ using butterBror.Utils.DataManagers;
 using butterBror;
 using Discord;
 using TwitchLib.Client.Enums;
+using butterBror.Utils.Tools;
 
 namespace butterBror
 {
@@ -41,7 +42,7 @@ namespace butterBror
 
             public CommandReturn Index(CommandData data)
             {
-                Engine.Statistics.functions_used.Add();
+                Core.Statistics.FunctionsUsed.Add();
                 try
                 {
                     string action = "";
@@ -83,7 +84,7 @@ namespace butterBror
             }
             public static CommandReturn GoToAfk(CommandData data, string afkType)
             {
-                Engine.Statistics.functions_used.Add();
+                Core.Statistics.FunctionsUsed.Add();
                 CommandReturn commandReturn = new CommandReturn();
 
                 try
@@ -100,7 +101,7 @@ namespace butterBror
                         UsersData.Save(data.user_id, "lastFromAfkResume", DateTime.UtcNow, data.platform);
                         UsersData.Save(data.user_id, "fromAfkResumeTimes", 0, data.platform);
 
-                        if (TextUtil.CleanAsciiWithoutSpaces(text) == "")
+                        if (Text.CleanAsciiWithoutSpaces(text) == "")
                             commandReturn.SetMessage(result);
                         else
                             commandReturn.SetMessage(result + ": " + text);

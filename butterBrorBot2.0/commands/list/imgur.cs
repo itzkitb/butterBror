@@ -2,6 +2,8 @@
 using TwitchLib.Client.Enums;
 using butterBror.Utils;
 using butterBror;
+using butterBror.Utils.Tools;
+using static butterBror.Utils.Things.Console;
 
 namespace butterBror
 {
@@ -32,9 +34,10 @@ namespace butterBror
                 Platforms = [Platforms.Twitch, Platforms.Telegram, Platforms.Discord]
             };
 
+            [ConsoleSector("butterBror.Commands.UploadToImgur", "Index")]
             public CommandReturn Index(CommandData data)
             {
-                Engine.Statistics.functions_used.Add();
+                Core.Statistics.FunctionsUsed.Add();
                 CommandReturn commandReturn = new CommandReturn();
 
                 try
@@ -42,7 +45,7 @@ namespace butterBror
                     string? url = "";
                     if (data.platform == Platforms.Twitch)
                     {
-                        url = TextUtil.CleanAscii(data.arguments_string);
+                        url = Text.CleanAscii(data.arguments_string);
                     }
                     else if (data.platform == Platforms.Discord)
                     {
@@ -55,15 +58,15 @@ namespace butterBror
                         try
                         {
                             stage++;
-                            var imageBytesTask = Utils.API.Imgur.DownloadAsync(url);
+                            var imageBytesTask = Utils.Tools.API.Imgur.DownloadAsync(url);
                             imageBytesTask.Wait();
                             byte[] imageBytes = imageBytesTask.Result;
                             stage++;
-                            var responseTask = Utils.API.Imgur.UploadAsync(imageBytes, "Бот butterBror и его разработчик ItzKITb никак не связаны с данным изображением и не поддерживают его содержимое.", $"Картинка от @{data.user.username}", Maintenance.token_imgur, "https://api.imgur.com/3/upload");
+                            var responseTask = Utils.Tools.API.Imgur.UploadAsync(imageBytes, "Бот butterBror и его разработчик ItzKITb никак не связаны с данным изображением и не поддерживают его содержимое.", $"Картинка от @{data.user.username}", Core.Bot.Tokens.Imgur, "https://api.imgur.com/3/upload");
                             responseTask.Wait();
                             string response = responseTask.Result;
                             stage++;
-                            string link = Utils.API.Imgur.GetLinkFromResponse(response);
+                            string link = Utils.Tools.API.Imgur.GetLinkFromResponse(response);
                             commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:imgur:uploaded", data.channel_id, data.platform).Replace("%link%", link));
                         }
                         catch (Exception ex)
@@ -85,7 +88,7 @@ namespace butterBror
                                     break;
                             }
                             commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, errorTranslation, data.channel_id, data.platform));
-                            Utils.Console.WriteError(ex, errorTranslation);
+                            Write(ex);
                         }
                     }
                     else

@@ -1,5 +1,6 @@
 ﻿using butterBror.Utils;
 using butterBror.Utils.DataManagers;
+using butterBror.Utils.Tools;
 using Discord;
 using TwitchLib.Client.Enums;
 
@@ -33,14 +34,14 @@ namespace butterBror
             };
             public async Task<CommandReturn> Index(CommandData data)
             {
-                Engine.Statistics.functions_used.Add();
+                Core.Statistics.FunctionsUsed.Add();
                 CommandReturn commandReturn = new CommandReturn();
 
                 try
                 {
                     if (data.arguments != null && data.arguments.Count != 0)
                     {
-                        var name = TextUtil.UsernameFilter(data.arguments.ElementAt(0).ToLower());
+                        var name = Text.UsernameFilter(data.arguments.ElementAt(0).ToLower());
                         var userID = Names.GetUserID(name, data.platform);
 
                         if (userID is null)
@@ -51,7 +52,7 @@ namespace butterBror
                         }
                         else
                         {
-                            var message = await MessagesWorker.GetMessage(data.channel_id, userID, data.platform, true, -1);
+                            var message = MessagesWorker.GetMessage(data.channel_id, userID, data.platform, true, -1);
                             var message_badges = string.Empty;
                             if (message != null)
                             {
@@ -71,21 +72,21 @@ namespace butterBror
                                     if (flag) message_badges += TranslationManager.GetTranslation(data.user.language, symbol, data.channel_id, data.platform);
                                 }
 
-                                if (!name.Equals(Maintenance.twitch_client.TwitchUsername, StringComparison.CurrentCultureIgnoreCase))
+                                if (!name.Equals(Core.Bot.BotName, StringComparison.CurrentCultureIgnoreCase))
                                 {
                                     if (name == data.user.username)
                                     {
-                                        commandReturn.SetMessage(TextUtil.ArgumentsReplacement(
+                                        commandReturn.SetMessage(Text.ArgumentsReplacement(
                                             TranslationManager.GetTranslation(data.user.language, "command:first_message:user", data.channel_id, data.platform), new() { // Fix AA8
-                                            { "ago", TextUtil.FormatTimeSpan(Utils.Format.GetTimeTo(message.messageDate, DateTime.UtcNow, false), data.user.language) },
+                                            { "ago", Text.FormatTimeSpan(Utils.Tools.Format.GetTimeTo(message.messageDate, DateTime.UtcNow, false), data.user.language) },
                                             { "message", message.messageText },
                                             { "bages", message_badges } }));
                                     }
                                     else
                                     {
-                                        commandReturn.SetMessage(TextUtil.ArgumentsReplacement(
+                                        commandReturn.SetMessage(Text.ArgumentsReplacement(
                                             TranslationManager.GetTranslation(data.user.language, "command:first_message", data.channel_id, data.platform), new() { // Fix AA8
-                                            { "ago", TextUtil.FormatTimeSpan(Utils.Format.GetTimeTo(message.messageDate, DateTime.UtcNow, false), data.user.language) },
+                                            { "ago", Text.FormatTimeSpan(Utils.Tools.Format.GetTimeTo(message.messageDate, DateTime.UtcNow, false), data.user.language) },
                                             { "message", message.messageText },
                                             { "bages", message_badges },
                                             { "user", Names.DontPing(Names.GetUsername(userID, data.platform)) } }));
@@ -101,7 +102,7 @@ namespace butterBror
                     else
                     {
                         var user_id = data.user_id;
-                        var message = await MessagesWorker.GetMessage(data.channel_id, user_id, data.platform, true, -1);
+                        var message = MessagesWorker.GetMessage(data.channel_id, user_id, data.platform, true, -1);
                         var message_badges = "";
                         if (message != null)
                         {
@@ -121,7 +122,7 @@ namespace butterBror
                                 if (flag) message_badges += TranslationManager.GetTranslation(data.user.language, symbol, data.channel_id, data.platform);
                             }
                             commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:first_message", data.channel_id, data.platform)
-                                .Replace("%ago%", TextUtil.FormatTimeSpan(Utils.Format.GetTimeTo(message.messageDate, DateTime.UtcNow, false), data.user.language))
+                                .Replace("%ago%", Text.FormatTimeSpan(Utils.Tools.Format.GetTimeTo(message.messageDate, DateTime.UtcNow, false), data.user.language))
                                 .Replace("%message%", message.messageText).Replace("%bages%", message_badges));
                         }
                     }

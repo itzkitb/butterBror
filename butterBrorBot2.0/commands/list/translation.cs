@@ -33,7 +33,7 @@ namespace butterBror
             };
             public CommandReturn Index(CommandData data)
             {
-                Engine.Statistics.functions_used.Add();
+                Core.Statistics.FunctionsUsed.Add();
                 try
                 {
                     var exdata = data;
@@ -48,7 +48,7 @@ namespace butterBror
                         exdata.arguments.Insert(0, "get");
                         exdata.arguments.Insert(0, "lang");
                     }
-                    var command = new BotCommand();
+                    var command = new Bot();
                     return command.Index(exdata);
                 }
                 catch (Exception e)

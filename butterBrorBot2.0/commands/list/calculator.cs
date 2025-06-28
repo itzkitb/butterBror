@@ -3,6 +3,7 @@ using butterBror;
 using Discord;
 using System.Data;
 using TwitchLib.Client.Enums;
+using butterBror.Utils.Tools;
 
 namespace butterBror
 {
@@ -34,7 +35,7 @@ namespace butterBror
             };
             public CommandReturn Index(CommandData data)
             {
-                Engine.Statistics.functions_used.Add();
+                Core.Statistics.FunctionsUsed.Add();
                 CommandReturn commandReturn = new CommandReturn();
 
                 try
@@ -61,7 +62,7 @@ namespace butterBror
                             throw new DivideByZeroException();
                         }
 
-                        commandReturn.SetMessage(TextUtil.ArgumentReplacement(TranslationManager.GetTranslation(data.user.language, "command:calculator:result", data.channel_id, data.platform), "result", mathResult.ToString()));
+                        commandReturn.SetMessage(Text.ArgumentReplacement(TranslationManager.GetTranslation(data.user.language, "command:calculator:result", data.channel_id, data.platform), "result", mathResult.ToString()));
                     }
                     catch (DivideByZeroException)
                     {

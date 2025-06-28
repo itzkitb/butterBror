@@ -4,6 +4,8 @@ using butterBror;
 using Discord;
 using TwitchLib.Client.Enums;
 using Microsoft.CodeAnalysis;
+using butterBror.Utils.Tools;
+using static butterBror.Utils.Things.Console;
 
 namespace butterBror
 {
@@ -34,9 +36,11 @@ namespace butterBror
                 IsForChannelModerator = false,
                 Platforms = [Platforms.Twitch, Platforms.Telegram, Platforms.Discord]
             };
+
+            [ConsoleSector("butterBror.Commands.Tuck", "Index")]
             public CommandReturn Index(CommandData data)
             {
-                Engine.Statistics.functions_used.Add();
+                Core.Statistics.FunctionsUsed.Add();
                 CommandReturn commandReturn = new CommandReturn();
 
                 try
@@ -44,7 +48,7 @@ namespace butterBror
                     commandReturn.SetColor(ChatColorPresets.HotPink);
                     if (data.arguments.Count >= 1)
                     {
-                        var username = TextUtil.UsernameFilter(TextUtil.CleanAsciiWithoutSpaces(data.arguments[0]));
+                        var username = Text.UsernameFilter(Text.CleanAsciiWithoutSpaces(data.arguments[0]));
                         var isSelectedUserIsNotIgnored = true;
                         var userID = Names.GetUserID(username.ToLower(), Platforms.Twitch);
                         try
@@ -53,7 +57,7 @@ namespace butterBror
                                 isSelectedUserIsNotIgnored = !UsersData.Get<bool>(userID, "isIgnored", data.platform);
                         }
                         catch (Exception) { }
-                        if (username.ToLower() == Maintenance.bot_name.ToLower())
+                        if (username.ToLower() == Core.Bot.BotName.ToLower())
                         {
                             commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:tuck:bot", data.channel_id, data.platform));
                             commandReturn.SetColor(ChatColorPresets.CadetBlue);
@@ -73,7 +77,7 @@ namespace butterBror
                         }
                         else
                         {
-                            LogWorker.Log($"User @{data.user.username} tried to put a user to sleep who is in the ignore list", LogWorker.LogTypes.Warn, $"command\\Tuck\\Index#{username}");
+                            Write($"User @{data.user.username} tried to put a user to sleep who is in the ignore list", "info");
                             commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:user_ignored", data.channel_id, data.platform));
                         }
                     }

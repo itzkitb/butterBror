@@ -4,6 +4,7 @@ using butterBror.Utils;
 using butterBror.Utils.DataManagers;
 using butterBror;
 using System.Diagnostics;
+using butterBror.Utils.Tools;
 
 namespace butterBror
 {
@@ -35,7 +36,7 @@ namespace butterBror
             };
             public CommandReturn Index(CommandData data)
             {
-                Engine.Statistics.functions_used.Add();
+                Core.Statistics.FunctionsUsed.Add();
                 CommandReturn commandReturn = new CommandReturn();
 
                 try

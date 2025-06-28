@@ -3,6 +3,7 @@ using butterBror.Utils.DataManagers;
 using butterBror;
 using Discord;
 using TwitchLib.Client.Enums;
+using butterBror.Utils.Tools;
 
 namespace butterBror
 {
@@ -34,7 +35,7 @@ namespace butterBror
             };
             public CommandReturn Index(CommandData data)
             {
-                Engine.Statistics.functions_used.Add();
+                Core.Statistics.FunctionsUsed.Add();
                 CommandReturn commandReturn = new CommandReturn();
 
                 try
@@ -43,7 +44,7 @@ namespace butterBror
 
                     if (data.arguments.Count != 0)
                     {
-                        var name = TextUtil.UsernameFilter(data.arguments.ElementAt(0).ToLower());
+                        var name = Text.UsernameFilter(data.arguments.ElementAt(0).ToLower());
                         var userID = Names.GetUserID(name, data.platform);
                         if (userID == null)
                         {
@@ -56,21 +57,21 @@ namespace butterBror
                             var firstLine = UsersData.Get<string>(userID, "firstMessage", data.platform);
                             var firstLineDate = UsersData.Get<DateTime>(userID, "firstSeen", data.platform);
 
-                            if (name == Maintenance.twitch_client.TwitchUsername.ToLower())
+                            if (name == Core.Bot.BotName.ToLower())
                             {
                                 commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:first_global_line:bot", data.channel_id, data.platform));
                             }
                             else if (name == data.user.username)
                             {
                                 commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:first_global_line", data.channel_id, data.platform)
-                                    .Replace("%ago%", TextUtil.FormatTimeSpan(Utils.Format.GetTimeTo(firstLineDate, now, false), data.user.language))
+                                    .Replace("%ago%", Text.FormatTimeSpan(Utils.Tools.Format.GetTimeTo(firstLineDate, now, false), data.user.language))
                                     .Replace("%message%", firstLine));
                             }
                             else
                             {
                                 commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:first_global_line:user", data.channel_id, data.platform)
                                     .Replace("%user%", Names.DontPing(Names.GetUsername(userID, data.platform)))
-                                    .Replace("%ago%", TextUtil.FormatTimeSpan(Utils.Format.GetTimeTo(firstLineDate, now, false), data.user.language))
+                                    .Replace("%ago%", Text.FormatTimeSpan(Utils.Tools.Format.GetTimeTo(firstLineDate, now, false), data.user.language))
                                     .Replace("%message%", firstLine));
                             }
                         }
@@ -81,7 +82,7 @@ namespace butterBror
                         var firstLineDate = UsersData.Get<DateTime>(data.user_id, "firstSeen", data.platform);
 
                         commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:first_global_line", data.channel_id, data.platform)
-                            .Replace("%ago%", TextUtil.FormatTimeSpan(Utils.Format.GetTimeTo(firstLineDate, now, false), data.user.language))
+                            .Replace("%ago%", Text.FormatTimeSpan(Utils.Tools.Format.GetTimeTo(firstLineDate, now, false), data.user.language))
                             .Replace("%message%", firstLine));
                     }
                 }

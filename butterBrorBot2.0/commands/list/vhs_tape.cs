@@ -2,6 +2,9 @@
 using butterBror.Utils;
 using Discord;
 using butterBror;
+using butterBror.Utils.Tools;
+using butterBror.Utils.Tools.API;
+using static butterBror.Utils.Things.Console;
 
 namespace butterBror
 {
@@ -32,9 +35,11 @@ namespace butterBror
                 IsForChannelModerator = false,
                 Platforms = [Platforms.Twitch, Platforms.Telegram, Platforms.Discord]
             };
+
+            [ConsoleSector("butterBror.Commands.Vhs", "Index")]
             public async Task<CommandReturn> Index(CommandData data)
             {
-                Engine.Statistics.functions_used.Add();
+                Core.Statistics.FunctionsUsed.Add();
                 CommandReturn commandReturn = new CommandReturn();
 
                 try
@@ -73,7 +78,7 @@ namespace butterBror
                             }
                             catch (Exception ex)
                             {
-                                Utils.Console.WriteError(ex, "vhs_bg_task");
+                                Write(ex);
                             }
                         });
                     }

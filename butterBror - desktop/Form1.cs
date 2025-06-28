@@ -53,7 +53,7 @@ namespace butterBror___desktop
             cpu_status.Controls.Add(cpu_status_chart);
             ram_status.Controls.Add(ram_status_chart);
 
-            version.Text = $"v. {Engine.version}{Engine.patch}";
+            version.Text = $"v. {Core.Version}{Core.Patch}";
 
             consoles.Add("kernel", kernel_console);
             consoles.Add("info", info_console);
@@ -66,7 +66,7 @@ namespace butterBror___desktop
             butterBror.Utils.Console.on_chat_line += chat_line;
             butterBror.Utils.Console.error_occured += on_error;
 
-            Engine.Start();
+            Core.Start();
 
             Main();
         }
@@ -97,14 +97,14 @@ namespace butterBror___desktop
 
                 this.Invoke((MethodInvoker)delegate
                 {
-                    AddChartPoint(20, ((int)Engine.Statistics.DataBase.cache_reads.Get()), cache_read_list, cache_read_chart);
-                    AddChartPoint(20, ((int)Engine.Statistics.DataBase.cache_writes.Get()), cache_write_list, cache_write_chart);
-                    AddChartPoint(20, ((int)Engine.Statistics.DataBase.file_reads.Get()), files_read_list, files_read_chart);
-                    AddChartPoint(20, ((int)Engine.Statistics.DataBase.file_writes.Get()), files_write_list, files_write_chart);
-                    AddChartPoint(20, ((int)Engine.Statistics.DataBase.checks.Get()), files_checks_list, files_checks_chart);
-                    AddChartPoint(20, ((int)Engine.Statistics.DataBase.operations.Get()), db_operations_list, db_operations_chart);
-                    AddChartPoint(60, Engine.Statistics.functions_used.Get(), operations_list, operations_chart);
-                    AddChartPoint(60, Engine.Statistics.messages_readed.Get(), messages_list, messages_chart);
+                    AddChartPoint(20, ((int)Core.Statistics.DataBase.CacheReads.Get()), cache_read_list, cache_read_chart);
+                    AddChartPoint(20, ((int)Core.Statistics.DataBase.CacheWrites.Get()), cache_write_list, cache_write_chart);
+                    AddChartPoint(20, ((int)Core.Statistics.DataBase.FileReads.Get()), files_read_list, files_read_chart);
+                    AddChartPoint(20, ((int)Core.Statistics.DataBase.FileWrites.Get()), files_write_list, files_write_chart);
+                    AddChartPoint(20, ((int)Core.Statistics.DataBase.Checks.Get()), files_checks_list, files_checks_chart);
+                    AddChartPoint(20, ((int)Core.Statistics.DataBase.Operations.Get()), db_operations_list, db_operations_chart);
+                    AddChartPoint(60, Core.Statistics.FunctionsUsed.Get(), operations_list, operations_chart);
+                    AddChartPoint(60, Core.Statistics.MessagesReaded.Get(), messages_list, messages_chart);
                     AddChartPoint(60, (int)ram, ram_status_list, ram_status_chart);
                     AddChartPoint(60, (int)cpu_counter.NextValue(), cpu_status_list, cpu_status_chart);
                 });

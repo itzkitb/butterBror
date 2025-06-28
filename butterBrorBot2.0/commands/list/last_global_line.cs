@@ -3,6 +3,7 @@ using butterBror.Utils.DataManagers;
 using butterBror;
 using Discord;
 using TwitchLib.Client.Enums;
+using butterBror.Utils.Tools;
 
 namespace butterBror
 {
@@ -34,14 +35,14 @@ namespace butterBror
             };
             public CommandReturn Index(CommandData data)
             {
-                Engine.Statistics.functions_used.Add();
+                Core.Statistics.FunctionsUsed.Add();
                 CommandReturn commandReturn = new CommandReturn();
 
                 try
                 {
                     if (data.arguments.Count != 0)
                     {
-                        var name = TextUtil.UsernameFilter(data.arguments.ElementAt(0).ToLower());
+                        var name = Text.UsernameFilter(data.arguments.ElementAt(0).ToLower());
                         var userID = Names.GetUserID(name, Platforms.Twitch);
                         if (userID == null)
                         {
@@ -54,7 +55,7 @@ namespace butterBror
                             var lastLine = UsersData.Get<string>(userID, "lastSeenMessage", data.platform);
                             var lastLineDate = UsersData.Get<DateTime>(userID, "lastSeen", data.platform);
                             DateTime now = DateTime.UtcNow;
-                            if (name == Maintenance.twitch_client.TwitchUsername.ToLower())
+                            if (name == Core.Bot.BotName.ToLower())
                             {
                                 commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:last_global_line:bot", data.channel_id, data.platform));
                             }
@@ -66,7 +67,7 @@ namespace butterBror
                             {
                                 commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:last_global_line", data.channel_id, data.platform)
                                     .Replace("%user%", Names.DontPing(Names.GetUsername(userID, data.platform)))
-                                    .Replace("&timeAgo&", TextUtil.FormatTimeSpan(Utils.Format.GetTimeTo(lastLineDate, now, false), data.user.language))
+                                    .Replace("&timeAgo&", Text.FormatTimeSpan(Utils.Tools.Format.GetTimeTo(lastLineDate, now, false), data.user.language))
                                     .Replace("%message%", lastLine));
                             }
                         }

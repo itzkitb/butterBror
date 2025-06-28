@@ -2,6 +2,7 @@
 using butterBror;
 using Discord;
 using TwitchLib.Client.Enums;
+using butterBror.Utils.Tools;
 
 namespace butterBror
 {
@@ -34,14 +35,14 @@ namespace butterBror
             };
             public CommandReturn Index(CommandData data)
             {
-                Engine.Statistics.functions_used.Add();
+                Core.Statistics.FunctionsUsed.Add();
                 CommandReturn commandReturn = new CommandReturn();
 
                 try
                 {
                     if (data.arguments.Count > 0)
                     {
-                        string username = TextUtil.UsernameFilter(data.arguments[0].ToLower());
+                        string username = Text.UsernameFilter(data.arguments[0].ToLower());
                         string ID = Names.GetUserID(username, data.platform);
                         if (ID == data.user_id)
                         {

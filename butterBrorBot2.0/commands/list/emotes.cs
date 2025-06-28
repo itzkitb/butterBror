@@ -6,7 +6,9 @@ using SevenTV.Types.Rest;
 using System.Drawing;
 using TwitchLib.Client.Enums;
 using V8.Net;
-using static butterBror.Utils.Command;
+using static butterBror.Utils.Tools.Command;
+using butterBror.Utils.Tools;
+using static butterBror.Utils.Things.Console;
 
 namespace butterBror
 {
@@ -39,7 +41,7 @@ namespace butterBror
             };
             public async Task<CommandReturn> Index(CommandData data)
             {
-                Engine.Statistics.functions_used.Add();
+                Core.Statistics.FunctionsUsed.Add();
                 CommandReturn commandReturn = new CommandReturn();
 
                 try
@@ -56,17 +58,17 @@ namespace butterBror
                         {
                             if (UsersData.Get<bool>(data.user_id, "isBotDev", data.platform) || UsersData.Get<bool>(data.user_id, "isBotModerator", data.platform) || (bool)data.user.channel_moderator || (bool)data.user.channel_broadcaster)
                             {
-                                await Utils.Emotes.EmoteUpdate(data.channel, data.channel_id);
+                                await Utils.Tools.Emotes.EmoteUpdate(data.channel, data.channel_id);
                                 commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:emotes:7tv:updated", data.channel_id, data.platform)
-                                    .Replace("%emotes%", Maintenance.channels_7tv_emotes[data.channel_id].emotes.Count().ToString()));
+                                    .Replace("%emotes%", Core.Bot.ChannelsSevenTVEmotes[data.channel_id].emotes.Count().ToString()));
                             }
                             else
                                 commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:not_enough_rights", data.channel_id, data.platform));
                         }
                         else if (randomAlias.Contains(GetArgument(data.arguments, 0)))
                         {
-                            if (!Maintenance.channels_7tv_emotes.ContainsKey(data.channel_id)) await Utils.Emotes.EmoteUpdate(data.channel, data.channel_id);
-                            var randomEmote = Utils.Emotes.RandomEmote(data.channel, data.channel_id);
+                            if (!Core.Bot.ChannelsSevenTVEmotes.ContainsKey(data.channel_id)) await Utils.Tools.Emotes.EmoteUpdate(data.channel, data.channel_id);
+                            var randomEmote = Utils.Tools.Emotes.RandomEmote(data.channel, data.channel_id);
                             if (randomEmote != null)
                                 commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:emotes:7tv:random", data.channel_id, data.platform)
                                     .Replace("%emote%", randomEmote.Result));
@@ -95,15 +97,15 @@ namespace butterBror
                     }
                     else
                     {
-                        if (Maintenance.channels_7tv_emotes.ContainsKey(data.channel_id))
+                        if (Core.Bot.ChannelsSevenTVEmotes.ContainsKey(data.channel_id))
                             commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:emotes:7tv:info", data.channel_id, data.platform)
-                                .Replace("%emotes%", Maintenance.channels_7tv_emotes[data.channel_id].emotes.Count().ToString()));
+                                .Replace("%emotes%", Core.Bot.ChannelsSevenTVEmotes[data.channel_id].emotes.Count().ToString()));
                         else
                         {
-                            await Utils.Emotes.EmoteUpdate(data.channel, data.channel_id);
-                            if (Maintenance.channels_7tv_emotes[data.channel_id].emotes.Count > 0)
+                            await Utils.Tools.Emotes.EmoteUpdate(data.channel, data.channel_id);
+                            if (Core.Bot.ChannelsSevenTVEmotes[data.channel_id].emotes.Count > 0)
                                 commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:emotes:7tv:info", data.channel_id, data.platform)
-                                    .Replace("%emotes%", Maintenance.channels_7tv_emotes[data.channel_id].emotes.Count().ToString()));
+                                    .Replace("%emotes%", Core.Bot.ChannelsSevenTVEmotes[data.channel_id].emotes.Count().ToString()));
                             else
                                 commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:emotes:7tv:empty", data.channel_id, data.platform));
                         }
@@ -122,18 +124,18 @@ namespace butterBror
             {
                 string from_id = null;
 
-                if (Maintenance.users_7tv_ids is not null && Maintenance.users_7tv_ids.ContainsKey(id))
-                    from_id = Maintenance.users_7tv_ids[id];
+                if (Core.Bot.UsersSevenTVIDs is not null && Core.Bot.UsersSevenTVIDs.ContainsKey(id))
+                    from_id = Core.Bot.UsersSevenTVIDs[id];
                 else
                 {
-                    from_id = Maintenance.sevenTvService.SearchUser(Names.GetUsername(id, Platforms.Twitch), Maintenance.token_7tv).Result;
+                    from_id = Core.Bot.SevenTvService.SearchUser(Names.GetUsername(id, Platforms.Twitch), Core.Bot.Tokens.SevenTV).Result;
                     if (from_id != null)
                     {
-                        if (Maintenance.users_7tv_ids is null)
-                            Maintenance.users_7tv_ids = new();
+                        if (Core.Bot.UsersSevenTVIDs is null)
+                            Core.Bot.UsersSevenTVIDs = new();
 
-                        Maintenance.users_7tv_ids.Add(id, from_id);
-                        SafeManager.Save(Maintenance.path_7tv_cache, "Ids", Maintenance.users_7tv_ids);
+                        Core.Bot.UsersSevenTVIDs.Add(id, from_id);
+                        SafeManager.Save(Core.Bot.Pathes.SevenTVCache, "Ids", Core.Bot.UsersSevenTVIDs);
                     }
                 }
 
@@ -200,7 +202,7 @@ namespace butterBror
                         .Replace("%emote%", emoteName);
                 }
 
-                var result = await Maintenance.sevenTvService.Remove(setId, emote.id, Maintenance.token_7tv);
+                var result = await Core.Bot.SevenTvService.Remove(setId, emote.id, Core.Bot.Tokens.SevenTV);
                 return ProcessResult(result, data, "command:emotes:7tv:removed", "command:emotes:7tv:noaccess:editor", emoteName, data.platform);
             }
 
@@ -227,14 +229,15 @@ namespace butterBror
                         .Replace("%emote%", oldName);
                 }
 
-                var result = await Maintenance.sevenTvService.Rename(setId, newName, emote.id, Maintenance.token_7tv);
+                var result = await Core.Bot.SevenTvService.Rename(setId, newName, emote.id, Core.Bot.Tokens.SevenTV);
                 return ProcessResult(result, data, "command:emotes:7tv:renamed", "command:emotes:7tv:noaccess:editor", $"{oldName} → {newName}", data.platform);
             }
             #endregion
             #region Help Methods
+            [ConsoleSector("butterBror.Commands.Emotes", "GetEmoteSetId")]
             public async Task<(string setId, string error)> GetEmoteSetId(string channelId, Platforms platform)
             {
-                if (Maintenance.emoteSetCache.TryGetValue(channelId, out var cached) &&
+                if (Core.Bot.EmoteSetsCache.TryGetValue(channelId, out var cached) &&
                     DateTime.UtcNow < cached.expiration)
                 {
                     return (cached.setId, null);
@@ -243,15 +246,15 @@ namespace butterBror
                 try
                 {
                     var userId = GetUserID(channelId);
-                    var user = await Maintenance.sevenTv.rest.GetUser(userId);
+                    var user = await Core.Bot.Clients.SevenTV.rest.GetUser(userId);
                     var setId = user.connections[0].emote_set.id;
 
-                    Maintenance.emoteSetCache[channelId] = (setId, DateTime.UtcNow.Add(Maintenance.CacheTTL));
+                    Core.Bot.EmoteSetsCache[channelId] = (setId, DateTime.UtcNow.Add(Core.Bot.CacheTTL));
                     return (setId, null);
                 }
                 catch (Exception ex)
                 {
-                    Utils.Console.WriteError(ex, $"Emotes\\GetEmoteSetId#{channelId}");
+                    Write(ex);
                     return (null, TranslationManager.GetTranslation("en", "command:emotes:7tv:set_error", channelId, platform));
                 }
             }
@@ -259,18 +262,18 @@ namespace butterBror
             public async Task<Emote> FindEmoteInSet(string setId, string emoteName)
             {
                 var cacheKey = $"{setId}_{emoteName}";
-                if (Maintenance.emoteCache.TryGetValue(cacheKey, out var cached) &&
+                if (Core.Bot.EmotesCache.TryGetValue(cacheKey, out var cached) &&
                     DateTime.UtcNow < cached.expiration)
                 {
                     return cached.emote;
                 }
 
-                var set = await Maintenance.sevenTv.rest.GetEmoteSet(setId);
+                var set = await Core.Bot.Clients.SevenTV.rest.GetEmoteSet(setId);
                 var emote = set.emotes.FirstOrDefault(e => e.name.Equals(emoteName));
 
                 if (emote != null)
                 {
-                    Maintenance.emoteCache[cacheKey] = (emote, DateTime.UtcNow.Add(TimeSpan.FromMinutes(5)));
+                    Core.Bot.EmotesCache[cacheKey] = (emote, DateTime.UtcNow.Add(TimeSpan.FromMinutes(5)));
                 }
 
                 return emote;
@@ -292,21 +295,21 @@ namespace butterBror
 
             public async Task<string> AddEmoteFromGlobal(string setId, string emoteName, CommandData data, Platforms platform)
             {
-                var emote = await Maintenance.sevenTvService.SearchEmote(emoteName, Maintenance.token_7tv);
+                var emote = await Core.Bot.SevenTvService.SearchEmote(emoteName, Core.Bot.Tokens.SevenTV);
                 if (emote == null)
                 {
                     return TranslationManager.GetTranslation(data.user.language, "command:emotes:7tv:not_founded", data.channel_id, platform)
                         .Replace("%emote%", emoteName);
                 }
 
-                var result = await Maintenance.sevenTvService.Add(setId, emoteName, emote, Maintenance.token_7tv);
+                var result = await Core.Bot.SevenTvService.Add(setId, emoteName, emote, Core.Bot.Tokens.SevenTV);
                 return ProcessResult(result, data, "command:emotes:7tv:added", "command:emotes:7tv:noaccess:editor", emoteName, platform);
             }
 
             public async Task<string> AddEmoteFromUser(string setId, string fromUser, string emoteName, CommandData data, Platforms platform)
             {
                 var sourceUserId = GetUserID(Names.GetUserID(fromUser, Platforms.Twitch));
-                var sourceUser = await Maintenance.sevenTv.rest.GetUser(sourceUserId);
+                var sourceUser = await Core.Bot.Clients.SevenTV.rest.GetUser(sourceUserId);
                 var sourceSetId = sourceUser.connections[0].emote_set.id;
 
                 var emote = await FindEmoteInSet(sourceSetId, emoteName);
@@ -316,7 +319,7 @@ namespace butterBror
                         .Replace("%emote%", emoteName);
                 }
 
-                var result = await Maintenance.sevenTvService.Add(setId, emoteName, emote.id, Maintenance.token_7tv);
+                var result = await Core.Bot.SevenTvService.Add(setId, emoteName, emote.id, Core.Bot.Tokens.SevenTV);
                 return ProcessResult(result, data, "command:emotes:7tv:added", "command:emotes:7tv:noaccess:editor", emoteName, platform);
             }
             #endregion

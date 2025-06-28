@@ -2,6 +2,7 @@
 using TwitchLib.Client.Enums;
 using butterBror.Utils;
 using butterBror;
+using butterBror.Utils.Tools;
 
 namespace butterBror
 {
@@ -35,7 +36,7 @@ namespace butterBror
             };
             public CommandReturn Index(CommandData data)
             {
-                Engine.Statistics.functions_used.Add();
+                Core.Statistics.FunctionsUsed.Add();
                 CommandReturn commandReturn = new CommandReturn();
 
                 try
@@ -79,7 +80,7 @@ namespace butterBror
                                                 if (TranslationManager.SetCustomTranslation(paramName, text, data.channel_id, lang, data.platform))
                                                 {
                                                     TranslationManager.UpdateTranslation(lang, data.channel_id, data.platform);
-                                                    commandReturn.SetMessage(TextUtil.ArgumentReplacement(TranslationManager.GetTranslation(data.user.language, "command:custom_translation:set", "", data.platform),
+                                                    commandReturn.SetMessage(Text.ArgumentReplacement(TranslationManager.GetTranslation(data.user.language, "command:custom_translation:set", "", data.platform),
                                                         "key", paramName));
                                                 }
                                                 else
@@ -97,7 +98,7 @@ namespace butterBror
                                     }
                                     else
                                     {
-                                        commandReturn.SetMessage(TextUtil.ArgumentReplacement(TranslationManager.GetTranslation(data.user.language, "error:not_enough_arguments", "", data.platform),
+                                        commandReturn.SetMessage(Text.ArgumentReplacement(TranslationManager.GetTranslation(data.user.language, "error:not_enough_arguments", "", data.platform),
                                             "command_example", "#ct set [paramName] [en/ru] [text]"));
                                         commandReturn.SetColor(ChatColorPresets.Red);
                                     }
@@ -106,7 +107,7 @@ namespace butterBror
                                 {
                                     if (TranslationManager.TranslateContains(paramName))
                                     {
-                                        commandReturn.SetMessage(TextUtil.ArgumentsReplacement(TranslationManager.GetTranslation(data.user.language, "command:custom_translation:get", "", data.platform),
+                                        commandReturn.SetMessage(Text.ArgumentsReplacement(TranslationManager.GetTranslation(data.user.language, "command:custom_translation:get", "", data.platform),
                                             new(){
                                                 { "key", paramName },
                                                 { "translation", TranslationManager.GetTranslation(lang, paramName, data.channel_id, data.platform) }
@@ -120,7 +121,7 @@ namespace butterBror
                                 }
                                 else if (originalAliases.Contains(arg1))
                                 {
-                                    commandReturn.SetMessage(TextUtil.ArgumentsReplacement(TranslationManager.GetTranslation(data.user.language, "command:custom_translation:original", "", data.platform),
+                                    commandReturn.SetMessage(Text.ArgumentsReplacement(TranslationManager.GetTranslation(data.user.language, "command:custom_translation:original", "", data.platform),
                                         new(){
                                             { "key", paramName },
                                             { "translation", TranslationManager.GetTranslation(lang, paramName, string.Empty, data.platform) }
@@ -132,7 +133,7 @@ namespace butterBror
                                     {
                                         if (TranslationManager.DeleteCustomTranslation(paramName, data.channel_id, lang, data.platform))
                                         {
-                                            commandReturn.SetMessage(TextUtil.ArgumentReplacement(TranslationManager.GetTranslation(data.user.language, "command:custom_translation:delete", "", data.platform), "key", paramName));
+                                            commandReturn.SetMessage(Text.ArgumentReplacement(TranslationManager.GetTranslation(data.user.language, "command:custom_translation:delete", "", data.platform), "key", paramName));
                                             TranslationManager.UpdateTranslation(lang, data.channel_id, data.platform);
                                         }
                                         else
@@ -150,7 +151,7 @@ namespace butterBror
                             }
                             else
                             {
-                                commandReturn.SetMessage(TextUtil.ArgumentsReplacement(TranslationManager.GetTranslation(data.user.language, "error:translation_lang_is_not_exist", "", data.platform),
+                                commandReturn.SetMessage(Text.ArgumentsReplacement(TranslationManager.GetTranslation(data.user.language, "error:translation_lang_is_not_exist", "", data.platform),
                                         new(){
                                             { "lang", lang },
                                             { "langs", string.Join(", ", langs) }
@@ -166,7 +167,7 @@ namespace butterBror
                     }
                     else
                     {
-                        commandReturn.SetMessage(TextUtil.ArgumentReplacement(TranslationManager.GetTranslation(data.user.language, "error:not_enough_arguments", "", data.platform), "command_example", "#ct set [paramName] [en/ru] [text]"));
+                        commandReturn.SetMessage(Text.ArgumentReplacement(TranslationManager.GetTranslation(data.user.language, "error:not_enough_arguments", "", data.platform), "command_example", "#ct set [paramName] [en/ru] [text]"));
                         commandReturn.SetColor(ChatColorPresets.Red);
                     }
                 }

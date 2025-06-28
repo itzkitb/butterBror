@@ -3,6 +3,8 @@ using Discord;
 using TwitchLib.Client.Enums;
 using butterBror.Utils;
 using butterBror;
+using butterBror.Utils.Things;
+using butterBror.Utils.Tools;
 
 namespace butterBror
 {
@@ -34,7 +36,7 @@ namespace butterBror
             };
             public CommandReturn Index(CommandData data)
             {
-                Engine.Statistics.functions_used.Add();
+                Core.Statistics.FunctionsUsed.Add();
                 CommandReturn commandReturn = new CommandReturn();
 
                 try
@@ -45,33 +47,34 @@ namespace butterBror
 
                     if (data.arguments.Count == 0)
                     {
-                        var workTime = DateTime.Now - Engine.start_time;
+                        var workTime = DateTime.Now - Core.StartTime;
                         string host = "";
                         long pingSpeed = 0;
                         if (data.platform == Platforms.Telegram)
                         {
-                            pingSpeed = Utils.API.Telegram.Ping().Result;
+                            pingSpeed = Utils.Tools.API.Telegram.Ping().Result;
                         }
                         else
                         {
-                            if (data.platform == Platforms.Discord) host = Maintenance.discord_url;
-                            else if (data.platform == Platforms.Twitch) host = Maintenance.twitch_url;
+                            if (data.platform == Platforms.Discord) host = URLs.discord;
+                            else if (data.platform == Platforms.Twitch) host = URLs.twitch;
+                            else if (data.platform == Platforms.Telegram) host = URLs.telegram;
 
                             PingReply reply = new Ping().Send(host, 1000);
                             pingSpeed = reply.Status == IPStatus.Success ? reply.RoundtripTime : -1;
                         }
 
                         commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:ping", data.channel_id, data.platform)
-                                    .Replace("%version%", Engine.version)
-                                    .Replace("%workTime%", TextUtil.FormatTimeSpan(workTime, data.user.language))
-                                    .Replace("%tabs%", Maintenance.channels_list.Length.ToString())
+                                    .Replace("%version%", Core.Version)
+                                    .Replace("%workTime%", Text.FormatTimeSpan(workTime, data.user.language))
+                                    .Replace("%tabs%", data.platform == Platforms.Twitch ? Core.Bot.Clients.Twitch.JoinedChannels.Count.ToString() : (data.platform == Platforms.Discord ? Core.Bot.Clients.Discord.Guilds.Count.ToString() : (Core.Bot.Clients.Twitch.JoinedChannels.Count + Core.Bot.Clients.Discord.Guilds.Count) + " (Twitch, Discord)"))
                                     .Replace("%loadedCMDs%", Commands.commands.Count.ToString())
-                                    .Replace("%completedCMDs%", Engine.completed_commands.ToString())
+                                    .Replace("%completedCMDs%", Core.CompletedCommands.ToString())
                                     .Replace("%ping%", pingSpeed.ToString()));
                     }
                     else if (argument.Equals("isp"))
                     {
-                        var workTime = DateTime.Now - Engine.start_time;
+                        var workTime = DateTime.Now - Core.StartTime;
                         PingReply reply = new Ping().Send("192.168.1.1", 1000);
                         long pingSpeed = -1;
                         if (reply.Status == IPStatus.Success) pingSpeed = reply.RoundtripTime;
@@ -86,35 +89,36 @@ namespace butterBror
                     }
                     else if (argument.Equals("dev"))
                     {
-                        var workTime = DateTime.Now - Engine.start_time;
+                        var workTime = DateTime.Now - Core.StartTime;
                         string host = "";
                         long pingSpeed = 0;
                         if (data.platform == Platforms.Telegram)
                         {
-                            pingSpeed = Utils.API.Telegram.Ping().Result;
+                            pingSpeed = Utils.Tools.API.Telegram.Ping().Result;
                         }
                         else
                         {
-                            if (data.platform == Platforms.Discord) host = Maintenance.discord_url;
-                            else if (data.platform == Platforms.Twitch) host = Maintenance.twitch_url;
+                            if (data.platform == Platforms.Discord) host = URLs.discord;
+                            else if (data.platform == Platforms.Twitch) host = URLs.twitch;
+                            else if (data.platform == Platforms.Telegram) host = URLs.telegram;
 
                             PingReply reply = new Ping().Send(host, 1000);
                             pingSpeed = reply.Status == IPStatus.Success ? reply.RoundtripTime : -1;
                         }
 
                         commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:ping:development", data.channel_id, data.platform)
-                                    .Replace("%version%", Engine.version)
-                                    .Replace("%patch%", Engine.patch)
-                                    .Replace("%workTime%", TextUtil.FormatTimeSpan(workTime, data.user.language))
-                                    .Replace("%tabs%", Maintenance.channels_list.Length.ToString())
+                                    .Replace("%version%", Core.Version)
+                                    .Replace("%patch%", Core.Patch)
+                                    .Replace("%workTime%", Text.FormatTimeSpan(workTime, data.user.language))
+                                    .Replace("%tabs%", (Core.Bot.Clients.Twitch.JoinedChannels.Count + Core.Bot.Clients.Discord.Guilds.Count) + " (Twitch, Discord)")
                                     .Replace("%loadedCMDs%", Commands.commands.Count.ToString())
-                                    .Replace("%completedCMDs%", Engine.completed_commands.ToString())
+                                    .Replace("%completedCMDs%", Core.CompletedCommands.ToString())
                                     .Replace("%ping%", pingSpeed.ToString())
-                                    .Replace("%tps%", Engine.ticks_per_second.ToString())
-                                    .Replace("%max_tps%", Engine.ticks.ToString())
-                                    .Replace("%tick_delay%", Engine.tick_delay.ToString())
-                                    .Replace("%tick_counted%", Engine.ticks_counter.ToString())
-                                    .Replace("%skiped_ticks%", Engine.skipped_ticks.ToString()));
+                                    .Replace("%tps%", Core.TicksPerSecond.ToString())
+                                    .Replace("%max_tps%", Core.Ticks.ToString())
+                                    .Replace("%tick_delay%", Core.TickDelay.ToString())
+                                    .Replace("%tick_counted%", Core.TicksCounter.ToString())
+                                    .Replace("%skiped_ticks%", Core.SkippedTicks.ToString()));
                     }
                 }
                 catch (Exception e)

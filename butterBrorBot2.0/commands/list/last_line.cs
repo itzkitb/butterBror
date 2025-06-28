@@ -3,6 +3,7 @@ using butterBror.Utils.DataManagers;
 using butterBror;
 using Discord;
 using TwitchLib.Client.Enums;
+using butterBror.Utils.Tools;
 
 namespace butterBror
 {
@@ -34,22 +35,22 @@ namespace butterBror
             };
             public async Task<CommandReturn> Index(CommandData data)
             {
-                Engine.Statistics.functions_used.Add();
+                Core.Statistics.FunctionsUsed.Add();
                 CommandReturn commandReturn = new CommandReturn();
 
                 try
                 {
                     if (data.arguments.Count != 0)
                     {
-                        var name = TextUtil.UsernameFilter(data.arguments.ElementAt(0).ToLower());
+                        var name = Text.UsernameFilter(data.arguments.ElementAt(0).ToLower());
                         var userID = Names.GetUserID(name, Platforms.Twitch);
-                        var message = await MessagesWorker.GetMessage(data.channel_id, userID, data.platform);
+                        var message = MessagesWorker.GetMessage(data.channel_id, userID, data.platform);
                         var bages = "";
                         if (message != null)
                         {
                             if (userID != null)
                             {
-                                if (name != Maintenance.twitch_client.TwitchUsername.ToLower())
+                                if (name != Core.Bot.BotName.ToLower())
                                 {
                                     if (name == data.user.username.ToLower())
                                     {
@@ -75,7 +76,7 @@ namespace butterBror
                                         }
                                         var Date = message.messageDate;
                                         commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:last_message", data.channel_id, data.platform)
-                                            .Replace("&timeAgo&", TextUtil.FormatTimeSpan(Utils.Format.GetTimeTo(message.messageDate, DateTime.Now, false), data.user.language))
+                                            .Replace("&timeAgo&", Text.FormatTimeSpan(Utils.Tools.Format.GetTimeTo(message.messageDate, DateTime.Now, false), data.user.language))
                                             .Replace("%message%", message.messageText).Replace("%bages%", message_badges)
                                             .Replace("%user%", Names.DontPing(Names.GetUsername(userID, data.platform))));
                                     }

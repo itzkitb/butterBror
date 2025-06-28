@@ -3,11 +3,13 @@ using Discord;
 using TwitchLib.Client.Enums;
 using butterBror.Utils;
 using butterBror.Utils.DataManagers;
-using butterBror.Utils.API;
+using butterBror.Utils.Tools.API;
 using butterBror;
-using static butterBror.Utils.API.Weather.Place;
-using static butterBror.Utils.API.Weather;
+using static butterBror.Utils.Tools.API.Weather.Place;
+using static butterBror.Utils.Tools.API.Weather;
 using System.Linq;
+using butterBror.Utils.Tools;
+using static butterBror.Utils.Things.Console;
 
 namespace butterBror
 {
@@ -38,9 +40,11 @@ namespace butterBror
                 IsForChannelModerator = false,
                 Platforms = [Platforms.Twitch, Platforms.Telegram, Platforms.Discord]
             };
+
+            [ConsoleSector("butterBror.Commands.Weather", "Index")]
             public CommandReturn Index(CommandData data)
             {
-                Engine.Statistics.functions_used.Add();
+                Core.Statistics.FunctionsUsed.Add();
                 CommandReturn commandReturn = new CommandReturn();
 
                 try
@@ -61,23 +65,23 @@ namespace butterBror
 
                     if (data.platform is Platforms.Twitch || data.platform is Platforms.Telegram)
                     {
-                        location = TextUtil.CleanAscii(data.arguments_string);
+                        location = Text.CleanAscii(data.arguments_string);
                         if (data.arguments.Count >= 2)
                         {
                             if (show_alias.Contains(data.arguments[0].ToLowerInvariant()))
                             {
                                 is_show_action = true;
-                                show_place_id = Utils.Format.ToInt(data.arguments[1].ToLowerInvariant());
+                                show_place_id = Utils.Tools.Format.ToInt(data.arguments[1].ToLowerInvariant());
                             }
                             else if (page_alias.Contains(data.arguments[0].ToLowerInvariant()))
                             {
                                 is_page_action = true;
-                                page = Utils.Format.ToInt(data.arguments[1].ToLowerInvariant());
+                                page = Utils.Tools.Format.ToInt(data.arguments[1].ToLowerInvariant());
                             }
                             else if (set_alias.Contains(data.arguments[0].ToLowerInvariant()))
                             {
                                 is_set_action = true;
-                                setLocation = TextUtil.CleanAscii(data.arguments[1]);
+                                setLocation = Text.CleanAscii(data.arguments[1]);
                             }
                         }
                         else if (data.arguments.Count >= 1)
@@ -142,7 +146,7 @@ namespace butterBror
                                     int index = startID;
                                     for (int i = 0; i < 5; i++)
                                     {
-                                        locationPage += $"{index}. {weatherResultLocations[index - 1].name} (lat: {TextUtil.ShortenCoordinate(weatherResultLocations[index - 1].lat)}, lon: {TextUtil.ShortenCoordinate(weatherResultLocations[index - 1].lon)}), ";
+                                        locationPage += $"{index}. {weatherResultLocations[index - 1].name} (lat: {Text.ShortenCoordinate(weatherResultLocations[index - 1].lat)}, lon: {Text.ShortenCoordinate(weatherResultLocations[index - 1].lon)}), ";
                                         index++;
                                     }
                                     locationPage = locationPage.TrimEnd(',', ' ');
@@ -361,7 +365,7 @@ namespace butterBror
                                         int index = 1;
                                         for (int i = 0; i < 5; i++)
                                         {
-                                            locationPage += $"{index}. {result_location[index - 1].name} (lat: {TextUtil.ShortenCoordinate(result_location[index - 1].lat)}, lon: {TextUtil.ShortenCoordinate(result_location[index - 1].lon)}), ";
+                                            locationPage += $"{index}. {result_location[index - 1].name} (lat: {Text.ShortenCoordinate(result_location[index - 1].lat)}, lon: {Text.ShortenCoordinate(result_location[index - 1].lon)}), ";
                                             index++;
                                         }
                                         locationPage = locationPage.TrimEnd(',', ' ');
@@ -384,7 +388,7 @@ namespace butterBror
                             }
                             catch (Exception ex)
                             {
-                                LogWorker.Log(ex.Message, LogWorker.LogTypes.Err, "command\\Weather\\Index");
+                                Write(ex);
                                 commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:place_not_found", data.channel_id, data.platform));
                                 commandReturn.SetColor(ChatColorPresets.Red);
                             }

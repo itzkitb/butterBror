@@ -1,5 +1,6 @@
 ﻿using butterBror;
 using butterBror.Utils;
+using butterBror.Utils.Tools;
 using Microsoft.TeamFoundation.Common;
 using Microsoft.VisualStudio.Services.Common.CommandLine;
 using Newtonsoft.Json;
@@ -35,7 +36,7 @@ namespace butterBror
 
             public async Task<CommandReturn> Index(CommandData data)
             {
-                Engine.Statistics.functions_used.Add();
+                Core.Statistics.FunctionsUsed.Add();
                 CommandReturn commandReturn = new CommandReturn();
 
                 try
@@ -95,8 +96,6 @@ namespace butterBror
                             if (currencyArgs.Count >= 2) wantedCurrency = currencyArgs[1];
                         }
 
-                        Utils.Console.WriteLine($"ht: {hasTo}, hf: {hasFrom}, ic: {initialCurrency}, wc: {wantedCurrency}", "info");
-
                         if (!wantedCurrency.IsNullOrEmpty() && !initialCurrency.IsNullOrEmpty())
                         {
                             wantedCurrency = wantedCurrency.ToUpper();
@@ -149,7 +148,7 @@ namespace butterBror
                     else
                     {
                         commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:not_enough_arguments", data.channel_id, data.platform)
-                            .Replace("%command_example%", $"{Maintenance.executor}currency 1 USD to RUB"));
+                            .Replace("%command_example%", $"{Core.Bot.Executor}currency 1 USD to RUB"));
                     }
                 }
                 catch (Exception e)

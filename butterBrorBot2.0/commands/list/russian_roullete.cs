@@ -2,6 +2,7 @@
 using butterBror;
 using Discord;
 using TwitchLib.Client.Enums;
+using butterBror.Utils.Tools;
 
 namespace butterBror
 {
@@ -33,7 +34,7 @@ namespace butterBror
             };
             public CommandReturn Index(CommandData data)
             {
-                Engine.Statistics.functions_used.Add();
+                Core.Statistics.FunctionsUsed.Add();
                 CommandReturn commandReturn = new CommandReturn();
 
                 try
@@ -41,13 +42,13 @@ namespace butterBror
                     int win = new Random().Next(1, 3);
                     int page2 = new Random().Next(1, 5);
                     string translationParam = "command:russian_roullete:";
-                    if (Utils.Balance.GetBalance(data.user_id, data.platform) > 4)
+                    if (Utils.Tools.Balance.GetBalance(data.user_id, data.platform) > 4)
                     {
                         if (win == 1)
                         {
                             // WIN
                             translationParam += "win:" + page2;
-                            Utils.Balance.Add(data.user_id, 1, 0, data.platform);
+                            Utils.Tools.Balance.Add(data.user_id, 1, 0, data.platform);
                         }
                         else
                         {
@@ -55,11 +56,11 @@ namespace butterBror
                             translationParam += "over:" + page2;
                             if (page2 == 4)
                             {
-                                Utils.Balance.Add(data.user_id, -1, 0, data.platform);
+                                Utils.Tools.Balance.Add(data.user_id, -1, 0, data.platform);
                             }
                             else
                             {
-                                Utils.Balance.Add(data.user_id, -5, 0, data.platform);
+                                Utils.Tools.Balance.Add(data.user_id, -5, 0, data.platform);
                             }
                             commandReturn.SetColor(ChatColorPresets.Red);
                         }
@@ -68,7 +69,7 @@ namespace butterBror
                     else
                     {
                         commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:roulette_not_enough_coins", data.channel_id, data.platform)
-                            .Replace("%balance%", Utils.Balance.GetBalance(data.user_id, data.platform).ToString()));
+                            .Replace("%balance%", Utils.Tools.Balance.GetBalance(data.user_id, data.platform).ToString()));
                     }
                 }
                 catch (Exception e)

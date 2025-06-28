@@ -5,6 +5,7 @@ using TwitchLib.Client.Enums;
 using System.Threading.Tasks;
 using butterBror.Utils.DataManagers;
 using DankDB;
+using butterBror.Utils.Tools;
 
 namespace butterBror
 {
@@ -38,12 +39,12 @@ namespace butterBror
 
             public async Task<CommandReturn> Index(CommandData data)
             {
-                Engine.Statistics.functions_used.Add();
+                Core.Statistics.FunctionsUsed.Add();
                 CommandReturn commandReturn = new CommandReturn();
 
                 try
                 {
-                    string root_path = Maintenance.path_main + $"GAMES_DATA/{Platform.strings[(int)data.platform]}/COOKIES/";
+                    string root_path = Core.Bot.Pathes.Main + $"GAMES_DATA/{Platform.strings[(int)data.platform]}/COOKIES/";
                     FileUtil.CreateDirectory(root_path);
 
                     string[] giftAliases = ["gift", "g", "подарить", "подарок"];
@@ -87,7 +88,7 @@ namespace butterBror
                             if (data.arguments.Count < 2 || data.arguments.IndexOf("gift") >= data.arguments.Count - 1)
                             {
                                 commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:not_enough_arguments", data.channel_id, data.platform)
-                                    .Replace("%command_example%", $"{Maintenance.executor}cookie gift username"));
+                                    .Replace("%command_example%", $"{Core.Bot.Executor}cookie gift username"));
                                 return commandReturn;
                             }
 
@@ -222,15 +223,15 @@ namespace butterBror
                                 return commandReturn;
                             }
 
-                            float currency = Engine.BankDollars / Engine.Coins;
+                            float currency = Core.BankDollars / Core.Coins;
                             float cost = 0.2f / currency;
 
                             int coins = -(int)cost;
                             int subcoins = -(int)((cost - coins) * 100);
 
-                            if (Utils.Balance.GetBalance(data.user_id, data.platform) + Utils.Balance.GetSubbalance(data.user_id, data.platform) / 100f >= coins + subcoins / 100f)
+                            if (Utils.Tools.Balance.GetBalance(data.user_id, data.platform) + Utils.Tools.Balance.GetSubbalance(data.user_id, data.platform) / 100f >= coins + subcoins / 100f)
                             {
-                                Utils.Balance.Add(data.user_id, coins, subcoins, data.platform);
+                                Utils.Tools.Balance.Add(data.user_id, coins, subcoins, data.platform);
                                 UsersData.Save(data.user.id, "cookie_last_used", DateTime.UtcNow.AddDays(-1), data.platform);
                                 commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:cookie:buyed", data.channel_id, data.platform));
                             }
@@ -249,7 +250,7 @@ namespace butterBror
                         return commandReturn;
                     }
 
-                    string[] result = await Utils.API.AI.Request(
+                    string[] result = await Utils.Tools.API.AI.Request(
                         @"Create original absurdly humorous texts in the style of 'horoscopes', as in the example below. Each text should contain:
 
 1. Advice/warning with an unexpected or ridiculous twist (e.g. 'Avoid people over 20 - they can be aggressive!').

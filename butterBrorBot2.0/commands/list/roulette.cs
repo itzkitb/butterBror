@@ -3,6 +3,7 @@ using butterBror.Utils;
 using System.Drawing;
 using TwitchLib.Client.Enums;
 using System.Collections.Generic;
+using butterBror.Utils.Tools;
 
 namespace butterBror
 {
@@ -34,7 +35,7 @@ namespace butterBror
             };
             public CommandReturn Index(CommandData data)
             {
-                Engine.Statistics.functions_used.Add();
+                Core.Statistics.FunctionsUsed.Add();
                 CommandReturn commandReturn = new CommandReturn();
 
                 try
@@ -64,9 +65,9 @@ namespace butterBror
                                 commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:roulette_wrong_bid", data.channel_id, data.platform));
                             else if (bid < 0)
                                 commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:roulette_steal", data.channel_id, data.platform));
-                            else if (Utils.Balance.GetBalance(data.user_id, data.platform) < bid)
+                            else if (Utils.Tools.Balance.GetBalance(data.user_id, data.platform) < bid)
                                 commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:roulette_not_enough_coins", data.channel_id, data.platform)
-                                            .Replace("%balance%", Utils.Balance.GetBalance(data.user_id, data.platform).ToString() + " " + Maintenance.coin_symbol));
+                                            .Replace("%balance%", Utils.Tools.Balance.GetBalance(data.user_id, data.platform).ToString() + " " + Core.Bot.CoinSymbol));
                             else
                             {
                                 int moves = new Random().Next(38, 380);
@@ -84,20 +85,20 @@ namespace butterBror
                                     commandReturn.SetColor(ChatColorPresets.YellowGreen);
 
                                     int win = (int)(bid * multipliers[result_symbol]);
-                                    Utils.Balance.Add(data.user_id, win, 0, data.platform);
+                                    Utils.Tools.Balance.Add(data.user_id, win, 0, data.platform);
                                     commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:roulette:result:win", data.channel_id, data.platform)
                                         .Replace("%result%", result_symbol)
                                         .Replace("%result_number%", result.ToString())
-                                        .Replace("%win%", win.ToString() + " " + Maintenance.coin_symbol)
+                                        .Replace("%win%", win.ToString() + " " + Core.Bot.CoinSymbol)
                                         .Replace("%multipier%", multipliers[result_symbol].ToString()));
                                 }
                                 else
                                 {
-                                    Utils.Balance.Add(data.user_id, -bid, 0, data.platform);
+                                    Utils.Tools.Balance.Add(data.user_id, -bid, 0, data.platform);
                                     commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:roulette:result:lose", data.channel_id, data.platform)
                                         .Replace("%result%", result_symbol)
                                         .Replace("%result_number%", result.ToString())
-                                        .Replace("%lose%", bid.ToString() + " " + Maintenance.coin_symbol));
+                                        .Replace("%lose%", bid.ToString() + " " + Core.Bot.CoinSymbol));
                                 }
                             }
                         }

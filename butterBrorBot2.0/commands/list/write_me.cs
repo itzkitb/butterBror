@@ -2,6 +2,7 @@
 using butterBror;
 using Discord;
 using TwitchLib.Client.Enums;
+using butterBror.Utils.Tools;
 
 
 namespace butterBror
@@ -35,15 +36,15 @@ namespace butterBror
             };
             public CommandReturn Index(CommandData data)
             {
-                Engine.Statistics.functions_used.Add();
+                Core.Statistics.FunctionsUsed.Add();
                 CommandReturn commandReturn = new CommandReturn();
 
                 try
                 {
-                    if (TextUtil.CleanAsciiWithoutSpaces(data.arguments_string) != "")
+                    if (Text.CleanAsciiWithoutSpaces(data.arguments_string) != "")
                     {
                         string[] blockedEntries = ["/", "$", "#", "+", "-", ">", "<", "*", "\\", ";"];
-                        string meMessage = TextUtil.CleanAscii(data.arguments_string);
+                        string meMessage = Text.CleanAscii(data.arguments_string);
                         while (true)
                         {
                             while (meMessage.StartsWith(' '))

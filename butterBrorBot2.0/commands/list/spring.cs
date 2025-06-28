@@ -2,6 +2,7 @@
 using butterBror;
 using Discord;
 using TwitchLib.Client.Enums;
+using butterBror.Utils.Tools;
 
 namespace butterBror
 {
@@ -33,14 +34,14 @@ namespace butterBror
             };
             public CommandReturn Index(CommandData data)
             {
-                Engine.Statistics.functions_used.Add();
+                Core.Statistics.FunctionsUsed.Add();
                 CommandReturn commandReturn = new CommandReturn();
 
                 try
                 {
                     DateTime startDate = new(2000, 3, 1);
                     DateTime endDate = new(2000, 6, 1);
-                    commandReturn.SetMessage(TextUtil.TimeTo(startDate, endDate, "spring", 0, data.user.language, data.arguments_string, data.channel_id, data.platform));
+                    commandReturn.SetMessage(Text.TimeTo(startDate, endDate, "spring", 0, data.user.language, data.arguments_string, data.channel_id, data.platform));
                 }
                 catch (Exception e)
                 {

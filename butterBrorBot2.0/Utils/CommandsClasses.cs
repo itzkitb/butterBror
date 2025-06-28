@@ -1,5 +1,6 @@
 ﻿using butterBror.Utils;
 using butterBror.Utils.DataManagers;
+using butterBror.Utils.Tools;
 using Discord;
 using Discord.WebSocket;
 using Telegram.Bot;
@@ -7,6 +8,7 @@ using Telegram.Bot.Types;
 using TwitchLib.Client.Enums;
 using TwitchLib.Client.Events;
 using TwitchLib.Client.Models;
+using static butterBror.Utils.Things.Console;
 
 namespace butterBror
 {
@@ -253,16 +255,16 @@ namespace butterBror
     }
     public partial class Commands
     {
+        [ConsoleSector("butterBror.Commands", "SendCommandReply#1")]
         public static async void SendCommandReply(TwitchMessageSendData data)
         {
-            Engine.Statistics.functions_used.Add();
+            Core.Statistics.FunctionsUsed.Add();
             try
             {
                 string message = data.message;
                 TwitchMessageSendData messageToSendPart2 = null;
-                Utils.Console.WriteLine("[TW] Sending a message...", "info");
-                LogWorker.Log($"[TW] A response to message {data.message_id} was sent to channel {data.channel}: {data.message}", LogWorker.LogTypes.Msg, "ButterBib\\Commands\\SendCommandReply");
-                message = TextUtil.CleanAscii(data.message);
+                //Write($"Twitch - A response to message {data.message_id} was sent to channel {data.channel}: {data.message}", "info");
+                message = Text.CleanAscii(data.message);
 
                 if (message.Length > 1500)
                     message = TranslationManager.GetTranslation(data.language, "error:too_large_text", data.channel_id, Platforms.Twitch);
@@ -276,33 +278,34 @@ namespace butterBror
                     Task task = Task.Run(() =>
                     {
                         Thread.Sleep(1000);
-                        Utils.Chat.TwitchReply(data.channel, data.channel_id, part2, data.message_id, data.language, data.safe_execute);
+                        Utils.Tools.Chat.TwitchReply(data.channel, data.channel_id, part2, data.message_id, data.language, data.safe_execute);
                     });
                 }
 
-                if (!Maintenance.twitch_client.JoinedChannels.Contains(new JoinedChannel(data.channel)))
-                    Maintenance.twitch_client.JoinChannel(data.channel);
+                if (!Core.Bot.Clients.Twitch.JoinedChannels.Contains(new JoinedChannel(data.channel)))
+                    Core.Bot.Clients.Twitch.JoinChannel(data.channel);
 
                 if (data.safe_execute || new NoBanwords().Check(message, data.channel_id, Platforms.Twitch))
-                    Maintenance.twitch_client.SendReply(data.channel, data.message_id, message);
+                    Core.Bot.Clients.Twitch.SendReply(data.channel, data.message_id, message);
                 else
-                    Maintenance.twitch_client.SendReply(data.channel, data.message_id, TranslationManager.GetTranslation(data.language, "error:message_could_not_be_sent", data.channel_id, Platforms.Twitch));
+                    Core.Bot.Clients.Twitch.SendReply(data.channel, data.message_id, TranslationManager.GetTranslation(data.language, "error:message_could_not_be_sent", data.channel_id, Platforms.Twitch));
             }
             catch (Exception ex)
             {
-                Utils.Console.WriteError(ex, $"butterBib\\Commands\\SendCommandReply");
+                Write(ex);
             }
         }
+
+        [ConsoleSector("butterBror.Commands", "SendCommandReply#2")]
         public static async void SendCommandReply(TelegramMessageSendData data)
         {
-            Engine.Statistics.functions_used.Add();
+            Core.Statistics.FunctionsUsed.Add();
             try
             {
                 string messageToSend = data.message;
                 TelegramMessageSendData messageToSendPart2 = null;
-                Utils.Console.WriteLine($"[TG] Sending a message... (Room: {(data.channel_id == null ? "null" : data.channel_id)}, message ID: {data.message_id})", "info");
-                LogWorker.Log($"[TG] A message response was sent to the {data.channel} channel: {data.message}", LogWorker.LogTypes.Msg, "ButterBib\\Commands\\SendCommandReply");
-                messageToSend = TextUtil.CleanAscii(data.message);
+                Write($"Telegram - A message response was sent to the {data.channel} channel: {data.message}", "info");
+                messageToSend = Text.CleanAscii(data.message);
 
                 if (messageToSend.Length > 12288)
                 {
@@ -321,9 +324,9 @@ namespace butterBror
                 }
 
                 if (data.safe_execute || new NoBanwords().Check(messageToSend, data.channel_id, Platforms.Telegram))
-                    await Maintenance.telegram_client.SendMessage(long.Parse(data.channel_id), data.message, replyParameters: int.Parse(data.message_id));
+                    await Core.Bot.Clients.Telegram.SendMessage(long.Parse(data.channel_id), data.message, replyParameters: int.Parse(data.message_id));
                 else
-                    await Maintenance.telegram_client.SendMessage(long.Parse(data.channel_id), TranslationManager.GetTranslation(data.language, "error:message_could_not_be_sent", data.channel_id, Platforms.Telegram), replyParameters: int.Parse(data.message_id));
+                    await Core.Bot.Clients.Telegram.SendMessage(long.Parse(data.channel_id), TranslationManager.GetTranslation(data.language, "error:message_could_not_be_sent", data.channel_id, Platforms.Telegram), replyParameters: int.Parse(data.message_id));
                 
 
                 if (messageToSendPart2 != null)
@@ -334,17 +337,18 @@ namespace butterBror
             }
             catch (Exception ex)
             {
-                Utils.Console.WriteError(ex, $"butterBib\\Commands\\SendCommandReply");
+                Write(ex);
             }
         }
+
+        [ConsoleSector("butterBror.Commands", "SendCommandReply#3")]
         public static async void SendCommandReply(DiscordCommandSendData data)
         {
-            Engine.Statistics.functions_used.Add();
+            Core.Statistics.FunctionsUsed.Add();
             try
             {
-                Utils.Console.WriteLine("[DS] Sending a message...", "info");
-                LogWorker.Log($"[DS] A response to the command was sent to the server {data.server}: {data.message}", LogWorker.LogTypes.Msg, "ButterBib\\Commands\\SendDiscordReply");
-                data.message = TextUtil.CleanAscii(data.message);
+                Write($"Discord - A message response was sent to the {data.server}: {data.message}", "info");
+                data.message = Text.CleanAscii(data.message);
 
                 if (data.socket_command_base != null)
                 {
@@ -401,7 +405,7 @@ namespace butterBror
                         messageToSendPart2.message = part2;
                     }
 
-                    ITextChannel sender = await Maintenance.discord_client.GetChannelAsync(ulong.Parse(data.channel_id)) as ITextChannel;
+                    ITextChannel sender = await Core.Bot.Clients.Discord.GetChannelAsync(ulong.Parse(data.channel_id)) as ITextChannel;
 
                     if ((data.safe_execute | data.is_ephemeral) || new NoBanwords().Check(data.message, data.server_id, Platforms.Discord) && new NoBanwords().Check(data.description, data.server_id, Platforms.Discord))
                     {
@@ -439,7 +443,7 @@ namespace butterBror
             }
             catch (Exception ex)
             {
-                Utils.Console.WriteError(ex, $"butterBib\\Commands\\SendCommandReply");
+                Write(ex);
             }
         }
     }

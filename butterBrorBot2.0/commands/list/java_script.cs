@@ -4,6 +4,8 @@ using TwitchLib.Client.Enums;
 using butterBror.Utils;
 using butterBror.Utils.DataManagers;
 using butterBror;
+using butterBror.Utils.Tools;
+using static butterBror.Utils.Things.Console;
 
 namespace butterBror
 {
@@ -33,9 +35,11 @@ namespace butterBror
                 IsForChannelModerator = false,
                 Platforms = [Platforms.Twitch, Platforms.Telegram, Platforms.Discord]
             };
+
+            [ConsoleSector("butterBror.Commands.Java", "Index")]
             public CommandReturn Index(CommandData data)
             {
-                Engine.Statistics.functions_used.Add();
+                Core.Statistics.FunctionsUsed.Add();
                 CommandReturn commandReturn = new CommandReturn();
 
                 try
@@ -73,7 +77,7 @@ namespace butterBror
                             commandReturn.SetColor(ChatColorPresets.Firebrick);
                             commandReturn.SetMessage("/me " + TranslationManager.GetTranslation(data.user.language, "error:js", data.channel_id, data.platform)
                                 .Replace("%err%", ex.Message));
-                            LogWorker.Log(ex.Message, LogWorker.LogTypes.Err, "command\\Java\\Index");
+                            Write(ex);
                         }
                     }
                 }

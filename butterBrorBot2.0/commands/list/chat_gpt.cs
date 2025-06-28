@@ -3,6 +3,7 @@ using butterBror;
 using Discord;
 using TwitchLib.Client.Enums;
 using butterBror.Utils.DataManagers;
+using butterBror.Utils.Tools;
 
 namespace butterBror
 {
@@ -35,28 +36,27 @@ namespace butterBror
             };
             public async Task<CommandReturn> Index(CommandData data)
             {
-                Engine.Statistics.functions_used.Add();
+                Core.Statistics.FunctionsUsed.Add();
                 CommandReturn commandReturn = new CommandReturn();
 
                 try
                 {
                     if (Command.GetArgument(data.arguments, "chat") is null)
                     {
-                        float currency = Engine.BankDollars / Engine.Coins;
+                        float currency = Core.BankDollars / Core.Coins;
                         float cost = 0.5f / currency;
 
                         int coins = -(int)cost;
                         int subcoins = -(int)((cost - coins) * 100);
-                        Utils.Console.WriteLine("cu:" + currency + ",ct:" + cost + ",cs:" + coins + ",s:" + subcoins, "info");
 
-                        if (Utils.Balance.GetBalance(data.user_id, data.platform) + Utils.Balance.GetSubbalance(data.user_id, data.platform) / 100f >= coins + subcoins / 100f)
+                        if (Utils.Tools.Balance.GetBalance(data.user_id, data.platform) + Utils.Tools.Balance.GetSubbalance(data.user_id, data.platform) / 100f >= coins + subcoins / 100f)
                         {
                             if (data.arguments.Count < 1)
                                 commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:not_enough_arguments", data.channel_id, data.platform)
-                                    .Replace("%command_example%", $"{Maintenance.executor}ai model:qwen Hello!"));
+                                    .Replace("%command_example%", $"{Core.Bot.Executor}ai model:qwen Hello!"));
                             else
                             {
-                                Utils.Balance.Add(data.user_id, coins, subcoins, data.platform);
+                                Utils.Tools.Balance.Add(data.user_id, coins, subcoins, data.platform);
 
                                 string request = data.arguments_string;
                                 string model = "qwen";
@@ -73,7 +73,7 @@ namespace butterBror
                                 {
                                     try
                                     {
-                                        repetitionPenalty = Utils.Format.ToDouble(Command.GetArgument(data.arguments, "repetition_penalty"));
+                                        repetitionPenalty = Utils.Tools.Format.ToDouble(Command.GetArgument(data.arguments, "repetition_penalty"));
                                         request = request.Replace($"repetition_penalty:{repetitionPenalty}", "");
 
                                         if (repetitionPenalty > 2) repetitionPenalty = 2;
@@ -89,7 +89,7 @@ namespace butterBror
 
                                 if (!UsersData.Contains(data.user.id, "gpt_history", data.platform)) UsersData.Save(data.user.id, "gpt_history", Array.Empty<List<string>>(), data.platform);
 
-                                if (Utils.API.AI.generating_models.Contains(model, StringComparer.OrdinalIgnoreCase))
+                                if (Utils.Tools.API.AI.generating_models.Contains(model, StringComparer.OrdinalIgnoreCase))
                                 {
                                     Chat.SendReply(data.platform, data.channel, data.channel_id,
                                         TranslationManager.GetTranslation(data.user.language, "command:gpt:generating", data.channel_id, data.platform),
@@ -99,7 +99,7 @@ namespace butterBror
                                         );
                                 }
 
-                                string[] result = await Utils.API.AI.Request(request, model, data.platform, data.user.username, data.user_id, data.user.language, repetitionPenalty, useHistory);
+                                string[] result = await Utils.Tools.API.AI.Request(request, model, data.platform, data.user.username, data.user_id, data.user.language, repetitionPenalty, useHistory);
                                 
                                 if (result[0] == "ERR")
                                 {
@@ -127,7 +127,7 @@ namespace butterBror
                         }
                         else if (argument is "models")
                         {
-                            List<string> models = Utils.API.AI.available_models.Select(model => model.Key).ToList();
+                            List<string> models = Utils.Tools.API.AI.available_models.Select(model => model.Key).ToList();
 
                             commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:gpt:models", data.channel_id, data.platform, new()
                             {

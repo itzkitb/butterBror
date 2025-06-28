@@ -3,6 +3,7 @@ using butterBror.Utils.DataManagers;
 using butterBror;
 using Discord;
 using TwitchLib.Client.Enums;
+using butterBror.Utils.Tools;
 
 namespace butterBror
 {
@@ -34,29 +35,29 @@ namespace butterBror
             };
             public CommandReturn Index(CommandData data)
             {
-                Engine.Statistics.functions_used.Add();
+                Core.Statistics.FunctionsUsed.Add();
                 CommandReturn commandReturn = new CommandReturn();
 
                 try
                 {
                     if (data.arguments.Count == 0)
                     {
-                        commandReturn.SetMessage(TextUtil.ArgumentReplacement(TranslationManager.GetTranslation(data.user.language, "command:balance", data.channel_id, data.platform),
-                            "amount", Utils.Balance.GetBalance(data.user_id, data.platform) + "." + Utils.Balance.GetSubbalance(data.user_id, data.platform)));
+                        commandReturn.SetMessage(Text.ArgumentReplacement(TranslationManager.GetTranslation(data.user.language, "command:balance", data.channel_id, data.platform),
+                            "amount", Utils.Tools.Balance.GetBalance(data.user_id, data.platform) + "." + Utils.Tools.Balance.GetSubbalance(data.user_id, data.platform)));
                     }
                     else
                     {
                         var userID = Names.GetUserID(data.arguments[0].Replace("@", "").Replace(",", ""), data.platform);
                         if (userID != null)
                         {
-                            commandReturn.SetMessage(TextUtil.ArgumentsReplacement(TranslationManager.GetTranslation(data.user.language, "command:balance:user", data.channel_id, data.platform),
-                                new(){ { "amount", Utils.Balance.GetBalance(userID, data.platform) + "." + Utils.Balance.GetSubbalance(userID, data.platform) },
-                                { "name", Names.DontPing(TextUtil.UsernameFilter(data.arguments_string)) }}));
+                            commandReturn.SetMessage(Text.ArgumentsReplacement(TranslationManager.GetTranslation(data.user.language, "command:balance:user", data.channel_id, data.platform),
+                                new(){ { "amount", Utils.Tools.Balance.GetBalance(userID, data.platform) + "." + Utils.Tools.Balance.GetSubbalance(userID, data.platform) },
+                                { "name", Names.DontPing(Text.UsernameFilter(data.arguments_string)) }}));
                         }
                         else
                         {
-                            commandReturn.SetMessage(TextUtil.ArgumentReplacement(TranslationManager.GetTranslation(data.user.language, "error:user_not_found", data.channel_id, data.platform),
-                                "user", Names.DontPing(TextUtil.UsernameFilter(data.arguments_string))));
+                            commandReturn.SetMessage(Text.ArgumentReplacement(TranslationManager.GetTranslation(data.user.language, "error:user_not_found", data.channel_id, data.platform),
+                                "user", Names.DontPing(Text.UsernameFilter(data.arguments_string))));
                             commandReturn.SetColor(ChatColorPresets.Red);
                         }
                     }

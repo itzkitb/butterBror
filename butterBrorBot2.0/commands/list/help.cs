@@ -3,6 +3,7 @@ using butterBror;
 using Discord;
 using System.Reflection;
 using TwitchLib.Client.Enums;
+using butterBror.Utils.Tools;
 
 namespace butterBror
 {
@@ -34,7 +35,7 @@ namespace butterBror
             };
             public CommandReturn Index(CommandData data)
             {
-                Engine.Statistics.functions_used.Add();
+                Core.Statistics.FunctionsUsed.Add();
                 CommandReturn commandReturn = new CommandReturn();
 
                 try
@@ -60,9 +61,9 @@ namespace butterBror
                                 {
                                     num++;
                                     if (num < numWithoutComma)
-                                        aliasesList += $"{Maintenance.executor}{alias}, ";
+                                        aliasesList += $"{Core.Bot.Executor}{alias}, ";
                                     else if (num == numWithoutComma)
-                                        aliasesList += $"{Maintenance.executor}{alias}";
+                                        aliasesList += $"{Core.Bot.Executor}{alias}";
                                 }
                                 commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:help", data.channel_id, data.platform)
                                     .Replace("%commandName%", info.Name)
