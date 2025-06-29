@@ -34,9 +34,9 @@ Release size: 6,24 MB
 
 > 3. Make sure that you are not banned or ignored
 
-> 3.1 At the moment, the ignore team is being developed, if you want the bot not to respond to your bot's messages, then write about it [to me](mailto://itzkitb@gmail.com)
+> 3.1 At the moment, the ignore team is being developed, if you want the bot not to respond to your bot's messages, then write about it [to me](mailto:itzkitb@gmail.com)
 
-> 3.2 If the bot is responding to messages from other users, then you are probably banned. Make sure that you have not violated the rules of use and privacy policy of the bot. If the lock happened by accident or you want to write a request for unblocking, then write [here](mailto://itzkitb@gmail.com)
+> 3.2 If the bot is responding to messages from other users, then you are probably banned. Make sure that you have not violated the rules of use and privacy policy of the bot. If the lock happened by accident or you want to write a request for unblocking, then write [here](mailto:itzkitb@gmail.com)
 
 ### Tasks
 ...
