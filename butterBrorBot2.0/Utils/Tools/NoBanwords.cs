@@ -7,17 +7,34 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static butterBror.Utils.Things.Console;
+using static butterBror.Utils.Bot.Console;
 using System.Text.RegularExpressions;
+using butterBror.Utils.Types;
 
 namespace butterBror.Utils.Tools
 {
+    /// <summary>
+    /// Provides functionality for checking messages against banned word lists with pattern replacement capabilities.
+    /// </summary>
     public class NoBanwords
     {
-        private readonly ConcurrentDictionary<string, string> FoundedBanWords = new();
-        private string replacementPattern;
-        private Regex replacementRegex;
+        private readonly ConcurrentDictionary<string, string> _foundedBanWords = new();
+        private string _replacementPattern;
+        private Regex _replacementRegex;
 
+        /// <summary>
+        /// Checks if a message contains any banned words after applying text transformations.
+        /// </summary>
+        /// <param name="message">The message text to check.</param>
+        /// <param name="channelID">The channel/room identifier.</param>
+        /// <param name="platform">Target platform context (Twitch/Discord/Telegram).</param>
+        /// <returns>True if message passes checks, false if banned word found.</returns>
+        /// <remarks>
+        /// - Performs multiple checks with different text transformations
+        /// - Uses both global and channel-specific banned word lists
+        /// - Applies character replacements before final check
+        /// - Logs detailed information about detected banned words
+        /// </remarks>
         [ConsoleSector("butterBror.Utils.Tools.NoBanwords", "Check")]
         public bool Check(string message, string channelID, Platforms platform)
         {
@@ -45,8 +62,8 @@ namespace butterBror.Utils.Tools
                 if (FileUtil.FileExists(channel_banned_words_path))
                     banned_words.AddRange(Manager.Get<List<string>>(channel_banned_words_path, "list"));
 
-                replacementPattern = string.Join("|", replacements.Keys.Select(Regex.Escape));
-                replacementRegex = new Regex(replacementPattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);
+                _replacementPattern = string.Join("|", replacements.Keys.Select(Regex.Escape));
+                _replacementRegex = new Regex(_replacementPattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
                 (bool, string) check_result = RunCheck(channelID,
                     check_UUID,
@@ -61,7 +78,7 @@ namespace butterBror.Utils.Tools
                 failed = !check_result.Item1;
                 sector = check_result.Item2;
 
-                if (failed) Write($"NoBanwords - [{check_UUID}] BANWORDS WAS FOUNDED! Banword: {FoundedBanWords[check_UUID]}, sector: {sector} ({(DateTime.UtcNow - start_time).TotalMilliseconds}ms)", "info");
+                if (failed) Write($"NoBanwords - [{check_UUID}] BANWORDS WAS FOUNDED! Banword: {_foundedBanWords[check_UUID]}, sector: {sector} ({(DateTime.UtcNow - start_time).TotalMilliseconds}ms)", "info");
                 else Write($"NoBanwords - [{check_UUID}] Succeful! ({(DateTime.UtcNow - start_time).TotalMilliseconds}ms)", "info");
 
                 return !failed;
@@ -73,30 +90,54 @@ namespace butterBror.Utils.Tools
             }
         }
 
+        /// <summary>
+        /// Runs multiple banword checks using different text processing strategies.
+        /// </summary>
+        /// <param name="channelID">The channel/room identifier.</param>
+        /// <param name="checkUUID">Unique identifier for tracking this check operation.</param>
+        /// <param name="bannedWords">List of global banned words.</param>
+        /// <param name="singleBanwords">List of single-word bans.</param>
+        /// <param name="replacements">Dictionary of character replacements to apply.</param>
+        /// <param name="clearedMessageWithoutRepeats">Message with duplicates removed.</param>
+        /// <param name="clearedMessageWithoutRepeatsChangedLayout">Message with duplicates removed and layout changed.</param>
+        /// <param name="clearedMessage">Original cleaned message.</param>
+        /// <param name="clearedMessageChangedLayout">Message with layout changed.</param>
+        /// <returns>Tuple containing check result and failed check type.</returns>
+        /// <remarks>
+        /// Performs 8 different checks in sequence:
+        /// 1. Light check without replacements
+        /// 2. Light check with replacements
+        /// 3. Layout-changed check without replacements
+        /// 4. Layout-changed check with replacements
+        /// 5. Full message check without replacements
+        /// 6. Full message check with replacements
+        /// 7. Layout-changed full message check
+        /// 8. Final layout-changed check with replacements
+        /// </remarks>
         [ConsoleSector("butterBror.Utils.Tools.NoBanwords", "RunCheck")]
         private (bool, string) RunCheck(
-    string channelID, string check_UUID, List<string> banned_words,
-    List<string> single_banwords, Dictionary<string, string> replacements,
-    string cleared_message_without_repeats, string cleared_message_without_repeats_changed_layout,
-    string cleared_message, string cleared_message_changed_layout)
+    string channelID, string checkUUID, List<string> bannedWords,
+    List<string> singleBanwords, Dictionary<string, string> replacements,
+    string clearedMessageWithoutRepeats, string clearedMessageWithoutRepeatsChangedLayout,
+    string clearedMessage, string clearedMessageChangedLayout)
         {
             var checks = new[]
             {
-        (message: cleared_message_without_repeats, useReplacement: false, label: "LightCheckWR"),
-        (cleared_message_without_repeats, true, "LightReplacemetCheckWR"),
-        (cleared_message_without_repeats_changed_layout, false, "LayoutChangeCheckWR"),
-        (cleared_message_without_repeats_changed_layout, true, "LayoutChangeReplacementCheckWR"),
-        (cleared_message, false, "LightCheck"),
-        (cleared_message, true, "LightReplacemetCheck"),
-        (cleared_message_changed_layout, false, "LayoutChangeCheck"),
-        (cleared_message_changed_layout, true, "LayoutChangeReplacementCheck")
+        (message: clearedMessageWithoutRepeats, useReplacement: false, label: "LightCheckWR"),
+        (clearedMessageWithoutRepeats, true, "LightReplacemetCheckWR"),
+        (clearedMessageWithoutRepeatsChangedLayout, false, "LayoutChangeCheckWR"),
+        (clearedMessageWithoutRepeatsChangedLayout, true, "LayoutChangeReplacementCheckWR"),
+        (clearedMessage, false, "LightCheck"),
+        (clearedMessage, true, "LightReplacemetCheck"),
+        (clearedMessageChangedLayout, false, "LayoutChangeCheck"),
+        (clearedMessageChangedLayout, true, "LayoutChangeReplacementCheck")
     };
 
             foreach (var (message, useReplacement, label) in checks)
             {
                 bool result = useReplacement
-                    ? CheckReplacements(message, channelID, check_UUID, banned_words, single_banwords, replacements)
-                    : CheckBanWords(message, channelID, check_UUID, banned_words, single_banwords);
+                    ? CheckReplacements(message, channelID, checkUUID, bannedWords, singleBanwords, replacements)
+                    : CheckBanWords(message, channelID, checkUUID, bannedWords, singleBanwords);
 
                 if (!result) return (false, label);
             }
@@ -104,22 +145,36 @@ namespace butterBror.Utils.Tools
             return (true, "LayoutChangeReplacementCheck");
         }
 
+        /// <summary>
+        /// Checks message against banned words without character replacement.
+        /// </summary>
+        /// <param name="message">The message text to check.</param>
+        /// <param name="channelID">The channel/room identifier.</param>
+        /// <param name="checkUUID">Unique identifier for tracking this check operation.</param>
+        /// <param name="bannedWords">List of global banned words.</param>
+        /// <param name="singleBanwords">List of single-word bans.</param>
+        /// <returns>True if message is clean, false if banned word found.</returns>
+        /// <remarks>
+        /// - Checks for both partial matches and exact matches
+        /// - Uses case-insensitive comparison
+        /// - Updates internal cache with detected banned words
+        /// </remarks>
         [ConsoleSector("butterBror.Utils.Tools.NoBanwords", "CheckBanWords")]
-        private bool CheckBanWords(string message, string channelID, string check_UUID,
-    List<string> banned_words, List<string> single_banwords)
+        private bool CheckBanWords(string message, string channelID, string checkUUID,
+    List<string> bannedWords, List<string> singleBanwords)
         {
             Core.Statistics.FunctionsUsed.Add();
             try
             {
-                if (banned_words.Any(word => message.Contains(word, StringComparison.OrdinalIgnoreCase)))
+                if (bannedWords.Any(word => message.Contains(word, StringComparison.OrdinalIgnoreCase)))
                 {
-                    FoundedBanWords.TryAdd(check_UUID, "BannedWordFound");
+                    _foundedBanWords.TryAdd(checkUUID, "BannedWordFound");
                     return false;
                 }
 
-                if (single_banwords.Any(word => message.Equals(word, StringComparison.OrdinalIgnoreCase)))
+                if (singleBanwords.Any(word => message.Equals(word, StringComparison.OrdinalIgnoreCase)))
                 {
-                    FoundedBanWords.TryAdd(check_UUID, "SingleBannedWordFound");
+                    _foundedBanWords.TryAdd(checkUUID, "SingleBannedWordFound");
                     return false;
                 }
 
@@ -128,22 +183,37 @@ namespace butterBror.Utils.Tools
             catch (Exception ex)
             {
                 Write(ex);
-                FoundedBanWords.TryAdd(check_UUID, "CHECK ERROR");
+                _foundedBanWords.TryAdd(checkUUID, "CHECK ERROR");
                 return false;
             }
         }
 
+        /// <summary>
+        /// Applies character replacements and then checks for banned words.
+        /// </summary>
+        /// <param name="message">The message text to check.</param>
+        /// <param name="channelID">The channel/room identifier.</param>
+        /// <param name="checkUUID">Unique identifier for tracking this check operation.</param>
+        /// <param name="bannedWords">List of global banned words.</param>
+        /// <param name="singleBanwords">List of single-word bans.</param>
+        /// <param name="replacements">Character replacement dictionary.</param>
+        /// <returns>True if message is clean after replacements, false if banned word found.</returns>
+        /// <remarks>
+        /// - Applies character replacements using regex pattern
+        /// - Delegates to CheckBanWords for final validation
+        /// - Uses compiled regex for better performance
+        /// </remarks>
         [ConsoleSector("butterBror.Utils.Tools.NoBanwords", "CheckReplacements")]
-        private bool CheckReplacements(string message, string ChannelID, string check_UUID,
-    List<string> banned_words, List<string> single_banwords, Dictionary<string, string> replacements)
+        private bool CheckReplacements(string message, string channelID, string checkUUID,
+    List<string> bannedWords, List<string> singleBanwords, Dictionary<string, string> replacements)
         {
             Core.Statistics.FunctionsUsed.Add();
             try
             {
-                string maskedWord = replacementRegex.Replace(message, match =>
+                string maskedWord = _replacementRegex.Replace(message, match =>
                     replacements[match.Value.ToLower()]);
 
-                return CheckBanWords(maskedWord, ChannelID, check_UUID, banned_words, single_banwords);
+                return CheckBanWords(maskedWord, channelID, checkUUID, bannedWords, singleBanwords);
             }
             catch (Exception ex)
             {

@@ -1,4 +1,5 @@
-﻿using butterBror.Utils.DataManagers;
+﻿using butterBror.Utils.Types;
+using butterBror.Utils.Types.DataBase;
 using DankDB;
 using Newtonsoft.Json;
 using System;
@@ -6,30 +7,24 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static butterBror.Utils.Things.Console;
+using static butterBror.Utils.Bot.Console;
 
 namespace butterBror.Utils.DataManagers
 {
+    /// <summary>
+    /// Manages chat message storage and retrieval operations for Twitch/Discord platforms.
+    /// </summary>
     public class MessagesWorker
     {
-        private static int max_messages = 1000;
+        private static int _maxMessages = 1000;
 
         /// <summary>
-        /// Класс данных о сообщении из Twitch/Discord чата
+        /// Saves a chat message to persistent storage with caching and backup management.
         /// </summary>
-        public class Message
-        {
-            public required DateTime messageDate { get; set; }
-            public required string messageText { get; set; }
-            public required bool isMe { get; set; }
-            public required bool isModerator { get; set; }
-            public required bool isSubscriber { get; set; }
-            public required bool isPartner { get; set; }
-            public required bool isStaff { get; set; }
-            public required bool isTurbo { get; set; }
-            public required bool isVip { get; set; }
-        }
-
+        /// <param name="channelID">The channel identifier.</param>
+        /// <param name="userID">The user identifier.</param>
+        /// <param name="newMessage">The message data to save.</param>
+        /// <param name="platform">The platform (Twitch/Discord) where the message originated.</param>
         [ConsoleSector("butterBror.Utils.DataManagers", "SaveMessage")]
         public static void SaveMessage(string channelID, string userID, Message newMessage, Platforms platform)
         {
@@ -73,7 +68,7 @@ namespace butterBror.Utils.DataManagers
                 }
 
                 messages.Insert(0, newMessage);
-                if (messages.Count > max_messages) messages = messages.Take(max_messages - 1).ToList();
+                if (messages.Count > _maxMessages) messages = messages.Take(_maxMessages - 1).ToList();
 
                 SafeManager.Save(user_messages_path, "messages", messages);
 
@@ -85,6 +80,15 @@ namespace butterBror.Utils.DataManagers
             }
         }
 
+        /// <summary>
+        /// Retrieves chat messages from cache or persistent storage.
+        /// </summary>
+        /// <param name="channelID">The channel identifier.</param>
+        /// <param name="userID">The user identifier.</param>
+        /// <param name="platform">The platform (Twitch/Discord) to retrieve messages from.</param>
+        /// <param name="isGetCustomNumber">Indicates whether to retrieve a specific message index.</param>
+        /// <param name="customNumber">The message index to retrieve (-1 for last message).</param>
+        /// <returns>The requested message or null if not found.</returns>
         [ConsoleSector("butterBror.Utils.DataManagers", "GetMessage")]
         public static Message GetMessage(string channelID, string userID, Platforms platform, bool isGetCustomNumber = false, int customNumber = 0)
         {

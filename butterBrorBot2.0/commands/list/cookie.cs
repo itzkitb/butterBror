@@ -1,11 +1,11 @@
 ﻿using butterBror.Utils;
-using butterBror;
 using Discord;
 using TwitchLib.Client.Enums;
 using System.Threading.Tasks;
 using butterBror.Utils.DataManagers;
 using DankDB;
 using butterBror.Utils.Tools;
+using butterBror.Utils.Types;
 
 namespace butterBror
 {
@@ -44,7 +44,7 @@ namespace butterBror
 
                 try
                 {
-                    string root_path = Core.Bot.Pathes.Main + $"GAMES_DATA/{Platform.strings[(int)data.platform]}/COOKIES/";
+                    string root_path = Core.Bot.Pathes.Main + $"GAMES_DATA/{Platform.strings[(int)data.Platform]}/COOKIES/";
                     FileUtil.CreateDirectory(root_path);
 
                     string[] giftAliases = ["gift", "g", "подарить", "подарок"];
@@ -56,25 +56,25 @@ namespace butterBror
                     string[] giftersAliases = ["gifters", "gifter", "gift", "дарители", "подарок", "дарить"];
                     string[] recipientsAliases = ["recipients", "recipient", "recip", "получатели", "получить"];
 
-                    if (data.arguments is not null && data.arguments.Count > 0)
+                    if (data.Arguments is not null && data.Arguments.Count > 0)
                     {
-                        if (statsAliases.Contains(data.arguments[0].ToLower()))
+                        if (statsAliases.Contains(data.Arguments[0].ToLower()))
                         {
-                            string targetUser = data.user.username;
-                            if (data.arguments.Count > 1) targetUser = data.arguments[1];
+                            string targetUser = data.User.Username;
+                            if (data.Arguments.Count > 1) targetUser = data.Arguments[1];
 
-                            string targetUserId = Names.GetUserID(targetUser, data.platform);
+                            string targetUserId = Names.GetUserID(targetUser, data.Platform);
                             if (targetUserId == null)
                             {
-                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:user_not_found", data.channel_id, data.platform, new() { { "user", targetUser } }));
+                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:user_not_found", data.ChannelID, data.Platform, new() { { "user", targetUser } }));
                                 return commandReturn;
                             }
 
-                            int eaten = UsersData.Get<int>(targetUserId, "cookie_eaten", data.platform);
-                            int gifted = UsersData.Get<int>(targetUserId, "cookie_gifted", data.platform);
-                            int received = UsersData.Get<int>(targetUserId, "cookie_received", data.platform);
+                            int eaten = UsersData.Get<int>(targetUserId, "cookie_eaten", data.Platform);
+                            int gifted = UsersData.Get<int>(targetUserId, "cookie_gifted", data.Platform);
+                            int received = UsersData.Get<int>(targetUserId, "cookie_received", data.Platform);
 
-                            string statsMessage = TranslationManager.GetTranslation(data.user.language, "command:cookie:statistics", data.channel_id, data.platform)
+                            string statsMessage = TranslationManager.GetTranslation(data.User.Language, "command:cookie:statistics", data.ChannelID, data.Platform)
                                 .Replace("%user%", targetUser)
                                 .Replace("%eaten%", eaten.ToString())
                                 .Replace("%gifted%", gifted.ToString())
@@ -83,51 +83,51 @@ namespace butterBror
                             commandReturn.SetMessage(statsMessage);
                             return commandReturn;
                         }
-                        else if (giftAliases.Contains(data.arguments[0].ToLower()))
+                        else if (giftAliases.Contains(data.Arguments[0].ToLower()))
                         {
-                            if (data.arguments.Count < 2 || data.arguments.IndexOf("gift") >= data.arguments.Count - 1)
+                            if (data.Arguments.Count < 2 || data.Arguments.IndexOf("gift") >= data.Arguments.Count - 1)
                             {
-                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:not_enough_arguments", data.channel_id, data.platform)
+                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:not_enough_arguments", data.ChannelID, data.Platform)
                                     .Replace("%command_example%", $"{Core.Bot.Executor}cookie gift username"));
                                 return commandReturn;
                             }
 
-                            DateTime gifterLastUse = UsersData.Get<DateTime>(data.user.id, "cookie_last_used", data.platform);
+                            DateTime gifterLastUse = UsersData.Get<DateTime>(data.User.ID, "cookie_last_used", data.Platform);
                             if (gifterLastUse.Date == DateTime.UtcNow.Date)
                             {
-                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:cookie_gift_cooldown", data.channel_id, data.platform));
+                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:cookie_gift_cooldown", data.ChannelID, data.Platform));
                                 return commandReturn;
                             }
 
-                            string targetUser = data.arguments[1];
-                            string targetUserId = Names.GetUserID(targetUser, data.platform);
+                            string targetUser = data.Arguments[1];
+                            string targetUserId = Names.GetUserID(targetUser, data.Platform);
 
                             if (targetUserId == null)
                             {
-                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:user_not_found", data.channel_id, data.platform, new() { { "user", targetUser } }));
+                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:user_not_found", data.ChannelID, data.Platform, new() { { "user", targetUser } }));
                                 return commandReturn;
                             }
 
-                            DateTime recipientLastUse = UsersData.Get<DateTime>(targetUserId, "cookie_last_used", data.platform);
+                            DateTime recipientLastUse = UsersData.Get<DateTime>(targetUserId, "cookie_last_used", data.Platform);
                             if (recipientLastUse.Date != DateTime.UtcNow.Date)
                             {
-                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:cookie_already_has", data.channel_id, data.platform)
+                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:cookie_already_has", data.ChannelID, data.Platform)
                                     .Replace("%user%", targetUser));
                                 return commandReturn;
                             }
 
-                            UsersData.Save(data.user.id, "cookie_gifted", (UsersData.Get<int>(data.user.id, "cookie_gifted", data.platform)) + 1, data.platform);
-                            UsersData.Save(targetUserId, "cookie_received", (UsersData.Get<int>(targetUserId, "cookie_received", data.platform)) + 1, data.platform);
-                            UsersData.Save(targetUserId, "cookie_last_used", DateTime.UtcNow.AddDays(-1), data.platform);
+                            UsersData.Save(data.User.ID, "cookie_gifted", (UsersData.Get<int>(data.User.ID, "cookie_gifted", data.Platform)) + 1, data.Platform);
+                            UsersData.Save(targetUserId, "cookie_received", (UsersData.Get<int>(targetUserId, "cookie_received", data.Platform)) + 1, data.Platform);
+                            UsersData.Save(targetUserId, "cookie_last_used", DateTime.UtcNow.AddDays(-1), data.Platform);
 
                             var topPathLocal = $"{root_path}/TOP.json";
                             var topGifters = Manager.Get<Dictionary<string, int>>(topPathLocal, "leaderboard_gifters") ?? new Dictionary<string, int>();
                             var topRecipients = Manager.Get<Dictionary<string, int>>(topPathLocal, "leaderboard_recipients") ?? new Dictionary<string, int>();
 
-                            if (!topGifters.ContainsKey(data.user.id))
-                                topGifters[data.user.id] = 0;
+                            if (!topGifters.ContainsKey(data.User.ID))
+                                topGifters[data.User.ID] = 0;
 
-                            topGifters[data.user.id]++;
+                            topGifters[data.User.ID]++;
 
                             if (!topRecipients.ContainsKey(targetUserId))
                                 topRecipients[targetUserId] = 0;
@@ -137,19 +137,19 @@ namespace butterBror
                             SafeManager.Save(topPathLocal, "leaderboard_gifters", topGifters, false);
                             SafeManager.Save(topPathLocal, "leaderboard_recipients", topRecipients);
 
-                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:cookie:gift", data.channel_id, data.platform)
-                                .Replace("%sender%", data.user.username)
+                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:cookie:gift", data.ChannelID, data.Platform)
+                                .Replace("%sender%", data.User.Username)
                                 .Replace("%receiver%", targetUser));
                             return commandReturn;
                         }
-                        else if (topAliases.Contains(data.arguments[0].ToLower()))
+                        else if (topAliases.Contains(data.Arguments[0].ToLower()))
                         {
                             string topType = "eaters";
-                            if (data.arguments.Count >= 2)
+                            if (data.Arguments.Count >= 2)
                             {
-                                if (giftersAliases.Contains(data.arguments[1].ToLower()))
+                                if (giftersAliases.Contains(data.Arguments[1].ToLower()))
                                     topType = "gifters";
-                                else if (recipientsAliases.Contains(data.arguments[1].ToLower()))
+                                else if (recipientsAliases.Contains(data.Arguments[1].ToLower()))
                                     topType = "recipients";
                             }
 
@@ -171,7 +171,7 @@ namespace butterBror
 
                             for (int i = 0; i < fullSortedList.Count; i++)
                             {
-                                if (fullSortedList[i].Key == data.user.id)
+                                if (fullSortedList[i].Key == data.User.ID)
                                 {
                                     userRank = i + 1;
                                     userPosition = $"{userRank}.";
@@ -185,7 +185,7 @@ namespace butterBror
                                 if (i < sortedList.Count)
                                 {
                                     var user = sortedList[i];
-                                    string username = Names.GetUsername(user.Key, data.platform);
+                                    string username = Names.GetUsername(user.Key, data.Platform);
                                     topLines[i] = $"{i + 1}. {Names.DontPing(username)} - {user.Value}";
                                 }
                                 else
@@ -195,17 +195,17 @@ namespace butterBror
                             }
 
                             string topTypeTranslation = TranslationManager.GetTranslation(
-                                data.user.language,
+                                data.User.Language,
                                 $"text:{topType}",
-                                data.channel_id,
-                                data.platform
+                                data.ChannelID,
+                                data.Platform
                             );
 
                             string topMessage = TranslationManager.GetTranslation(
-                                data.user.language,
+                                data.User.Language,
                                 "command:cookie:top",
-                                data.channel_id,
-                                data.platform
+                                data.ChannelID,
+                                data.Platform
                             )
                             .Replace("%type%", topTypeTranslation)
                             .Replace("%list%", string.Join(", ", topLines))
@@ -214,12 +214,12 @@ namespace butterBror
                             commandReturn.SetMessage(topMessage);
                             return commandReturn;
                         }
-                        else if (buyAliases.Contains(data.arguments[0].ToLower()))
+                        else if (buyAliases.Contains(data.Arguments[0].ToLower()))
                         {
-                            DateTime lastUse = UsersData.Get<DateTime>(data.user.id, "cookie_last_used", data.platform);
+                            DateTime lastUse = UsersData.Get<DateTime>(data.User.ID, "cookie_last_used", data.Platform);
                             if (lastUse.Date != DateTime.UtcNow.Date)
                             {
-                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:user_already_has_cookie", data.channel_id, data.platform));
+                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:user_already_has_cookie", data.ChannelID, data.Platform));
                                 return commandReturn;
                             }
 
@@ -229,24 +229,24 @@ namespace butterBror
                             int coins = -(int)cost;
                             int subcoins = -(int)((cost - coins) * 100);
 
-                            if (Utils.Tools.Balance.GetBalance(data.user_id, data.platform) + Utils.Tools.Balance.GetSubbalance(data.user_id, data.platform) / 100f >= coins + subcoins / 100f)
+                            if (Utils.Tools.Balance.GetBalance(data.UserID, data.Platform) + Utils.Tools.Balance.GetSubbalance(data.UserID, data.Platform) / 100f >= coins + subcoins / 100f)
                             {
-                                Utils.Tools.Balance.Add(data.user_id, coins, subcoins, data.platform);
-                                UsersData.Save(data.user.id, "cookie_last_used", DateTime.UtcNow.AddDays(-1), data.platform);
-                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:cookie:buyed", data.channel_id, data.platform));
+                                Utils.Tools.Balance.Add(data.UserID, coins, subcoins, data.Platform);
+                                UsersData.Save(data.User.ID, "cookie_last_used", DateTime.UtcNow.AddDays(-1), data.Platform);
+                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:cookie:buyed", data.ChannelID, data.Platform));
                             }
                             else
                             {
-                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:not_enough_coins", data.channel_id, data.platform, new() { { "coins", coins + "." + subcoins } }));
+                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:not_enough_coins", data.ChannelID, data.Platform, new() { { "coins", coins + "." + subcoins } }));
                             }
                             return commandReturn;
                         }
                     }
 
-                    DateTime lastUsed = UsersData.Get<DateTime>(data.user.id, "cookie_last_used", data.platform);
+                    DateTime lastUsed = UsersData.Get<DateTime>(data.User.ID, "cookie_last_used", data.Platform);
                     if (lastUsed.Date == DateTime.UtcNow.Date)
                     {
-                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:cookie_cooldown", data.channel_id, data.platform));
+                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:cookie_cooldown", data.ChannelID, data.Platform));
                         return commandReturn;
                     }
 
@@ -266,26 +266,26 @@ Example (just to understand the style):
 'Today, it is recommended to put on a clown costume and go online. If you have problems, hit yourself on the corner of the refrigerator. Attacks by Jedi midwives are possible!'
 
 Generate ONLY 4 sentence variations following these rules. The answer must be in the user's language! In your answer write ONLY text! DO NOT indicate sentence numbers! DO NOT write more than 4 sentences!",
-                        null, data.platform, data.user.username, data.user.id, data.user.language, 2, false
+                        null, data.Platform, data.User.Username, data.User.ID, data.User.Language, 2, false
                     );
 
                     if (result[0] == "ERR")
                     {
-                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:AI_error", data.channel_id, data.platform, new() { { "reason", result[1] } }));
+                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:AI_error", data.ChannelID, data.Platform, new() { { "reason", result[1] } }));
                         commandReturn.SetColor(ChatColorPresets.Red);
                         return commandReturn;
                     }
 
-                    UsersData.Save(data.user.id, "cookie_eaten", (UsersData.Get<int>(data.user.id, "cookie_eaten", data.platform)) + 1, data.platform);
-                    UsersData.Save(data.user.id, "cookie_last_used", DateTime.UtcNow, data.platform);
+                    UsersData.Save(data.User.ID, "cookie_eaten", (UsersData.Get<int>(data.User.ID, "cookie_eaten", data.Platform)) + 1, data.Platform);
+                    UsersData.Save(data.User.ID, "cookie_last_used", DateTime.UtcNow, data.Platform);
 
                     var topPath = $"{root_path}/TOP.json";
                     var top = Manager.Get<Dictionary<string, int>>(topPath, "leaderboard_eaters") ?? new Dictionary<string, int>();
 
-                    if (!top.ContainsKey(data.user.id))
-                        top[data.user.id] = 0;
+                    if (!top.ContainsKey(data.User.ID))
+                        top[data.User.ID] = 0;
 
-                    top[data.user.id]++;
+                    top[data.User.ID]++;
                     SafeManager.Save(topPath, "leaderboard_eaters", top);
 
                     string horoscope = "🍪 " + result[1];

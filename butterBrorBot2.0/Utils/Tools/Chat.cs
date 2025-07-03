@@ -8,15 +8,35 @@ using System.Threading.Tasks;
 using TwitchLib.Client.Enums;
 using TwitchLib.Client.Models;
 using Telegram.Bot.Types;
-using static butterBror.Utils.Things.Console;
+using static butterBror.Utils.Bot.Console;
 using Telegram.Bot;
+using butterBror.Utils.Types;
 
 namespace butterBror.Utils.Tools
 {
+    /// <summary>
+    /// Handles AFK return operations and sends platform-specific chat messages with translation support.
+    /// </summary>
     public class Chat
     {
+        /// <summary>
+        /// Processes a user returning from AFK status with appropriate message generation based on AFK duration and type.
+        /// </summary>
+        /// <param name="UserID">User identifier</param>
+        /// <param name="RoomID">Channel/room identifier</param>
+        /// <param name="channel">Target channel name</param>
+        /// <param name="username">Username to mention</param>
+        /// <param name="message_id">Message ID for reply context</param>
+        /// <param name="message_reply">Telegram message context for replies</param>
+        /// <param name="platform">Target platform (Twitch/Telegram)</param>
+        /// <remarks>
+        /// - Determines appropriate AFK response based on duration and type
+        /// - Updates user AFK status in storage
+        /// - Sends formatted message with time elapsed since AFK
+        /// - Handles multiple AFK types (draw, sleep, study, etc.)
+        /// </remarks>
         [ConsoleSector("butterBror.Utils.Tools.Chat", "ReturnFromAFK")]
-        public static void ReturnFromAFK(string UserID, string RoomID, string channel, string username, string message_id, Message message_reply, Platforms platform)
+        public static void ReturnFromAFK(string UserID, string RoomID, string channel, string username, string message_id, Telegram.Bot.Types.Message message_reply, Platforms platform)
         {
             Core.Statistics.FunctionsUsed.Add();
             var language = "ru";
@@ -124,6 +144,22 @@ namespace butterBror.Utils.Tools
                 TelegramReply(channel, message_reply.Chat.Id, text.Replace("%user%", username) + send + " (" + Text.FormatTimeSpan(timeElapsed, language) + ")", message_reply, language);
         }
 
+        /// <summary>
+        /// Sends a message to Twitch chat with automatic message splitting for long content.
+        /// </summary>
+        /// <param name="channel">Target Twitch channel</param>
+        /// <param name="message">Message content to send</param>
+        /// <param name="channelID">Channel identifier for banword checks</param>
+        /// <param name="messageID">Message ID for reply context</param>
+        /// <param name="lang">Language for error messages</param>
+        /// <param name="isSafeEx">Bypass banword check if true</param>
+        /// <param name="asciiClean">Clean ASCII characters if true</param>
+        /// <remarks>
+        /// - Automatically splits messages over 500 characters
+        /// - Handles Twitch message length limits (1500 chars)
+        /// - Includes safety checks for banned words
+        /// - Automatically joins channel if not already joined
+        /// </remarks>
         [ConsoleSector("butterBror.Utils.Tools.Chat", "TwitchSend")]
         public static void TwitchSend(string channel, string message, string channelID, string messageID, string lang, bool isSafeEx = false, bool asciiClean = true)
         {
@@ -166,6 +202,21 @@ namespace butterBror.Utils.Tools
             }
         }
 
+        /// <summary>
+        /// Sends a reply message to Twitch chat with message threading support.
+        /// </summary>
+        /// <param name="channel">Target Twitch channel</param>
+        /// <param name="channelID">Channel identifier for banword checks</param>
+        /// <param name="message">Reply message content</param>
+        /// <param name="messageID">Message ID to reply to</param>
+        /// <param name="lang">Language for error messages</param>
+        /// <param name="isSafeEx">Bypass banword check if true</param>
+        /// <remarks>
+        /// - Automatically splits long messages
+        /// - Maintains message threading through message ID
+        /// - Handles Twitch reply limitations
+        /// - Includes ASCII character cleaning
+        /// </remarks>
         [ConsoleSector("butterBror.Utils.Tools.Chat", "TwitchReply")]
         public static void TwitchReply(string channel, string channelID, string message, string messageID, string lang, bool isSafeEx = false)
         {
@@ -205,8 +256,23 @@ namespace butterBror.Utils.Tools
             }
         }
 
+        /// <summary>
+        /// Sends a reply message to Telegram chat with message threading support.
+        /// </summary>
+        /// <param name="channel">Target Telegram chat name</param>
+        /// <param name="channelID">Telegram chat ID</param>
+        /// <param name="message">Message content to send</param>
+        /// <param name="messageReply">Original message for reply context</param>
+        /// <param name="lang">Language for error messages</param>
+        /// <param name="isSafeEx">Bypass banword check if true</param>
+        /// <remarks>
+        /// - Handles Telegram message length limit (4096 chars)
+        /// - Maintains message threading through message ID
+        /// - Includes safety checks for banned words
+        /// - Supports message replies in Telegram
+        /// </remarks>
         [ConsoleSector("butterBror.Utils.Tools.Chat", "TelegramReply")]
-        public static void TelegramReply(string channel, long channelID, string message, Message messageReply, string lang, bool isSafeEx = false)
+        public static void TelegramReply(string channel, long channelID, string message, Telegram.Bot.Types.Message messageReply, string lang, bool isSafeEx = false)
         {
             Core.Statistics.FunctionsUsed.Add();
             try
@@ -235,56 +301,78 @@ namespace butterBror.Utils.Tools
             }
         }
 
+        /// <summary>
+        /// Sends a platform-agnostic reply message across supported platforms.
+        /// </summary>
+        /// <param name="platform">Target platform (Twitch/Discord/Telegram)</param>
+        /// <param name="channel">Target channel name</param>
+        /// <param name="channelID">Channel identifier for banword checks</param>
+        /// <param name="message">Message content to send</param>
+        /// <param name="language">Language for content</param>
+        /// <param name="username">Username to mention</param>
+        /// <param name="userID">User identifier</param>
+        /// <param name="server">Server name (for Discord)</param>
+        /// <param name="serverID">Server identifier (for Discord)</param>
+        /// <param name="messageID">Message ID for reply context</param>
+        /// <param name="messageReply">Telegram message context for replies</param>
+        /// <param name="isSafe">Bypass banword check if true</param>
+        /// <param name="usernameColor">Color preference for Twitch messages</param>
+        /// <remarks>
+        /// - Delegates to platform-specific implementation
+        /// - Handles message routing across multiple platforms
+        /// - Maintains consistent message formatting across platforms
+        /// - Supports ephemeral messages and embeds for Discord
+        /// </remarks>
         [ConsoleSector("butterBror.Utils.Tools.Chat", "SendReply")]
-        public static void SendReply(Platforms platform, string channel, string channelID, string message, string language, string username, string userID, string server, string serverID, string messageID, Message messageReply, bool isSafe = false, ChatColorPresets usernameColor = ChatColorPresets.YellowGreen)
+        public static void SendReply(Platforms platform, string channel, string channelID, string message, string language, string username, string userID, string server, string serverID, string messageID, Telegram.Bot.Types.Message messageReply, bool isSafe = false, ChatColorPresets usernameColor = ChatColorPresets.YellowGreen)
         {
             switch (platform)
             {
                 case Platforms.Twitch:
                     Commands.SendCommandReply(new TwitchMessageSendData
                     {
-                        message = message,
-                        channel = channel,
-                        channel_id = channelID,
-                        message_id = messageID,
-                        language = language,
-                        username = username,
-                        safe_execute = isSafe,
-                        nickname_color = usernameColor
+                        Message = message,
+                        Channel = channel,
+                        ChannelID = channelID,
+                        MessageID = messageID,
+                        Language = language,
+                        Username = username,
+                        SafeExecute = isSafe,
+                        UsernameColor = usernameColor
                     });
                     break;
                 case Platforms.Discord:
                     Commands.SendCommandReply(new DiscordCommandSendData
                     {
-                        message = message,
-                        title = "",
-                        description = "",
-                        embed_color = Discord.Color.Green,
-                        is_embed = false,
-                        is_ephemeral = false,
-                        server = server,
-                        server_id = serverID,
-                        language = language,
-                        safe_execute = isSafe,
-                        socket_command_base = null,
-                        author = "",
-                        image_link = "",
-                        thumbnail_link = "",
-                        footer = "",
-                        channel_id = channelID,
-                        user_id = userID
+                        Message = message,
+                        Title = "",
+                        Description = "",
+                        EmbedColor = Discord.Color.Green,
+                        IsEmbed = false,
+                        IsEphemeral = false,
+                        Server = server,
+                        ServerID = serverID,
+                        Language = language,
+                        SafeExecute = isSafe,
+                        SocketCommandBase = null,
+                        Author = "",
+                        ImageLink = "",
+                        ThumbnailLink = "",
+                        Footer = "",
+                        ChannelID = channelID,
+                        UserID = userID
                     });
                     break;
                 case Platforms.Telegram:
                     Commands.SendCommandReply(new TelegramMessageSendData
                     {
-                        message = message,
-                        language = language,
-                        safe_execute = isSafe,
-                        channel = channel,
-                        channel_id = channelID,
-                        message_id = messageID,
-                        username = username
+                        Message = message,
+                        Language = language,
+                        SafeExecute = isSafe,
+                        Channel = channel,
+                        ChannelID = channelID,
+                        MessageID = messageID,
+                        Username = username
                     });
                     break;
             }

@@ -1,4 +1,4 @@
-﻿using butterBror;
+﻿using butterBror.Utils.Types;
 using Discord;
 using TwitchLib.Client.Enums;
 

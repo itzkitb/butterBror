@@ -1,4 +1,5 @@
 ﻿using butterBror.Utils.DataManagers;
+using butterBror.Utils.Types;
 using DankDB;
 using Newtonsoft.Json;
 using System;
@@ -6,10 +7,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static butterBror.Utils.Things.Console;
+using static butterBror.Utils.Bot.Console;
 
 namespace butterBror.Utils.Tools.API
 {
+    [Obsolete("Will be rewritten to another API.")]
     public class Weather
     {
         [ConsoleSector("butterBror.Utils.Tools.API.Weather", "Get")]

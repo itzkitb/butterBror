@@ -2,7 +2,7 @@
 using System.Diagnostics;
 using butterBror.Utils;
 using TwitchLib.Client.Enums;
-using butterBror;
+using butterBror.Utils.Types;
 
 namespace butterBror
 {
@@ -84,7 +84,7 @@ namespace butterBror
                         status += 1;
                     }
 
-                    if (data.platform == Platforms.Twitch)
+                    if (data.Platform == Platforms.Twitch)
                     {
                         if (status >= 6)
                         {
@@ -111,7 +111,7 @@ namespace butterBror
                             statusName = "AINTNOWAY";
                         }
                     }
-                    else if (data.platform == Platforms.Discord)
+                    else if (data.Platform == Platforms.Discord)
                     {
                         if (status >= 6)
                         {
@@ -145,11 +145,11 @@ namespace butterBror
                     long folder_size_GB = folder_size / (1024 * 1024 * 1024);
                     int percent_folder_disk_used = 100 - (int)(float)(100.0 / diskSpace * folder_size_GB);
 
-                    if (data.platform == Platforms.Twitch)
+                    if (data.Platform == Platforms.Twitch)
                     {
                         commandReturn.SetMessage($"glorp 📡 Pshhh... I'm ButterBror v.{Core.Version} 💻 Status: {statusName} 💾 Free disk space ( {diskName.Replace("\\", "")} ): {avalibeDiskSpace} GB/{diskSpace} GB ({percentDiskUsed}% free) 🫙 Used working memory by bot: {workingAppSet} MB ⚖️ Bot database weight: {folder_size_MB} MB/{diskSpace} GB ({percent_folder_disk_used}% free)");
                     }
-                    else if (data.platform == Platforms.Discord)
+                    else if (data.Platform == Platforms.Discord)
                     {
                         commandReturn.SetMessage($"<:OFFLINECHAT:1248250625754398730> 📡 Pshhh... I'm ButterBror v.{Core.Version} 💻 Status: {statusName} 💾 Free disk space ( {diskName.Replace("\\", "")} ): {avalibeDiskSpace} GB/{diskSpace} GB ({percentDiskUsed}% free) 🫙 Used working memory by bot: {workingAppSet} MB ⚖️ Bot database weight: {folder_size_MB} MB/{diskSpace} GB ({percent_folder_disk_used}% free)");
                     }

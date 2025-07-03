@@ -8,7 +8,8 @@ using TwitchLib.Client.Enums;
 using V8.Net;
 using static butterBror.Utils.Tools.Command;
 using butterBror.Utils.Tools;
-using static butterBror.Utils.Things.Console;
+using static butterBror.Utils.Bot.Console;
+using butterBror.Utils.Types;
 
 namespace butterBror
 {
@@ -52,62 +53,62 @@ namespace butterBror
                     string[] deleteAlias = ["remove", "delete", "удалить", "у", "d"];
                     string[] renameAlias = ["rename", "переименовать", "ren", "re", "п"];
 
-                    if (data.arguments.Count > 0)
+                    if (data.Arguments.Count > 0)
                     {
-                        if (updateAlias.Contains(GetArgument(data.arguments, 0)))
+                        if (updateAlias.Contains(GetArgument(data.Arguments, 0)))
                         {
-                            if (UsersData.Get<bool>(data.user_id, "isBotDev", data.platform) || UsersData.Get<bool>(data.user_id, "isBotModerator", data.platform) || (bool)data.user.channel_moderator || (bool)data.user.channel_broadcaster)
+                            if (UsersData.Get<bool>(data.UserID, "isBotDev", data.Platform) || UsersData.Get<bool>(data.UserID, "isBotModerator", data.Platform) || (bool)data.User.IsModerator || (bool)data.User.IsBroadcaster)
                             {
-                                await Utils.Tools.Emotes.EmoteUpdate(data.channel, data.channel_id);
-                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:emotes:7tv:updated", data.channel_id, data.platform)
-                                    .Replace("%emotes%", Core.Bot.ChannelsSevenTVEmotes[data.channel_id].emotes.Count().ToString()));
+                                await Utils.Tools.Emotes.EmoteUpdate(data.Channel, data.ChannelID);
+                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:emotes:7tv:updated", data.ChannelID, data.Platform)
+                                    .Replace("%emotes%", Core.Bot.ChannelsSevenTVEmotes[data.ChannelID].emotes.Count().ToString()));
                             }
                             else
-                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:not_enough_rights", data.channel_id, data.platform));
+                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:not_enough_rights", data.ChannelID, data.Platform));
                         }
-                        else if (randomAlias.Contains(GetArgument(data.arguments, 0)))
+                        else if (randomAlias.Contains(GetArgument(data.Arguments, 0)))
                         {
-                            if (!Core.Bot.ChannelsSevenTVEmotes.ContainsKey(data.channel_id)) await Utils.Tools.Emotes.EmoteUpdate(data.channel, data.channel_id);
-                            var randomEmote = Utils.Tools.Emotes.RandomEmote(data.channel, data.channel_id);
+                            if (!Core.Bot.ChannelsSevenTVEmotes.ContainsKey(data.ChannelID)) await Utils.Tools.Emotes.EmoteUpdate(data.Channel, data.ChannelID);
+                            var randomEmote = Utils.Tools.Emotes.RandomEmote(data.Channel, data.ChannelID);
                             if (randomEmote != null)
-                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:emotes:7tv:random", data.channel_id, data.platform)
+                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:emotes:7tv:random", data.ChannelID, data.Platform)
                                     .Replace("%emote%", randomEmote.Result));
                             else
-                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:emotes:7tv:empty", data.channel_id, data.platform));
+                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:emotes:7tv:empty", data.ChannelID, data.Platform));
                         }
-                        else if ((bool)data.user.bot_moderator || (bool)data.user.channel_moderator || (bool)data.user.channel_broadcaster || (bool)data.user.bot_developer)
+                        else if ((bool)data.User.IsBotModerator || (bool)data.User.IsModerator || (bool)data.User.IsBroadcaster || (bool)data.User.IsBotDeveloper)
                         {
-                            if (addAlias.Contains(GetArgument(data.arguments, 0)))
+                            if (addAlias.Contains(GetArgument(data.Arguments, 0)))
                             {
                                 commandReturn.SetMessage(await ProcessAddEmote(data));
                             }
-                            else if (deleteAlias.Contains(GetArgument(data.arguments, 0)))
+                            else if (deleteAlias.Contains(GetArgument(data.Arguments, 0)))
                             {
                                 commandReturn.SetMessage(await ProcessDeleteEmote(data));
                             }
-                            else if (renameAlias.Contains(GetArgument(data.arguments, 0)))
+                            else if (renameAlias.Contains(GetArgument(data.Arguments, 0)))
                             {
                                 commandReturn.SetMessage(await ProcessRenameEmote(data));
                             }
                         }
-                        else if (addAlias.Contains(GetArgument(data.arguments, 0)) || deleteAlias.Contains(GetArgument(data.arguments, 0)) || renameAlias.Contains(GetArgument(data.arguments, 0)))
+                        else if (addAlias.Contains(GetArgument(data.Arguments, 0)) || deleteAlias.Contains(GetArgument(data.Arguments, 0)) || renameAlias.Contains(GetArgument(data.Arguments, 0)))
                         {
-                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:not_enough_rights", data.channel_id, data.platform));
+                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:not_enough_rights", data.ChannelID, data.Platform));
                         }
                     }
                     else
                     {
-                        if (Core.Bot.ChannelsSevenTVEmotes.ContainsKey(data.channel_id))
-                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:emotes:7tv:info", data.channel_id, data.platform)
-                                .Replace("%emotes%", Core.Bot.ChannelsSevenTVEmotes[data.channel_id].emotes.Count().ToString()));
+                        if (Core.Bot.ChannelsSevenTVEmotes.ContainsKey(data.ChannelID))
+                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:emotes:7tv:info", data.ChannelID, data.Platform)
+                                .Replace("%emotes%", Core.Bot.ChannelsSevenTVEmotes[data.ChannelID].emotes.Count().ToString()));
                         else
                         {
-                            await Utils.Tools.Emotes.EmoteUpdate(data.channel, data.channel_id);
-                            if (Core.Bot.ChannelsSevenTVEmotes[data.channel_id].emotes.Count > 0)
-                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:emotes:7tv:info", data.channel_id, data.platform)
-                                    .Replace("%emotes%", Core.Bot.ChannelsSevenTVEmotes[data.channel_id].emotes.Count().ToString()));
+                            await Utils.Tools.Emotes.EmoteUpdate(data.Channel, data.ChannelID);
+                            if (Core.Bot.ChannelsSevenTVEmotes[data.ChannelID].emotes.Count > 0)
+                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:emotes:7tv:info", data.ChannelID, data.Platform)
+                                    .Replace("%emotes%", Core.Bot.ChannelsSevenTVEmotes[data.ChannelID].emotes.Count().ToString()));
                             else
-                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:emotes:7tv:empty", data.channel_id, data.platform));
+                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:emotes:7tv:empty", data.ChannelID, data.Platform));
                         }
                     }
                 }
@@ -153,43 +154,43 @@ namespace butterBror
             #region Processes
             public async Task<string> ProcessAddEmote(CommandData data)
             {
-                if (GetArgument(data.arguments, 1).IsNullOrWhiteSpace())
+                if (GetArgument(data.Arguments, 1).IsNullOrWhiteSpace())
                 {
-                    return ShowLowArgsError(data, "#emote add emotename as:alias from:itzkitb", data.platform);
+                    return ShowLowArgsError(data, "#emote add emotename as:alias from:itzkitb", data.Platform);
                 }
 
-                var (setId, error) = await GetEmoteSetId(data.channel_id, data.platform);
+                var (setId, error) = await GetEmoteSetId(data.ChannelID, data.Platform);
                 if (setId == null)
                 {
                     return error;
                 }
 
-                string from = GetArgument(data.arguments, "from");
-                string emoteName = GetArgument(data.arguments, "as") ?? GetArgument(data.arguments, 1);
+                string from = GetArgument(data.Arguments, "from");
+                string emoteName = GetArgument(data.Arguments, "as") ?? GetArgument(data.Arguments, 1);
 
                 if (FindEmoteInSet(setId, emoteName).Result is not null)
                 {
-                    return TranslationManager.GetTranslation(data.user.language, "command:emotes:7tv:add:already", data.channel_id, data.platform);
+                    return TranslationManager.GetTranslation(data.User.Language, "command:emotes:7tv:add:already", data.ChannelID, data.Platform);
                 }
                 else if (string.IsNullOrWhiteSpace(from))
                 {
-                    return await AddEmoteFromGlobal(setId, emoteName, data, data.platform);
+                    return await AddEmoteFromGlobal(setId, emoteName, data, data.Platform);
                 }
                 else
                 {
-                    return await AddEmoteFromUser(setId, from, emoteName, data, data.platform);
+                    return await AddEmoteFromUser(setId, from, emoteName, data, data.Platform);
                 }
             }
 
             public async Task<string> ProcessDeleteEmote(CommandData data)
             {
-                string emoteName = GetArgument(data.arguments, 1);
+                string emoteName = GetArgument(data.Arguments, 1);
                 if (string.IsNullOrWhiteSpace(emoteName))
                 {
-                    return ShowLowArgsError(data, "#emote delete emotename", data.platform);
+                    return ShowLowArgsError(data, "#emote delete emotename", data.Platform);
                 }
 
-                var (setId, error) = await GetEmoteSetId(data.channel_id, data.platform);
+                var (setId, error) = await GetEmoteSetId(data.ChannelID, data.Platform);
                 if (setId == null)
                 {
                     return error;
@@ -198,25 +199,25 @@ namespace butterBror
                 var emote = await FindEmoteInSet(setId, emoteName);
                 if (emote == null)
                 {
-                    return TranslationManager.GetTranslation(data.user.language, "command:emotes:7tv:not_founded", data.channel_id, data.platform)
+                    return TranslationManager.GetTranslation(data.User.Language, "command:emotes:7tv:not_founded", data.ChannelID, data.Platform)
                         .Replace("%emote%", emoteName);
                 }
 
                 var result = await Core.Bot.SevenTvService.Remove(setId, emote.id, Core.Bot.Tokens.SevenTV);
-                return ProcessResult(result, data, "command:emotes:7tv:removed", "command:emotes:7tv:noaccess:editor", emoteName, data.platform);
+                return ProcessResult(result, data, "command:emotes:7tv:removed", "command:emotes:7tv:noaccess:editor", emoteName, data.Platform);
             }
 
             public async Task<string> ProcessRenameEmote(CommandData data)
             {
-                string oldName = GetArgument(data.arguments, 1);
-                string newName = GetArgument(data.arguments, "as");
+                string oldName = GetArgument(data.Arguments, 1);
+                string newName = GetArgument(data.Arguments, "as");
 
                 if (string.IsNullOrWhiteSpace(oldName) || string.IsNullOrWhiteSpace(newName))
                 {
-                    return ShowLowArgsError(data, "#emote rename oldname as:newname", data.platform);
+                    return ShowLowArgsError(data, "#emote rename oldname as:newname", data.Platform);
                 }
 
-                var (setId, error) = await GetEmoteSetId(data.channel_id, data.platform);
+                var (setId, error) = await GetEmoteSetId(data.ChannelID, data.Platform);
                 if (setId == null)
                 {
                     return error;
@@ -225,12 +226,12 @@ namespace butterBror
                 var emote = await FindEmoteInSet(setId, oldName);
                 if (emote == null)
                 {
-                    return TranslationManager.GetTranslation(data.user.language, "command:emotes:7tv:not_founded", data.channel_id, data.platform)
+                    return TranslationManager.GetTranslation(data.User.Language, "command:emotes:7tv:not_founded", data.ChannelID, data.Platform)
                         .Replace("%emote%", oldName);
                 }
 
                 var result = await Core.Bot.SevenTvService.Rename(setId, newName, emote.id, Core.Bot.Tokens.SevenTV);
-                return ProcessResult(result, data, "command:emotes:7tv:renamed", "command:emotes:7tv:noaccess:editor", $"{oldName} → {newName}", data.platform);
+                return ProcessResult(result, data, "command:emotes:7tv:renamed", "command:emotes:7tv:noaccess:editor", $"{oldName} → {newName}", data.Platform);
             }
             #endregion
             #region Help Methods
@@ -283,13 +284,13 @@ namespace butterBror
             public string ProcessResult(bool result, CommandData data, string successKey, string errorKey, string emoteName, Platforms platform)
             {
                 return result
-                    ? TranslationManager.GetTranslation(data.user.language, successKey, data.channel_id, platform).Replace("%emote%", emoteName)
-                    : TranslationManager.GetTranslation(data.user.language, errorKey, data.channel_id, platform);
+                    ? TranslationManager.GetTranslation(data.User.Language, successKey, data.ChannelID, platform).Replace("%emote%", emoteName)
+                    : TranslationManager.GetTranslation(data.User.Language, errorKey, data.ChannelID, platform);
             }
 
             public string ShowLowArgsError(CommandData data, string commandExample, Platforms platform)
             {
-                return TranslationManager.GetTranslation(data.user.language, "error:not_enough_arguments", data.channel_id, platform)
+                return TranslationManager.GetTranslation(data.User.Language, "error:not_enough_arguments", data.ChannelID, platform)
                     .Replace("command_example", commandExample);
             }
 
@@ -298,7 +299,7 @@ namespace butterBror
                 var emote = await Core.Bot.SevenTvService.SearchEmote(emoteName, Core.Bot.Tokens.SevenTV);
                 if (emote == null)
                 {
-                    return TranslationManager.GetTranslation(data.user.language, "command:emotes:7tv:not_founded", data.channel_id, platform)
+                    return TranslationManager.GetTranslation(data.User.Language, "command:emotes:7tv:not_founded", data.ChannelID, platform)
                         .Replace("%emote%", emoteName);
                 }
 
@@ -315,7 +316,7 @@ namespace butterBror
                 var emote = await FindEmoteInSet(sourceSetId, emoteName);
                 if (emote == null)
                 {
-                    return TranslationManager.GetTranslation(data.user.language, "command:emotes:7tv:not_founded", data.channel_id, platform)
+                    return TranslationManager.GetTranslation(data.User.Language, "command:emotes:7tv:not_founded", data.ChannelID, platform)
                         .Replace("%emote%", emoteName);
                 }
 

@@ -4,31 +4,57 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Caching.Memory;
-using static butterBror.Utils.Things.Console;
+using static butterBror.Utils.Bot.Console;
 using butterBror.Utils.Tools;
+using butterBror.Utils.Types;
+using butterBror.Utils.Types.SevenTVLib;
+using butterBror.Utils.Bot;
 
 namespace butterBror.Utils
 {
+    /// <summary>
+    /// Provides interaction with 7TV API for user and emote operations with caching capabilities.
+    /// </summary>
     public class SevenTvService
     {
-        private readonly HttpClient client;
-        private readonly MemoryCache cache = new MemoryCache(new MemoryCacheOptions());
-        private readonly MemoryCacheEntryOptions cache_options = new()
+        private readonly HttpClient _client;
+        private readonly MemoryCache _cache = new MemoryCache(new MemoryCacheOptions());
+        private readonly MemoryCacheEntryOptions _cacheOptions = new()
         {
             SlidingExpiration = TimeSpan.FromMinutes(30)
         };
+
+        /// <summary>
+        /// Initializes a new instance of the SevenTvService class with HTTP client.
+        /// </summary>
+        /// <param name="httpClient">Pre-configured HttpClient for API requests.</param>
+        /// <remarks>
+        /// Sets up base address to 7TV's GraphQL endpoint and configures caching policies.
+        /// Uses in-memory caching with 30-minute sliding expiration for both users and emotes.
+        /// </remarks>
         public SevenTvService(HttpClient httpClient)
         {
             Core.Statistics.FunctionsUsed.Add();
-            client = httpClient;
-            client.BaseAddress = new Uri("https://7tv.io/v4/gql");
+            _client = httpClient;
+            _client.BaseAddress = new Uri($"https://{URLs.seventvAPI}/v4/gql");
         }
 
+        /// <summary>
+        /// Searches for a 7TV user by nickname with caching.
+        /// </summary>
+        /// <param name="nickname">The username to search for.</param>
+        /// <param name="bearer_token">Authentication token for API access.</param>
+        /// <returns>User ID string if found, null otherwise.</returns>
+        /// <remarks>
+        /// - First checks memory cache for existing results
+        /// - Performs fresh search if cache is empty or expired
+        /// - Stores successful results in cache for future requests
+        /// </remarks>
         [ConsoleSector("butterBror.Utils.SevenTvService", "SearchUser")]
         public async Task<string> SearchUser(string nickname, string bearer_token)
         {
             Core.Statistics.FunctionsUsed.Add();
-            if (cache.TryGetValue<string>($"user_{nickname}", out var cached) && cache is not null)
+            if (_cache.TryGetValue<string>($"user_{nickname}", out var cached) && _cache is not null)
             {
                 Write($"SevenTV - Getted cache data for @{nickname}", "info");
                 return cached;
@@ -37,16 +63,27 @@ namespace butterBror.Utils
             var result = await PerformSearchUser(nickname);
 
             if (!string.IsNullOrEmpty(result))
-                cache.Set($"user_{nickname}", result, cache_options);
+                _cache.Set($"user_{nickname}", result, _cacheOptions);
             Write($"SevenTV - Loaded data for @{nickname} ({result is null}): {Text.CheckNull(result)}", "info");
             return result;
         }
 
+        /// <summary>
+        /// Searches for a 7TV emote by name with caching.
+        /// </summary>
+        /// <param name="emoteName">The emote name to search for.</param>
+        /// <param name="bearer_token">Authentication token for API access.</param>
+        /// <returns>Emote ID string if found, null otherwise.</returns>
+        /// <remarks>
+        /// - First checks memory cache for existing results
+        /// - Performs fresh search if cache is empty or expired
+        /// - Stores successful results in cache for future requests
+        /// </remarks>
         [ConsoleSector("butterBror.Utils.SevenTvService", "SearchEmote")]
         public async Task<string> SearchEmote(string emoteName, string bearer_token)
         {
             Core.Statistics.FunctionsUsed.Add();
-            if (cache.TryGetValue<string>($"emote_{emoteName}", out var cached))
+            if (_cache.TryGetValue<string>($"emote_{emoteName}", out var cached))
             {
                 Write($"SevenTV - Getted cache data for @{emoteName}", "info");
                 return cached;
@@ -55,11 +92,23 @@ namespace butterBror.Utils
             var result = await PerformSearchEmote(emoteName);
 
             if (!string.IsNullOrEmpty(result))
-                cache.Set($"emote_{emoteName}", result, cache_options);
+                _cache.Set($"emote_{emoteName}", result, _cacheOptions);
             Write($"SevenTV - Loaded emote {emoteName} ({result is null})", "info");
             return result;
         }
 
+        /// <summary>
+        /// Adds an emote to a user's emote set.
+        /// </summary>
+        /// <param name="set_id">Target emote set identifier.</param>
+        /// <param name="emote_name">Name for the emote in the set.</param>
+        /// <param name="emote_id">ID of the emote to add.</param>
+        /// <param name="bearer_token">Authentication token for API access.</param>
+        /// <returns>True if successfully added, false otherwise.</returns>
+        /// <remarks>
+        /// Uses GraphQL mutation to modify emote sets.
+        /// Requires valid bearer token with edit permissions.
+        /// </remarks>
         [ConsoleSector("butterBror.Utils.SevenTvService", "Add")]
         public async Task<bool> Add(string set_id, string emote_name, string emote_id, string bearer_token)
         {
@@ -93,6 +142,17 @@ namespace butterBror.Utils
             return await SendRequestAsync(request, bearer_token);
         }
 
+        /// <summary>
+        /// Removes an emote from a user's emote set.
+        /// </summary>
+        /// <param name="set_id">Target emote set identifier.</param>
+        /// <param name="emote_id">ID of the emote to remove.</param>
+        /// <param name="bearer_token">Authentication token for API access.</param>
+        /// <returns>True if successfully removed, false otherwise.</returns>
+        /// <remarks>
+        /// Uses GraphQL mutation to modify emote sets.
+        /// Requires valid bearer token with edit permissions.
+        /// </remarks>
         [ConsoleSector("butterBror.Utils.SevenTvService", "Remove")]
         public async Task<bool> Remove(string set_id, string emote_id, string bearer_token)
         {
@@ -125,6 +185,18 @@ namespace butterBror.Utils
             return await SendRequestAsync(request, bearer_token);
         }
 
+        /// <summary>
+        /// Renames an existing emote in a user's emote set.
+        /// </summary>
+        /// <param name="set_id">Target emote set identifier.</param>
+        /// <param name="new_name">New name for the emote.</param>
+        /// <param name="emote_id">ID of the emote to rename.</param>
+        /// <param name="bearer_token">Authentication token for API access.</param>
+        /// <returns>True if successfully renamed, false otherwise.</returns>
+        /// <remarks>
+        /// Uses GraphQL mutation to update emote alias.
+        /// Requires valid bearer token with edit permissions.
+        /// </remarks>
         [ConsoleSector("butterBror.Utils.SevenTvService", "Rename")]
         public async Task<bool> Rename(string set_id, string new_name, string emote_id, string bearer_token)
         {
@@ -158,6 +230,16 @@ namespace butterBror.Utils
             return await SendRequestAsync(request, bearer_token);
         }
 
+        /// <summary>
+        /// Sends a GraphQL request to 7TV API.
+        /// </summary>
+        /// <param name="requestData">GraphQL operation data.</param>
+        /// <param name="bearerToken">Authentication token for API access.</param>
+        /// <returns>True if request succeeded, false if failed.</returns>
+        /// <remarks>
+        /// Handles HTTP POST requests with Bearer authentication.
+        /// Returns false for non-success status codes.
+        /// </remarks>
         [ConsoleSector("butterBror.Utils.SevenTvService", "SendRequestAsync")]
         private async Task<bool> SendRequestAsync(object requestData, string bearerToken)
         {
@@ -179,7 +261,7 @@ namespace butterBror.Utils
 
             try
             {
-                var response = await client.SendAsync(request);
+                var response = await _client.SendAsync(request);
                 response.EnsureSuccessStatusCode();
                 return true;
             }
@@ -189,6 +271,16 @@ namespace butterBror.Utils
             }
         }
 
+        /// <summary>
+        /// Performs actual user search operation against 7TV API.
+        /// </summary>
+        /// <param name="nickname">The Twitch username to find on 7TV.</param>
+        /// <returns>User response data or null if not found.</returns>
+        /// <remarks>
+        /// - Converts Twitch username to 7TV user ID
+        /// - Uses 7TV's user search GraphQL endpoint
+        /// - Returns first matching user ID from results
+        /// </remarks>
         [ConsoleSector("butterBror.Utils.SevenTvService", "PerformSearchUser")]
         public async Task<string> PerformSearchUser(string nickname)
         {
@@ -210,7 +302,7 @@ namespace butterBror.Utils
 
             try
             {
-                var response = await client.SendAsync(httpRequest);
+                var response = await _client.SendAsync(httpRequest);
                 response.EnsureSuccessStatusCode();
 
                 var responseContent = await response.Content.ReadAsStringAsync();
@@ -229,6 +321,17 @@ namespace butterBror.Utils
             }
         }
 
+        /// <summary>
+        /// Performs actual emote search operation against 7TV API.
+        /// </summary>
+        /// <param name="emoteName">The emote name to search for.</param>
+        /// <returns>Emote response data or null if not found.</returns>
+        /// <remarks>
+        /// - Searches with exact match filter enabled
+        /// - Sorts results by popularity descending
+        /// - Returns first matching emote ID from results
+        /// - Supports various search filters through GraphQL parameters
+        /// </remarks>
         [ConsoleSector("butterBror.Utils.SevenTvService", "PerformSearchEmote")]
         public async Task<string> PerformSearchEmote(string emoteName)
         {
@@ -312,7 +415,7 @@ namespace butterBror.Utils
                 //httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearer_token);
                 httpRequest.Content = content;
 
-                var response = await client.SendAsync(httpRequest);
+                var response = await _client.SendAsync(httpRequest);
                 response.EnsureSuccessStatusCode();
 
                 var responseContent = await response.Content.ReadAsStringAsync();
@@ -327,128 +430,6 @@ namespace butterBror.Utils
                 Write(ex);
                 return null;
             }
-        }
-
-        public class SearchResponse
-        {
-            [JsonPropertyName("data")]
-            public Data Data { get; set; }
-        }
-
-        public class Data
-        {
-            [JsonPropertyName("emotes")]
-            public Emotes Emotes { get; set; }
-        }
-
-        public class Emotes
-        {
-            [JsonPropertyName("count")]
-            public int Count { get; set; }
-            [JsonPropertyName("max_page")]
-            public int MaxPage { get; set; }
-            [JsonPropertyName("items")]
-            public List<EmoteItem> Items { get; set; }
-        }
-
-        public class EmoteItem
-        {
-            [JsonPropertyName("id")]
-            public string Id { get; set; }
-            [JsonPropertyName("name")]
-            public string Name { get; set; }
-            [JsonPropertyName("state")]
-            public List<string> State { get; set; }
-            [JsonPropertyName("trending")]
-            public dynamic? Trending { get; set; }
-            [JsonPropertyName("owner")]
-            public Owner Owner { get; set; }
-            [JsonPropertyName("flags")]
-            public int Flags { get; set; }
-            [JsonPropertyName("host")]
-            public Host Host { get; set; }
-        }
-
-        public class Owner
-        {
-            [JsonPropertyName("id")]
-            public string Id { get; set; }
-            [JsonPropertyName("username")]
-            public string Username { get; set; }
-            [JsonPropertyName("display_name")]
-            public string DisplayName { get; set; }
-            [JsonPropertyName("style")]
-            public Style Style { get; set; }
-        }
-
-        public class Style
-        {
-            [JsonPropertyName("color")]
-            public long Color { get; set; }
-            [JsonPropertyName("paint_id")]
-            public string PaintId { get; set; }
-        }
-
-        public class Host
-        {
-            [JsonPropertyName("url")]
-            public string Url { get; set; }
-            [JsonPropertyName("files")]
-            public List<File> Files { get; set; }
-        }
-
-        public class File
-        {
-            [JsonPropertyName("name")]
-            public string Name { get; set; }
-            [JsonPropertyName("format")]
-            public string Format { get; set; }
-            [JsonPropertyName("width")]
-            public int Width { get; set; }
-            [JsonPropertyName("height")]
-            public int Height { get; set; }
-        }
-
-        public class UserResponse
-        {
-            [JsonPropertyName("data")]
-            public UserData Data { get; set; }
-        }
-
-        public class UserData
-        {
-            [JsonPropertyName("users")]
-            public List<User> Users { get; set; }
-        }
-
-        public class User
-        {
-            [JsonPropertyName("id")]
-            public string Id { get; set; }
-
-            [JsonPropertyName("username")]
-            public string Username { get; set; }
-
-            [JsonPropertyName("display_name")]
-            public string DisplayName { get; set; }
-
-            [JsonPropertyName("roles")]
-            public List<string> Roles { get; set; }
-
-            [JsonPropertyName("style")]
-            public UserStyle Style { get; set; }
-
-            [JsonPropertyName("avatar_url")]
-            public string AvatarUrl { get; set; }
-        }
-
-        public class UserStyle
-        {
-            [JsonPropertyName("color")]
-            public int Color { get; set; }
-
-            [JsonPropertyName("__typename")]
-            public string TypeName { get; set; }
         }
     }
 }

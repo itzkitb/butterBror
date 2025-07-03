@@ -1,4 +1,5 @@
 ﻿using butterBror.Utils.DataManagers;
+using butterBror.Utils.Types;
 using DankDB;
 using Newtonsoft.Json.Linq;
 using System;
@@ -6,14 +7,25 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static butterBror.Utils.Things.Console;
+using static butterBror.Utils.Bot.Console;
 
 namespace butterBror.Utils.DataManagers
 {
+    /// <summary>
+    /// Manages user data persistence and retrieval operations across different platforms.
+    /// </summary>
     public class UsersData
     {
-        private static readonly string directory = Core.Bot.Pathes.Users;
+        private static readonly string _directory = Core.Bot.Pathes.Users;
 
+        /// <summary>
+        /// Retrieves a user-specific value of type T from persistent storage.
+        /// </summary>
+        /// <typeparam name="T">The type of data to retrieve.</typeparam>
+        /// <param name="userId">The unique identifier of the user.</param>
+        /// <param name="paramName">The name of the parameter to retrieve.</param>
+        /// <param name="platform">The platform (Twitch/Discord) associated with the user.</param>
+        /// <returns>The retrieved value or default(T) if operation fails.</returns>
         [ConsoleSector("butterBror.Utils.DataManagers.UsersData", "Get")]
         public static T Get<T>(string userId, string paramName, Platforms platform)
         {
@@ -29,6 +41,13 @@ namespace butterBror.Utils.DataManagers
             }
         }
 
+        /// <summary>
+        /// Saves a user-specific value to persistent storage with optional backup.
+        /// </summary>
+        /// <param name="userId">The unique identifier of the user.</param>
+        /// <param name="paramName">The name of the parameter to save.</param>
+        /// <param name="value">The value to persist.</param>
+        /// <param name="platform">The platform (Twitch/Discord) associated with the user.</param>
         [ConsoleSector("butterBror.Utils.DataManagers.UsersData", "Save")]
         public static void Save(string userId, string paramName, object value, Platforms platform)
         {
@@ -45,6 +64,13 @@ namespace butterBror.Utils.DataManagers
             }
         }
 
+        /// <summary>
+        /// Checks if a user parameter exists in persistent storage.
+        /// </summary>
+        /// <param name="userId">The unique identifier of the user.</param>
+        /// <param name="paramName">The name of the parameter to check.</param>
+        /// <param name="platform">The platform (Twitch/Discord) associated with the user.</param>
+        /// <returns>True if parameter exists; otherwise, false.</returns>
         [ConsoleSector("butterBror.Utils.DataManagers.UsersData", "Contains")]
         public static bool Contains(string userId, string paramName, Platforms platform)
         {
@@ -60,6 +86,12 @@ namespace butterBror.Utils.DataManagers
             }
         }
 
+        /// <summary>
+        /// Registers a new user with default values in the system.
+        /// </summary>
+        /// <param name="userId">The unique identifier of the user to register.</param>
+        /// <param name="firstMessage">The user's initial message text.</param>
+        /// <param name="platform">The platform (Twitch/Discord) where the user registered.</param>
         [ConsoleSector("butterBror.Utils.DataManagers.UsersData", "Register")]
         public static void Register(string userId, string firstMessage, Platforms platform)
         {
@@ -97,11 +129,17 @@ namespace butterBror.Utils.DataManagers
             SafeManager.Save(path, "afkTime", DateTime.UtcNow);
         }
 
+        /// <summary>
+        /// Constructs the file path for a user's data file based on platform.
+        /// </summary>
+        /// <param name="userId">The unique identifier of the user.</param>
+        /// <param name="platform">The platform (Twitch/Discord) associated with the user.</param>
+        /// <returns>The full file path for the user's data file.</returns>
         [ConsoleSector("butterBror.Utils.DataManagers.UsersData", "GetUserFilePath")]
         private static string GetUserFilePath(string userId, Platforms platform)
         {
             Core.Statistics.FunctionsUsed.Add();
-            return Path.Combine(directory, $"{Platform.strings[(int)platform]}/{userId}.json");
+            return Path.Combine(_directory, $"{Platform.strings[(int)platform]}/{userId}.json");
         }
     }
 }

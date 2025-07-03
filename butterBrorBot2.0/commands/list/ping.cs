@@ -2,9 +2,9 @@
 using Discord;
 using TwitchLib.Client.Enums;
 using butterBror.Utils;
-using butterBror;
-using butterBror.Utils.Things;
 using butterBror.Utils.Tools;
+using butterBror.Utils.Bot;
+using butterBror.Utils.Types;
 
 namespace butterBror
 {
@@ -42,32 +42,32 @@ namespace butterBror
                 try
                 {
                     string argument = "";
-                    if (data.arguments.Count > 0)
-                        argument = data.arguments[0].ToLower();
+                    if (data.Arguments.Count > 0)
+                        argument = data.Arguments[0].ToLower();
 
-                    if (data.arguments.Count == 0)
+                    if (data.Arguments.Count == 0)
                     {
                         var workTime = DateTime.Now - Core.StartTime;
                         string host = "";
                         long pingSpeed = 0;
-                        if (data.platform == Platforms.Telegram)
+                        if (data.Platform == Platforms.Telegram)
                         {
                             pingSpeed = Utils.Tools.API.Telegram.Ping().Result;
                         }
                         else
                         {
-                            if (data.platform == Platforms.Discord) host = URLs.discord;
-                            else if (data.platform == Platforms.Twitch) host = URLs.twitch;
-                            else if (data.platform == Platforms.Telegram) host = URLs.telegram;
+                            if (data.Platform == Platforms.Discord) host = URLs.discord;
+                            else if (data.Platform == Platforms.Twitch) host = URLs.twitch;
+                            else if (data.Platform == Platforms.Telegram) host = URLs.telegram;
 
                             PingReply reply = new Ping().Send(host, 1000);
                             pingSpeed = reply.Status == IPStatus.Success ? reply.RoundtripTime : -1;
                         }
 
-                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:ping", data.channel_id, data.platform)
+                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:ping", data.ChannelID, data.Platform)
                                     .Replace("%version%", Core.Version)
-                                    .Replace("%workTime%", Text.FormatTimeSpan(workTime, data.user.language))
-                                    .Replace("%tabs%", data.platform == Platforms.Twitch ? Core.Bot.Clients.Twitch.JoinedChannels.Count.ToString() : (data.platform == Platforms.Discord ? Core.Bot.Clients.Discord.Guilds.Count.ToString() : (Core.Bot.Clients.Twitch.JoinedChannels.Count + Core.Bot.Clients.Discord.Guilds.Count) + " (Twitch, Discord)"))
+                                    .Replace("%workTime%", Text.FormatTimeSpan(workTime, data.User.Language))
+                                    .Replace("%tabs%", data.Platform == Platforms.Twitch ? Core.Bot.Clients.Twitch.JoinedChannels.Count.ToString() : (data.Platform == Platforms.Discord ? Core.Bot.Clients.Discord.Guilds.Count.ToString() : (Core.Bot.Clients.Twitch.JoinedChannels.Count + Core.Bot.Clients.Discord.Guilds.Count) + " (Twitch, Discord)"))
                                     .Replace("%loadedCMDs%", Commands.commands.Count.ToString())
                                     .Replace("%completedCMDs%", Core.CompletedCommands.ToString())
                                     .Replace("%ping%", pingSpeed.ToString()));
@@ -84,7 +84,7 @@ namespace butterBror
                             if (reply.Status == IPStatus.Success) pingSpeed = reply.RoundtripTime;
                         }
 
-                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:ping:isp", data.channel_id, data.platform)
+                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:ping:isp", data.ChannelID, data.Platform)
                                     .Replace("%ping%", pingSpeed.ToString()));
                     }
                     else if (argument.Equals("dev"))
@@ -92,24 +92,24 @@ namespace butterBror
                         var workTime = DateTime.Now - Core.StartTime;
                         string host = "";
                         long pingSpeed = 0;
-                        if (data.platform == Platforms.Telegram)
+                        if (data.Platform == Platforms.Telegram)
                         {
                             pingSpeed = Utils.Tools.API.Telegram.Ping().Result;
                         }
                         else
                         {
-                            if (data.platform == Platforms.Discord) host = URLs.discord;
-                            else if (data.platform == Platforms.Twitch) host = URLs.twitch;
-                            else if (data.platform == Platforms.Telegram) host = URLs.telegram;
+                            if (data.Platform == Platforms.Discord) host = URLs.discord;
+                            else if (data.Platform == Platforms.Twitch) host = URLs.twitch;
+                            else if (data.Platform == Platforms.Telegram) host = URLs.telegram;
 
                             PingReply reply = new Ping().Send(host, 1000);
                             pingSpeed = reply.Status == IPStatus.Success ? reply.RoundtripTime : -1;
                         }
 
-                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:ping:development", data.channel_id, data.platform)
+                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:ping:development", data.ChannelID, data.Platform)
                                     .Replace("%version%", Core.Version)
                                     .Replace("%patch%", Core.Patch)
-                                    .Replace("%workTime%", Text.FormatTimeSpan(workTime, data.user.language))
+                                    .Replace("%workTime%", Text.FormatTimeSpan(workTime, data.User.Language))
                                     .Replace("%tabs%", (Core.Bot.Clients.Twitch.JoinedChannels.Count + Core.Bot.Clients.Discord.Guilds.Count) + " (Twitch, Discord)")
                                     .Replace("%loadedCMDs%", Commands.commands.Count.ToString())
                                     .Replace("%completedCMDs%", Core.CompletedCommands.ToString())

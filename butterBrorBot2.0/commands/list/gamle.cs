@@ -1,9 +1,9 @@
-﻿using butterBror;
-using butterBror.Utils;
+﻿using butterBror.Utils;
 using System.Drawing;
 using TwitchLib.Client.Enums;
 using System.Collections.Generic;
 using butterBror.Utils.Tools;
+using butterBror.Utils.Types;
 
 namespace butterBror
 {
@@ -54,20 +54,20 @@ namespace butterBror
                         { "🟩", 2 },
                     };
 
-                    if (data.arguments.Count > 1)
+                    if (data.Arguments.Count > 1)
                     {
-                        if (selections.Contains(data.arguments[0]))
+                        if (selections.Contains(data.Arguments[0]))
                         {
-                            int bid = Format.ToInt(data.arguments[1]);
+                            int bid = Format.ToInt(data.Arguments[1]);
                             commandReturn.SetColor(ChatColorPresets.Red);
 
                             if (bid == 0)
-                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:roulette_wrong_bid", data.channel_id, data.platform));
+                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:roulette_wrong_bid", data.ChannelID, data.Platform));
                             else if (bid < 0)
-                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:roulette_steal", data.channel_id, data.platform));
-                            else if (Utils.Tools.Balance.GetBalance(data.user_id, data.platform) < bid)
-                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:roulette_not_enough_coins", data.channel_id, data.platform)
-                                            .Replace("%balance%", Utils.Tools.Balance.GetBalance(data.user_id, data.platform).ToString() + " " + Core.Bot.CoinSymbol));
+                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:roulette_steal", data.ChannelID, data.Platform));
+                            else if (Utils.Tools.Balance.GetBalance(data.UserID, data.Platform) < bid)
+                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:roulette_not_enough_coins", data.ChannelID, data.Platform)
+                                            .Replace("%balance%", Utils.Tools.Balance.GetBalance(data.UserID, data.Platform).ToString() + " " + Core.Bot.CoinSymbol));
                             else
                             {
                                 int moves = new Random().Next(38, 380);
@@ -80,13 +80,13 @@ namespace butterBror
                                         result_symbol = item.Key;
                                 }
 
-                                if (result_symbol.Equals(data.arguments[0]))
+                                if (result_symbol.Equals(data.Arguments[0]))
                                 {
                                     commandReturn.SetColor(ChatColorPresets.YellowGreen);
 
                                     int win = (int)(bid * multipliers[result_symbol]);
-                                    Utils.Tools.Balance.Add(data.user_id, win, 0, data.platform);
-                                    commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:roulette:result:win", data.channel_id, data.platform)
+                                    Utils.Tools.Balance.Add(data.UserID, win, 0, data.Platform);
+                                    commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:roulette:result:win", data.ChannelID, data.Platform)
                                         .Replace("%result%", result_symbol)
                                         .Replace("%result_number%", result.ToString())
                                         .Replace("%win%", win.ToString() + " " + Core.Bot.CoinSymbol)
@@ -94,8 +94,8 @@ namespace butterBror
                                 }
                                 else
                                 {
-                                    Utils.Tools.Balance.Add(data.user_id, -bid, 0, data.platform);
-                                    commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:roulette:result:lose", data.channel_id, data.platform)
+                                    Utils.Tools.Balance.Add(data.UserID, -bid, 0, data.Platform);
+                                    commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:roulette:result:lose", data.ChannelID, data.Platform)
                                         .Replace("%result%", result_symbol)
                                         .Replace("%result_number%", result.ToString())
                                         .Replace("%lose%", bid.ToString() + " " + Core.Bot.CoinSymbol));
@@ -103,11 +103,11 @@ namespace butterBror
                             }
                         }
                         else
-                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:roulette_wrong_select", data.channel_id, data.platform));
+                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:roulette_wrong_select", data.ChannelID, data.Platform));
                     }
                     else
-                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:not_enough_arguments", data.channel_id, data.platform)
-                            .Replace("%command_example%", $"#roulette [🟩/🟥/⬛] [{TranslationManager.GetTranslation(data.user.language, "word:bid", data.channel_id, data.platform)}]"));
+                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:not_enough_arguments", data.ChannelID, data.Platform)
+                            .Replace("%command_example%", $"#roulette [🟩/🟥/⬛] [{TranslationManager.GetTranslation(data.User.Language, "word:bid", data.ChannelID, data.Platform)}]"));
                 }
                 catch (Exception e)
                 {

@@ -1,4 +1,6 @@
 ﻿using butterBror.Utils.DataManagers;
+using butterBror.Utils.Types;
+using butterBror.Utils.Types.AI;
 using DankDB;
 using Newtonsoft.Json;
 using System;
@@ -7,19 +9,19 @@ using System.Linq;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
-using static butterBror.Utils.Things.Console;
+using static butterBror.Utils.Bot.Console;
 
 namespace butterBror.Utils.Tools.API
 {
+    /// <summary>
+    /// Provides artificial intelligence capabilities with multiple model support and chat history management.
+    /// </summary>
     public class AI
     {
-        public class Data
-        {
-            public required string text { get; set; }
-            public required string model { get; set; }
-        }
-
-        public static readonly Dictionary<string, string> available_models = new()
+        /// <summary>
+        /// Dictionary of available AI models with their corresponding API identifiers.
+        /// </summary>
+        public static readonly Dictionary<string, string> availableModels = new()
                 {
                     { "qwen", "qwen/qwen3-30b-a3b:free" },
                     { "deepseek", "deepseek/deepseek-r1-0528-qwen3-8b:free" },
@@ -29,7 +31,11 @@ namespace butterBror.Utils.Tools.API
                     { "nvidia", "nvidia/llama-3.3-nemotron-super-49b-v1:free" },
                     { "mistral", "mistralai/devstral-small:free" }
                 };
-        public static readonly Dictionary<string, TimeSpan> models_timeout = new()
+
+        /// <summary>
+        /// Dictionary specifying timeout durations for different AI models.
+        /// </summary>
+        public static readonly Dictionary<string, TimeSpan> modelsTimeout = new()
                 {
                     { "qwen", TimeSpan.FromSeconds(240) },
                     { "deepseek", TimeSpan.FromSeconds(240) },
@@ -39,32 +45,25 @@ namespace butterBror.Utils.Tools.API
                     { "nvidia", TimeSpan.FromSeconds(60) },
                     { "mistral", TimeSpan.FromSeconds(60) }
                 };
-        public static readonly List<string> generating_models = new() { "qwen", "deepseek", "microsoft" };
 
-        public class Message
-        {
-            public string role { get; set; }
-            public string content { get; set; }
-        }
+        /// <summary>
+        /// List of models capable of generating extended content responses.
+        /// </summary>
+        public static readonly List<string> generatingModels = new() { "qwen", "deepseek", "microsoft" };
 
-        public class RequestBody
-        {
-            public string model { get; set; }
-            public List<Message> messages { get; set; }
-            public double repetition_penalty { get; set; }
-        }
-
-        public class Choice
-        {
-            public Message message { get; set; }
-        }
-
-        public class ResponseBody
-        {
-            public List<Choice> choices { get; set; }
-            public string model { get; set; }
-        }
-
+        /// <summary>
+        /// Sends a request to the AI API and processes the response.
+        /// </summary>
+        /// <param name="request">The user's input text to process.</param>
+        /// <param name="umodel">The requested AI model (optional).</param>
+        /// <param name="platform">The platform context for the request.</param>
+        /// <param name="username">The username of the requester.</param>
+        /// <param name="userID">The unique identifier of the user.</param>
+        /// <param name="lang">The preferred language for the response.</param>
+        /// <param name="repetitionPenalty">Value to control output repetition (0-2).</param>
+        /// <param name="chatHistory">Indicates whether to include chat history (default: true).</param>
+        /// <returns>An array containing the model name and response, or error information.</returns>
+        /// <exception cref="Exception">Any exceptions during API communication are caught and logged.</exception>
         [ConsoleSector("butterBror.Utils.Tools.API.AI", "Request")]
         public static async Task<string[]> Request(string request, string umodel, Platforms platform, string username, string userID, string lang, double repetitionPenalty, bool chatHistory = true)
         {
@@ -79,41 +78,41 @@ namespace butterBror.Utils.Tools.API
             if (umodel is not null)
             {
                 model = umodel.ToLower();
-                if (!available_models.ContainsKey(model))
+                if (!availableModels.ContainsKey(model))
                 {
                     return new[] { "ERR", "Model not found" };
                 }
 
-                selected_model = available_models[model];
+                selected_model = availableModels[model];
             }
 
             if (string.IsNullOrWhiteSpace(request))
                 return new[] { "ERR", "Empty request" };
 
-            var system_message = new Message
+            var system_message = new Types.AI.Message
             {
                 role = "system",
                 content = $@"You are bot on platform: {Platform.strings[(int)platform]}. Your name is {Core.Bot.BotName}. DO NOT POST CONFIDENTIAL INFORMATION, DO NOT USE PROFANITY! WRITE LESS THAN 50 WORDS! SHORTEN YOUR TEXT!"
             };
 
-            var user_info_message = new Message
+            var user_info_message = new Types.AI.Message
             {
                 role = "system",
                 content = $"User info:\n1) Username: {username}\n2) ID: {userID}\n3) Language (YOUR ANSWER MUST BE IN IT unless the user says otherwise!): {lang}\nCurrent date and time: {DateTime.UtcNow.ToString("dd-MM-yyyy HH:mm")} UTC"
             };
 
-            var user_message = new Message
+            var user_message = new Types.AI.Message
             {
                 role = "user",
                 content = request
             };
 
-            List<Message> messages = new List<Message> { system_message, user_info_message, user_message };
+            List<Types.AI.Message> messages = new List<Types.AI.Message> { system_message, user_info_message, user_message };
 
             if (chatHistory)
             {
                 var history = UsersData.Get<List<string>>(userID, "gpt_history", platform);
-                messages.Insert(0, new Message
+                messages.Insert(0, new Types.AI.Message
                 {
                     role = "system",
                     content = $"Chat history:\n{string.Join('\n', history)}"
@@ -128,7 +127,7 @@ namespace butterBror.Utils.Tools.API
             };
 
             using var client = new HttpClient();
-            client.Timeout = models_timeout[model];
+            client.Timeout = modelsTimeout[model];
             var json_content = JsonConvert.SerializeObject(request_body);
             using var req = new HttpRequestMessage(HttpMethod.Post, uri)
             {

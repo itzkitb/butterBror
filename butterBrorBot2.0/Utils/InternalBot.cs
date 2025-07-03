@@ -1,8 +1,11 @@
 ﻿using butterBror.Utils;
+using butterBror.Utils.Bot;
 using butterBror.Utils.DataManagers;
-using butterBror.Utils.Things;
 using butterBror.Utils.Tools;
 using butterBror.Utils.Tools.Device;
+using butterBror.Utils.Types;
+using butterBror.Utils.Types.DataBase;
+using butterBror.Utils.Workers;
 using DankDB;
 using Discord;
 using Discord.Commands;
@@ -19,11 +22,14 @@ using TwitchLib.Client.Models;
 using TwitchLib.Communication.Clients;
 using TwitchLib.Communication.Models;
 using static butterBror.Core.Statistics;
-using static butterBror.Utils.Things.Console;
-using static butterBror.Utils.Tools.TwitchToken;
+using static butterBror.Utils.Bot.Console;
+using static butterBror.Utils.Bot.TwitchToken;
 
 namespace butterBror
 {
+    /// <summary>
+    /// Core bot implementation handling initialization, platform connections, and lifecycle management.
+    /// </summary>
     public class InternalBot
     {
         internal ClientWorker Clients = new ClientWorker();
@@ -61,17 +67,25 @@ namespace butterBror
         public ReceiverOptions? TelegramReceiverOptions;
         public CommandService? DiscordCommandService;
         public SevenTvService SevenTvService = new SevenTvService(new HttpClient());
-        private DateTime StartTime = DateTime.UtcNow;
-
+        private DateTime _startTime = DateTime.UtcNow;
 
         public readonly TimeSpan CacheTTL = TimeSpan.FromMinutes(30);
 
+        /// <summary>
+        /// Starts the bot instance and initializes all components.
+        /// </summary>
+        /// <param name="ThreadID">Unique identifier for this bot instance thread.</param>
+        /// <remarks>
+        /// - Loads currency statistics and creates necessary directories
+        /// - Initializes settings and connects to Twitch
+        /// - Handles version tracking and file persistence
+        /// </remarks>
         [ConsoleSector("butterBror.InternalBot", "Start")]
         public async void Start(int ThreadID)
         {
             FunctionsUsed.Add();
 
-            StartTime = DateTime.UtcNow;
+            _startTime = DateTime.UtcNow;
             Thread.CurrentThread.Name = ThreadID.ToString();
             Core.Ready = false;
 
@@ -148,6 +162,15 @@ namespace butterBror
             }
         }
 
+        /// <summary>
+        /// Establishes connections to all supported platforms.
+        /// </summary>
+        /// <remarks>
+        /// - Connects to Twitch with authentication
+        /// - Initializes Discord with command handlers
+        /// - Starts Telegram message reception
+        /// - Loads cached emote data
+        /// </remarks>
         [ConsoleSector("butterBror.InternalBot", "Connect")]
         public async Task Connect()
         {
@@ -171,7 +194,7 @@ namespace butterBror
                 Core.Ready = true;
                 Initialized = true;
                 Connected = true;
-                Write($"Well done! ({(endTime - StartTime).TotalMilliseconds} ms)", "info");
+                Write($"Well done! ({(endTime - _startTime).TotalMilliseconds} ms)", "info");
             }
             catch (Exception ex)
             {
@@ -180,6 +203,14 @@ namespace butterBror
             }
         }
 
+        /// <summary>
+        /// Establishes connection to Twitch platform with event subscriptions.
+        /// </summary>
+        /// <remarks>
+        /// - Sets up Twitch client credentials and event handlers
+        /// - Joins configured channels and the bot's own channel
+        /// - Sends connection announcement message
+        /// </remarks>
         [ConsoleSector("butterBror.InternalBot", "ConnectToTwitch")]
         private void ConnectToTwitch()
         {
@@ -244,6 +275,14 @@ namespace butterBror
             Clients.Twitch.SendMessage(BotName.ToLower(), "truckCrash Connecting to twitch...");
         }
 
+        /// <summary>
+        /// Establishes connection to Discord platform with command registration.
+        /// </summary>
+        /// <remarks>
+        /// - Initializes Discord client with required gateway intents
+        /// - Registers command handlers and event subscriptions
+        /// - Starts the Discord bot instance
+        /// </remarks>
         [ConsoleSector("butterBror.InternalBot", "ConnectToDiscord")]
         private async Task ConnectToDiscord()
         {
@@ -280,6 +319,13 @@ namespace butterBror
             await Clients.Discord.StartAsync();
         }
 
+        /// <summary>
+        /// Starts receiving messages from Telegram platform.
+        /// </summary>
+        /// <remarks>
+        /// - Initializes Telegram bot client
+        /// - Starts message reception with configured options
+        /// </remarks>
         [ConsoleSector("butterBror.InternalBot", "ConnectToTelegram")]
         private void ConnectToTelegram()
         {
@@ -292,9 +338,17 @@ namespace butterBror
                 DropPendingUpdates = true,
             };
 
-            Clients.Telegram.StartReceiving(Utils.Workers.Telegram.UpdateHandler, Utils.Workers.Telegram.ErrorHandler, TelegramReceiverOptions, Clients.TelegramCancellationToken.Token);
+            Clients.Telegram.StartReceiving(TelegramEvents.UpdateHandler, TelegramEvents.ErrorHandler, TelegramReceiverOptions, Clients.TelegramCancellationToken.Token);
         }
 
+        /// <summary>
+        /// Sends periodic telemetry data to Twitch chat and logs system metrics.
+        /// </summary>
+        /// <remarks>
+        /// - Collects performance metrics (memory, CPU, network pings)
+        /// - Reports command execution times and database operations
+        /// - Sends detailed metrics to bot's Twitch channel
+        /// </remarks>
         [ConsoleSector("butterBror.InternalBot", "StatusSender")]
         public async Task SendTelemetry()
         {
@@ -333,26 +387,26 @@ namespace butterBror
 
                 UserData user = new()
                 {
-                    id = "a123456789",
-                    language = "en",
-                    username = "test",
-                    channel_moderator = true,
-                    channel_broadcaster = true
+                    ID = "a123456789",
+                    Language = "en",
+                    Username = "test",
+                    IsModerator = true,
+                    IsBroadcaster = true
                 };
 
                 CommandData data = new()
                 {
-                    name = CommandName.ToLower(),
-                    user_id = "a123456789",
-                    arguments = CommandArguments,
-                    arguments_string = CommandArgumentsAsString,
-                    channel = "test",
-                    channel_id = "a123456789",
-                    message_id = "a123456789",
-                    platform = Platforms.Telegram,
-                    user = user,
-                    twitch_arguments = new TwitchLib.Client.Events.OnChatCommandReceivedArgs(),
-                    command_instance_id = Guid.NewGuid().ToString()
+                    Name = CommandName.ToLower(),
+                    UserID = "a123456789",
+                    Arguments = CommandArguments,
+                    ArgumentsString = CommandArgumentsAsString,
+                    Channel = "test",
+                    ChannelID = "a123456789",
+                    MessageID = "a123456789",
+                    Platform = Platforms.Telegram,
+                    User = user,
+                    TwitchArguments = new TwitchLib.Client.Events.OnChatCommandReceivedArgs(),
+                    CommandInstanceID = Guid.NewGuid().ToString()
                 };
 
                 await Commands.Run(data, true);
@@ -369,7 +423,7 @@ namespace butterBror
                 #endregion
                 #region MessageSaver ping
                 Stopwatch MessageSaver = Stopwatch.StartNew();
-                MessagesWorker.Message message = new()
+                Message message = new()
                 {
                     isMe = true,
                     messageDate = DateTime.Now,
@@ -460,6 +514,14 @@ namespace butterBror
             }
         }
 
+        /// <summary>
+        /// Restarts the bot instance gracefully.
+        /// </summary>
+        /// <remarks>
+        /// - Initiates clean shutdown sequence
+        /// - Preserves state between restarts
+        /// - Maintains current thread execution context
+        /// </remarks>
         [ConsoleSector("butterBror.InternalBot", "Restart")]
         public void Restart()
         {
@@ -469,6 +531,14 @@ namespace butterBror
             Disconnect();
         }
 
+        /// <summary>
+        /// Shuts down the bot instance cleanly.
+        /// </summary>
+        /// <remarks>
+        /// - Sends shutdown message to Twitch channels
+        /// - Disconnects from all platforms
+        /// - Preserves state for graceful shutdown
+        /// </remarks>
         [ConsoleSector("butterBror.InternalBot", "TurnOff")]
         public void TurnOff()
         {
@@ -496,6 +566,14 @@ namespace butterBror
             }
         }
 
+        /// <summary>
+        /// Disconnects from all platforms and cleans up resources.
+        /// </summary>
+        /// <remarks>
+        /// - Leaves all Twitch channels
+        /// - Disposes of Discord and Telegram clients
+        /// - Updates connection state flags
+        /// </remarks>
         [ConsoleSector("butterBror.InternalBot", "Disconnect")]
         private void Disconnect()
         {
@@ -529,6 +607,15 @@ namespace butterBror
             Connected = false;
         }
 
+        /// <summary>
+        /// Initializes default settings file with initial configuration.
+        /// </summary>
+        /// <param name="path">Path where to create the settings file.</param>
+        /// <remarks>
+        /// - Creates empty settings file if missing
+        /// - Sets up default values for all bot parameters
+        /// - Preserves existing settings if file exists
+        /// </remarks>
         [ConsoleSector("butterBror.InternalBot", "InitializeSettingsFile")]
         private void InitializeSettingsFile(string path)
         {
@@ -555,6 +642,14 @@ namespace butterBror
             SafeManager.Save(path, "currency_mentioner_payment", 2);
         }
 
+        /// <summary>
+        /// Loads bot configuration from settings file into memory.
+        /// </summary>
+        /// <remarks>
+        /// - Reads all critical configuration values
+        /// - Sets up tokens, connection strings, and bot behavior parameters
+        /// - Initializes Twitch token manager with loaded credentials
+        /// </remarks>
         [ConsoleSector("butterBror.InternalBot", "LoadSettings")]
         private void LoadSettings()
         {
@@ -578,6 +673,14 @@ namespace butterBror
             Executor = Convert.ToChar(Manager.Get<string>(Pathes.Settings, "executor"));
         }
 
+        /// <summary>
+        /// Persists current emote cache data to storage.
+        /// </summary>
+        /// <remarks>
+        /// - Serializes emote cache dictionaries to JSON
+        /// - Saves to predefined cache file path
+        /// - Handles directory creation if needed
+        /// </remarks>
         [ConsoleSector("butterBror.InternalBot", "SaveEmoteCache")]
         public void SaveEmoteCache()
         {
@@ -603,6 +706,14 @@ namespace butterBror
             }
         }
 
+        /// <summary>
+        /// Loads previously saved emote cache data from storage.
+        /// </summary>
+        /// <remarks>
+        /// - Deserializes emote cache from JSON file
+        /// - Populates all emote-related dictionaries
+        /// - Handles missing cache file gracefully
+        /// </remarks>
         [ConsoleSector("butterBror.InternalBot", "LoadEmoteCache")]
         public void LoadEmoteCache()
         {

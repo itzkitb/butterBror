@@ -1,9 +1,9 @@
 ﻿using butterBror.Utils;
-using butterBror;
 using Discord;
 using System.Data;
 using TwitchLib.Client.Enums;
 using butterBror.Utils.Tools;
+using butterBror.Utils.Types;
 
 namespace butterBror
 {
@@ -40,7 +40,7 @@ namespace butterBror
 
                 try
                 {
-                    string input = data.arguments_string;
+                    string input = data.ArgumentsString;
                     Dictionary<string, string> replacements = new() {
                         { ",", "." },
                         { ":", "/" },
@@ -62,16 +62,16 @@ namespace butterBror
                             throw new DivideByZeroException();
                         }
 
-                        commandReturn.SetMessage(Text.ArgumentReplacement(TranslationManager.GetTranslation(data.user.language, "command:calculator:result", data.channel_id, data.platform), "result", mathResult.ToString()));
+                        commandReturn.SetMessage(Text.ArgumentReplacement(TranslationManager.GetTranslation(data.User.Language, "command:calculator:result", data.ChannelID, data.Platform), "result", mathResult.ToString()));
                     }
                     catch (DivideByZeroException)
                     {
-                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:divide_by_zero", data.channel_id, data.platform));
+                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:divide_by_zero", data.ChannelID, data.Platform));
                         commandReturn.SetColor(ChatColorPresets.Red);
                     }
                     catch (Exception)
                     {
-                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:invalid_mathematical_expression", data.channel_id, data.platform));
+                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:invalid_mathematical_expression", data.ChannelID, data.Platform));
                         commandReturn.SetColor(ChatColorPresets.Red);
                     }
                 }

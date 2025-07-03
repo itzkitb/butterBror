@@ -1,4 +1,6 @@
-﻿using butterBror.Utils.DataManagers;
+﻿using butterBror.Utils.Bot;
+using butterBror.Utils.DataManagers;
+using butterBror.Utils.Types;
 using DankDB;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -8,12 +10,23 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Telegram.Bot.Types;
 using TwitchLib.Client.Events;
-using static butterBror.Utils.Things.Console;
+using static butterBror.Utils.Bot.Console;
 
 namespace butterBror.Utils.Tools
 {
+    /// <summary>
+    /// Provides command processing functionality including argument parsing, cooldown management, and message handling.
+    /// </summary>
     public class Command
     {
+        public static readonly ConcurrentDictionary<string, (SemaphoreSlim Semaphore, DateTime LastUsed)> messagesSemaphores = new(StringComparer.Ordinal);
+
+        /// <summary>
+        /// Retrieves an argument from a list by index position.
+        /// </summary>
+        /// <param name="args">List of command arguments</param>
+        /// <param name="index">Zero-based index of the argument to retrieve</param>
+        /// <returns>The argument at specified index or null if index out of range</returns>
         [ConsoleSector("butterBror.Utils.Tools.Command", "GetArgument#1")]
         public static string GetArgument(List<string> args, int index)
         {
@@ -23,6 +36,12 @@ namespace butterBror.Utils.Tools
             return null;
         }
 
+        /// <summary>
+        /// Retrieves a named argument value from the argument list.
+        /// </summary>
+        /// <param name="args">List of command arguments</param>
+        /// <param name="arg_name">Name prefix to search for (e.g., "user:")</param>
+        /// <returns>The value after the colon for matching argument, or null if not found</returns>
         [ConsoleSector("butterBror.Utils.Tools.Command", "GetArgument#2")]
         public static string GetArgument(List<string> args, string arg_name)
         {
@@ -34,13 +53,17 @@ namespace butterBror.Utils.Tools
             return null;
         }
 
+        /// <summary>
+        /// Logs command execution details and increments the completed commands counter.
+        /// </summary>
+        /// <param name="data">Command data containing execution context</param>
         [ConsoleSector("butterBror.Utils.Tools.Command", "ExecutedCommand")]
         public static void ExecutedCommand(CommandData data)
         {
             Core.Statistics.FunctionsUsed.Add();
             try
             {
-                Write($"Executed command {data.name} (User: {data.user.username}, full message: \"{data.name} {data.arguments_string}\", arguments: \"{data.arguments_string}\", command: \"{data.name}\")", "info");
+                Write($"Executed command {data.Name} (User: {data.User.Username}, full message: \"{data.Name} {data.ArgumentsString}\", arguments: \"{data.ArgumentsString}\", command: \"{data.Name}\")", "info");
                 Core.CompletedCommands++;
             }
             catch (Exception ex)
@@ -49,6 +72,19 @@ namespace butterBror.Utils.Tools
             }
         }
 
+        /// <summary>
+        /// Checks user and global cooldowns for command execution.
+        /// </summary>
+        /// <param name="userSecondsCooldown">User-specific cooldown in seconds</param>
+        /// <param name="globalCooldown">Global cooldown in seconds</param>
+        /// <param name="cooldownParamName">Unique identifier for the cooldown parameter</param>
+        /// <param name="userID">User ID to check</param>
+        /// <param name="roomID">Channel/Room ID context</param>
+        /// <param name="platform">Target platform (Twitch/Discord/Telegram)</param>
+        /// <param name="resetUseTimeIfCommandIsNotReseted">Whether to reset timer on failed global cooldown</param>
+        /// <param name="ignoreUserVIP">Bypass VIP/moderator cooldown exemptions</param>
+        /// <param name="ignoreGlobalCooldown">Bypass global cooldown check</param>
+        /// <returns>True if cooldown requirements are satisfied</returns>
         [ConsoleSector("butterBror.Utils.Tools.Command", "CheckCooldown")]
         public static bool CheckCooldown(
             int userSecondsCooldown,
@@ -135,12 +171,19 @@ namespace butterBror.Utils.Tools
             }
             catch (Exception ex)
             {
-                Console.Write(ex);
+                Write(ex);
                 return false;
             }
         }
 
-
+        /// <summary>
+        /// Gets remaining cooldown time for a user's command.
+        /// </summary>
+        /// <param name="userID">User ID to check</param>
+        /// <param name="cooldownParamName">Cooldown parameter name</param>
+        /// <param name="userSecondsCooldown">Total cooldown duration in seconds</param>
+        /// <param name="platform">Target platform</param>
+        /// <returns>TimeSpan representing remaining cooldown</returns>
         [ConsoleSector("butterBror.Utils.Tools.Command", "GetCooldownTime")]
         public static TimeSpan GetCooldownTime(
             string userID,
@@ -161,8 +204,22 @@ namespace butterBror.Utils.Tools
             }
         }
 
-        public static readonly ConcurrentDictionary<string, (SemaphoreSlim Semaphore, DateTime LastUsed)> messages_semaphores = new(StringComparer.Ordinal);
-
+        /// <summary>
+        /// Processes incoming chat messages across platforms with rate limiting and message tracking.
+        /// </summary>
+        /// <param name="UserID">User identifier</param>
+        /// <param name="RoomId">Channel/Room identifier</param>
+        /// <param name="Username">Display name of the user</param>
+        /// <param name="Message">Message content</param>
+        /// <param name="Twitch">Twitch-specific message context</param>
+        /// <param name="Room">Channel/Room name</param>
+        /// <param name="Platform">Target platform (Twitch/Discord/Telegram)</param>
+        /// <param name="Telegram">Telegram-specific message context</param>
+        /// <param name="ServerChannel">Discord server channel (optional)</param>
+        /// <remarks>
+        /// Handles message counting, AFK return detection, currency rewards, nickname mapping, 
+        /// and message persistence across platforms.
+        /// </remarks>
         [ConsoleSector("butterBror.Utils.Tools.Command", "ProcessMessageAsync")]
         public static async Task ProcessMessageAsync(
             string UserID,
@@ -172,18 +229,18 @@ namespace butterBror.Utils.Tools
             OnMessageReceivedArgs Twitch,
             string Room,
             Platforms Platform,
-            Message Telegram,
+            Telegram.Bot.Types.Message Telegram,
             string ServerChannel = ""
         )
         {
             Core.Statistics.FunctionsUsed.Add();
             Core.Statistics.MessagesReaded.Add();
             var now = DateTime.UtcNow;
-            var semaphore = messages_semaphores.GetOrAdd(UserID, id => (new SemaphoreSlim(1, 1), now));
+            var semaphore = messagesSemaphores.GetOrAdd(UserID, id => (new SemaphoreSlim(1, 1), now));
             try
             {
                 await semaphore.Semaphore.WaitAsync().ConfigureAwait(false);
-                messages_semaphores.TryUpdate(UserID, (semaphore.Semaphore, now), semaphore);
+                messagesSemaphores.TryUpdate(UserID, (semaphore.Semaphore, now), semaphore);
                 // Skip banned or ignored users
                 if (UsersData.Get<bool>(UserID, "isBanned", Platform) ||
                     UsersData.Get<bool>(UserID, "isIgnored", Platform))
@@ -292,11 +349,11 @@ namespace butterBror.Utils.Tools
                 }
                 catch (Exception ex)
                 {
-                    Console.Write(ex);
+                    Write(ex);
                 }
 
                 // Persist message history
-                var msg = new MessagesWorker.Message
+                var msg = new Types.DataBase.Message
                 {
                     messageDate = now_utc,
                     messageText = Message,
@@ -340,6 +397,16 @@ namespace butterBror.Utils.Tools
             }
         }
 
+        /// <summary>
+        /// Dynamically compiles and executes user-provided C# code snippets.
+        /// </summary>
+        /// <param name="userCode">C# code to execute</param>
+        /// <returns>Result of code execution</returns>
+        /// <exception cref="CompilationException">Thrown when code compilation fails</exception>
+        /// <remarks>
+        /// Uses Roslyn compiler with restricted assembly references for security.
+        /// Requires proper permissions to execute.
+        /// </remarks>
         [ConsoleSector("butterBror.Utils.Tools.Command", "ExecuteCode")]
         public static string ExecuteCode(string userCode)
         {
@@ -375,7 +442,7 @@ namespace butterBror.Utils.Tools
             var requiredAssemblies = new[]
             {
         typeof(object).Assembly,
-        typeof(Console).Assembly,
+        typeof(System.Console).Assembly,
         typeof(Enumerable).Assembly,
         typeof(System.Runtime.GCSettings).Assembly,
     };
@@ -414,8 +481,15 @@ namespace butterBror.Utils.Tools
             return (string)method.Invoke(null, null);
         }
 
+        /// <summary>
+        /// Represents custom exceptions during code compilation.
+        /// </summary>
         public class CompilationException : Exception
         {
+            /// <summary>
+            /// Initializes a new instance of the CompilationException class with a specified error message.
+            /// </summary>
+            /// <param name="message">The error message that explains the reason for the exception.</param>
             public CompilationException(string message) : base(message) { }
         }
     }

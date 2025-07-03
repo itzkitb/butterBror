@@ -1,6 +1,6 @@
 ﻿using TwitchLib.Client.Enums;
 using Discord;
-using butterBror;
+using butterBror.Utils.Types;
 
 namespace butterBror
 {
@@ -37,7 +37,7 @@ namespace butterBror
 
                 try
                 {
-                    commandReturn.SetMessage(data.arguments_string);
+                    commandReturn.SetMessage(data.ArgumentsString);
                 }
                 catch (Exception e)
                 {

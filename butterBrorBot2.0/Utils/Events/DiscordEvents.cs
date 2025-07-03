@@ -4,12 +4,20 @@ using Discord.Commands;
 using Discord.WebSocket;
 using System.Reflection;
 using TwitchLib.Client.Events;
-using static butterBror.Utils.Things.Console;
+using static butterBror.Utils.Bot.Console;
 
 namespace butterBror.Utils
 {
+    /// <summary>
+    /// Contains event handlers for Discord API interactions and bot behavior customization.
+    /// </summary>
     public partial class DiscordEvents
     {
+        /// <summary>
+        /// Handles Discord client logging events.
+        /// </summary>
+        /// <param name="log">The log message from Discord client.</param>
+        /// <returns>A completed task representing the asynchronous operation.</returns>
         [ConsoleSector("butterBror.Utils.DiscordEvents", "LogAsync")]
         public static Task LogAsync(LogMessage log)
         {
@@ -25,6 +33,11 @@ namespace butterBror.Utils
             }
         }
 
+        /// <summary>
+        /// Handles guild connection event when the bot joins a Discord server.
+        /// </summary>
+        /// <param name="g">The guild (server) that was connected to.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
         [ConsoleSector("butterBror.Utils.DiscordEvents", "ConnectToGuilt")]
         public static async Task ConnectToGuilt(SocketGuild g)
         {
@@ -33,6 +46,11 @@ namespace butterBror.Utils
             Core.Bot.DiscordServers++;
         }
 
+        /// <summary>
+        /// Processes text-based commands from Discord users.
+        /// </summary>
+        /// <param name="arg">The message that might contain a command.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
         [ConsoleSector("butterBror.Utils.DiscordEvents", "HandleCommandAsync")]
         public static async Task HandleCommandAsync(SocketMessage arg)
         {
@@ -59,6 +77,11 @@ namespace butterBror.Utils
             }
         }
 
+        /// <summary>
+        /// Handles slash command interactions from Discord users.
+        /// </summary>
+        /// <param name="command">The slash command interaction data.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
         [ConsoleSector("butterBror.Utils.DiscordEvents", "SlashCommandHandler")]
         public static async Task SlashCommandHandler(SocketSlashCommand command)
         {
@@ -66,6 +89,11 @@ namespace butterBror.Utils
             Commands.Discord(command);
         }
 
+        /// <summary>
+        /// Handles application command creation events.
+        /// </summary>
+        /// <param name="e">The created application command data.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
         [ConsoleSector("butterBror.Utils.DiscordEvents", "ApplicationCommandCreated")]
         public static async Task ApplicationCommandCreated(SocketApplicationCommand e)
         {
@@ -73,6 +101,11 @@ namespace butterBror.Utils
             Write("Discord - The command has been created: /" + e.Name + " (" + e.Description + ")", "info");
         }
 
+        /// <summary>
+        /// Handles application command deletion events.
+        /// </summary>
+        /// <param name="e">The deleted application command data.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
         [ConsoleSector("butterBror.Utils.DiscordEvents", "ApplicationCommandDeleted")]
         public static async Task ApplicationCommandDeleted(SocketApplicationCommand e)
         {
@@ -80,6 +113,11 @@ namespace butterBror.Utils
             Write("Discord - Command deleted: /" + e.Name + " (" + e.Description + ")", "info");
         }
 
+        /// <summary>
+        /// Handles application command update events.
+        /// </summary>
+        /// <param name="e">The updated application command data.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
         [ConsoleSector("butterBror.Utils.DiscordEvents", "ApplicationCommandUpdated")]
         public static async Task ApplicationCommandUpdated(SocketApplicationCommand e)
         {
@@ -87,6 +125,11 @@ namespace butterBror.Utils
             Write($"Discord - Command updated: /{e.Name} ({e.Description})", "info");
         }
 
+        /// <summary>
+        /// Handles channel creation events in Discord servers.
+        /// </summary>
+        /// <param name="e">The created channel data.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
         [ConsoleSector("butterBror.Utils.DiscordEvents", "ChannelCreated")]
         public static async Task ChannelCreated(SocketChannel e)
         {
@@ -94,6 +137,11 @@ namespace butterBror.Utils
             Write("Discord - New channel created: " + e.Id, "info");
         }
 
+        /// <summary>
+        /// Handles channel deletion events in Discord servers.
+        /// </summary>
+        /// <param name="e">The deleted channel data.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
         [ConsoleSector("butterBror.Utils.DiscordEvents", "ChannelDeleted")]
         public static async Task ChannelDeleted(SocketChannel e)
         {
@@ -101,6 +149,12 @@ namespace butterBror.Utils
             Write("Discord - The channel has been deleted: " + e.Id, "info");
         }
 
+        /// <summary>
+        /// Handles channel update events in Discord servers.
+        /// </summary>
+        /// <param name="e">The original channel data before update.</param>
+        /// <param name="a">The updated channel data.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
         [ConsoleSector("butterBror.Utils.DiscordEvents", "ChannelUpdated")]
         public static async Task ChannelUpdated(SocketChannel e, SocketChannel a)
         {
@@ -108,6 +162,10 @@ namespace butterBror.Utils
             Write("Discord - Channel updated: " + e.Id + "/" + a.Id, "info");
         }
 
+        /// <summary>
+        /// Handles connection established event for the Discord client.
+        /// </summary>
+        /// <returns>A task representing the asynchronous operation.</returns>
         [ConsoleSector("butterBror.Utils.DiscordEvents", "Connected")]
         public static async Task Connected()
         {
@@ -115,93 +173,16 @@ namespace butterBror.Utils
             //Write("Discord - Connected!", "info");
         }
 
+        /// <summary>
+        /// Handles button interaction events from Discord message components.
+        /// </summary>
+        /// <param name="e">The button interaction data.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
         [ConsoleSector("butterBror.Utils.DiscordEvents", "ButtonTouched")]
         public static async Task ButtonTouched(SocketMessageComponent e)
         {
             Core.Statistics.FunctionsUsed.Add();
             Write($"Discord - A button was pressed. User: {e.User}, Button ID: {e.Id}, Server: {((SocketGuildChannel)e.Channel).Guild.Name}", "info");
-        }
-    }
-
-    public partial class DiscordWorker
-    {
-        [ConsoleSector("butterBror.Utils.DiscordWorker", "ReadyAsync")]
-        public static async Task ReadyAsync()
-        {
-            Core.Statistics.FunctionsUsed.Add();
-            try
-            {
-                Write($"Discord - Connected as {Core.Bot.Clients.Discord.CurrentUser}!", "info");
-                Core.Bot.DiscordServers = (ulong)Core.Bot.Clients.Discord.Guilds.Count;
-            }
-            catch (Exception ex)
-            {
-                Write(ex);
-            }
-        }
-
-        [ConsoleSector("butterBror.Utils.DiscordWorker", "MessageReceivedAsync")]
-        public static async Task MessageReceivedAsync(SocketMessage message)
-        {
-            Core.Statistics.FunctionsUsed.Add();
-            try
-            {
-                if (!(message is SocketUserMessage msg) || message.Author.IsBot) return;
-                OnMessageReceivedArgs e = default;
-                await Command.ProcessMessageAsync(message.Author.Id.ToString(), ((SocketGuildChannel)message.Channel).Guild.Id.ToString(), message.Author.Username.ToLower(), message.Content, e, ((SocketGuildChannel)message.Channel).Guild.Name, Platforms.Discord, null, message.Channel.ToString());
-
-                if (message.Content.StartsWith(Core.Bot.Executor))
-                {
-                    Commands.Discord(message);
-                }
-            }
-            catch (Exception ex)
-            {
-                Write(ex);
-            }
-        }
-
-        [ConsoleSector("butterBror.Utils.DiscordWorker", "RegisterCommandsAsync")]
-        public static async Task RegisterCommandsAsync()
-        {
-            Core.Statistics.FunctionsUsed.Add();
-            try
-            {
-                Core.Bot.Clients.Discord.Ready += RegisterSlashCommands;
-                Core.Bot.Clients.Discord.MessageReceived += DiscordEvents.HandleCommandAsync;
-                await Core.Bot.DiscordCommandService.AddModulesAsync(assembly: Assembly.GetEntryAssembly(), services: Core.Bot.DiscordServiceProvider);
-            }
-            catch (Exception ex)
-            {
-                Write(ex);
-            }
-        }
-
-        [ConsoleSector("butterBror.Utils.DiscordWorker", "RegisterSlashCommands")]
-        private static async Task RegisterSlashCommands()
-        {
-            Core.Statistics.FunctionsUsed.Add();
-            Write("Discord - Updating commands...", "info");
-
-            await Core.Bot.Clients.Discord.Rest.DeleteAllGlobalCommandsAsync();
-
-            await Core.Bot.Clients.Discord.Rest.CreateGlobalCommand(new SlashCommandBuilder()
-                .WithName("ping")
-                .WithDescription("Check bot status")
-                .Build());
-            await Core.Bot.Clients.Discord.Rest.CreateGlobalCommand(new SlashCommandBuilder()
-                .WithName("status")
-                .WithDescription("View the bot's status. (Bot administrators only)")
-                .Build());
-            await Core.Bot.Clients.Discord.Rest.CreateGlobalCommand(new SlashCommandBuilder()
-                .WithName("weather")
-                .WithDescription("Check the weather")
-                .AddOption("location", ApplicationCommandOptionType.String, "weather check location", isRequired: false)
-                .AddOption("showpage", ApplicationCommandOptionType.Integer, "show weather on page", isRequired: false)
-                .AddOption("page", ApplicationCommandOptionType.Integer, "show the result page of the received weather", isRequired: false)
-                .Build());
-
-            Write("Discord - Commands updated!", "info");
         }
     }
 }

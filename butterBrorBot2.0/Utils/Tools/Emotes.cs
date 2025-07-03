@@ -3,17 +3,30 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static butterBror.Utils.Things.Console;
+using static butterBror.Utils.Bot.Console;
 
 namespace butterBror.Utils.Tools
 {
+    /// <summary>
+    /// Provides functionality for retrieving and managing 7TV emotes for Twitch channels.
+    /// </summary>
     public class Emotes
     {
         /// <summary>
-        /// Getting channel emotes from cache
+        /// Gets or sets the semaphore used to synchronize cache access across threads.
         /// </summary>
-        private static readonly SemaphoreSlim cache_lock = new(1, 1);
+        private static readonly SemaphoreSlim _cacheLock = new(1, 1);
 
+        /// <summary>
+        /// Retrieves cached 7TV emotes for a channel or fetches new ones if cache is expired.
+        /// </summary>
+        /// <param name="channel">The channel name to retrieve emotes for.</param>
+        /// <param name="channel_id">The unique channel identifier.</param>
+        /// <returns>A list of emote names, or null if retrieval fails.</returns>
+        /// <remarks>
+        /// Uses double-check locking pattern with semaphore to ensure thread-safe cache updates.
+        /// Returns cached emotes if valid, otherwise fetches and caches new emotes.
+        /// </remarks>
         [ConsoleSector("butterBror.Utils.Tools.Emotes", "GetEmotesForChannel")]
         public static async Task<List<string>?> GetEmotesForChannel(string channel, string channel_id)
         {
@@ -26,7 +39,7 @@ namespace butterBror.Utils.Tools
                     return cached.emotes;
                 }
 
-                await cache_lock.WaitAsync();
+                await _cacheLock.WaitAsync();
                 try
                 {
                     if (Core.Bot.ChannelsSevenTVEmotes.TryGetValue(channel_id, out cached) &&
@@ -41,7 +54,7 @@ namespace butterBror.Utils.Tools
                 }
                 finally
                 {
-                    cache_lock.Release();
+                    _cacheLock.Release();
                 }
             }
             catch (Exception ex)
@@ -51,6 +64,12 @@ namespace butterBror.Utils.Tools
             }
         }
 
+        /// <summary>
+        /// Gets a random 7TV emote from the specified channel's emote set.
+        /// </summary>
+        /// <param name="channel">The channel name to select emote from.</param>
+        /// <param name="channel_id">The unique channel identifier.</param>
+        /// <returns>A random emote name, or null if no emotes are available.</returns>
         [ConsoleSector("butterBror.Utils.Tools.Emotes", "RandomEmote")]
         public static async Task<string> RandomEmote(string channel, string channel_id)
         {
@@ -69,6 +88,15 @@ namespace butterBror.Utils.Tools
             }
         }
 
+        /// <summary>
+        /// Forces an update of cached 7TV emotes for a channel.
+        /// </summary>
+        /// <param name="channel">The channel name to update emotes for.</param>
+        /// <param name="channel_id">The unique channel identifier.</param>
+        /// <remarks>
+        /// Bypasses cache expiration time and refreshes emotes immediately.
+        /// Updates the global cache with new expiration timestamp.
+        /// </remarks>
         [ConsoleSector("butterBror.Utils.Tools.Emotes", "EmoteUpdate")]
         public static async Task EmoteUpdate(string channel, string channel_id)
         {
@@ -84,6 +112,15 @@ namespace butterBror.Utils.Tools
             }
         }
 
+        /// <summary>
+        /// Gets 7TV emotes for a channel with user ID caching mechanism.
+        /// </summary>
+        /// <param name="channel">The channel name to retrieve emotes for.</param>
+        /// <returns>A list of emote names (always non-null, may be empty).</returns>
+        /// <remarks>
+        /// Uses two-level caching: first checks channel-to-user mapping cache,
+        /// then fetches emotes from 7TV API if needed.
+        /// </remarks>
         [ConsoleSector("butterBror.Utils.Tools.Emotes", "GetEmotes")]
         public static async Task<List<string>> GetEmotes(string channel)
         {
@@ -113,6 +150,15 @@ namespace butterBror.Utils.Tools
             }
         }
 
+        /// <summary>
+        /// Gets 7TV emotes directly from 7TV API using user ID.
+        /// </summary>
+        /// <param name="userId">The 7TV user ID to fetch emotes for.</param>
+        /// <returns>A list of emote names (always non-null, may be empty).</returns>
+        /// <remarks>
+        /// Processes raw 7TV API response and extracts emote names.
+        /// Returns empty list if user has no emotes or API call fails.
+        /// </remarks>
         [ConsoleSector("butterBror.Utils.Tools.Emotes", "GetEmotesFromCache")]
         private static async Task<List<string>> GetEmotesFromCache(string userId)
         {
