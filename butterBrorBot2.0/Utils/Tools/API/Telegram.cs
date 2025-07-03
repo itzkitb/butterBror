@@ -9,6 +9,7 @@ namespace butterBror.Utils.Tools.API
 {
     public class Telegram
     {
+        [Obsolete("Will be rewritten.")]
         public static async Task<long> Ping()
         {
             var client = new HttpClient();

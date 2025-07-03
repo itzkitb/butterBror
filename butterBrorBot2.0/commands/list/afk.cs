@@ -1,9 +1,9 @@
 ﻿using butterBror.Utils;
 using butterBror.Utils.DataManagers;
-using butterBror;
 using Discord;
 using TwitchLib.Client.Enums;
 using butterBror.Utils.Tools;
+using butterBror.Utils.Types;
 
 namespace butterBror
 {
@@ -46,7 +46,7 @@ namespace butterBror
                 try
                 {
                     string action = "";
-                    switch (data.name)
+                    switch (data.Name)
                     {
                         case string name when draw.Contains(name):
                             action = "draw";
@@ -89,17 +89,17 @@ namespace butterBror
 
                 try
                 {
-                    string result = TranslationManager.GetTranslation(data.user.language, $"command:afk:{afkType}:start", data.channel_id, data.platform).Replace("%user%", data.user.username);
-                    string text = data.arguments_string;
+                    string result = TranslationManager.GetTranslation(data.User.Language, $"command:afk:{afkType}:start", data.ChannelID, data.Platform).Replace("%user%", data.User.Username);
+                    string text = data.ArgumentsString;
 
-                    if (new NoBanwords().Check(text, data.channel_id, data.platform))
+                    if (new NoBanwords().Check(text, data.ChannelID, data.Platform))
                     {
-                        UsersData.Save(data.user_id, "isAfk", true, data.platform);
-                        UsersData.Save(data.user_id, "afkText", text, data.platform);
-                        UsersData.Save(data.user_id, "afkType", afkType, data.platform);
-                        UsersData.Save(data.user_id, "afkTime", DateTime.UtcNow, data.platform);
-                        UsersData.Save(data.user_id, "lastFromAfkResume", DateTime.UtcNow, data.platform);
-                        UsersData.Save(data.user_id, "fromAfkResumeTimes", 0, data.platform);
+                        UsersData.Save(data.UserID, "isAfk", true, data.Platform);
+                        UsersData.Save(data.UserID, "afkText", text, data.Platform);
+                        UsersData.Save(data.UserID, "afkType", afkType, data.Platform);
+                        UsersData.Save(data.UserID, "afkTime", DateTime.UtcNow, data.Platform);
+                        UsersData.Save(data.UserID, "lastFromAfkResume", DateTime.UtcNow, data.Platform);
+                        UsersData.Save(data.UserID, "fromAfkResumeTimes", 0, data.Platform);
 
                         if (Text.CleanAsciiWithoutSpaces(text) == "")
                             commandReturn.SetMessage(result);

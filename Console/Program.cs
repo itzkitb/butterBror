@@ -1,4 +1,5 @@
 ﻿using butterBror;
+using butterBror.Utils.Bot;
 using butterBror.Utils.Tools.Device;
 using DankDB;
 using Pastel;
@@ -9,7 +10,7 @@ using System.Net;
 using System.Net.NetworkInformation;
 using System.Security.Cryptography;
 using System.Text;
-using static butterBror.Utils.Things.Console;
+using static butterBror.Utils.Bot.Console;
 
 class Programm
 {
@@ -25,13 +26,13 @@ class Programm
 
     public static void SelectEthernetAdapter()
     {
-        Console.WriteLine("Select network interface:");
+        System.Console.WriteLine("Select network interface:");
 
         NetworkInterface[] adapters = NetworkInterface.GetAllNetworkInterfaces();
 
         if (adapters.Length == 0)
         {
-            Console.WriteLine("No network interfaces available.");
+            System.Console.WriteLine("No network interfaces available.");
             return;
         }
 
@@ -47,28 +48,28 @@ class Programm
 
         if (activeAdapters.Count == 0)
         {
-            Console.WriteLine("There are no active network interfaces..");
-            Console.ReadLine();
+            System.Console.WriteLine("There are no active network interfaces..");
+            System.Console.ReadLine();
             Environment.Exit(0);
         }
 
         for (int i = 0; i < activeAdapters.Count; i++)
         {
             var adapter = activeAdapters[i];
-            Console.WriteLine($"{i + 1}. {adapter.Name} ({adapter.Description})");
+            System.Console.WriteLine($"{i + 1}. {adapter.Name} ({adapter.Description})");
         }
 
-        Console.Write("Enter interface number: ");
-        if (!int.TryParse(Console.ReadLine(), out int selectedIndex) ||
+        System.Console.Write("Enter interface number: ");
+        if (!int.TryParse(System.Console.ReadLine(), out int selectedIndex) ||
             selectedIndex < 1 ||
             selectedIndex > activeAdapters.Count)
         {
-            Console.WriteLine("Invalid input.");
+            System.Console.WriteLine("Invalid input.");
             SelectEthernetAdapter();
         }
-        Console.Clear();
-        Console.Title = $"butterBror | Loading...";
-        Console.WriteLine("Loading libraries...");
+        System.Console.Clear();
+        System.Console.Title = $"butterBror | Loading...";
+        System.Console.WriteLine("Loading libraries...");
         selectedInterface = activeAdapters[selectedIndex - 1];
     }
 
@@ -83,12 +84,12 @@ class Programm
             Core.Start();
         });
 
-        Console.Title = $"butterBror | {Core.Version}.{Core.Patch}";
-        Console.Clear();
+        System.Console.Title = $"butterBror | {Core.Version}.{Core.Patch}";
+        System.Console.Clear();
 
         Listener.Prefixes.Add(Host + "/");
         Listener.Start();
-        Console.WriteLine($"The web interface is running on {Host}");
+        System.Console.WriteLine($"The web interface is running on {Host}");
 
         timer = new Timer(_ =>
         {

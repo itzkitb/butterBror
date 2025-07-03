@@ -9,8 +9,22 @@ using System.Threading.Tasks;
 
 namespace butterBror.Utils.Tools.Device
 {
+    /// <summary>
+    /// Provides platform-specific methods to retrieve system memory information and conversion utilities.
+    /// </summary>
     public class Memory
     {
+        /// <summary>
+        /// Gets the total physical memory installed on the system in bytes.
+        /// </summary>
+        /// <returns>Total physical memory in bytes</returns>
+        /// <exception cref="PlatformNotSupportedException">Thrown when running on an unsupported OS platform</exception>
+        /// <remarks>
+        /// Uses platform-specific implementations:
+        /// - Windows: Calls kernel32.dll's GetPhysicallyInstalledSystemMemory
+        /// - Linux: Reads from /proc/meminfo
+        /// - macOS: Uses sysctl command
+        /// </remarks>
         public static ulong GetTotalMemoryBytes()
         {
             Core.Statistics.FunctionsUsed.Add();
@@ -32,6 +46,15 @@ namespace butterBror.Utils.Tools.Device
                 throw new PlatformNotSupportedException("Platform not supported");
             }
         }
+
+        /// <summary>
+        /// Gets the total physical memory on Windows systems using kernel32.dll.
+        /// </summary>
+        /// <returns>Total physical memory in bytes</returns>
+        /// <remarks>
+        /// Uses Windows API call to GetPhysicallyInstalledSystemMemory.
+        /// Memory is reported in kilobytes and converted to bytes.
+        /// </remarks>
         private static ulong GetWindowsTotalMemory()
         {
             [DllImport("kernel32.dll")]
@@ -42,6 +65,14 @@ namespace butterBror.Utils.Tools.Device
             return (ulong)TotalMemoryInKilobytes * 1024;
         }
 
+        /// <summary>
+        /// Gets the total physical memory on Linux systems by parsing /proc/meminfo.
+        /// </summary>
+        /// <returns>Total physical memory in bytes</returns>
+        /// <remarks>
+        /// Reads the first line of /proc/meminfo and extracts the memory value in kilobytes.
+        /// Converts the value to bytes using multiplication by 1024.
+        /// </remarks>
         private static ulong GetLinuxTotalMemory()
         {
             Core.Statistics.FunctionsUsed.Add();
@@ -51,6 +82,14 @@ namespace butterBror.Utils.Tools.Device
             return Convert.ToUInt64(totalMemoryValue) * 1024;
         }
 
+        /// <summary>
+        /// Gets the total physical memory on macOS systems using sysctl command.
+        /// </summary>
+        /// <returns>Total physical memory in bytes</returns>
+        /// <remarks>
+        /// Executes 'sysctl -n hw.memsize' to get memory size and returns it directly.
+        /// On macOS, this returns the value in bytes without needing conversion.
+        /// </remarks>
         private static ulong GetMacOSTotalMemory()
         {
             Core.Statistics.FunctionsUsed.Add();
@@ -71,11 +110,22 @@ namespace butterBror.Utils.Tools.Device
             return Convert.ToUInt64(output.Trim());
         }
 
+        /// <summary>
+        /// Converts a byte count to gigabytes.
+        /// </summary>
+        /// <param name="bytes">The number of bytes to convert</param>
+        /// <returns>The equivalent gigabytes value</returns>
         public static double BytesToGB(long bytes)
         {
             Core.Statistics.FunctionsUsed.Add();
             return bytes / (1024.0 * 1024.0 * 1024.0);
         }
+
+        /// <summary>
+        /// Converts an unsigned byte count to gigabytes.
+        /// </summary>
+        /// <param name="bytes">The number of bytes to convert</param>
+        /// <returns>The equivalent gigabytes value</returns>
         public static double BytesToGB(ulong bytes)
         {
             Core.Statistics.FunctionsUsed.Add();

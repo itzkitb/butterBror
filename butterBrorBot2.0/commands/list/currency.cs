@@ -1,6 +1,6 @@
-﻿using butterBror;
-using butterBror.Utils;
+﻿using butterBror.Utils;
 using butterBror.Utils.Tools;
+using butterBror.Utils.Types;
 using Microsoft.TeamFoundation.Common;
 using Microsoft.VisualStudio.Services.Common.CommandLine;
 using Newtonsoft.Json;
@@ -41,7 +41,7 @@ namespace butterBror
 
                 try
                 {
-                    if (data.arguments.Count > 1)
+                    if (data.Arguments.Count > 1)
                     {
                         string[] existingCurrencies = new string[]
                         {
@@ -70,25 +70,25 @@ namespace butterBror
                         string wantedCurrency = null;
                         ulong currencyQuantity = 0;
 
-                        bool hasTo = data.arguments_string.Contains("to:", StringComparison.OrdinalIgnoreCase);
-                        bool hasFrom = data.arguments_string.Contains("from:", StringComparison.OrdinalIgnoreCase);
+                        bool hasTo = data.ArgumentsString.Contains("to:", StringComparison.OrdinalIgnoreCase);
+                        bool hasFrom = data.ArgumentsString.Contains("from:", StringComparison.OrdinalIgnoreCase);
 
                         if (hasTo || hasFrom)
                         {
-                            var currencyArgs = data.arguments
+                            var currencyArgs = data.Arguments
                                 .Where(arg => currencySet.Contains(arg.ToUpper().Replace("TO:", "").Replace("FROM:", "")))
                                 .ToList();
 
-                            wantedCurrency = hasTo ? Command.GetArgument(data.arguments, "to") : currencyArgs.Count >= 1 ? currencyArgs[0] : null;
+                            wantedCurrency = hasTo ? Command.GetArgument(data.Arguments, "to") : currencyArgs.Count >= 1 ? currencyArgs[0] : null;
 
                             if (!wantedCurrency.IsNullOrEmpty())
                             {
-                                initialCurrency = hasFrom ? Command.GetArgument(data.arguments, "from") : currencyArgs.Count >= 2 ? currencyArgs[1] : null;
+                                initialCurrency = hasFrom ? Command.GetArgument(data.Arguments, "from") : currencyArgs.Count >= 2 ? currencyArgs[1] : null;
                             }
                         }
                         else
                         {
-                            var currencyArgs = data.arguments
+                            var currencyArgs = data.Arguments
                                 .Where(arg => currencySet.Contains(arg.ToUpper()))
                                 .ToList();
 
@@ -103,7 +103,7 @@ namespace butterBror
 
                             try
                             {
-                                currencyQuantity = Format.ToUlong(data.arguments[0]);
+                                currencyQuantity = Format.ToUlong(data.Arguments[0]);
                             }
                             catch 
                             {
@@ -113,7 +113,7 @@ namespace butterBror
                             if (!currencySet.Contains(initialCurrency) || !currencySet.Contains(wantedCurrency))
                             {
                                 string notFounded = !currencySet.Contains(initialCurrency) ? initialCurrency : wantedCurrency;
-                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:currency_not_found", data.channel_id, data.platform, new()
+                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:currency_not_found", data.ChannelID, data.Platform, new()
                                 {
                                     { "currency", notFounded }
                                 }));
@@ -128,7 +128,7 @@ namespace butterBror
 
                             CurrencyClass res = JsonConvert.DeserializeObject<CurrencyClass>(await resp.Content.ReadAsStringAsync());
 
-                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:currency", data.channel_id, data.platform, new Dictionary<string, string>()
+                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:currency", data.ChannelID, data.Platform, new Dictionary<string, string>()
                             {
                                 { "currencyQuantity", currencyQuantity.ToString() },
                                 { "initialCurrency", initialCurrency.ToString() },
@@ -139,7 +139,7 @@ namespace butterBror
                         else
                         {
                             string notFounded = !currencySet.Contains(initialCurrency) ? initialCurrency : wantedCurrency;
-                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:currency_not_found", data.channel_id, data.platform, new()
+                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:currency_not_found", data.ChannelID, data.Platform, new()
                                 {
                                     { "currency", notFounded }
                                 }));
@@ -147,7 +147,7 @@ namespace butterBror
                     }
                     else
                     {
-                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:not_enough_arguments", data.channel_id, data.platform)
+                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:not_enough_arguments", data.ChannelID, data.Platform)
                             .Replace("%command_example%", $"{Core.Bot.Executor}currency 1 USD to RUB"));
                     }
                 }

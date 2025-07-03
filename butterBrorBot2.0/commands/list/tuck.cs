@@ -1,11 +1,11 @@
 ﻿using butterBror.Utils;
 using butterBror.Utils.DataManagers;
-using butterBror;
 using Discord;
 using TwitchLib.Client.Enums;
 using Microsoft.CodeAnalysis;
 using butterBror.Utils.Tools;
-using static butterBror.Utils.Things.Console;
+using static butterBror.Utils.Bot.Console;
+using butterBror.Utils.Types;
 
 namespace butterBror
 {
@@ -46,44 +46,44 @@ namespace butterBror
                 try
                 {
                     commandReturn.SetColor(ChatColorPresets.HotPink);
-                    if (data.arguments.Count >= 1)
+                    if (data.Arguments.Count >= 1)
                     {
-                        var username = Text.UsernameFilter(Text.CleanAsciiWithoutSpaces(data.arguments[0]));
+                        var username = Text.UsernameFilter(Text.CleanAsciiWithoutSpaces(data.Arguments[0]));
                         var isSelectedUserIsNotIgnored = true;
                         var userID = Names.GetUserID(username.ToLower(), Platforms.Twitch);
                         try
                         {
                             if (userID != null)
-                                isSelectedUserIsNotIgnored = !UsersData.Get<bool>(userID, "isIgnored", data.platform);
+                                isSelectedUserIsNotIgnored = !UsersData.Get<bool>(userID, "isIgnored", data.Platform);
                         }
                         catch (Exception) { }
                         if (username.ToLower() == Core.Bot.BotName.ToLower())
                         {
-                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:tuck:bot", data.channel_id, data.platform));
+                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:tuck:bot", data.ChannelID, data.Platform));
                             commandReturn.SetColor(ChatColorPresets.CadetBlue);
                         }
                         else if (isSelectedUserIsNotIgnored)
                         {
-                            if (data.arguments.Count >= 2)
+                            if (data.Arguments.Count >= 2)
                             {
-                                List<string> list = data.arguments;
+                                List<string> list = data.Arguments;
                                 list.RemoveAt(0);
-                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:tuck:text", data.channel_id, data.platform).Replace("%user%", Names.DontPing(username)).Replace("%text%", string.Join(" ", list)));
+                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:tuck:text", data.ChannelID, data.Platform).Replace("%user%", Names.DontPing(username)).Replace("%text%", string.Join(" ", list)));
                             }
                             else
                             {
-                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:tuck", data.channel_id, data.platform).Replace("%user%", Names.DontPing(username)));
+                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:tuck", data.ChannelID, data.Platform).Replace("%user%", Names.DontPing(username)));
                             }
                         }
                         else
                         {
-                            Write($"User @{data.user.username} tried to put a user to sleep who is in the ignore list", "info");
-                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:user_ignored", data.channel_id, data.platform));
+                            Write($"User @{data.User.Username} tried to put a user to sleep who is in the ignore list", "info");
+                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:user_ignored", data.ChannelID, data.Platform));
                         }
                     }
                     else
                     {
-                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:tuck:none", data.channel_id, data.platform));
+                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:tuck:none", data.ChannelID, data.Platform));
                         commandReturn.SetColor(ChatColorPresets.CadetBlue);
                     }
                 }

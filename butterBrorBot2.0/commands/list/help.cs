@@ -1,9 +1,9 @@
 ﻿using butterBror.Utils;
-using butterBror;
 using Discord;
 using System.Reflection;
 using TwitchLib.Client.Enums;
 using butterBror.Utils.Tools;
+using butterBror.Utils.Types;
 
 namespace butterBror
 {
@@ -40,10 +40,10 @@ namespace butterBror
 
                 try
                 {
-                    if (data.arguments.Count == 1)
+                    if (data.Arguments.Count == 1)
                     {
-                        string classToFind = data.arguments[0];
-                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:help:not_found", data.channel_id, data.platform));
+                        string classToFind = data.Arguments[0];
+                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:help:not_found", data.ChannelID, data.Platform));
                         foreach (var classType in Commands.commands)
                         {
                             var infoProperty = classType.GetField("Info", BindingFlags.Static | BindingFlags.Public);
@@ -65,12 +65,12 @@ namespace butterBror
                                     else if (num == numWithoutComma)
                                         aliasesList += $"{Core.Bot.Executor}{alias}";
                                 }
-                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:help", data.channel_id, data.platform)
+                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:help", data.ChannelID, data.Platform)
                                     .Replace("%commandName%", info.Name)
                                     .Replace("%Variables%", aliasesList)
                                     .Replace("%Args%", info.Arguments)
                                     .Replace("%Link%", info.WikiLink)
-                                    .Replace("%Description%", info.Description[data.user.language])
+                                    .Replace("%Description%", info.Description[data.User.Language])
                                     .Replace("%Author%", Names.DontPing(info.Author))
                                     .Replace("%creationDate%", info.CreationDate.ToShortDateString())
                                     .Replace("%uCooldown%", info.CooldownPerUser.ToString())
@@ -80,10 +80,10 @@ namespace butterBror
                             }
                         }
                     }
-                    else if (data.arguments.Count > 1)
-                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:a_few_arguments", data.channel_id, data.platform).Replace("%args%", "(command_name)"));
+                    else if (data.Arguments.Count > 1)
+                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:a_few_arguments", data.ChannelID, data.Platform).Replace("%args%", "(command_name)"));
                     else
-                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "text:bot_info", data.channel_id, data.platform));
+                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "text:bot_info", data.ChannelID, data.Platform));
                 }
                 catch (Exception e)
                 {

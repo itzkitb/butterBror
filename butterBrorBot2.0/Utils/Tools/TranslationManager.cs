@@ -7,38 +7,57 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static butterBror.Utils.Things.Console;
+using static butterBror.Utils.Bot.Console;
+using butterBror.Utils.Types;
 
 namespace butterBror.Utils.Tools
 {
+    /// <summary>
+    /// Manages multilingual translations with support for default and custom overrides per channel/platform.
+    /// </summary>
     public class TranslationManager
     {
-        private static Dictionary<string, Dictionary<string, string>> translations = new();
-        private static Dictionary<string, Dictionary<string, Dictionary<string, string>>> customTranslations = new();
+        private static Dictionary<string, Dictionary<string, string>> _translations = new();
+        private static Dictionary<string, Dictionary<string, Dictionary<string, string>>> _customTranslations = new();
 
+        /// <summary>
+        /// Retrieves a localized translation with optional parameter replacements.
+        /// </summary>
+        /// <param name="userLang">Language code (e.g., "ru", "en")</param>
+        /// <param name="key">Translation key path (e.g., "command:ping")</param>
+        /// <param name="channel_id">Channel/Room identifier for custom translations</param>
+        /// <param name="platform">Target platform context</param>
+        /// <param name="replacements">Optional dictionary of %key% replacements</param>
+        /// <returns>Localized string or key if not found</returns>
+        /// <remarks>
+        /// Checks in order: 
+        /// 1. Custom translations for channel/platform
+        /// 2. Default language translations
+        /// Returns null if error occurs during retrieval
+        /// </remarks>
         [ConsoleSector("butterBror.Utils.Tools.TranslationManager", "GetTranslation")]
         public static string GetTranslation(string userLang, string key, string channel_id, Platforms platform, Dictionary<string, string> replacements = null)
         {
             Core.Statistics.FunctionsUsed.Add();
             try
             {
-                if (!translations.ContainsKey(userLang))
-                    translations[userLang] = LoadTranslations(userLang);
+                if (!_translations.ContainsKey(userLang))
+                    _translations[userLang] = LoadTranslations(userLang);
 
-                if (!customTranslations.ContainsKey(channel_id))
-                    customTranslations[channel_id] = new();
+                if (!_customTranslations.ContainsKey(channel_id))
+                    _customTranslations[channel_id] = new();
 
-                if (!customTranslations[channel_id].ContainsKey(userLang))
-                    customTranslations[channel_id][userLang] = LoadCustomTranslations(userLang, channel_id, platform);
+                if (!_customTranslations[channel_id].ContainsKey(userLang))
+                    _customTranslations[channel_id][userLang] = LoadCustomTranslations(userLang, channel_id, platform);
 
-                var custom = customTranslations[channel_id][userLang];
+                var custom = _customTranslations[channel_id][userLang];
                 if (custom.TryGetValue(key, out var customValue))
                 {
                     if (replacements is not null) customValue = Text.ArgumentsReplacement(customValue, replacements);
                     return customValue;
                 }
 
-                if (translations[userLang].TryGetValue(key, out var defaultVal))
+                if (_translations[userLang].TryGetValue(key, out var defaultVal))
                 {
                     if (replacements is not null) defaultVal = Text.ArgumentsReplacement(defaultVal, replacements);
                     return defaultVal;
@@ -54,6 +73,20 @@ namespace butterBror.Utils.Tools
             }
         }
 
+        /// <summary>
+        /// Sets or updates a custom translation for a specific channel.
+        /// </summary>
+        /// <param name="key">Translation key to set</param>
+        /// <param name="value">Translation value</param>
+        /// <param name="channel">Channel identifier</param>
+        /// <param name="lang">Language code</param>
+        /// <param name="platform">Target platform</param>
+        /// <returns>True if successful, false otherwise</returns>
+        /// <remarks>
+        /// - Creates necessary directories if missing
+        /// - Updates both memory cache and persistent storage
+        /// - Returns false if file operations fail
+        /// </remarks>
         [ConsoleSector("butterBror.Utils.Tools.TranslationManager", "SetCustomTranslation")]
         public static bool SetCustomTranslation(string key, string value, string channel, string lang, Platforms platform)
         {
@@ -68,7 +101,7 @@ namespace butterBror.Utils.Tools
                     : new Dictionary<string, string>();
 
                 content[key] = value;
-                customTranslations[channel][lang] = content;
+                _customTranslations[channel][lang] = content;
 
                 FileUtil.SaveFileContent(
                     $"{path}{lang}.json",
@@ -83,6 +116,18 @@ namespace butterBror.Utils.Tools
             }
         }
 
+        /// <summary>
+        /// Deletes a custom translation from channel-specific storage.
+        /// </summary>
+        /// <param name="key">Translation key to delete</param>
+        /// <param name="channel">Channel identifier</param>
+        /// <param name="lang">Language code</param>
+        /// <param name="platform">Target platform</param>
+        /// <returns>True if successfully deleted, false otherwise</returns>
+        /// <remarks>
+        /// - Only affects custom translations
+        /// - Returns false if translation doesn't exist or operation fails
+        /// </remarks>
         [ConsoleSector("butterBror.Utils.Tools.TranslationManager", "DeleteCustomTranslation")]
         public static bool DeleteCustomTranslation(string key, string channel, string lang, Platforms platform)
         {
@@ -109,6 +154,15 @@ namespace butterBror.Utils.Tools
             }
         }
 
+        /// <summary>
+        /// Loads default translations for a specific language.
+        /// </summary>
+        /// <param name="userLang">Language code to load</param>
+        /// <returns>Dictionary of translation keys and values</returns>
+        /// <remarks>
+        /// Uses Manager.Get to load from JSON files.
+        /// Returns empty dictionary if file is missing or invalid.
+        /// </remarks>
         [ConsoleSector("butterBror.Utils.Tools.TranslationManager", "LoadTranslations")]
         private static Dictionary<string, string> LoadTranslations(string userLang)
         {
@@ -119,6 +173,17 @@ namespace butterBror.Utils.Tools
             ) ?? new Dictionary<string, string>();
         }
 
+        /// <summary>
+        /// Loads custom translations for a specific channel and language.
+        /// </summary>
+        /// <param name="userLang">Language code to load</param>
+        /// <param name="channel">Channel identifier</param>
+        /// <param name="platform">Target platform</param>
+        /// <returns>Dictionary of translation keys and values</returns>
+        /// <remarks>
+        /// Uses Manager.Get to load from channel-specific JSON files.
+        /// Returns empty dictionary if file is missing or invalid.
+        /// </remarks>
         [ConsoleSector("butterBror.Utils.Tools.TranslationManager", "LoadCustomTranslations")]
         private static Dictionary<string, string> LoadCustomTranslations(string userLang, string channel, Platforms platform)
         {
@@ -129,40 +194,61 @@ namespace butterBror.Utils.Tools
             ) ?? new Dictionary<string, string>();
         }
 
+        /// <summary>
+        /// Checks if a Russian translation exists for a specific key.
+        /// </summary>
+        /// <param name="key">Translation key to check</param>
+        /// <returns>True if Russian translation exists, false otherwise</returns>
+        /// <remarks>
+        /// Always checks against Russian ("ru") translations first.
+        /// Loads Russian dictionary if not already loaded.
+        /// </remarks>
         [ConsoleSector("butterBror.Utils.Tools.TranslationManager", "TranslateContains")]
         public static bool TranslateContains(string key)
         {
             Core.Statistics.FunctionsUsed.Add();
-            if (!translations.ContainsKey("ru"))
+            if (!_translations.ContainsKey("ru"))
             {
-                translations["ru"] = LoadTranslations("ru");
+                _translations["ru"] = LoadTranslations("ru");
             }
 
-            return translations["ru"].ContainsKey(key);
+            return _translations["ru"].ContainsKey(key);
         }
 
+        /// <summary>
+        /// Forces refresh of translation dictionaries for specified language/channel.
+        /// </summary>
+        /// <param name="userLang">Language code to refresh</param>
+        /// <param name="channel">Channel identifier</param>
+        /// <param name="platform">Target platform</param>
+        /// <returns>True if translations were successfully reloaded</returns>
+        /// <remarks>
+        /// - Clears existing translations from cache
+        /// - Reloads translations from disk
+        /// - Returns false if default translations fail to reload
+        /// </remarks>
         [ConsoleSector("butterBror.Utils.Tools.TranslationManager", "UpdateTranslation")]
         public static bool UpdateTranslation(string userLang, string channel, Platforms platform)
         {
             Core.Statistics.FunctionsUsed.Add();
             try
             {
-                if (translations.ContainsKey(userLang))
+                if (_translations.ContainsKey(userLang))
                 {
-                    translations[userLang].Clear();
+                    _translations[userLang].Clear();
                 }
-                if (customTranslations.ContainsKey(channel))
+                if (_customTranslations.ContainsKey(channel))
                 {
-                    if (customTranslations[channel].ContainsKey(userLang))
+                    if (_customTranslations[channel].ContainsKey(userLang))
                     {
-                        customTranslations[channel][userLang].Clear();
+                        _customTranslations[channel][userLang].Clear();
                     }
                 }
 
-                translations[userLang] = LoadTranslations(userLang);
-                customTranslations[channel][userLang] = LoadCustomTranslations(userLang, channel, platform);
+                _translations[userLang] = LoadTranslations(userLang);
+                _customTranslations[channel][userLang] = LoadCustomTranslations(userLang, channel, platform);
 
-                if (translations[userLang].Count > 0)
+                if (_translations[userLang].Count > 0)
                 {
                     return true;
                 }

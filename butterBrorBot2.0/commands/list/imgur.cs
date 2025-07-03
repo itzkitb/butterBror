@@ -1,9 +1,9 @@
 ﻿using Discord;
 using TwitchLib.Client.Enums;
 using butterBror.Utils;
-using butterBror;
 using butterBror.Utils.Tools;
-using static butterBror.Utils.Things.Console;
+using static butterBror.Utils.Bot.Console;
+using butterBror.Utils.Types;
 
 namespace butterBror
 {
@@ -43,13 +43,13 @@ namespace butterBror
                 try
                 {
                     string? url = "";
-                    if (data.platform == Platforms.Twitch)
+                    if (data.Platform == Platforms.Twitch)
                     {
-                        url = Text.CleanAscii(data.arguments_string);
+                        url = Text.CleanAscii(data.ArgumentsString);
                     }
-                    else if (data.platform == Platforms.Discord)
+                    else if (data.Platform == Platforms.Discord)
                     {
-                        url = data.discord_arguments["url"];
+                        url = data.DiscordArguments["url"];
                     }
 
                     if (url != "")
@@ -62,12 +62,12 @@ namespace butterBror
                             imageBytesTask.Wait();
                             byte[] imageBytes = imageBytesTask.Result;
                             stage++;
-                            var responseTask = Utils.Tools.API.Imgur.UploadAsync(imageBytes, "Бот butterBror и его разработчик ItzKITb никак не связаны с данным изображением и не поддерживают его содержимое.", $"Картинка от @{data.user.username}", Core.Bot.Tokens.Imgur, "https://api.imgur.com/3/upload");
+                            var responseTask = Utils.Tools.API.Imgur.UploadAsync(imageBytes, "Бот butterBror и его разработчик ItzKITb никак не связаны с данным изображением и не поддерживают его содержимое.", $"Картинка от @{data.User.Username}", Core.Bot.Tokens.Imgur, "https://api.imgur.com/3/upload");
                             responseTask.Wait();
                             string response = responseTask.Result;
                             stage++;
                             string link = Utils.Tools.API.Imgur.GetLinkFromResponse(response);
-                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:imgur:uploaded", data.channel_id, data.platform).Replace("%link%", link));
+                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:imgur:uploaded", data.ChannelID, data.Platform).Replace("%link%", link));
                         }
                         catch (Exception ex)
                         {
@@ -87,13 +87,13 @@ namespace butterBror
                                     errorTranslation = "error:unhandled";
                                     break;
                             }
-                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, errorTranslation, data.channel_id, data.platform));
+                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, errorTranslation, data.ChannelID, data.Platform));
                             Write(ex);
                         }
                     }
                     else
                     {
-                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:not_enough_arguments", data.channel_id, data.platform).Replace("%command_example%", "imguruploadimage [url]"));
+                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:not_enough_arguments", data.ChannelID, data.Platform).Replace("%command_example%", "imguruploadimage [url]"));
                     }
                 }
                 catch (Exception e)

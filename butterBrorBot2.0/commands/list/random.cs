@@ -1,8 +1,8 @@
 ﻿using butterBror.Utils;
-using butterBror;
 using Discord;
 using TwitchLib.Client.Enums;
 using butterBror.Utils.Tools;
+using butterBror.Utils.Types;
 
 namespace butterBror
 {
@@ -39,21 +39,21 @@ namespace butterBror
 
                 try
                 {
-                    if (data.arguments.Count > 0)
+                    if (data.Arguments.Count > 0)
                     {
-                        if (data.arguments_string.Contains('-'))
+                        if (data.ArgumentsString.Contains('-'))
                         {
-                            string[] numbers = data.arguments_string.Split('-');
+                            string[] numbers = data.ArgumentsString.Split('-');
                             if (numbers.Length == 2 && int.TryParse(numbers[0], out int min) && int.TryParse(numbers[1], out int max))
-                                commandReturn.SetMessage($"{TranslationManager.GetTranslation(data.user.language, "command:random", data.channel_id, data.platform)}{new Random().Next(min, max + 1)}");
+                                commandReturn.SetMessage($"{TranslationManager.GetTranslation(data.User.Language, "command:random", data.ChannelID, data.Platform)}{new Random().Next(min, max + 1)}");
                             else
-                                commandReturn.SetMessage($"{TranslationManager.GetTranslation(data.user.language, "command:random", data.channel_id, data.platform)}{string.Join(" ", [.. data.arguments_string.Split(' ').OrderBy(x => new Random().Next())])}");
+                                commandReturn.SetMessage($"{TranslationManager.GetTranslation(data.User.Language, "command:random", data.ChannelID, data.Platform)}{string.Join(" ", [.. data.ArgumentsString.Split(' ').OrderBy(x => new Random().Next())])}");
                         }
                         else
-                            commandReturn.SetMessage($"{TranslationManager.GetTranslation(data.user.language, "command:random", data.channel_id, data.platform)}{string.Join(" ", [.. data.arguments_string.Split(' ').OrderBy(x => new Random().Next())])}");
+                            commandReturn.SetMessage($"{TranslationManager.GetTranslation(data.User.Language, "command:random", data.ChannelID, data.Platform)}{string.Join(" ", [.. data.ArgumentsString.Split(' ').OrderBy(x => new Random().Next())])}");
                     }
                     else
-                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:random", data.channel_id, data.platform) + "DinoDance");
+                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:random", data.ChannelID, data.Platform) + "DinoDance");
                 }
                 catch (Exception e)
                 {

@@ -1,8 +1,8 @@
 ﻿using butterBror.Utils;
 using butterBror.Utils.DataManagers;
-using butterBror;
 using Discord;
 using TwitchLib.Client.Enums;
+using butterBror.Utils.Types;
 
 namespace butterBror
 {
@@ -39,7 +39,7 @@ namespace butterBror
 
                 try
                 {
-                    if (UsersData.Contains(data.user_id, "isBotModerator", data.platform) || UsersData.Contains(data.user_id, "isBotDev", data.platform))
+                    if (UsersData.Contains(data.UserID, "isBotModerator", data.Platform) || UsersData.Contains(data.UserID, "isBotDev", data.Platform))
                     {
                         commandReturn.SetMessage("❄ Перезагрузка...");
                         Core.Bot.Restart();

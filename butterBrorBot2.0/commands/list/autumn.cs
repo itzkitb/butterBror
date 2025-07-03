@@ -1,8 +1,8 @@
 ﻿using butterBror.Utils;
-using butterBror;
 using Discord;
 using TwitchLib.Client.Enums;
 using butterBror.Utils.Tools;
+using butterBror.Utils.Types;
 
 namespace butterBror
 {
@@ -41,7 +41,7 @@ namespace butterBror
                 {
                     DateTime startDate = new(2000, 9, 1);
                     DateTime endDate = new(2000, 12, 1);
-                    commandReturn.SetMessage(Text.TimeTo(startDate, endDate, "autumn", 0, data.user.language, data.arguments_string, data.channel_id, data.platform));
+                    commandReturn.SetMessage(Text.TimeTo(startDate, endDate, "autumn", 0, data.User.Language, data.ArgumentsString, data.ChannelID, data.Platform));
                 }
                 catch (Exception e)
                 {

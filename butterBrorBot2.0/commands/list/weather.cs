@@ -4,12 +4,12 @@ using TwitchLib.Client.Enums;
 using butterBror.Utils;
 using butterBror.Utils.DataManagers;
 using butterBror.Utils.Tools.API;
-using butterBror;
 using static butterBror.Utils.Tools.API.Weather.Place;
 using static butterBror.Utils.Tools.API.Weather;
 using System.Linq;
 using butterBror.Utils.Tools;
-using static butterBror.Utils.Things.Console;
+using static butterBror.Utils.Bot.Console;
+using butterBror.Utils.Types;
 
 namespace butterBror
 {
@@ -63,56 +63,56 @@ namespace butterBror
                     long page = 0;
                     long show_place_id = 0;
 
-                    if (data.platform is Platforms.Twitch || data.platform is Platforms.Telegram)
+                    if (data.Platform is Platforms.Twitch || data.Platform is Platforms.Telegram)
                     {
-                        location = Text.CleanAscii(data.arguments_string);
-                        if (data.arguments.Count >= 2)
+                        location = Text.CleanAscii(data.ArgumentsString);
+                        if (data.Arguments.Count >= 2)
                         {
-                            if (show_alias.Contains(data.arguments[0].ToLowerInvariant()))
+                            if (show_alias.Contains(data.Arguments[0].ToLowerInvariant()))
                             {
                                 is_show_action = true;
-                                show_place_id = Utils.Tools.Format.ToInt(data.arguments[1].ToLowerInvariant());
+                                show_place_id = Utils.Tools.Format.ToInt(data.Arguments[1].ToLowerInvariant());
                             }
-                            else if (page_alias.Contains(data.arguments[0].ToLowerInvariant()))
+                            else if (page_alias.Contains(data.Arguments[0].ToLowerInvariant()))
                             {
                                 is_page_action = true;
-                                page = Utils.Tools.Format.ToInt(data.arguments[1].ToLowerInvariant());
+                                page = Utils.Tools.Format.ToInt(data.Arguments[1].ToLowerInvariant());
                             }
-                            else if (set_alias.Contains(data.arguments[0].ToLowerInvariant()))
+                            else if (set_alias.Contains(data.Arguments[0].ToLowerInvariant()))
                             {
                                 is_set_action = true;
-                                setLocation = Text.CleanAscii(data.arguments[1]);
+                                setLocation = Text.CleanAscii(data.Arguments[1]);
                             }
                         }
-                        else if (data.arguments.Count >= 1)
+                        else if (data.Arguments.Count >= 1)
                         {
-                            if (get_alias.Contains(data.arguments[0].ToLowerInvariant()))
+                            if (get_alias.Contains(data.Arguments[0].ToLowerInvariant()))
                             {
                                 is_get_action = true;
                             }
                         }
                     }
-                    else if (data.platform == Platforms.Discord)
+                    else if (data.Platform == Platforms.Discord)
                     {
-                        if (data.discord_arguments.ContainsKey("location"))
+                        if (data.DiscordArguments.ContainsKey("location"))
                         {
-                            location = data.discord_arguments.GetValueOrDefault("location");
+                            location = data.DiscordArguments.GetValueOrDefault("location");
                         }
-                        if (data.discord_arguments.ContainsKey("showpage"))
+                        if (data.DiscordArguments.ContainsKey("showpage"))
                         {
-                            page = data.discord_arguments.GetValueOrDefault("showpage");
+                            page = data.DiscordArguments.GetValueOrDefault("showpage");
                             is_page_action = true;
                         }
-                        else if (data.discord_arguments.ContainsKey("page"))
+                        else if (data.DiscordArguments.ContainsKey("page"))
                         {
-                            show_place_id = data.discord_arguments.GetValueOrDefault("page");
+                            show_place_id = data.DiscordArguments.GetValueOrDefault("page");
                             is_show_action = true;
                         }
                     }
 
                     if (is_page_action)
                     {
-                        var weatherResultLocationsUnworked = UsersData.Get<string[]>(data.user_id, "weatherResultLocations", data.platform);
+                        var weatherResultLocationsUnworked = UsersData.Get<string[]>(data.UserID, "weatherResultLocations", data.Platform);
                         var weatherResultLocations = new List<Place>();
 
                         foreach (var data2 in weatherResultLocationsUnworked)
@@ -161,26 +161,26 @@ namespace butterBror
                                     }
                                 }
                                 locationPage = (locationPage + "\n").Replace(", \n", "");
-                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:weather:a_few_places", data.channel_id, data.platform)
+                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:weather:a_few_places", data.ChannelID, data.Platform)
                                     .Replace("%places%", locationPage)
                                     .Replace("%page%", page.ToString())
                                     .Replace("%pages%", maxPages.ToString()));
                             }
                             else
                             {
-                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:page_not_found", data.channel_id, data.platform));
+                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:page_not_found", data.ChannelID, data.Platform));
                                 commandReturn.SetColor(ChatColorPresets.Red);
                             }
                         }
                         else
                         {
-                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:no_pages", data.channel_id, data.platform));
+                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:no_pages", data.ChannelID, data.Platform));
                             commandReturn.SetColor(ChatColorPresets.Red);
                         }
                     }
                     else if (is_show_action)
                     {
-                        var weatherResultLocationsUnworked = UsersData.Get<string[]>(data.user_id, "weatherResultLocations", data.platform);
+                        var weatherResultLocationsUnworked = UsersData.Get<string[]>(data.UserID, "weatherResultLocations", data.Platform);
                         var weatherResultLocations = new List<Place>();
                         foreach (var data2 in weatherResultLocationsUnworked)
                         {
@@ -209,13 +209,13 @@ namespace butterBror
                                 var result = weather.Result.current;
                                 if (result.temperature != -400)
                                 {
-                                    commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:weather", data.channel_id, data.platform)
+                                    commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:weather", data.ChannelID, data.Platform)
                                         .Replace("%emote%", GetEmoji(result.temperature))
                                         .Replace("%name%", weatherResultLocations[(int)show_place_id - 1].name)
                                         .Replace("%temperature%", result.temperature.ToString())
                                         .Replace("%feelsLike%", result.feels_like.ToString())
                                         .Replace("%windSpeed%", result.wind.speed.ToString())
-                                        .Replace("%summary%", GetSummary(data.user.language, result.summary.ToString(), data.channel_id, data.platform))
+                                        .Replace("%summary%", GetSummary(data.User.Language, result.summary.ToString(), data.ChannelID, data.Platform))
                                         .Replace("%pressure%", result.pressure.ToString())
                                         .Replace("%uvIndex%", result.uv_index.ToString())
                                         .Replace("%humidity%", result.humidity.ToString())
@@ -224,19 +224,19 @@ namespace butterBror
                                 }
                                 else
                                 {
-                                    commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:place_not_found", data.channel_id, data.platform));
+                                    commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:place_not_found", data.ChannelID, data.Platform));
                                     commandReturn.SetColor(ChatColorPresets.Red);
                                 }
                             }
                             else
                             {
-                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:page_not_found", data.channel_id, data.platform));
+                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:page_not_found", data.ChannelID, data.Platform));
                                 commandReturn.SetColor(ChatColorPresets.Red);
                             }
                         }
                         else
                         {
-                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:no_pages", data.channel_id, data.platform));
+                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:no_pages", data.ChannelID, data.Platform));
                             commandReturn.SetColor(ChatColorPresets.Red);
                         }
                     }
@@ -245,29 +245,29 @@ namespace butterBror
                         var places = GetLocation(setLocation).Result;
                         if (places.Count == 0 || places[0].name == "err")
                         {
-                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:place_not_found", data.channel_id, data.platform));
+                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:place_not_found", data.ChannelID, data.Platform));
                             commandReturn.SetColor(ChatColorPresets.Red);
                         }
                         else
                         {
                             var first = places[0];
-                            UsersData.Save(data.user_id, "userPlace", first.name, data.platform);
-                            UsersData.Save(data.user_id, "userLat", first.lat, data.platform);
-                            UsersData.Save(data.user_id, "userLon", first.lon, data.platform);
+                            UsersData.Save(data.UserID, "userPlace", first.name, data.Platform);
+                            UsersData.Save(data.UserID, "userLat", first.lat, data.Platform);
+                            UsersData.Save(data.UserID, "userLon", first.lon, data.Platform);
 
-                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:weather:set_location", data.channel_id, data.platform, new Dictionary<string, string> { { "%city%", first.name } }));
+                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:weather:set_location", data.ChannelID, data.Platform, new Dictionary<string, string> { { "%city%", first.name } }));
                             commandReturn.SetColor(ChatColorPresets.YellowGreen);
                         }
                     }
                     else if (is_get_action)
                     {
-                        if (UsersData.Get<string>(data.user_id, "userPlace", data.platform) is not "")
+                        if (UsersData.Get<string>(data.UserID, "userPlace", data.Platform) is not "")
                         {
-                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:weather:get_location", data.channel_id, data.platform, new() { { "city", UsersData.Get<string>(data.user_id, "userPlace", data.platform) } }));
+                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:weather:get_location", data.ChannelID, data.Platform, new() { { "city", UsersData.Get<string>(data.UserID, "userPlace", data.Platform) } }));
                         }
                         else
                         {
-                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:location_not_set", data.channel_id, data.platform));
+                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:location_not_set", data.ChannelID, data.Platform));
                             commandReturn.SetColor(ChatColorPresets.Red);
                         }
                     }
@@ -275,19 +275,19 @@ namespace butterBror
                     {
                         if (location is "")
                         {
-                            if (UsersData.Get<string>(data.user_id, "userPlace", data.platform) is not "")
+                            if (UsersData.Get<string>(data.UserID, "userPlace", data.Platform) is not "")
                             {
-                                var weather = Get(UsersData.Get<string>(data.user_id, "userLat", data.platform), UsersData.Get<string>(data.user_id, "userLon", data.platform));
+                                var weather = Get(UsersData.Get<string>(data.UserID, "userLat", data.Platform), UsersData.Get<string>(data.UserID, "userLon", data.Platform));
                                 var result = weather.Result.current;
                                 if (result.temperature != -400)
                                 {
-                                    commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:weather", data.channel_id, data.platform)
+                                    commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:weather", data.ChannelID, data.Platform)
                                         .Replace("%emote%", GetEmoji(result.temperature))
-                                        .Replace("%name%", UsersData.Get<string>(data.user_id, "userPlace", data.platform))
+                                        .Replace("%name%", UsersData.Get<string>(data.UserID, "userPlace", data.Platform))
                                         .Replace("%temperature%", result.temperature.ToString())
                                         .Replace("%feelsLike%", result.feels_like.ToString())
                                         .Replace("%windSpeed%", result.wind.speed.ToString())
-                                        .Replace("%summary%", GetSummary(data.user.language, result.summary.ToString(), data.channel_id, data.platform))
+                                        .Replace("%summary%", GetSummary(data.User.Language, result.summary.ToString(), data.ChannelID, data.Platform))
                                         .Replace("%pressure%", result.pressure.ToString())
                                         .Replace("%uvIndex%", result.uv_index.ToString())
                                         .Replace("%humidity%", result.humidity.ToString())
@@ -296,13 +296,13 @@ namespace butterBror
                                 }
                                 else
                                 {
-                                    commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:place_not_found", data.channel_id, data.platform));
+                                    commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:place_not_found", data.ChannelID, data.Platform));
                                     commandReturn.SetColor(ChatColorPresets.Red);
                                 }
                             }
                             else
                             {
-                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:location_not_set", data.channel_id, data.platform));
+                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:location_not_set", data.ChannelID, data.Platform));
                                 commandReturn.SetColor(ChatColorPresets.Red);
                             }
                         }
@@ -313,14 +313,14 @@ namespace butterBror
                                 var result_location = GetLocation(location).Result;
                                 if (result_location.Count == 0)
                                 {
-                                    commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:place_not_found", data.channel_id, data.platform));
+                                    commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:place_not_found", data.ChannelID, data.Platform));
                                     commandReturn.SetColor(ChatColorPresets.Red);
                                 }
                                 else if (result_location.Count == 1)
                                 {
                                     if (result_location.ElementAt(0).name == "err")
                                     {
-                                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:place_not_found", data.channel_id, data.platform));
+                                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:place_not_found", data.ChannelID, data.Platform));
                                         commandReturn.SetColor(ChatColorPresets.Red);
                                     }
                                     else
@@ -330,13 +330,13 @@ namespace butterBror
                                         var result = weather.Result.current;
                                         if (result.temperature != -400)
                                         {
-                                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:weather", data.channel_id, data.platform)
+                                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:weather", data.ChannelID, data.Platform)
                                                 .Replace("%emote%", GetEmoji(result.temperature))
                                                 .Replace("%name%", result_location[0].name)
                                                 .Replace("%temperature%", result.temperature.ToString())
                                                 .Replace("%feelsLike%", result.feels_like.ToString())
                                                 .Replace("%windSpeed%", result.wind.speed.ToString())
-                                                .Replace("%summary%", GetSummary(data.user.language, result.summary.ToString(), data.channel_id, data.platform))
+                                                .Replace("%summary%", GetSummary(data.User.Language, result.summary.ToString(), data.ChannelID, data.Platform))
                                                 .Replace("%pressure%", result.pressure.ToString())
                                                 .Replace("%uvIndex%", result.uv_index.ToString())
                                                 .Replace("%humidity%", result.humidity.ToString())
@@ -345,7 +345,7 @@ namespace butterBror
                                         }
                                         else
                                         {
-                                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:place_not_found", data.channel_id, data.platform));
+                                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:place_not_found", data.ChannelID, data.Platform));
                                             commandReturn.SetColor(ChatColorPresets.Red);
                                         }
                                     }
@@ -357,7 +357,7 @@ namespace butterBror
                                     {
                                         jsons.Add($"name: \"{loc.name}\", lat: \"{loc.lat}\", lon: \"{loc.lon}\"");
                                     }
-                                    UsersData.Save(data.user_id, "weatherResultLocations", jsons, data.platform);
+                                    UsersData.Save(data.UserID, "weatherResultLocations", jsons, data.Platform);
                                     string locationPage = "";
                                     int maxPage = (int)Math.Ceiling((double)(result_location.Count / 5));
                                     if (result_location.Count > 5)
@@ -380,7 +380,7 @@ namespace butterBror
                                         }
                                     }
                                     locationPage = (locationPage + "\n").Replace(", \n", "");
-                                    commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:weather:a_few_places", data.channel_id, data.platform)
+                                    commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:weather:a_few_places", data.ChannelID, data.Platform)
                                         .Replace("%places%", locationPage)
                                         .Replace("%page%", "1")
                                         .Replace("%pages%", maxPage.ToString()));
@@ -389,7 +389,7 @@ namespace butterBror
                             catch (Exception ex)
                             {
                                 Write(ex);
-                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:place_not_found", data.channel_id, data.platform));
+                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:place_not_found", data.ChannelID, data.Platform));
                                 commandReturn.SetColor(ChatColorPresets.Red);
                             }
                         }

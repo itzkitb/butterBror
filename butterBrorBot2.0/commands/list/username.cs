@@ -1,8 +1,8 @@
 ﻿using butterBror.Utils;
-using butterBror;
 using Discord;
 using TwitchLib.Client.Enums;
 using butterBror.Utils.Tools;
+using butterBror.Utils.Types;
 
 namespace butterBror
 {
@@ -40,26 +40,26 @@ namespace butterBror
 
                 try
                 {
-                    if (data.arguments.Count > 0)
+                    if (data.Arguments.Count > 0)
                     {
-                        string name = Names.GetUsername(data.arguments[0], Platforms.Twitch);
-                        if (name == data.user_id)
+                        string name = Names.GetUsername(data.Arguments[0], Platforms.Twitch);
+                        if (name == data.UserID)
                         {
-                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:name", data.channel_id, data.platform).Replace("%name%", data.user_id)); // Fix AB3
+                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:name", data.ChannelID, data.Platform).Replace("%name%", data.UserID)); // Fix AB3
                         }
                         else if (name == null)
                         {
-                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "error:user_not_found", data.channel_id, data.platform).Replace("%user%", data.arguments[0])); // Fix AB3
+                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:user_not_found", data.ChannelID, data.Platform).Replace("%user%", data.Arguments[0])); // Fix AB3
                             commandReturn.SetColor(ChatColorPresets.CadetBlue);
                         }
                         else
                         {
-                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:name:user", data.channel_id, data.platform).Replace("%name%", name).Replace("%id%", data.arguments[0])); // Fix AB3
+                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:name:user", data.ChannelID, data.Platform).Replace("%name%", name).Replace("%id%", data.Arguments[0])); // Fix AB3
                         }
                     }
                     else
                     {
-                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.user.language, "command:name", data.channel_id, data.platform).Replace("%name%", data.user_id)); // Fix AB3
+                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:name", data.ChannelID, data.Platform).Replace("%name%", data.UserID)); // Fix AB3
                     }
                 }
                 catch (Exception e)

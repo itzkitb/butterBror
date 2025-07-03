@@ -1,20 +1,35 @@
 ﻿using butterBror.Utils;
+using butterBror.Utils.Bot;
 using butterBror.Utils.DataManagers;
-using butterBror.Utils.Things;
 using butterBror.Utils.Tools;
+using butterBror.Utils.Types;
 using System.Net.NetworkInformation;
 using Telegram.Bot;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using TwitchLib.Client.Events;
-using static butterBror.Utils.Things.Console;
+using static butterBror.Utils.Bot.Console;
 using static butterBror.Utils.Tools.Text;
 
 namespace butterBror.Utils
 {
+    /// <summary>
+    /// Contains event handlers for Telegram bot interactions and message processing.
+    /// </summary>
     public partial class TelegramEvents
     {
+        /// <summary>
+        /// Handles incoming Telegram updates and processes user commands.
+        /// </summary>
+        /// <param name="client">The Telegram bot client instance.</param>
+        /// <param name="update">The incoming update containing message data.</param>
+        /// <param name="cancellation_token">Token to cancel the operation.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
+        /// <remarks>
+        /// Processes commands like /start, /ping, /help, and routes them to appropriate handlers.
+        /// Interacts with translation system and command processing components.
+        /// </remarks>
         [ConsoleSector("butterBror.Utils.TelegramEvents", "UpdateHandler")]
         public static async Task UpdateHandler(ITelegramBotClient client, Update update, CancellationToken cancellation_token)
         {
@@ -23,7 +38,7 @@ namespace butterBror.Utils
             {
                 if (update.Type is not UpdateType.Message) return;
 
-                Message message = update.Message;
+                Telegram.Bot.Types.Message message = update.Message;
                 User user = message.From;
                 User my_data = Core.Bot.Clients.Telegram.GetMe().Result;
                 string text = message.Text;
@@ -101,6 +116,16 @@ namespace butterBror.Utils
             }
         }
 
+        /// <summary>
+        /// Handles exceptions from the Telegram bot API client.
+        /// </summary>
+        /// <param name="botClient">The Telegram bot client instance.</param>
+        /// <param name="error">The exception that occurred.</param>
+        /// <param name="cancellationToken">Token to cancel the operation.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
+        /// <remarks>
+        /// Formats and logs Telegram API errors, including HTTP status codes and API-specific exceptions.
+        /// </remarks>
         [ConsoleSector("butterBror.Utils.TelegramEvents", "ErrorHandler")]
         public static Task ErrorHandler(ITelegramBotClient botClient, Exception error, CancellationToken cancellationToken)
         {
