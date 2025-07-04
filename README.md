@@ -1,5 +1,5 @@
 <img 
-    src="https://i.api.itzkitb.lol/butterbror/github_logo.png" 
+    src="https://images.itzkitb.lol/butterbror/github_logo.png" 
     alt="logo"
 />
 
