@@ -3,13 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.9.34728.123
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "butterBror", "butterBrorBot2.0\butterBror.csproj", "{334F9C7B-9B01-4978-961B-C8100CA8BB7B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "butterBror", "butterBror\butterBror.csproj", "{334F9C7B-9B01-4978-961B-C8100CA8BB7B}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "7tv_requests_test", "7tv_requests_test\7tv_requests_test.csproj", "{75D9DF5E-245F-474F-95E3-6C63BA2E4054}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestTelegramPing", "TestTelegramPing\TestTelegramPing.csproj", "{16B206BE-1334-461F-9481-F98F24DB2742}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Host", "Core\Host.csproj", "{E94EB63F-7259-4A08-9825-4B9A00C3D4F0}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Host", "Host\Host.csproj", "{E94EB63F-7259-4A08-9825-4B9A00C3D4F0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

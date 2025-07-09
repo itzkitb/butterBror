@@ -361,3 +361,5 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/TestTelegramPing/TestTelegramPing.csproj
+/7tv_requests_test/7tv_requests_test.csproj
