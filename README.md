@@ -13,11 +13,11 @@ Bot with various functions for chat moderation, mini-games, etc. Still in develo
 - [Telegram](https://t.me/butterBror_bot)
 
 ### Stats
-Commands count: 40
+Commands count: 42
 
-Lines of code in the release: 11701
+Lines of code in the release: 13568
 
-Release size: 6,24 MB
+Release size: 65,6 MB
 
 ### FAQ
 - How do I add a bot to the channel?
