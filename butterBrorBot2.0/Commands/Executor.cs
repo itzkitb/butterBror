@@ -28,7 +28,7 @@ namespace butterBror
         [ConsoleSector("butterBror.Commands", "Twitch")]
         public static async void Twitch(object sender, OnChatCommandReceivedArgs command)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 string CommandName = command.Command.CommandText;
@@ -49,8 +49,8 @@ namespace butterBror
                 UserData user = new()
                 {
                     ID = command.Command.ChatMessage.UserId,
-                    Language = "ru",
-                    Username = command.Command.ChatMessage.Username,
+                    Language = "en",
+                    Name = command.Command.ChatMessage.Username,
                     IsModerator = command.Command.ChatMessage.IsModerator,
                     IsBroadcaster = command.Command.ChatMessage.IsBroadcaster
                 };
@@ -97,14 +97,14 @@ namespace butterBror
         [ConsoleSector("butterBror.Commands", "Discord#1")]
         public static async void Discord(SocketSlashCommand command)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 UserData user = new()
                 {
                     ID = command.User.Id.ToString(),
-                    Language = "ru",
-                    Username = command.User.Username
+                    Language = "en",
+                    Name = command.User.Username
                 };
                 Guid RequestUuid = Guid.NewGuid();
                 Guid CommandExecutionUuid = Guid.NewGuid();
@@ -156,7 +156,7 @@ namespace butterBror
         [ConsoleSector("butterBror.Commands", "Discord#2")]
         public static async void Discord(SocketMessage message)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 string CommandName = message.Content.Split(' ')[0].Remove(0, 1);
@@ -177,8 +177,8 @@ namespace butterBror
                 UserData user = new()
                 {
                     ID = message.Author.Id.ToString(),
-                    Language = "ru",
-                    Username = message.Author.Username
+                    Language = "en",
+                    Name = message.Author.Username
                 };
 
                 CommandData data = new()
@@ -217,14 +217,14 @@ namespace butterBror
         [ConsoleSector("butterBror.Commands", "Telegram")]
         public static async void Telegram(Message message)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 UserData user = new()
                 {
                     ID = message.From.Id.ToString(),
-                    Language = "ru",
-                    Username = message.From.Username ?? message.From.FirstName,
+                    Language = "en",
+                    Name = message.From.Username ?? message.From.FirstName,
                     IsModerator = false,
                     IsBroadcaster = message.From.Id == message.Chat.Id
                 };

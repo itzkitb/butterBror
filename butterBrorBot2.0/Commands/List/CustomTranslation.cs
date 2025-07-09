@@ -32,11 +32,11 @@ namespace butterBror
                 IsForBotDeveloper = false,
                 IsForChannelModerator = false,
                 Platforms = [Platforms.Twitch, Platforms.Telegram, Platforms.Discord],
-                is_on_development = true
+                isOnDevelopment = true
             };
             public CommandReturn Index(CommandData data)
             {
-                Core.Statistics.FunctionsUsed.Add();
+                Engine.Statistics.FunctionsUsed.Add();
                 CommandReturn commandReturn = new CommandReturn();
 
                 try

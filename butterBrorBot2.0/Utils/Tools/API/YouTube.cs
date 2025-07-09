@@ -28,7 +28,7 @@ namespace butterBror.Utils.Tools.API
         [ConsoleSector("butterBror.Utils.Tools.API.YouTube", "GetPlaylistVideos")]
         public static string[] GetPlaylistVideos(string playlistUrl)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 MatchCollection matches = new Regex(@"watch\?v=[a-zA-Z0-9_-]{11}").Matches(new WebClient().DownloadString(playlistUrl));

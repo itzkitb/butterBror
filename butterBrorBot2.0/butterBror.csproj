@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>Library</OutputType>
+    <OutputType>Exe</OutputType>
     <TargetFrameworks>net8.0</TargetFrameworks>
 	<RootNamespace>butterBror</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>

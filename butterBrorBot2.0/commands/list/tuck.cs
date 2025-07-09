@@ -40,7 +40,7 @@ namespace butterBror
             [ConsoleSector("butterBror.Commands.Tuck", "Index")]
             public CommandReturn Index(CommandData data)
             {
-                Core.Statistics.FunctionsUsed.Add();
+                Engine.Statistics.FunctionsUsed.Add();
                 CommandReturn commandReturn = new CommandReturn();
 
                 try
@@ -57,7 +57,7 @@ namespace butterBror
                                 isSelectedUserIsNotIgnored = !UsersData.Get<bool>(userID, "isIgnored", data.Platform);
                         }
                         catch (Exception) { }
-                        if (username.ToLower() == Core.Bot.BotName.ToLower())
+                        if (username.ToLower() == Engine.Bot.BotName.ToLower())
                         {
                             commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:tuck:bot", data.ChannelID, data.Platform));
                             commandReturn.SetColor(ChatColorPresets.CadetBlue);
@@ -77,7 +77,7 @@ namespace butterBror
                         }
                         else
                         {
-                            Write($"User @{data.User.Username} tried to put a user to sleep who is in the ignore list", "info");
+                            Write($"User @{data.User.Name} tried to put a user to sleep who is in the ignore list", "info");
                             commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:user_ignored", data.ChannelID, data.Platform));
                         }
                     }

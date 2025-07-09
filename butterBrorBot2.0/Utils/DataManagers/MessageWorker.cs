@@ -28,13 +28,13 @@ namespace butterBror.Utils.DataManagers
         [ConsoleSector("butterBror.Utils.DataManagers", "SaveMessage")]
         public static void SaveMessage(string channelID, string userID, Message newMessage, Platforms platform)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             try
             {
-                string path = $"{Core.Bot.Pathes.Channels}{Platform.strings[(int)platform]}/{channelID}/MSGS/";
+                string path = $"{Engine.Bot.Pathes.Channels}{Platform.strings[(int)platform]}/{channelID}/MSGS/";
                 string user_messages_path = $"{path}{userID}.json";
                 if (FileUtil.FileExists(user_messages_path)) FileUtil.CreateBackup(user_messages_path);
-                string first_message_path = $"{Core.Bot.Pathes.Channels}{Platform.strings[(int)platform]}/{channelID}/FM/";
+                string first_message_path = $"{Engine.Bot.Pathes.Channels}{Platform.strings[(int)platform]}/{channelID}/FM/";
                 FileUtil.CreateDirectory(first_message_path);
                 FileUtil.CreateDirectory(path);
                 List<Message> messages = [];
@@ -92,10 +92,10 @@ namespace butterBror.Utils.DataManagers
         [ConsoleSector("butterBror.Utils.DataManagers", "GetMessage")]
         public static Message GetMessage(string channelID, string userID, Platforms platform, bool isGetCustomNumber = false, int customNumber = 0)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             try
             {
-                string path = $"{Core.Bot.Pathes.Channels}{Platform.strings[(int)platform]}/{channelID}/MSGS/";
+                string path = $"{Engine.Bot.Pathes.Channels}{Platform.strings[(int)platform]}/{channelID}/MSGS/";
                 string user_messages_path = $"{path}{userID}.json";
                 if (!File.Exists(path + userID + ".json")) return null;
 

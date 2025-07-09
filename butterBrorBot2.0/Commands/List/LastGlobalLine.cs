@@ -35,7 +35,7 @@ namespace butterBror
             };
             public CommandReturn Index(CommandData data)
             {
-                Core.Statistics.FunctionsUsed.Add();
+                Engine.Statistics.FunctionsUsed.Add();
                 CommandReturn commandReturn = new CommandReturn();
 
                 try
@@ -55,11 +55,11 @@ namespace butterBror
                             var lastLine = UsersData.Get<string>(userID, "lastSeenMessage", data.Platform);
                             var lastLineDate = UsersData.Get<DateTime>(userID, "lastSeen", data.Platform);
                             DateTime now = DateTime.UtcNow;
-                            if (name == Core.Bot.BotName.ToLower())
+                            if (name == Engine.Bot.BotName.ToLower())
                             {
                                 commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:last_global_line:bot", data.ChannelID, data.Platform));
                             }
-                            else if (name == data.User.Username.ToLower())
+                            else if (name == data.User.Name.ToLower())
                             {
                                 commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "text:you_right_there", data.ChannelID, data.Platform));
                             }

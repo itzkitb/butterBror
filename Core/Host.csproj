@@ -5,20 +5,10 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <ApplicationIcon>logo.ico</ApplicationIcon>
-    <AssemblyName>butterBror - console</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="logo.ico" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="Pastel" Version="6.0.1" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\butterBrorBot2.0\butterBrorBot2.0.csproj" />
   </ItemGroup>
 
 </Project>

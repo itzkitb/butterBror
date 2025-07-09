@@ -2,6 +2,7 @@
 using butterBror.Utils.Tools;
 using butterBror.Utils.Types;
 using Discord.WebSocket;
+using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Reflection;
 using Telegram.Bot.Types;
@@ -81,64 +82,65 @@ namespace butterBror
         [ConsoleSector("butterBror.Commands", "Run")]
         public static async Task Run(CommandData data, bool isATest = false)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
+            Stopwatch start = Stopwatch.StartNew();
 
             try
             {
-                DateTime command_start_time = DateTime.Now;
+                string userLanguage = "en";
 
-                if (data.Platform is Platforms.Twitch && data.TwitchArguments.Command.ChatMessage.IsMe)
-                    return;
+                if (UsersData.Get<string>(data.UserID, "language", data.Platform) == null)
+                    UsersData.Save(data.UserID, "language", "en", data.Platform);
+                else
+                    userLanguage = UsersData.Get<string>(data.UserID, "language", data.Platform);
 
-                string user_language = "ru";
-
-                try
-                {
-                    if (UsersData.Get<string>(data.UserID, "language", data.Platform) == null)
-                        UsersData.Save(data.UserID, "language", "ru", data.Platform);
-                    else
-                        user_language = UsersData.Get<string>(data.UserID, "language", data.Platform);
-                }
-                catch (Exception ex)
-                {
-                    Write(ex);
-                }
-
-                data.User.Language = user_language;
+                data.User.Language = userLanguage;
                 data.User.IsBanned = UsersData.Get<bool>(data.UserID, "isBanned", data.Platform);
                 data.User.Ignored = UsersData.Get<bool>(data.UserID, "isIgnored", data.Platform);
                 data.User.IsBotModerator = UsersData.Get<bool>(data.UserID, "isBotModerator", data.Platform);
                 data.User.IsBotDeveloper = UsersData.Get<bool>(data.UserID, "isBotDev", data.Platform);
-                var command = Text.FilterCommand(data.Name).Replace("ё", "е");
 
-                bool command_founded = false;
-                int index = 0;
+                if ((bool)data.User.IsBanned || (bool)data.User.Ignored ||
+                    (data.Platform is Platforms.Twitch && data.TwitchArguments.Command.ChatMessage.IsMe)) return; // Fix AB9
+
+                string command = FilterCommand(data.Name).Replace("ё", "е");
+                bool commandFounded = false;
                 CommandReturn? result = null;
 
-                if ((bool)data.User.IsBanned || (bool)data.User.Ignored) return; // Fix AB9
-
-                List<CommandHandler> command_handlers_list;
+                List<CommandHandler> commandHandlersList;
                 lock (_handlersLock)
                 {
-                    command_handlers_list = commandHandlers;
+                    commandHandlersList = commandHandlers;
                 }
 
-                foreach (var handler in command_handlers_list)
+                foreach (var handler in commandHandlersList)
                 {
-                    if (handler.info.Aliases.Contains(command))
+                    if (handler.Info.Aliases.Contains(command, StringComparer.OrdinalIgnoreCase))
                     {
-                        command_founded = true;
+                        if (handler.Info.Cost is not null)
+                        {
+                            int UserBalance = Utils.Tools.Balance.GetBalance(data.UserID, data.Platform);
+                            if (UserBalance >= handler.Info.Cost)
+                                Utils.Tools.Balance.Add(data.UserID, -(int)handler.Info.Cost, 0, data.Platform);
+                            else
+                            {
+                                string message = TranslationManager.GetTranslation(data.User.Language, "error:command_not_enough_coins", data.ChannelID,
+                                    data.Platform, new() { { "balance", UserBalance.ToString() }, { "need", handler.Info.Cost.ToString() } });
+                                Utils.Tools.Chat.SendReply(data.Platform, data.Channel, data.ChannelID, message, data.User.Language,
+                                    data.User.Name, data.UserID, data.Server, data.ServerID, data.MessageID, data.TelegramMessage, true);
+                            }
+                        }
 
-                        if (handler.info.IsForBotDeveloper && !(bool)data.User.IsBotDeveloper ||
-                            handler.info.IsForBotModerator && !(bool)data.User.IsBotModerator ||
-                            (data.Platform == Platforms.Twitch && handler.info.IsForChannelModerator && !(bool)data.User.IsModerator))
+                        commandFounded = true;
+
+                        if (handler.Info.IsForBotDeveloper && !(bool)data.User.IsBotDeveloper ||
+                            handler.Info.IsForBotModerator && !(bool)data.User.IsBotModerator ||
+                            (data.Platform == Platforms.Twitch && handler.Info.IsForChannelModerator && !(bool)data.User.IsModerator) ||
+                            !Command.CheckCooldown(handler.Info.CooldownPerUser, handler.Info.CooldownPerChannel, handler.Info.Name,
+                            data.User.ID, data.ChannelID, data.Platform, handler.Info.CooldownReset))
                             break;
 
-                        if (!Command.CheckCooldown(handler.info.CooldownPerUser, handler.info.CooldownPerChannel, handler.info.Name,
-                            data.User.ID, data.ChannelID, data.Platform, handler.info.CooldownReset))
-                            break;
-
-                        if (handler.info.is_on_development)
+                        if (handler.Info.isOnDevelopment)
                         {
                             CommandReturn commandReturn = new CommandReturn();
                             commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "text:tech_works", data.UserID, data.Platform));
@@ -146,15 +148,12 @@ namespace butterBror
                         }
                         else
                         {
-                            if (!isATest)
-                            {
-                                Command.ExecutedCommand(data);
-                            }
+                            if (!isATest) Command.ExecutedCommand(data);
 
                             try
                             {
                                 var currentHandler = handler;
-                                var commandName = currentHandler.info?.Name ?? "unknown_command";
+                                var commandName = currentHandler.Info?.Name ?? "unknown_command";
 
                                 if (currentHandler.sync_executor != null)
                                 {
@@ -167,91 +166,35 @@ namespace butterBror
                             }
                             catch (Exception ex)
                             {
-                                throw new Exception($"Failed to execute command: \nError: {ex.Message}\nStack: {ex.StackTrace}\n" +
-                                    $"Error Location: {ex.Source}\nCommand: {handler.info.Name}\nCommand Arguments: {data.ArgumentsString}\n" +
-                                    $"User: {data.User.Username} (#{data.UserID})");
+                                throw new Exception($"--How did we get here?--\n#Message:\n{ex.Message}\n#Stack:\n{ex.StackTrace}\n" +
+                                    $"#ErrorSource:\n{ex.Source}\n#Command:\n{handler.Info.Name}\n#CommandArguments:\n{data.ArgumentsString}\n" +
+                                    $"#User:\n{data.User.Name} (#{data.UserID})\n--End--");
                             }
                         }
 
                         if (result is not null)
                         {
                             if (result.Exception is not null && result.IsError)
-                                throw new Exception($"Command failed: " +
-                                    $"\nError: {CheckNull(result.Exception.Message)}" +
-                                    $"\nStack: {CheckNull(result.Exception.StackTrace)}" +
-                                    $"\nSource: {CheckNull(result.Exception.Source)}" +
-                                    $"\nCommand: {CheckNull(handler.info.Name)}" +
-                                    $"\nArgs: {CheckNull(data.ArgumentsString)}" +
-                                    $"\nUser: {CheckNull(data.User.Username)} (#{CheckNull(data.UserID)})");
+                                throw new Exception($"--It's not your fault--\n#Message:\n{result.Exception.Message}\n#Stack:\n{result.Exception.StackTrace}\n" +
+                                    $"#ErrorSource:\n{result.Exception.Source}\n#Command:\n{handler.Info.Name}\n#CommandArguments:\n{data.ArgumentsString}\n" +
+                                    $"#User:\n{data.User.Name} (#{data.UserID})\n--End--");
 
                             if (!isATest)
                             {
-                                switch (data.Platform)
-                                {
-                                    case Platforms.Twitch:
-                                        SendCommandReply(new TwitchMessageSendData
-                                        {
-                                            Message = result.Message,
-                                            Channel = data.Channel,
-                                            ChannelID = data.ChannelID,
-                                            MessageID = data.TwitchArguments.Command.ChatMessage.Id,
-                                            Language = data.User.Language,
-                                            Username = data.User.Username,
-                                            SafeExecute = result.IsSafe,
-                                            UsernameColor = result.BotNameColor
-                                        });
-                                        break;
-                                    case Platforms.Discord:
-                                        SendCommandReply(new DiscordCommandSendData
-                                        {
-                                            Message = result.Message,
-                                            Title = result.Title,
-                                            Description = result.Description,
-                                            EmbedColor = (Discord.Color?)result.EmbedColor,
-                                            IsEmbed = result.IsEmbed,
-                                            IsEphemeral = result.IsEphemeral,
-                                            Server = data.Server,
-                                            ServerID = data.ServerID,
-                                            Language = data.User.Language,
-                                            SafeExecute = result.IsSafe,
-                                            SocketCommandBase = data.DiscordCommandBase,
-                                            Author = result.Author,
-                                            ImageLink = result.ImageLink,
-                                            ThumbnailLink = result.ThumbnailLink,
-                                            Footer = result.Footer,
-                                            ChannelID = data.ChannelID,
-                                            UserID = data.UserID
-                                        });
-                                        break;
-                                    case Platforms.Telegram:
-                                        SendCommandReply(new TelegramMessageSendData
-                                        {
-                                            Message = result.Message,
-                                            Language = data.User.Language,
-                                            SafeExecute = result.IsSafe,
-                                            Channel = data.Channel,
-                                            ChannelID = data.ChannelID,
-                                            MessageID = data.MessageID,
-                                            Username = data.Name
-                                        });
-                                        break;
-                                }
+                                Utils.Tools.Chat.SendReply(data.Platform, data.Channel, data.ChannelID, result.Message, data.User.Language,
+                                    data.User.Name, data.UserID, data.Server, data.ServerID, data.MessageID, data.TelegramMessage, result.IsSafe, result.BotNameColor);
                             }
-
-                            if (handler.info.cost != null)
-                                Utils.Tools.Balance.Add(data.UserID, -(int)handler.info.cost, 0, data.Platform);
                         }
                         else
                         {
-                            Write($"Empty response from {handler.info.Name}", "info", LogLevel.Warning);
+                            Write($"Empty response from {handler.Info.Name}", "info", LogLevel.Error);
                         }
                     }
-                    index++;
                 }
 
-                if (!command_founded)
+                if (!commandFounded)
                 {
-                    Write($"@{data.Name} tried to execute unknown command: {command}", "info", LogLevel.Warning);
+                    Write($"@{data.Name} tried to run unknown command: {command}", "info", LogLevel.Warning);
                 }
             }
             catch (Exception ex)
@@ -259,55 +202,14 @@ namespace butterBror
                 Write(ex);
                 if (!isATest)
                 {
-                    if (data.Platform is Platforms.Twitch)
-                    {
-                        TwitchMessageSendData SendData = new()
-                        {
-                            Message = TranslationManager.GetTranslation("ru", "error:unknown", data.ChannelID, data.Platform),
-                            Channel = data.Channel,
-                            ChannelID = data.ChannelID,
-                            MessageID = data.TwitchArguments.Command.ChatMessage.Id,
-                            Language = data.User.Language,
-                            Username = data.User.Username,
-                            SafeExecute = true,
-                            UsernameColor = ChatColorPresets.Red
-                        };
-                        butterBror.Commands.SendCommandReply(SendData);
-                    }
-                    else if (data.Platform is Platforms.Telegram)
-                    {
-                        TelegramMessageSendData SendData = new()
-                        {
-                            Message = TranslationManager.GetTranslation("ru", "error:unknown", data.ChannelID, data.Platform),
-                            Channel = data.Channel,
-                            ChannelID = data.ChannelID,
-                            MessageID = data.MessageID,
-                            Language = data.User.Language,
-                            Username = data.User.Username,
-                            SafeExecute = true
-                        };
-                        butterBror.Commands.SendCommandReply(SendData);
-                    }
-                    else if (data.Platform is Platforms.Discord)
-                    {
-                        DiscordCommandSendData SendData = new()
-                        {
-                            Message = "",
-                            Description = TranslationManager.GetTranslation("ru", "error:unknown", data.ChannelID, data.Platform),
-                            IsEmbed = true,
-                            EmbedColor = (Discord.Color?)System.Drawing.Color.Red,
-                            IsEphemeral = true,
-                            Server = data.Server,
-                            ServerID = data.ServerID,
-                            Language = data.User.Language,
-                            SafeExecute = true,
-                            SocketCommandBase = data.DiscordCommandBase,
-                            ChannelID = data.ChannelID,
-                            UserID = data.UserID
-                        };
-                        butterBror.Commands.SendCommandReply(SendData);
-                    }
+                    Utils.Tools.Chat.SendReply(data.Platform, data.Channel, data.ChannelID, TranslationManager.GetTranslation("ru", "error:unknown", data.ChannelID, data.Platform), data.User.Language,
+                        data.User.Name, data.UserID, data.Server, data.ServerID, data.MessageID, data.TelegramMessage, true, ChatColorPresets.Red);
                 }
+            }
+            finally
+            {
+                start.Stop();
+                Write($"Command completed in {start.ElapsedMilliseconds}ms", "info");
             }
         }
     }

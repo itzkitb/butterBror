@@ -42,7 +42,7 @@ namespace butterBror
 
             public CommandReturn Index(CommandData data)
             {
-                Core.Statistics.FunctionsUsed.Add();
+                Engine.Statistics.FunctionsUsed.Add();
                 try
                 {
                     string action = "";
@@ -84,12 +84,12 @@ namespace butterBror
             }
             public static CommandReturn GoToAfk(CommandData data, string afkType)
             {
-                Core.Statistics.FunctionsUsed.Add();
+                Engine.Statistics.FunctionsUsed.Add();
                 CommandReturn commandReturn = new CommandReturn();
 
                 try
                 {
-                    string result = TranslationManager.GetTranslation(data.User.Language, $"command:afk:{afkType}:start", data.ChannelID, data.Platform).Replace("%user%", data.User.Username);
+                    string result = TranslationManager.GetTranslation(data.User.Language, $"command:afk:{afkType}:start", data.ChannelID, data.Platform).Replace("%user%", data.User.Name);
                     string text = data.ArgumentsString;
 
                     if (new NoBanwords().Check(text, data.ChannelID, data.Platform))

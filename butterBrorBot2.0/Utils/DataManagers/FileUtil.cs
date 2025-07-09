@@ -165,8 +165,8 @@ namespace butterBror.Utils.DataManagers
         /// <returns>A new path for the backup file.</returns>
         public static string GetBackupPath(string originalPath)
         {
-            Core.Statistics.FunctionsUsed.Add();
-            var fileName = $"{Core.Bot.Pathes.Reserve}{originalPath.Replace(Core.Bot.Pathes.Main, "")}";
+            Engine.Statistics.FunctionsUsed.Add();
+            var fileName = $"{Engine.Bot.Pathes.Reserve}{originalPath.Replace(Engine.Bot.Pathes.Main, "")}";
 
             return fileName;
         }

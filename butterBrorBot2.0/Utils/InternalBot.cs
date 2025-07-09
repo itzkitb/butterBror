@@ -21,7 +21,7 @@ using TwitchLib.Client;
 using TwitchLib.Client.Models;
 using TwitchLib.Communication.Clients;
 using TwitchLib.Communication.Models;
-using static butterBror.Core.Statistics;
+using static butterBror.Engine.Statistics;
 using static butterBror.Utils.Bot.Console;
 using static butterBror.Utils.Bot.TwitchToken;
 
@@ -38,7 +38,6 @@ namespace butterBror
 
         public bool TwitchReconnected = false;
         public bool Initialized = false;
-        public bool NeedRestart = false;
         public bool Connected = false;
 
         public string TwitchClientId = string.Empty;
@@ -81,24 +80,23 @@ namespace butterBror
         /// - Handles version tracking and file persistence
         /// </remarks>
         [ConsoleSector("butterBror.InternalBot", "Start")]
-        public async void Start(int ThreadID)
+        public async void Start()
         {
             FunctionsUsed.Add();
 
             _startTime = DateTime.UtcNow;
-            Thread.CurrentThread.Name = ThreadID.ToString();
-            Core.Ready = false;
+            Engine.Ready = false;
 
             if (FileUtil.FileExists(Pathes.Currency))
             {
-                Core.Coins = Manager.Get<float>(Pathes.Currency, "totalAmount");
-                Core.BankDollars = Manager.Get<int>(Pathes.Currency, "totalDollarsInTheBank");
-                Core.Users = Manager.Get<int>(Pathes.Currency, "totalUsers");
+                Engine.Coins = Manager.Get<float>(Pathes.Currency, "totalAmount");
+                Engine.BankDollars = Manager.Get<int>(Pathes.Currency, "totalDollarsInTheBank");
+                Engine.Users = Manager.Get<int>(Pathes.Currency, "totalUsers");
             }
 
             try
             {
-                Write("Checking directories right now...", "info");
+                Write("Checking directories right now...", "initialization");
                 string[] directories = {
                         Pathes.General, Pathes.Main, Pathes.Channels, Pathes.Users, Pathes.NicknamesData,
                         Pathes.Nick2ID, Pathes.ID2Nick, Pathes.TranslateDefault, Pathes.TranslateCustom
@@ -112,11 +110,11 @@ namespace butterBror
                     };
 
 
-                Write("Checking files right now...", "info");
+                Write("Checking files right now...", "initialization");
                 if (!FileUtil.FileExists(Pathes.Settings))
                 {
                     InitializeSettingsFile(Pathes.Settings);
-                    Write($"The settings file has been created! ({Pathes.Settings})", "info");
+                    Write($"The settings file has been created! ({Pathes.Settings})", "initialization");
                     Thread.Sleep(-1);
                 }
 
@@ -127,18 +125,18 @@ namespace butterBror
                             Path.Combine(Pathes.TranslateDefault, "en.json"), Path.Combine(Pathes.Main, "VERSION.txt")
                     };
 
-                Write("Creating files...", "info");
+                Write("Creating files...", "initialization");
                 foreach (var file in files)
                 {
                     FileUtil.CreateFile(file);
                 }
 
-                Core.PreviousVersion = File.ReadAllText(Path.Combine(Pathes.Main, "VERSION.txt"));
-                File.WriteAllText(Path.Combine(Pathes.Main, "VERSION.txt"), $"{Core.Version}.{Core.Patch}");
+                Engine.PreviousVersion = File.ReadAllText(Path.Combine(Pathes.Main, "VERSION.txt"));
+                File.WriteAllText(Path.Combine(Pathes.Main, "VERSION.txt"), $"{Engine.Version}.{Engine.Patch}");
 
                 Commands.IndexCommands();
 
-                Write("Loading settigns...", "info");
+                Write("Loading settigns...", "initialization");
                 LoadSettings();
 
                 Tokens.TwitchGetter = new(TwitchClientId, Tokens.TwitchSecretToken, Pathes.Main + "TWITCH_AUTH.json");
@@ -151,7 +149,7 @@ namespace butterBror
                 }
                 else
                 {
-                    Write("Twitch token is null! Something went wrong...", "info");
+                    Write("Twitch token is null! Something went wrong...", "initialization");
                     Restart();
                 }
             }
@@ -178,23 +176,23 @@ namespace butterBror
 
             try
             {
-                Write("Connecting to Twitch...", "info");
+                Write("Connecting to Twitch...", "initialization");
                 ConnectToTwitch();
 
-                Write("Connecting to Discord...", "info");
+                Write("Connecting to Discord...", "initialization");
                 await ConnectToDiscord();
 
-                Write("Connecting to Telegram...", "info");
+                Write("Connecting to Telegram...", "initialization");
                 ConnectToTelegram();
 
-                Write("Loading 7tv cache...", "info");
+                Write("Loading 7tv cache...", "initialization");
                 LoadEmoteCache();
 
                 DateTime endTime = DateTime.UtcNow;
-                Core.Ready = true;
+                Engine.Ready = true;
                 Initialized = true;
                 Connected = true;
-                Write($"Well done! ({(endTime - _startTime).TotalMilliseconds} ms)", "info");
+                Write($"Well done! ({(endTime - _startTime).TotalMilliseconds} ms)", "initialization");
             }
             catch (Exception ex)
             {
@@ -262,14 +260,14 @@ namespace butterBror
                 return channel2;
             }).Where(channel => channel != "NONE\n"));
 
-            Write($"Twitch - Connecting to {send_channels}", "info");
+            Write($"Twitch - Connecting to {send_channels}", "initialization");
             foreach (var channel in TwitchChannels)
             {
                 var channel2 = Names.GetUsername(channel, Platforms.Twitch);
                 if (channel2 != null) Clients.Twitch.JoinChannel(channel2);
             }
             foreach (var channel in not_founded_channels)
-                Write("Twitch - Can't find ID for " + channel, "info", LogLevel.Warning);
+                Write("Twitch - Can't find ID for " + channel, "initialization", LogLevel.Warning);
 
             Clients.Twitch.JoinChannel(BotName.ToLower());
             Clients.Twitch.SendMessage(BotName.ToLower(), "truckCrash Connecting to twitch...");
@@ -356,7 +354,7 @@ namespace butterBror
 
             try
             {
-                Write("Twitch - Telemetry started!", "info");
+                Write("Twitch - Telemetry started!", "telemetry");
                 Chat.TwitchSend(BotName.ToLower(), $"glorp 📡 ᴛᴇʟᴇᴍᴇᴛʀʏ sᴛᴀʀᴛᴇᴅ...", "", "", "", true, false);
                 Stopwatch Start = Stopwatch.StartNew();
 
@@ -389,7 +387,7 @@ namespace butterBror
                 {
                     ID = "a123456789",
                     Language = "en",
-                    Username = "test",
+                    Name = "test",
                     IsModerator = true,
                     IsBroadcaster = true
                 };
@@ -442,36 +440,36 @@ namespace butterBror
 
                 MessageSaver.Stop();
 
-                File.Delete(Path.Combine(Core.Bot.Pathes.Users, "TELEGRAM", "a123456789.json"));
-                Directory.Delete(Path.Combine(Core.Bot.Pathes.Channels, "TELEGRAM", "a123456789"), true);
+                File.Delete(Path.Combine(Engine.Bot.Pathes.Users, "TELEGRAM", "a123456789.json"));
+                Directory.Delete(Path.Combine(Engine.Bot.Pathes.Channels, "TELEGRAM", "a123456789"), true);
                 #endregion
                 #region Local ping
                 Stopwatch LocalPing = Stopwatch.StartNew();
-                Core.Ping();
+                Engine.Ping();
                 LocalPing.Stop();
                 #endregion
 
-                decimal cpuPercent = Core.CPUCounterItems == 0 ? 0 : Core.CPUCounter / Core.CPUCounterItems;
-                decimal tpsAverage = Core.TPSCounterItems == 0 ? 0 : (decimal)Core.TPSCounter / Core.TPSCounterItems;
-                float coinCurrency = Core.Coins == 0 ? 0 : Core.BankDollars / Core.Coins;
+                decimal cpuPercent = Engine.TelemetryCPUItems == 0 ? 0 : Engine.TelemetryCPU / Engine.TelemetryCPUItems;
+                decimal tpsAverage = Engine.TelemetryTPSItems == 0 ? 0 : (decimal)Engine.TelemetryTPS / Engine.TelemetryTPSItems;
+                float coinCurrency = Engine.Coins == 0 ? 0 : Engine.BankDollars / Engine.Coins;
 
-                Core.CPUCounter = 0;
-                Core.CPUCounterItems = 0;
-                Core.TPSCounter = 0;
-                Core.TPSCounterItems = 0;
+                Engine.TelemetryCPU = 0;
+                Engine.TelemetryCPUItems = 0;
+                Engine.TelemetryTPS = 0;
+                Engine.TelemetryTPSItems = 0;
                 Start.Stop();
 
                 await Task.Delay(500);
                 long memory = Process.GetCurrentProcess().PrivateMemorySize64 / (1024 * 1024);
 
                 Chat.TwitchSend(BotName.ToLower(), $"/me glorp 📡 ᴛᴇʟᴇᴍᴇᴛʀʏ №1 | " +
-                    $"🏃‍♂️ Work time: {DateTime.Now - Core.StartTime:dd\\:hh\\:mm\\.ss} | " +
+                    $"🏃‍♂️ Work time: {DateTime.Now - Engine.StartTime:dd\\:hh\\:mm\\.ss} | " +
                     $"📲 Memory: {memoryBefore}Mbyte → {memory}Mbyte | " +
                     $"🔋 Battery: {Battery.GetBatteryCharge()}% ({Battery.IsCharging()}) | " +
                     $"⚡ CPU: {cpuPercent:0.00}% | " +
                     $"⌛ TPS: {tpsAverage:0.00} | " +
-                    $"⌚ TT: {Core.TicksCounter} | " +
-                    $"⚠ ST: {Core.SkippedTicks} | " +
+                    $"⌚ TT: {Engine.TicksCounter} | " +
+                    $"⚠ ST: {Engine.SkippedTicks} | " +
                     $"👾 DankDB: {cacheItemsBefore} → {Worker.cache.count} | " +
                     $"🤨 Emotes: {EmotesCache.Count} | " +
                     $"📺 7tv: {ChannelsSevenTVEmotes.Count} | " +
@@ -479,8 +477,8 @@ namespace butterBror
                     $"🔍 7tv USC: {UsersSearchCache.Count} | " +
                     $"💬 Messages: {MessagesProccessed} | " +
                     $"🤖 Discord: {Clients.Discord.Guilds.Count} | " +
-                    $"📋 Commands: {Core.CompletedCommands} | " +
-                    $"👥 Users: {Core.Users}", "", "", "", true, false);
+                    $"📋 Commands: {Engine.CompletedCommands} | " +
+                    $"👥 Users: {Engine.Users}", "", "", "", true, false);
 
                 await Task.Delay(500);
                 Chat.TwitchSend(BotName.ToLower(), $"/me glorp 📡 ᴛᴇʟᴇᴍᴇᴛʀʏ №2 | " +
@@ -489,14 +487,14 @@ namespace butterBror
                     $"Telegram: {telegram}ms | " +
                     $"7tv: {sevenTV.RoundtripTime}ms | " +
                     $"🚄 ISP: {ISP.RoundtripTime}ms | " +
-                    $"{Core.Bot.CoinSymbol} Coins: {Core.Coins:0.00} | " +
+                    $"{Engine.Bot.CoinSymbol} Coins: {Engine.Coins:0.00} | " +
                     $"Coin currency: ${coinCurrency:0.00000000} | " +
                     $"Commands ping: {CommandExecute.ElapsedMilliseconds}ms | " +
                     $"DB ping: {DBPing.ElapsedMilliseconds}ms | " +
                     $"MessageSaver ping: {MessageSaver.ElapsedMilliseconds}ms | " +
                     $"Local ping: {LocalPing.ElapsedMilliseconds}ms", "", "", "", true, false);
 
-                Write($"Twitch - Telemetry ended! ({Start.ElapsedMilliseconds}ms)", "info");
+                Write($"Twitch - Telemetry ended! ({Start.ElapsedMilliseconds}ms)", "telemetry");
 
                 try
                 {
@@ -517,18 +515,17 @@ namespace butterBror
         /// <summary>
         /// Restarts the bot instance gracefully.
         /// </summary>
-        /// <remarks>
-        /// - Initiates clean shutdown sequence
-        /// - Preserves state between restarts
-        /// - Maintains current thread execution context
-        /// </remarks>
         [ConsoleSector("butterBror.InternalBot", "Restart")]
         public void Restart()
         {
             FunctionsUsed.Add();
 
             Write("Restarting...", "info");
-            Disconnect();
+
+            Initialized = false;
+            Connected = false;
+            Task.Delay(5000);
+            Engine.Exit(1);
         }
 
         /// <summary>
@@ -536,8 +533,6 @@ namespace butterBror
         /// </summary>
         /// <remarks>
         /// - Sends shutdown message to Twitch channels
-        /// - Disconnects from all platforms
-        /// - Preserves state for graceful shutdown
         /// </remarks>
         [ConsoleSector("butterBror.InternalBot", "TurnOff")]
         public void TurnOff()
@@ -556,55 +551,17 @@ namespace butterBror
                     }
                     catch { }
                 }
+                Initialized = false;
+                Connected = false;
 
-                Disconnect();
                 Write($"Bot is disabled!", "info");
+                Task.Delay(1000).Wait();
+                Engine.Exit(0);
             }
             catch (Exception ex)
             {
                 Write(ex);
             }
-        }
-
-        /// <summary>
-        /// Disconnects from all platforms and cleans up resources.
-        /// </summary>
-        /// <remarks>
-        /// - Leaves all Twitch channels
-        /// - Disposes of Discord and Telegram clients
-        /// - Updates connection state flags
-        /// </remarks>
-        [ConsoleSector("butterBror.InternalBot", "Disconnect")]
-        private void Disconnect()
-        {
-            FunctionsUsed.Add();
-
-            try
-            {
-                foreach (var channel in Clients.Twitch.JoinedChannels)
-                {
-                    try
-                    {
-                        Clients.Twitch.LeaveChannel(channel);
-                    }
-                    catch (Exception ex)
-                    {
-                        Write($"Twitch - Leave channel error: {ex.Message} : {ex.StackTrace}", "info", LogLevel.Warning);
-                    }
-                }
-
-                Clients.Twitch.Disconnect();
-                Clients.TelegramCancellationToken.Dispose();
-                Clients.Discord.Dispose();
-            }
-            catch (Exception ex)
-            {
-                Write(ex);
-            }
-
-            NeedRestart = true;
-            Initialized = false;
-            Connected = false;
         }
 
         /// <summary>

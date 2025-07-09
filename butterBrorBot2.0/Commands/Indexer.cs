@@ -29,7 +29,7 @@ namespace butterBror
         [ConsoleSector("butterBror.Commands", "IndexCommands")]
         public static void IndexCommands()
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             Write($"Indexing commands...", "info");
 
             foreach (var classType in commands)
@@ -61,7 +61,7 @@ namespace butterBror
                     {
                         var handler = new CommandHandler
                         {
-                            info = info,
+                            Info = info,
                             sync_executor = null,
                             async_executor = null
                         };
@@ -107,7 +107,7 @@ namespace butterBror
         [ConsoleSector("butterBror.Commands", "CreateInstanceFactory")]
         private static Func<object> CreateInstanceFactory(Type type)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 var constructor = type.GetConstructor(Type.EmptyTypes);
@@ -138,7 +138,7 @@ namespace butterBror
         [ConsoleSector("butterBror.Commands", "CreateSyncDelegate")]
         private static Delegate CreateSyncDelegate(Type type, MethodInfo method)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             var instanceParam = Expression.Parameter(typeof(object));
             var dataParam = Expression.Parameter(typeof(CommandData));
             var call = Expression.Call(
@@ -146,7 +146,7 @@ namespace butterBror
                 method,
                 dataParam
             );
-            return Expression.Lambda(call, instanceParam, dataParam).Compile();
+            return Expression.Lambda<Func<object, CommandData, CommandReturn>>(call, instanceParam, dataParam).Compile();
         }
 
         /// <summary>
@@ -162,7 +162,7 @@ namespace butterBror
         [ConsoleSector("butterBror.Commands", "CreateAsyncDelegate")]
         private static Delegate CreateAsyncDelegate(Type type, MethodInfo method)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             var instanceParam = Expression.Parameter(typeof(object));
             var dataParam = Expression.Parameter(typeof(CommandData));
             var call = Expression.Call(
@@ -170,7 +170,7 @@ namespace butterBror
                 method,
                 dataParam
             );
-            return Expression.Lambda(call, instanceParam, dataParam).Compile();
+            return Expression.Lambda<Func<object, CommandData, Task<CommandReturn>>>(call, instanceParam, dataParam).Compile();
         }
     }
 }

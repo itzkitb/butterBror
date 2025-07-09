@@ -30,7 +30,7 @@ namespace butterBror.Utils.Tools
         [ConsoleSector("butterBror.Utils.Tools.Command", "GetArgument#1")]
         public static string GetArgument(List<string> args, int index)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             if (args.Count > index)
                 return args[index];
             return null;
@@ -45,7 +45,7 @@ namespace butterBror.Utils.Tools
         [ConsoleSector("butterBror.Utils.Tools.Command", "GetArgument#2")]
         public static string GetArgument(List<string> args, string arg_name)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             foreach (string arg in args)
             {
                 if (arg.StartsWith(arg_name + ":")) return arg.Replace(arg_name + ":", "");
@@ -60,11 +60,11 @@ namespace butterBror.Utils.Tools
         [ConsoleSector("butterBror.Utils.Tools.Command", "ExecutedCommand")]
         public static void ExecutedCommand(CommandData data)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             try
             {
-                Write($"Executed command {data.Name} (User: {data.User.Username}, full message: \"{data.Name} {data.ArgumentsString}\", arguments: \"{data.ArgumentsString}\", command: \"{data.Name}\")", "info");
-                Core.CompletedCommands++;
+                Write($"Executed command {data.Name} (User: {data.User.Name}, full message: \"{data.Name} {data.ArgumentsString}\", arguments: \"{data.ArgumentsString}\", command: \"{data.Name}\")", "info");
+                Engine.CompletedCommands++;
             }
             catch (Exception ex)
             {
@@ -98,7 +98,7 @@ namespace butterBror.Utils.Tools
             bool ignoreGlobalCooldown = false
         )
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
 
             try
             {
@@ -112,7 +112,7 @@ namespace butterBror.Utils.Tools
                 }
 
                 string userKey = $"LU_{cooldownParamName}";
-                string channelPath = Path.Combine(Core.Bot.Pathes.Channels, Platform.strings[(int)platform], roomID);
+                string channelPath = Path.Combine(Engine.Bot.Pathes.Channels, Platform.strings[(int)platform], roomID);
                 string cddFile = Path.Combine(channelPath, "CDD.json");
 
                 DateTime now = DateTime.UtcNow;
@@ -192,7 +192,7 @@ namespace butterBror.Utils.Tools
             Platforms platform
         )
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 return TimeSpan.FromSeconds(userSecondsCooldown) - (DateTime.UtcNow - UsersData.Get<DateTime>(userID, $"LU_{cooldownParamName}", platform));
@@ -233,8 +233,8 @@ namespace butterBror.Utils.Tools
             string ServerChannel = ""
         )
         {
-            Core.Statistics.FunctionsUsed.Add();
-            Core.Statistics.MessagesReaded.Add();
+            Engine.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.MessagesReaded.Add();
             var now = DateTime.UtcNow;
             var semaphore = messagesSemaphores.GetOrAdd(UserID, id => (new SemaphoreSlim(1, 1), now));
             try
@@ -248,14 +248,14 @@ namespace butterBror.Utils.Tools
 
                 // Prepare paths and counters
                 string platform_key = butterBror.Platform.strings[(int)Platform];
-                string channel_base = Path.Combine(Core.Bot.Pathes.Channels, platform_key, RoomId);
+                string channel_base = Path.Combine(Engine.Bot.Pathes.Channels, platform_key, RoomId);
                 string count_dir = Path.Combine(channel_base, "MS");
                 string user_count_file = Path.Combine(count_dir, UserID + ".txt");
                 int messages_count = 0;
                 DateTime now_utc = DateTime.UtcNow;
 
-                string nick2id = Path.Combine(Core.Bot.Pathes.Nick2ID, platform_key, Username + ".txt");
-                string id2nick = Path.Combine(Core.Bot.Pathes.ID2Nick, platform_key, UserID + ".txt");
+                string nick2id = Path.Combine(Engine.Bot.Pathes.Nick2ID, platform_key, Username + ".txt");
+                string id2nick = Path.Combine(Engine.Bot.Pathes.ID2Nick, platform_key, UserID + ".txt");
 
                 // Ensure directories exist
                 FileUtil.CreateDirectory(channel_base);
@@ -265,10 +265,10 @@ namespace butterBror.Utils.Tools
                 // Count and increment
                 if (FileUtil.FileExists(user_count_file))
                     messages_count = Format.ToInt(FileUtil.GetFileContent(user_count_file)) + 1;
-                Core.Bot.MessagesProccessed++;
+                Engine.Bot.MessagesProccessed++;
 
                 bool isNewUser = !FileUtil.FileExists(
-                    Path.Combine(Core.Bot.Pathes.Users, platform_key, UserID + ".json")
+                    Path.Combine(Engine.Bot.Pathes.Users, platform_key, UserID + ".json")
                 );
 
                 // Build message prefix
@@ -299,17 +299,17 @@ namespace butterBror.Utils.Tools
                     int bal = Balance.GetBalance(UserID, Platform);
 
                     prefix.Append(Platform == Platforms.Discord
-                        ? $"{Room} | {ServerChannel} · {Username} ({messages_count}/{bal}.{floatBal} {Core.Bot.CoinSymbol}): "
-                        : $"{Room} | {Username} ({messages_count}/{bal}.{floatBal} {Core.Bot.CoinSymbol}): ");
+                        ? $"{Room} | {ServerChannel} · {Username} ({messages_count}/{bal}.{floatBal} {Engine.Bot.CoinSymbol}): "
+                        : $"{Room} | {Username} ({messages_count}/{bal}.{floatBal} {Engine.Bot.CoinSymbol}): ");
                 }
 
                 // Currency init for new users
                 if (!UsersData.Get<bool>(UserID, "isReadedCurrency", Platform))
                 {
                     UsersData.Save(UserID, "isReadedCurrency", true, Platform);
-                    Core.Coins += (float)(UsersData.Get<int>(UserID, "balance", Platform)
+                    Engine.Coins += (float)(UsersData.Get<int>(UserID, "balance", Platform)
                                    + UsersData.Get<int>(UserID, "floatBalance", Platform) / 100.0);
-                    Core.Users++;
+                    Engine.Users++;
                     prefix.Append("(Added to currency) ");
                 }
 
@@ -328,10 +328,10 @@ namespace butterBror.Utils.Tools
                     if (!string.Equals(mentioned, Username, StringComparison.OrdinalIgnoreCase)
                         && mentionedId != null)
                     {
-                        Balance.Add(mentionedId, 0, Core.Bot.CurrencyMentioned, Platform);
-                        Balance.Add(UserID, 0, Core.Bot.CurrencyMentioner, Platform);
-                        prefix.Append($" ({mentioned} +{Core.Bot.CurrencyMentioned}) " +
-                                      $"({Username} +{Core.Bot.CurrencyMentioner})");
+                        Balance.Add(mentionedId, 0, Engine.Bot.CurrencyMentioned, Platform);
+                        Balance.Add(UserID, 0, Engine.Bot.CurrencyMentioner, Platform);
+                        prefix.Append($" ({mentioned} +{Engine.Bot.CurrencyMentioned}) " +
+                                      $"({Username} +{Engine.Bot.CurrencyMentioner})");
                     }
                 }
 
@@ -385,7 +385,7 @@ namespace butterBror.Utils.Tools
                     Platforms.Telegram => "tg_chat",
                     _ => "chat"
                 };
-                Write(outputMessage, logTag);
+                //Write(outputMessage, logTag);
             }
             catch (Exception ex)
             {
@@ -410,7 +410,7 @@ namespace butterBror.Utils.Tools
         [ConsoleSector("butterBror.Utils.Tools.Command", "ExecuteCode")]
         public static string ExecuteCode(string userCode)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
 
             var fullCode = $@"
         using DankDB;

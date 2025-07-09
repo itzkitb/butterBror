@@ -10,7 +10,7 @@ namespace butterBror.Utils.Types
     {
         public required string ID { get; set; }
         public required string Language { get; set; }
-        public required string Username { get; set; }
+        public required string Name { get; set; }
         public int? Balance { get; set; }
         public int? BalanceFloat { get; set; }
         public int? TotalMessages { get; set; }

@@ -37,7 +37,7 @@ namespace butterBror.Utils.Tools
         [ConsoleSector("butterBror.Utils.Tools.CAFUS", "Maintrance")]
         public void Maintrance(string userId, string username, Platforms platform)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
 
             try
             {
@@ -71,7 +71,7 @@ namespace butterBror.Utils.Tools
         [ConsoleSector("butterBror.Utils.Tools.CAFUS", "Migrate0")]
         private static void Migrate0(string uid, Platforms p)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             var defaults = new Dictionary<string, object>
             {
                 ["language"] = "ru",
@@ -94,7 +94,7 @@ namespace butterBror.Utils.Tools
         [ConsoleSector("butterBror.Utils.Tools.CAFUS", "Migrate1")]
         private static void Migrate1(string uid, Platforms p)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             SaveIfMissing(uid, "isBotDev", false, p);
         }
 
@@ -106,7 +106,7 @@ namespace butterBror.Utils.Tools
         [ConsoleSector("butterBror.Utils.Tools.CAFUS", "Migrate2")]
         private static void Migrate2(string uid, Platforms p)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             SaveIfMissing(uid, "banReason", "", p);
             SaveIfMissing(uid, "weatherAPIUsedTimes", 0, p);
             SaveIfMissing(uid, "weatherAPIResetDate", DateTime.UtcNow.AddDays(1), p);
@@ -120,7 +120,7 @@ namespace butterBror.Utils.Tools
         [ConsoleSector("butterBror.Utils.Tools.CAFUS", "Migrate3")]
         private static void Migrate3(string uid, Platforms p)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             var defaults = new Dictionary<string, object>
             {
                 ["lastSeenChannel"] = "",
@@ -140,7 +140,7 @@ namespace butterBror.Utils.Tools
         [ConsoleSector("butterBror.Utils.Tools.CAFUS", "Migrate4")]
         private static void Migrate4(string uid, Platforms p)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             var inventory = new Dictionary<string, int>
             {
                 ["Fish"] = 0,
@@ -185,7 +185,7 @@ namespace butterBror.Utils.Tools
         [ConsoleSector("butterBror.Utils.Tools.CAFUS", "SaveIfMissing")]
         private static void SaveIfMissing(string uid, string key, object value, Platforms p)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             if (!UsersData.Contains(key, uid, p))
                 UsersData.Save(uid, key, value, p);
         }

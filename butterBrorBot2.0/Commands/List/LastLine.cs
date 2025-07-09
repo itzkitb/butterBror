@@ -35,7 +35,7 @@ namespace butterBror
             };
             public async Task<CommandReturn> Index(CommandData data)
             {
-                Core.Statistics.FunctionsUsed.Add();
+                Engine.Statistics.FunctionsUsed.Add();
                 CommandReturn commandReturn = new CommandReturn();
 
                 try
@@ -50,9 +50,9 @@ namespace butterBror
                         {
                             if (userID != null)
                             {
-                                if (name != Core.Bot.BotName.ToLower())
+                                if (name != Engine.Bot.BotName.ToLower())
                                 {
-                                    if (name == data.User.Username.ToLower())
+                                    if (name == data.User.Name.ToLower())
                                     {
                                         commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "text:you_right_there", data.ChannelID, data.Platform));
                                     }

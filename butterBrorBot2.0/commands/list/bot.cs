@@ -40,7 +40,7 @@ namespace butterBror
             [ConsoleSector("butterBror.Commands.Bot", "Index")]
             public CommandReturn Index(CommandData data)
             {
-                Core.Statistics.FunctionsUsed.Add();
+                Engine.Statistics.FunctionsUsed.Add();
                 CommandReturn commandReturn = new CommandReturn();
 
                 try
@@ -128,16 +128,16 @@ namespace butterBror
                         }
                         else if (invite_alias.Contains(argument_one))
                         {
-                            Write($"Request to add a bot from @{data.User.Username}", "info");
+                            Write($"Request to add a bot from @{data.User.Name}", "info");
                             Dictionary<string, dynamic> userData = new()
                             {
                                 { "language", data.User.Language },
-                                { "username", data.User.Username },
+                                { "username", data.User.Name },
                                 { "user_indentificator", data.UserID },
                                 { "date", DateTime.UtcNow }
                             };
-                            Directory.CreateDirectory(Core.Bot.Pathes.General + "INVITE/");
-                            SafeManager.Save(Core.Bot.Pathes.General + $"INVITE/{data.User.Username}.txt", $"rq{DateTime.UtcNow}", userData);
+                            Directory.CreateDirectory(Engine.Bot.Pathes.General + "INVITE/");
+                            SafeManager.Save(Engine.Bot.Pathes.General + $"INVITE/{data.User.Name}.txt", $"rq{DateTime.UtcNow}", userData);
                             commandReturn.SetMessage(TranslationManager.GetTranslation(language, "command:bot:user_verify", channel_id, data.Platform));
                         }
                         else if (currency_alias.Contains(argument_one))
@@ -145,11 +145,11 @@ namespace butterBror
                             if (arguments.Count > 2 && add_currency_alias.Contains(arguments.ElementAt(1).ToLower()) && is_developer)
                             {
                                 int converted = Utils.Tools.Format.ToInt(arguments.ElementAt(2).ToLower());
-                                Core.BankDollars += converted;
+                                Engine.BankDollars += converted;
 
                                 commandReturn.SetMessage(Text.ArgumentsReplacement(TranslationManager.GetTranslation(language, "command:bot:currency:add", channel_id, data.Platform), new() {
                                             { "added", converted.ToString() },
-                                            { "now", Core.BankDollars.ToString() }
+                                            { "now", Engine.BankDollars.ToString() }
                                           }));
                             }
                             else
@@ -158,33 +158,33 @@ namespace butterBror
 
                                 var date = DateTime.UtcNow.AddDays(-1);
 
-                                float oldCurrencyAmount = Manager.Get<float>(Core.Bot.Pathes.Currency, $"[{date.Day}.{date.Month}.{date.Year}] amount");
-                                float oldCurrencyCost = Manager.Get<float>(Core.Bot.Pathes.Currency, $"[{date.Day}.{date.Month}.{date.Year}] cost");
-                                int oldCurrencyUsers = Manager.Get<int>(Core.Bot.Pathes.Currency, $"[{date.Day}.{date.Month}.{date.Year}] users");
-                                int oldDollarsInBank = Manager.Get<int>(Core.Bot.Pathes.Currency, $"[{date.Day}.{date.Month}.{date.Year}] dollars");
+                                float oldCurrencyAmount = Manager.Get<float>(Engine.Bot.Pathes.Currency, $"[{date.Day}.{date.Month}.{date.Year}] amount");
+                                float oldCurrencyCost = Manager.Get<float>(Engine.Bot.Pathes.Currency, $"[{date.Day}.{date.Month}.{date.Year}] cost");
+                                int oldCurrencyUsers = Manager.Get<int>(Engine.Bot.Pathes.Currency, $"[{date.Day}.{date.Month}.{date.Year}] users");
+                                int oldDollarsInBank = Manager.Get<int>(Engine.Bot.Pathes.Currency, $"[{date.Day}.{date.Month}.{date.Year}] dollars");
                                 float oldMiddle = oldCurrencyUsers != 0 ? float.Parse((oldCurrencyAmount / oldCurrencyUsers).ToString("0.00")) : 0;
 
-                                float currencyCost = float.Parse((Core.BankDollars / Core.Coins).ToString("0.00"));
-                                float middleUsersBalance = float.Parse((Core.Coins / Core.Users).ToString("0.00"));
+                                float currencyCost = float.Parse((Engine.BankDollars / Engine.Coins).ToString("0.00"));
+                                float middleUsersBalance = float.Parse((Engine.Coins / Engine.Users).ToString("0.00"));
 
                                 float plusOrMinusCost = currencyCost - oldCurrencyCost;
-                                float plusOrMinusAmount = Core.Coins - oldCurrencyAmount;
-                                int plusOrMinusUsers = Core.Users - oldCurrencyUsers;
-                                int plusOrMinusDollars = Core.BankDollars - oldDollarsInBank;
+                                float plusOrMinusAmount = Engine.Coins - oldCurrencyAmount;
+                                int plusOrMinusUsers = Engine.Users - oldCurrencyUsers;
+                                int plusOrMinusDollars = Engine.BankDollars - oldDollarsInBank;
                                 float plusOrMinusMiddle = middleUsersBalance - oldMiddle;
 
                                 string buttersCostProgress = oldCurrencyCost > currencyCost ? $"🔽 ({plusOrMinusCost:0.00})" : oldCurrencyCost == currencyCost ? "⏺️ (0)" : $"🔼 (+{plusOrMinusCost:0.00})";
-                                string buttersAmountProgress = oldCurrencyAmount > Core.Coins ? $"🔽 ({plusOrMinusAmount:0.00})" : oldCurrencyAmount == Core.Coins ? "⏺️ (0)" : $"🔼 (+{plusOrMinusAmount:0.00})";
-                                string buttersUsers = oldCurrencyUsers > Core.Users ? $"🔽 ({plusOrMinusUsers})" : oldCurrencyUsers == Core.Users ? "⏺️ (0)" : $"🔼 (+{plusOrMinusUsers})";
-                                string buttersDollars = oldDollarsInBank > Core.BankDollars ? $"🔽 ({plusOrMinusDollars})" : oldDollarsInBank == Core.BankDollars ? "⏺️ (0)" : $"🔼 (+{plusOrMinusDollars})";
+                                string buttersAmountProgress = oldCurrencyAmount > Engine.Coins ? $"🔽 ({plusOrMinusAmount:0.00})" : oldCurrencyAmount == Engine.Coins ? "⏺️ (0)" : $"🔼 (+{plusOrMinusAmount:0.00})";
+                                string buttersUsers = oldCurrencyUsers > Engine.Users ? $"🔽 ({plusOrMinusUsers})" : oldCurrencyUsers == Engine.Users ? "⏺️ (0)" : $"🔼 (+{plusOrMinusUsers})";
+                                string buttersDollars = oldDollarsInBank > Engine.BankDollars ? $"🔽 ({plusOrMinusDollars})" : oldDollarsInBank == Engine.BankDollars ? "⏺️ (0)" : $"🔼 (+{plusOrMinusDollars})";
                                 string buttersMiddle = oldMiddle > middleUsersBalance ? $"🔽 ({plusOrMinusMiddle:0.00})" : oldMiddle == middleUsersBalance ? "⏺️ (0)" : $"🔼 (+{plusOrMinusMiddle:0.00})";
 
                                 commandReturn.SetMessage(Text.ArgumentsReplacement(TranslationManager.GetTranslation(language, "command:bot:currency", channel_id, data.Platform), new() {
-                                    {"total", Core.Coins.ToString() + " " + buttersAmountProgress},
-                                    {"users", Core.Users.ToString() + " " + buttersUsers},
-                                    {"midle", (Core.Coins / Core.Users).ToString("0.00") + " " + buttersMiddle},
-                                    {"cost", (Core.BankDollars / Core.Coins).ToString("0.00") + "$ " + buttersCostProgress},
-                                    {"dollars", Core.BankDollars + "$ " + buttersDollars},
+                                    {"total", Engine.Coins.ToString() + " " + buttersAmountProgress},
+                                    {"users", Engine.Users.ToString() + " " + buttersUsers},
+                                    {"midle", (Engine.Coins / Engine.Users).ToString("0.00") + " " + buttersMiddle},
+                                    {"cost", (Engine.BankDollars / Engine.Coins).ToString("0.00") + "$ " + buttersCostProgress},
+                                    {"dollars", Engine.BankDollars + "$ " + buttersDollars},
                                 }));
                                 commandReturn.SetSafe(false);
                             }
@@ -266,9 +266,9 @@ namespace butterBror
                                 if (arguments.Count > 1)
                                 {
                                     string user = arguments[1];
-                                    if (Core.Bot.Clients.Twitch.JoinedChannels.Contains(new JoinedChannel(user)))
-                                        Core.Bot.Clients.Twitch.LeaveChannel(user);
-                                    Core.Bot.Clients.Twitch.JoinChannel(user);
+                                    if (Engine.Bot.Clients.Twitch.JoinedChannels.Contains(new JoinedChannel(user)))
+                                        Engine.Bot.Clients.Twitch.LeaveChannel(user);
+                                    Engine.Bot.Clients.Twitch.JoinChannel(user);
                                     commandReturn.SetMessage(TranslationManager.GetTranslation(language, "command:bot:rejoin", channel_id, data.Platform));
                                 }
                                 else
@@ -286,14 +286,14 @@ namespace butterBror
                                     string newid = Names.GetUserID(arguments[1], data.Platform);
                                     if (newid is not null) // Fix AA2
                                     {
-                                        List<string> channels = Manager.Get<List<string>>(Core.Bot.Pathes.Settings, "twitch_connect_channels"); // Fix AA2
+                                        List<string> channels = Manager.Get<List<string>>(Engine.Bot.Pathes.Settings, "twitch_connect_channels"); // Fix AA2
                                         channels.Add(newid);
                                         string[] output = [.. channels];
 
-                                        SafeManager.Save(Core.Bot.Pathes.Settings, "twitch_connect_channels", output); // Fix AA2
-                                        Core.Bot.Clients.Twitch.JoinChannel(arguments[1]);
+                                        SafeManager.Save(Engine.Bot.Pathes.Settings, "twitch_connect_channels", output); // Fix AA2
+                                        Engine.Bot.Clients.Twitch.JoinChannel(arguments[1]);
                                         Chat.TwitchReply(channel, channel_id, Text.ArgumentReplacement(TranslationManager.GetTranslation(language, "command:bot:channel:add", channel_id, data.Platform), "user", arguments[1]), message_id, language, true);
-                                        Chat.TwitchSend(arguments[1], Text.ArgumentReplacement(TranslationManager.GetTranslation(language, "text:added", channel_id, data.Platform), "version", Core.Version), channel_id, message_id, language, true);
+                                        Chat.TwitchSend(arguments[1], Text.ArgumentReplacement(TranslationManager.GetTranslation(language, "text:added", channel_id, data.Platform), "version", Engine.Version), channel_id, message_id, language, true);
                                     }
                                     else
                                         Chat.TwitchReply(channel, channel_id, Text.ArgumentReplacement(TranslationManager.GetTranslation(language, "error:user_not_found", channel_id, data.Platform), "user", arguments[1]), message_id, language, true);
@@ -313,12 +313,12 @@ namespace butterBror
                                     var userID = Names.GetUserID(arguments[1], data.Platform);
                                     if (!userID.Equals(null))
                                     {
-                                        List<string> channels = Manager.Get<List<string>>(Core.Bot.Pathes.Settings, "channels");
+                                        List<string> channels = Manager.Get<List<string>>(Engine.Bot.Pathes.Settings, "channels");
                                         channels.Remove(userID);
                                         string[] output = [.. channels];
 
-                                        SafeManager.Save(Core.Bot.Pathes.Settings, "channels", output);
-                                        Core.Bot.Clients.Twitch.LeaveChannel(arguments[1]);
+                                        SafeManager.Save(Engine.Bot.Pathes.Settings, "channels", output);
+                                        Engine.Bot.Clients.Twitch.LeaveChannel(arguments[1]);
                                         Chat.TwitchReply(channel, channel_id, Text.ArgumentReplacement(TranslationManager.GetTranslation(language, "command:bot:channel:delete", channel_id, data.Platform), "user", arguments[1]), message_id, data.User.Language, true);
                                     }
                                     else
@@ -336,7 +336,7 @@ namespace butterBror
                             {
                                 if (arguments.Count > 1)
                                 {
-                                    Core.Bot.Clients.Twitch.JoinChannel(arguments[1]);
+                                    Engine.Bot.Clients.Twitch.JoinChannel(arguments[1]);
                                     Chat.TwitchReply(channel, channel_id, TranslationManager.GetTranslation(language, "command:bot:connect", channel_id, data.Platform), message_id, data.User.Language, true);
                                 }
                                 else
@@ -351,7 +351,7 @@ namespace butterBror
                             {
                                 if (arguments.Count > 1)
                                 {
-                                    Core.Bot.Clients.Twitch.LeaveChannel(arguments[1]);
+                                    Engine.Bot.Clients.Twitch.LeaveChannel(arguments[1]);
                                     Chat.TwitchReply(channel, channel_id, TranslationManager.GetTranslation(language, "command:bot:leave", channel_id, data.Platform), message_id, data.User.Language, true);
                                 }
                                 else

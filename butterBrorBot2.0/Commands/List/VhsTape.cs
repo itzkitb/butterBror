@@ -39,7 +39,7 @@ namespace butterBror
             [ConsoleSector("butterBror.Commands.Vhs", "Index")]
             public async Task<CommandReturn> Index(CommandData data)
             {
-                Core.Statistics.FunctionsUsed.Add();
+                Engine.Statistics.FunctionsUsed.Add();
                 CommandReturn commandReturn = new CommandReturn();
 
                 try
@@ -53,7 +53,7 @@ namespace butterBror
                         var server = data.Server;
                         var userId = data.UserID;
                         var language = data.User.Language;
-                        var username = data.User.Username;
+                        var username = data.User.Name;
                         var messageId = data.MessageID;
                         var telegramMessage = data.TelegramMessage;
 

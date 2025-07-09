@@ -67,10 +67,10 @@ namespace butterBror.Utils.Tools.API
         [ConsoleSector("butterBror.Utils.Tools.API.AI", "Request")]
         public static async Task<string[]> Request(string request, string umodel, Platforms platform, string username, string userID, string lang, double repetitionPenalty, bool chatHistory = true)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
 
             DateTime requestTime = DateTime.UtcNow;
-            var api_key = Manager.Get<string>(Core.Bot.Pathes.Settings, "openrouter_token");
+            var api_key = Manager.Get<string>(Engine.Bot.Pathes.Settings, "openrouter_token");
             var uri = new Uri("https://openrouter.ai/api/v1/chat/completions");
 
             string selected_model = "meta-llama/llama-4-maverick:free";
@@ -92,7 +92,7 @@ namespace butterBror.Utils.Tools.API
             var system_message = new Types.AI.Message
             {
                 role = "system",
-                content = $@"You are bot on platform: {Platform.strings[(int)platform]}. Your name is {Core.Bot.BotName}. DO NOT POST CONFIDENTIAL INFORMATION, DO NOT USE PROFANITY! WRITE LESS THAN 50 WORDS! SHORTEN YOUR TEXT!"
+                content = $@"You are bot on platform: {Platform.strings[(int)platform]}. Your name is {Engine.Bot.BotName}. DO NOT POST CONFIDENTIAL INFORMATION, DO NOT USE PROFANITY! WRITE LESS THAN 50 WORDS! SHORTEN YOUR TEXT!"
             };
 
             var user_info_message = new Types.AI.Message

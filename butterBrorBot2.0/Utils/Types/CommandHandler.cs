@@ -8,7 +8,7 @@ namespace butterBror.Utils.Types
 {
     public class CommandHandler
     {
-        public CommandInfo info { get; set; }
+        public CommandInfo Info { get; set; }
         public Func<CommandData, CommandReturn> sync_executor { get; set; }
         public Func<CommandData, Task<CommandReturn>> async_executor { get; set; }
     }

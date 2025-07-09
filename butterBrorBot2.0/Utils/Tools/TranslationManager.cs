@@ -38,7 +38,7 @@ namespace butterBror.Utils.Tools
         [ConsoleSector("butterBror.Utils.Tools.TranslationManager", "GetTranslation")]
         public static string GetTranslation(string userLang, string key, string channel_id, Platforms platform, Dictionary<string, string> replacements = null)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 if (!_translations.ContainsKey(userLang))
@@ -90,10 +90,10 @@ namespace butterBror.Utils.Tools
         [ConsoleSector("butterBror.Utils.Tools.TranslationManager", "SetCustomTranslation")]
         public static bool SetCustomTranslation(string key, string value, string channel, string lang, Platforms platform)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             try
             {
-                string path = $"{Core.Bot.Pathes.TranslateCustom}{Platform.strings[(int)platform]}/{channel}/";
+                string path = $"{Engine.Bot.Pathes.TranslateCustom}{Platform.strings[(int)platform]}/{channel}/";
                 Directory.CreateDirectory(path);
 
                 var content = FileUtil.FileExists($"{path}{lang}.json")
@@ -131,10 +131,10 @@ namespace butterBror.Utils.Tools
         [ConsoleSector("butterBror.Utils.Tools.TranslationManager", "DeleteCustomTranslation")]
         public static bool DeleteCustomTranslation(string key, string channel, string lang, Platforms platform)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             try
             {
-                string path = $"{Core.Bot.Pathes.TranslateCustom}{Platform.strings[(int)platform]}/{channel}/";
+                string path = $"{Engine.Bot.Pathes.TranslateCustom}{Platform.strings[(int)platform]}/{channel}/";
                 if (!Directory.Exists(path)) return false;
 
                 var content = Manager.Get<Dictionary<string, string>>($"{path}{lang}.json", "translations");
@@ -166,9 +166,9 @@ namespace butterBror.Utils.Tools
         [ConsoleSector("butterBror.Utils.Tools.TranslationManager", "LoadTranslations")]
         private static Dictionary<string, string> LoadTranslations(string userLang)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             return Manager.Get<Dictionary<string, string>>(
-                $"{Core.Bot.Pathes.TranslateDefault}{userLang}.json",
+                $"{Engine.Bot.Pathes.TranslateDefault}{userLang}.json",
                 "translations"
             ) ?? new Dictionary<string, string>();
         }
@@ -187,9 +187,9 @@ namespace butterBror.Utils.Tools
         [ConsoleSector("butterBror.Utils.Tools.TranslationManager", "LoadCustomTranslations")]
         private static Dictionary<string, string> LoadCustomTranslations(string userLang, string channel, Platforms platform)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             return Manager.Get<Dictionary<string, string>>(
-                $"{Core.Bot.Pathes.TranslateCustom}{channel}/{Platform.strings[(int)platform]}/{userLang}.json",
+                $"{Engine.Bot.Pathes.TranslateCustom}{channel}/{Platform.strings[(int)platform]}/{userLang}.json",
                 "translations"
             ) ?? new Dictionary<string, string>();
         }
@@ -206,7 +206,7 @@ namespace butterBror.Utils.Tools
         [ConsoleSector("butterBror.Utils.Tools.TranslationManager", "TranslateContains")]
         public static bool TranslateContains(string key)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             if (!_translations.ContainsKey("ru"))
             {
                 _translations["ru"] = LoadTranslations("ru");
@@ -230,7 +230,7 @@ namespace butterBror.Utils.Tools
         [ConsoleSector("butterBror.Utils.Tools.TranslationManager", "UpdateTranslation")]
         public static bool UpdateTranslation(string userLang, string channel, Platforms platform)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 if (_translations.ContainsKey(userLang))

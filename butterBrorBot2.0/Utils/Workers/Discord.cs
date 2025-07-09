@@ -31,11 +31,11 @@ namespace butterBror.Utils.Workers
         [ConsoleSector("butterBror.Utils.DiscordWorker", "ReadyAsync")]
         public static async Task ReadyAsync()
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             try
             {
-                Write($"Discord - Connected as {Core.Bot.Clients.Discord.CurrentUser}!", "info");
-                Core.Bot.DiscordServers = (ulong)Core.Bot.Clients.Discord.Guilds.Count;
+                Write($"Discord - Connected as {Engine.Bot.Clients.Discord.CurrentUser}!", "info");
+                Engine.Bot.DiscordServers = (ulong)Engine.Bot.Clients.Discord.Guilds.Count;
             }
             catch (Exception ex)
             {
@@ -57,14 +57,14 @@ namespace butterBror.Utils.Workers
         [ConsoleSector("butterBror.Utils.DiscordWorker", "MessageReceivedAsync")]
         public static async Task MessageReceivedAsync(SocketMessage message)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 if (!(message is SocketUserMessage msg) || message.Author.IsBot) return;
                 OnMessageReceivedArgs e = default;
                 await Command.ProcessMessageAsync(message.Author.Id.ToString(), ((SocketGuildChannel)message.Channel).Guild.Id.ToString(), message.Author.Username.ToLower(), message.Content, e, ((SocketGuildChannel)message.Channel).Guild.Name, Platforms.Discord, null, message.Channel.ToString());
 
-                if (message.Content.StartsWith(Core.Bot.Executor))
+                if (message.Content.StartsWith(Engine.Bot.Executor))
                 {
                     Commands.Discord(message);
                 }
@@ -88,12 +88,12 @@ namespace butterBror.Utils.Workers
         [ConsoleSector("butterBror.Utils.DiscordWorker", "RegisterCommandsAsync")]
         public static async Task RegisterCommandsAsync()
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             try
             {
-                Core.Bot.Clients.Discord.Ready += RegisterSlashCommands;
-                Core.Bot.Clients.Discord.MessageReceived += DiscordEvents.HandleCommandAsync;
-                await Core.Bot.DiscordCommandService.AddModulesAsync(assembly: Assembly.GetEntryAssembly(), services: Core.Bot.DiscordServiceProvider);
+                Engine.Bot.Clients.Discord.Ready += RegisterSlashCommands;
+                Engine.Bot.Clients.Discord.MessageReceived += DiscordEvents.HandleCommandAsync;
+                await Engine.Bot.DiscordCommandService.AddModulesAsync(assembly: Assembly.GetEntryAssembly(), services: Engine.Bot.DiscordServiceProvider);
             }
             catch (Exception ex)
             {
@@ -116,20 +116,20 @@ namespace butterBror.Utils.Workers
         [ConsoleSector("butterBror.Utils.DiscordWorker", "RegisterSlashCommands")]
         private static async Task RegisterSlashCommands()
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             Write("Discord - Updating commands...", "info");
 
-            await Core.Bot.Clients.Discord.Rest.DeleteAllGlobalCommandsAsync();
+            await Engine.Bot.Clients.Discord.Rest.DeleteAllGlobalCommandsAsync();
 
-            await Core.Bot.Clients.Discord.Rest.CreateGlobalCommand(new SlashCommandBuilder()
+            await Engine.Bot.Clients.Discord.Rest.CreateGlobalCommand(new SlashCommandBuilder()
                 .WithName("ping")
                 .WithDescription("Check bot status")
                 .Build());
-            await Core.Bot.Clients.Discord.Rest.CreateGlobalCommand(new SlashCommandBuilder()
+            await Engine.Bot.Clients.Discord.Rest.CreateGlobalCommand(new SlashCommandBuilder()
                 .WithName("status")
                 .WithDescription("View the bot's status. (Bot administrators only)")
                 .Build());
-            await Core.Bot.Clients.Discord.Rest.CreateGlobalCommand(new SlashCommandBuilder()
+            await Engine.Bot.Clients.Discord.Rest.CreateGlobalCommand(new SlashCommandBuilder()
                 .WithName("weather")
                 .WithDescription("Check the weather")
                 .AddOption("location", ApplicationCommandOptionType.String, "weather check location", isRequired: false)

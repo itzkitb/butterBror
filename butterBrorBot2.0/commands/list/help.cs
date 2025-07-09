@@ -35,7 +35,7 @@ namespace butterBror
             };
             public CommandReturn Index(CommandData data)
             {
-                Core.Statistics.FunctionsUsed.Add();
+                Engine.Statistics.FunctionsUsed.Add();
                 CommandReturn commandReturn = new CommandReturn();
 
                 try
@@ -61,9 +61,9 @@ namespace butterBror
                                 {
                                     num++;
                                     if (num < numWithoutComma)
-                                        aliasesList += $"{Core.Bot.Executor}{alias}, ";
+                                        aliasesList += $"{Engine.Bot.Executor}{alias}, ";
                                     else if (num == numWithoutComma)
-                                        aliasesList += $"{Core.Bot.Executor}{alias}";
+                                        aliasesList += $"{Engine.Bot.Executor}{alias}";
                                 }
                                 commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:help", data.ChannelID, data.Platform)
                                     .Replace("%commandName%", info.Name)

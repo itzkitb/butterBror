@@ -37,7 +37,7 @@ namespace butterBror
             [ConsoleSector("butterBror.Commands.UploadToImgur", "Index")]
             public CommandReturn Index(CommandData data)
             {
-                Core.Statistics.FunctionsUsed.Add();
+                Engine.Statistics.FunctionsUsed.Add();
                 CommandReturn commandReturn = new CommandReturn();
 
                 try
@@ -62,7 +62,7 @@ namespace butterBror
                             imageBytesTask.Wait();
                             byte[] imageBytes = imageBytesTask.Result;
                             stage++;
-                            var responseTask = Utils.Tools.API.Imgur.UploadAsync(imageBytes, "Бот butterBror и его разработчик ItzKITb никак не связаны с данным изображением и не поддерживают его содержимое.", $"Картинка от @{data.User.Username}", Core.Bot.Tokens.Imgur, "https://api.imgur.com/3/upload");
+                            var responseTask = Utils.Tools.API.Imgur.UploadAsync(imageBytes, "Бот butterBror и его разработчик ItzKITb никак не связаны с данным изображением и не поддерживают его содержимое.", $"Картинка от @{data.User.Name}", Engine.Bot.Tokens.Imgur, "https://api.imgur.com/3/upload");
                             responseTask.Wait();
                             string response = responseTask.Result;
                             stage++;

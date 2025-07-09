@@ -35,7 +35,7 @@ namespace butterBror
             };
             public CommandReturn Index(CommandData data)
             {
-                Core.Statistics.FunctionsUsed.Add();
+                Engine.Statistics.FunctionsUsed.Add();
                 CommandReturn commandReturn = new CommandReturn();
 
                 try
@@ -67,7 +67,7 @@ namespace butterBror
                                 commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:roulette_steal", data.ChannelID, data.Platform));
                             else if (Utils.Tools.Balance.GetBalance(data.UserID, data.Platform) < bid)
                                 commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:roulette_not_enough_coins", data.ChannelID, data.Platform)
-                                            .Replace("%balance%", Utils.Tools.Balance.GetBalance(data.UserID, data.Platform).ToString() + " " + Core.Bot.CoinSymbol));
+                                            .Replace("%balance%", Utils.Tools.Balance.GetBalance(data.UserID, data.Platform).ToString() + " " + Engine.Bot.CoinSymbol));
                             else
                             {
                                 int moves = new Random().Next(38, 380);
@@ -89,7 +89,7 @@ namespace butterBror
                                     commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:roulette:result:win", data.ChannelID, data.Platform)
                                         .Replace("%result%", result_symbol)
                                         .Replace("%result_number%", result.ToString())
-                                        .Replace("%win%", win.ToString() + " " + Core.Bot.CoinSymbol)
+                                        .Replace("%win%", win.ToString() + " " + Engine.Bot.CoinSymbol)
                                         .Replace("%multipier%", multipliers[result_symbol].ToString()));
                                 }
                                 else
@@ -98,7 +98,7 @@ namespace butterBror
                                     commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:roulette:result:lose", data.ChannelID, data.Platform)
                                         .Replace("%result%", result_symbol)
                                         .Replace("%result_number%", result.ToString())
-                                        .Replace("%lose%", bid.ToString() + " " + Core.Bot.CoinSymbol));
+                                        .Replace("%lose%", bid.ToString() + " " + Engine.Bot.CoinSymbol));
                                 }
                             }
                         }

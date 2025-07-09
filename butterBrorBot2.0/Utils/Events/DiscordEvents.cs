@@ -21,7 +21,7 @@ namespace butterBror.Utils
         [ConsoleSector("butterBror.Utils.DiscordEvents", "LogAsync")]
         public static Task LogAsync(LogMessage log)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 return Task.CompletedTask;
@@ -41,9 +41,9 @@ namespace butterBror.Utils
         [ConsoleSector("butterBror.Utils.DiscordEvents", "ConnectToGuilt")]
         public static async Task ConnectToGuilt(SocketGuild g)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             Write($"Discord - Connected to a server: {g.Name}", "info");
-            Core.Bot.DiscordServers++;
+            Engine.Bot.DiscordServers++;
         }
 
         /// <summary>
@@ -54,17 +54,17 @@ namespace butterBror.Utils
         [ConsoleSector("butterBror.Utils.DiscordEvents", "HandleCommandAsync")]
         public static async Task HandleCommandAsync(SocketMessage arg)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 var message = arg as SocketUserMessage;
                 if (message == null || message.Author.IsBot) return;
 
                 int argPos = 0;
-                if (message.HasCharPrefix(Core.Bot.Executor, ref argPos))
+                if (message.HasCharPrefix(Engine.Bot.Executor, ref argPos))
                 {
-                    var context = new SocketCommandContext(Core.Bot.Clients.Discord, message);
-                    var result = await Core.Bot.DiscordCommandService.ExecuteAsync(context, argPos, Core.Bot.DiscordServiceProvider);
+                    var context = new SocketCommandContext(Engine.Bot.Clients.Discord, message);
+                    var result = await Engine.Bot.DiscordCommandService.ExecuteAsync(context, argPos, Engine.Bot.DiscordServiceProvider);
                     if (!result.IsSuccess)
                     {
                         Write($"Discord - {result.ErrorReason}", "info", LogLevel.Warning);
@@ -85,7 +85,7 @@ namespace butterBror.Utils
         [ConsoleSector("butterBror.Utils.DiscordEvents", "SlashCommandHandler")]
         public static async Task SlashCommandHandler(SocketSlashCommand command)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             Commands.Discord(command);
         }
 
@@ -97,7 +97,7 @@ namespace butterBror.Utils
         [ConsoleSector("butterBror.Utils.DiscordEvents", "ApplicationCommandCreated")]
         public static async Task ApplicationCommandCreated(SocketApplicationCommand e)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             Write("Discord - The command has been created: /" + e.Name + " (" + e.Description + ")", "info");
         }
 
@@ -109,7 +109,7 @@ namespace butterBror.Utils
         [ConsoleSector("butterBror.Utils.DiscordEvents", "ApplicationCommandDeleted")]
         public static async Task ApplicationCommandDeleted(SocketApplicationCommand e)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             Write("Discord - Command deleted: /" + e.Name + " (" + e.Description + ")", "info");
         }
 
@@ -121,7 +121,7 @@ namespace butterBror.Utils
         [ConsoleSector("butterBror.Utils.DiscordEvents", "ApplicationCommandUpdated")]
         public static async Task ApplicationCommandUpdated(SocketApplicationCommand e)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             Write($"Discord - Command updated: /{e.Name} ({e.Description})", "info");
         }
 
@@ -133,7 +133,7 @@ namespace butterBror.Utils
         [ConsoleSector("butterBror.Utils.DiscordEvents", "ChannelCreated")]
         public static async Task ChannelCreated(SocketChannel e)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             Write("Discord - New channel created: " + e.Id, "info");
         }
 
@@ -145,7 +145,7 @@ namespace butterBror.Utils
         [ConsoleSector("butterBror.Utils.DiscordEvents", "ChannelDeleted")]
         public static async Task ChannelDeleted(SocketChannel e)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             Write("Discord - The channel has been deleted: " + e.Id, "info");
         }
 
@@ -158,7 +158,7 @@ namespace butterBror.Utils
         [ConsoleSector("butterBror.Utils.DiscordEvents", "ChannelUpdated")]
         public static async Task ChannelUpdated(SocketChannel e, SocketChannel a)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             Write("Discord - Channel updated: " + e.Id + "/" + a.Id, "info");
         }
 
@@ -169,7 +169,7 @@ namespace butterBror.Utils
         [ConsoleSector("butterBror.Utils.DiscordEvents", "Connected")]
         public static async Task Connected()
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             //Write("Discord - Connected!", "info");
         }
 
@@ -181,7 +181,7 @@ namespace butterBror.Utils
         [ConsoleSector("butterBror.Utils.DiscordEvents", "ButtonTouched")]
         public static async Task ButtonTouched(SocketMessageComponent e)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             Write($"Discord - A button was pressed. User: {e.User}, Button ID: {e.Id}, Server: {((SocketGuildChannel)e.Channel).Guild.Name}", "info");
         }
     }

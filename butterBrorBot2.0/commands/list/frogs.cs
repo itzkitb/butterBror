@@ -36,12 +36,12 @@ namespace butterBror
             };
             public CommandReturn Index(CommandData data)
             {
-                Core.Statistics.FunctionsUsed.Add();
+                Engine.Statistics.FunctionsUsed.Add();
                 CommandReturn commandReturn = new CommandReturn();
 
                 try
                 {
-                    string root_path = Core.Bot.Pathes.Main + $"GAMES_DATA/{Platform.strings[(int)data.Platform]}/FROGS/";
+                    string root_path = Engine.Bot.Pathes.Main + $"GAMES_DATA/{Platform.strings[(int)data.Platform]}/FROGS/";
                     string user_path = $"{root_path}{data.UserID}.json";
 
                     FileUtil.CreateDirectory(root_path);
@@ -171,7 +171,7 @@ namespace butterBror
                             else
                             {
                                 commandReturn.SetMessage(Text.ArgumentReplacement(TranslationManager.GetTranslation(data.User.Language, "error:not_enough_arguments", data.ChannelID, data.Platform),
-                                    "command_example", $"{Core.Bot.Executor}frog gift [user] [frogs]"));
+                                    "command_example", $"{Engine.Bot.Executor}frog gift [user] [frogs]"));
                                 commandReturn.SetColor(ChatColorPresets.Red);
                             }
                         }

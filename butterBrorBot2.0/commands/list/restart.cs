@@ -34,7 +34,7 @@ namespace butterBror
             };
             public CommandReturn Index(CommandData data)
             {
-                Core.Statistics.FunctionsUsed.Add();
+                Engine.Statistics.FunctionsUsed.Add();
                 CommandReturn commandReturn = new CommandReturn();
 
                 try
@@ -42,7 +42,7 @@ namespace butterBror
                     if (UsersData.Contains(data.UserID, "isBotModerator", data.Platform) || UsersData.Contains(data.UserID, "isBotDev", data.Platform))
                     {
                         commandReturn.SetMessage("❄ Перезагрузка...");
-                        Core.Bot.Restart();
+                        Engine.Bot.Restart();
                     }
                     else
                     {

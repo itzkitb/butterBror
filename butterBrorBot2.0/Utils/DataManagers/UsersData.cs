@@ -16,7 +16,7 @@ namespace butterBror.Utils.DataManagers
     /// </summary>
     public class UsersData
     {
-        private static readonly string _directory = Core.Bot.Pathes.Users;
+        private static readonly string _directory = Engine.Bot.Pathes.Users;
 
         /// <summary>
         /// Retrieves a user-specific value of type T from persistent storage.
@@ -29,7 +29,7 @@ namespace butterBror.Utils.DataManagers
         [ConsoleSector("butterBror.Utils.DataManagers.UsersData", "Get")]
         public static T Get<T>(string userId, string paramName, Platforms platform)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 return Manager.Get<T>(GetUserFilePath(userId, platform), paramName);
@@ -51,7 +51,7 @@ namespace butterBror.Utils.DataManagers
         [ConsoleSector("butterBror.Utils.DataManagers.UsersData", "Save")]
         public static void Save(string userId, string paramName, object value, Platforms platform)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 string path = GetUserFilePath(userId, platform);
@@ -74,7 +74,7 @@ namespace butterBror.Utils.DataManagers
         [ConsoleSector("butterBror.Utils.DataManagers.UsersData", "Contains")]
         public static bool Contains(string userId, string paramName, Platforms platform)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 return Manager.Get<dynamic>(GetUserFilePath(userId, platform), paramName) is not null;
@@ -95,7 +95,7 @@ namespace butterBror.Utils.DataManagers
         [ConsoleSector("butterBror.Utils.DataManagers.UsersData", "Register")]
         public static void Register(string userId, string firstMessage, Platforms platform)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             string path = GetUserFilePath(userId, platform);
             SafeManager.Save(path, "firstSeen", DateTime.UtcNow, false);
             SafeManager.Save(path, "firstMessage", firstMessage, false);
@@ -138,7 +138,7 @@ namespace butterBror.Utils.DataManagers
         [ConsoleSector("butterBror.Utils.DataManagers.UsersData", "GetUserFilePath")]
         private static string GetUserFilePath(string userId, Platforms platform)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             return Path.Combine(_directory, $"{Platform.strings[(int)platform]}/{userId}.json");
         }
     }

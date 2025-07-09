@@ -33,7 +33,7 @@ namespace butterBror.Utils.Tools
         [ConsoleSector("butterBror.Utils.Tools.Names", "GetUsernameFromText")]
         public static string GetUsernameFromText(string text)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 if (!text.Contains('@'))
@@ -65,10 +65,10 @@ namespace butterBror.Utils.Tools
         [ConsoleSector("butterBror.Utils.Tools.Names", "GetUserID")]
         public static string GetUserID(string user, Platforms platform, bool requestAPI = false)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
 
             string key = user.ToLowerInvariant();
-            string dir = Path.Combine(Core.Bot.Pathes.Nick2ID, Platform.strings[(int)platform]);
+            string dir = Path.Combine(Engine.Bot.Pathes.Nick2ID, Platform.strings[(int)platform]);
             string filePath = Path.Combine(dir, key + ".txt");
 
             try
@@ -79,13 +79,13 @@ namespace butterBror.Utils.Tools
                 // Twitch API
                 if (platform is Platforms.Twitch && requestAPI)
                 {
-                    if (string.IsNullOrEmpty(Core.Bot.TwitchClientId) || string.IsNullOrEmpty(Core.Bot.Tokens.Twitch.AccessToken))
+                    if (string.IsNullOrEmpty(Engine.Bot.TwitchClientId) || string.IsNullOrEmpty(Engine.Bot.Tokens.Twitch.AccessToken))
                         return null;
 
                     using var client = new HttpClient();
-                    client.DefaultRequestHeaders.Add("Client-ID", Core.Bot.TwitchClientId);
+                    client.DefaultRequestHeaders.Add("Client-ID", Engine.Bot.TwitchClientId);
                     client.DefaultRequestHeaders.Authorization =
-                        new AuthenticationHeaderValue("Bearer", Core.Bot.Tokens.Twitch.AccessToken);
+                        new AuthenticationHeaderValue("Bearer", Engine.Bot.Tokens.Twitch.AccessToken);
 
                     var uri = new Uri($"https://api.twitch.tv/helix/users?login={Uri.EscapeDataString(user)}");
                     using var response = client.GetAsync(uri).Result;
@@ -132,9 +132,9 @@ namespace butterBror.Utils.Tools
         [ConsoleSector("butterBror.Utils.Tools.Names", "GetUsername")]
         public static string GetUsername(string ID, Platforms platform, bool requestAPI = false)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
 
-            string dir = Path.Combine(Core.Bot.Pathes.ID2Nick, Platform.strings[(int)platform]);
+            string dir = Path.Combine(Engine.Bot.Pathes.ID2Nick, Platform.strings[(int)platform]);
             string filePath = Path.Combine(dir, ID + ".txt");
 
             try
@@ -145,16 +145,16 @@ namespace butterBror.Utils.Tools
                 // API
                 if (platform is Platforms.Twitch && requestAPI)
                 {
-                    if (string.IsNullOrEmpty(Core.Bot.TwitchClientId) ||
-                        string.IsNullOrEmpty(Core.Bot.Tokens.Twitch.AccessToken))
+                    if (string.IsNullOrEmpty(Engine.Bot.TwitchClientId) ||
+                        string.IsNullOrEmpty(Engine.Bot.Tokens.Twitch.AccessToken))
                     {
                         return null;
                     }
 
                     using var client = new HttpClient();
-                    client.DefaultRequestHeaders.Add("Client-ID", Core.Bot.TwitchClientId);
+                    client.DefaultRequestHeaders.Add("Client-ID", Engine.Bot.TwitchClientId);
                     client.DefaultRequestHeaders.Authorization =
-                        new AuthenticationHeaderValue("Bearer", Core.Bot.Tokens.Twitch.AccessToken);
+                        new AuthenticationHeaderValue("Bearer", Engine.Bot.Tokens.Twitch.AccessToken);
 
                     var uri = new Uri($"https://api.twitch.tv/helix/users?id={Uri.EscapeDataString(ID)}");
                     using var response = client.GetAsync(uri).Result;
@@ -200,7 +200,7 @@ namespace butterBror.Utils.Tools
         [ConsoleSector("butterBror.Utils.Tools.Names", "DontPing")]
         public static string DontPing(string username)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             return string.Join("󠀀", username);
         }
     }

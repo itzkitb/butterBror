@@ -35,7 +35,7 @@ namespace butterBror
             };
             public async Task<CommandReturn> Index(CommandData data)
             {
-                Core.Statistics.FunctionsUsed.Add();
+                Engine.Statistics.FunctionsUsed.Add();
                 CommandReturn commandReturn = new CommandReturn();
 
                 try
@@ -73,9 +73,9 @@ namespace butterBror
                                     if (flag) message_badges += TranslationManager.GetTranslation(data.User.Language, symbol, data.ChannelID, data.Platform);
                                 }
 
-                                if (!name.Equals(Core.Bot.BotName, StringComparison.CurrentCultureIgnoreCase))
+                                if (!name.Equals(Engine.Bot.BotName, StringComparison.CurrentCultureIgnoreCase))
                                 {
-                                    if (name == data.User.Username)
+                                    if (name == data.User.Name)
                                     {
                                         commandReturn.SetMessage(Text.ArgumentsReplacement(
                                             TranslationManager.GetTranslation(data.User.Language, "command:first_message:user", data.ChannelID, data.Platform), new() { // Fix AA8
