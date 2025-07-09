@@ -39,12 +39,12 @@ namespace butterBror
 
             public async Task<CommandReturn> Index(CommandData data)
             {
-                Core.Statistics.FunctionsUsed.Add();
+                Engine.Statistics.FunctionsUsed.Add();
                 CommandReturn commandReturn = new CommandReturn();
 
                 try
                 {
-                    string root_path = Core.Bot.Pathes.Main + $"GAMES_DATA/{Platform.strings[(int)data.Platform]}/COOKIES/";
+                    string root_path = Engine.Bot.Pathes.Main + $"GAMES_DATA/{Platform.strings[(int)data.Platform]}/COOKIES/";
                     FileUtil.CreateDirectory(root_path);
 
                     string[] giftAliases = ["gift", "g", "подарить", "подарок"];
@@ -60,7 +60,7 @@ namespace butterBror
                     {
                         if (statsAliases.Contains(data.Arguments[0].ToLower()))
                         {
-                            string targetUser = data.User.Username;
+                            string targetUser = data.User.Name;
                             if (data.Arguments.Count > 1) targetUser = data.Arguments[1];
 
                             string targetUserId = Names.GetUserID(targetUser, data.Platform);
@@ -88,7 +88,7 @@ namespace butterBror
                             if (data.Arguments.Count < 2 || data.Arguments.IndexOf("gift") >= data.Arguments.Count - 1)
                             {
                                 commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:not_enough_arguments", data.ChannelID, data.Platform)
-                                    .Replace("%command_example%", $"{Core.Bot.Executor}cookie gift username"));
+                                    .Replace("%command_example%", $"{Engine.Bot.Executor}cookie gift username"));
                                 return commandReturn;
                             }
 
@@ -138,7 +138,7 @@ namespace butterBror
                             SafeManager.Save(topPathLocal, "leaderboard_recipients", topRecipients);
 
                             commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:cookie:gift", data.ChannelID, data.Platform)
-                                .Replace("%sender%", data.User.Username)
+                                .Replace("%sender%", data.User.Name)
                                 .Replace("%receiver%", targetUser));
                             return commandReturn;
                         }
@@ -223,7 +223,7 @@ namespace butterBror
                                 return commandReturn;
                             }
 
-                            float currency = Core.BankDollars / Core.Coins;
+                            float currency = Engine.BankDollars / Engine.Coins;
                             float cost = 0.2f / currency;
 
                             int coins = -(int)cost;
@@ -266,7 +266,7 @@ Example (just to understand the style):
 'Today, it is recommended to put on a clown costume and go online. If you have problems, hit yourself on the corner of the refrigerator. Attacks by Jedi midwives are possible!'
 
 Generate ONLY 4 sentence variations following these rules. The answer must be in the user's language! In your answer write ONLY text! DO NOT indicate sentence numbers! DO NOT write more than 4 sentences!",
-                        null, data.Platform, data.User.Username, data.User.ID, data.User.Language, 2, false
+                        null, data.Platform, data.User.Name, data.User.ID, data.User.Language, 2, false
                     );
 
                     if (result[0] == "ERR")

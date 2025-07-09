@@ -28,11 +28,11 @@ namespace butterBror.Utils.Tools
         /// </remarks>
         public static void Add(string userID, int buttersAdd, int crumbsAdd, Platforms platform)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             int crumbs = GetSubbalance(userID, platform) + crumbsAdd;
             int butters = GetBalance(userID, platform) + buttersAdd;
 
-            Core.Coins += buttersAdd + crumbsAdd / 100f;
+            Engine.Coins += buttersAdd + crumbsAdd / 100f;
             while (crumbs > 100)
             {
                 crumbs -= 100;
@@ -57,7 +57,7 @@ namespace butterBror.Utils.Tools
         /// <returns>The user's current balance in butters.</returns>
         public static int GetBalance(string userID, Platforms platform)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             return UsersData.Get<int>(userID, "balance", platform);
         }
 
@@ -69,7 +69,7 @@ namespace butterBror.Utils.Tools
         /// <returns>The user's current fractional balance in crumbs (0-99).</returns>
         public static int GetSubbalance(string userID, Platforms platform)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             return UsersData.Get<int>(userID, "floatBalance", platform);
         }
     }

@@ -36,14 +36,14 @@ namespace butterBror
             };
             public async Task<CommandReturn> Index(CommandData data)
             {
-                Core.Statistics.FunctionsUsed.Add();
+                Engine.Statistics.FunctionsUsed.Add();
                 CommandReturn commandReturn = new CommandReturn();
 
                 try
                 {
                     if (Command.GetArgument(data.Arguments, "chat") is null)
                     {
-                        float currency = Core.BankDollars / Core.Coins;
+                        float currency = Engine.BankDollars / Engine.Coins;
                         float cost = 0.5f / currency;
 
                         int coins = -(int)cost;
@@ -53,7 +53,7 @@ namespace butterBror
                         {
                             if (data.Arguments.Count < 1)
                                 commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:not_enough_arguments", data.ChannelID, data.Platform)
-                                    .Replace("%command_example%", $"{Core.Bot.Executor}ai model:qwen Hello!"));
+                                    .Replace("%command_example%", $"{Engine.Bot.Executor}ai model:qwen Hello!"));
                             else
                             {
                                 Utils.Tools.Balance.Add(data.UserID, coins, subcoins, data.Platform);
@@ -93,13 +93,13 @@ namespace butterBror
                                 {
                                     Chat.SendReply(data.Platform, data.Channel, data.ChannelID,
                                         TranslationManager.GetTranslation(data.User.Language, "command:gpt:generating", data.ChannelID, data.Platform),
-                                        data.User.Language, data.User.Username, data.User.ID,
+                                        data.User.Language, data.User.Name, data.User.ID,
                                         data.Server, data.ServerID, data.MessageID,
                                         data.TelegramMessage, true
                                         );
                                 }
 
-                                string[] result = await Utils.Tools.API.AI.Request(request, model, data.Platform, data.User.Username, data.UserID, data.User.Language, repetitionPenalty, useHistory);
+                                string[] result = await Utils.Tools.API.AI.Request(request, model, data.Platform, data.User.Name, data.UserID, data.User.Language, repetitionPenalty, useHistory);
                                 
                                 if (result[0] == "ERR")
                                 {

@@ -38,7 +38,7 @@ namespace butterBror.Utils.Tools
         [ConsoleSector("butterBror.Utils.Tools.NoBanwords", "Check")]
         public bool Check(string message, string channelID, Platforms platform)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 bool failed = false;
@@ -52,9 +52,9 @@ namespace butterBror.Utils.Tools
                 string cleared_message_without_repeats_changed_layout = Text.ChangeLayout(cleared_message_without_repeats);
                 string cleared_message_changed_layout = Text.ChangeLayout(cleared_message);
 
-                string banned_words_path = Core.Bot.Pathes.BlacklistWords;
-                string channel_banned_words_path = Core.Bot.Pathes.Channels + Platform.strings[(int)platform] + "/" + channelID + "/BANWORDS.json";
-                string replacement_path = Core.Bot.Pathes.BlacklistReplacements;
+                string banned_words_path = Engine.Bot.Pathes.BlacklistWords;
+                string channel_banned_words_path = Engine.Bot.Pathes.Channels + Platform.strings[(int)platform] + "/" + channelID + "/BANWORDS.json";
+                string replacement_path = Engine.Bot.Pathes.BlacklistReplacements;
 
                 List<string> single_banwords = Manager.Get<List<string>>(banned_words_path, "single_word");
                 Dictionary<string, string> replacements = Manager.Get<Dictionary<string, string>>(replacement_path, "list") ?? new Dictionary<string, string>();
@@ -163,7 +163,7 @@ namespace butterBror.Utils.Tools
         private bool CheckBanWords(string message, string channelID, string checkUUID,
     List<string> bannedWords, List<string> singleBanwords)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 if (bannedWords.Any(word => message.Contains(word, StringComparison.OrdinalIgnoreCase)))
@@ -207,7 +207,7 @@ namespace butterBror.Utils.Tools
         private bool CheckReplacements(string message, string channelID, string checkUUID,
     List<string> bannedWords, List<string> singleBanwords, Dictionary<string, string> replacements)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 string maskedWord = _replacementRegex.Replace(message, match =>

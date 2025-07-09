@@ -36,7 +36,7 @@ namespace butterBror
 
             public async Task<CommandReturn> Index(CommandData data)
             {
-                Core.Statistics.FunctionsUsed.Add();
+                Engine.Statistics.FunctionsUsed.Add();
                 CommandReturn commandReturn = new CommandReturn();
 
                 try
@@ -148,7 +148,7 @@ namespace butterBror
                     else
                     {
                         commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:not_enough_arguments", data.ChannelID, data.Platform)
-                            .Replace("%command_example%", $"{Core.Bot.Executor}currency 1 USD to RUB"));
+                            .Replace("%command_example%", $"{Engine.Bot.Executor}currency 1 USD to RUB"));
                     }
                 }
                 catch (Exception e)

@@ -35,7 +35,7 @@ namespace butterBror
             // #CMD 1A
             public CommandReturn Index(CommandData data)
             {
-                Core.Statistics.FunctionsUsed.Add();
+                Engine.Statistics.FunctionsUsed.Add();
                 CommandReturn commandReturn = new CommandReturn();
 
                 try
@@ -139,7 +139,7 @@ namespace butterBror
                         }
                     }
 
-                    DirectoryInfo directory_info = new DirectoryInfo(Core.Bot.Pathes.Main);
+                    DirectoryInfo directory_info = new DirectoryInfo(Engine.Bot.Pathes.Main);
                     long folder_size = directory_info.EnumerateFiles("*.*", SearchOption.AllDirectories).Sum(fi => fi.Length);
                     long folder_size_MB = folder_size / (1024 * 1024);
                     long folder_size_GB = folder_size / (1024 * 1024 * 1024);
@@ -147,11 +147,11 @@ namespace butterBror
 
                     if (data.Platform == Platforms.Twitch)
                     {
-                        commandReturn.SetMessage($"glorp 📡 Pshhh... I'm ButterBror v.{Core.Version} 💻 Status: {statusName} 💾 Free disk space ( {diskName.Replace("\\", "")} ): {avalibeDiskSpace} GB/{diskSpace} GB ({percentDiskUsed}% free) 🫙 Used working memory by bot: {workingAppSet} MB ⚖️ Bot database weight: {folder_size_MB} MB/{diskSpace} GB ({percent_folder_disk_used}% free)");
+                        commandReturn.SetMessage($"glorp 📡 Pshhh... I'm ButterBror v.{Engine.Version} 💻 Status: {statusName} 💾 Free disk space ( {diskName.Replace("\\", "")} ): {avalibeDiskSpace} GB/{diskSpace} GB ({percentDiskUsed}% free) 🫙 Used working memory by bot: {workingAppSet} MB ⚖️ Bot database weight: {folder_size_MB} MB/{diskSpace} GB ({percent_folder_disk_used}% free)");
                     }
                     else if (data.Platform == Platforms.Discord)
                     {
-                        commandReturn.SetMessage($"<:OFFLINECHAT:1248250625754398730> 📡 Pshhh... I'm ButterBror v.{Core.Version} 💻 Status: {statusName} 💾 Free disk space ( {diskName.Replace("\\", "")} ): {avalibeDiskSpace} GB/{diskSpace} GB ({percentDiskUsed}% free) 🫙 Used working memory by bot: {workingAppSet} MB ⚖️ Bot database weight: {folder_size_MB} MB/{diskSpace} GB ({percent_folder_disk_used}% free)");
+                        commandReturn.SetMessage($"<:OFFLINECHAT:1248250625754398730> 📡 Pshhh... I'm ButterBror v.{Engine.Version} 💻 Status: {statusName} 💾 Free disk space ( {diskName.Replace("\\", "")} ): {avalibeDiskSpace} GB/{diskSpace} GB ({percentDiskUsed}% free) 🫙 Used working memory by bot: {workingAppSet} MB ⚖️ Bot database weight: {folder_size_MB} MB/{diskSpace} GB ({percent_folder_disk_used}% free)");
                     }
                 }
                 catch (Exception e)

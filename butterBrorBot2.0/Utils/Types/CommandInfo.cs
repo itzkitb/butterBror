@@ -23,9 +23,9 @@ namespace butterBror.Utils.Types
         public required bool IsForBotModerator { get; set; }
         public required bool IsForChannelModerator { get; set; }
         public required bool IsForBotDeveloper { get; set; }
-        public double? cost { get; set; }
+        public double? Cost { get; set; }
         public required Platforms[] Platforms { get; set; }
 
-        public bool is_on_development { get; set; }
+        public bool isOnDevelopment { get; set; }
     }
 }

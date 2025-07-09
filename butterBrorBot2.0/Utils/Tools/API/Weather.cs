@@ -17,7 +17,7 @@ namespace butterBror.Utils.Tools.API
         [ConsoleSector("butterBror.Utils.Tools.API.Weather", "Get")]
         public static async Task<Data> Get(string lat, string lon)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
 
             Data GetErrorData()
                 => new Data
@@ -37,17 +37,17 @@ namespace butterBror.Utils.Tools.API
 
             try
             {
-                var tokens = Manager.Get<string[]>(Core.Bot.Pathes.Settings, "weather_token");
+                var tokens = Manager.Get<string[]>(Engine.Bot.Pathes.Settings, "weather_token");
                 string dateKey = DateTime.UtcNow.ToString("ddMMyyyy");
                 using var client = new HttpClient();
 
                 foreach (var token in tokens)
                 {
                     string cacheKey = dateKey + token;
-                    int usage = Manager.Get<int>(Core.Bot.Pathes.Cache, cacheKey);
+                    int usage = Manager.Get<int>(Engine.Bot.Pathes.Cache, cacheKey);
                     if (usage >= 10) continue;
 
-                    SafeManager.Save(Core.Bot.Pathes.Cache, cacheKey, ++usage);
+                    SafeManager.Save(Engine.Bot.Pathes.Cache, cacheKey, ++usage);
 
                     var uri = new Uri(
                         $"https://ai-weather-by-meteosource.p.rapidapi.com/current" +
@@ -77,15 +77,15 @@ namespace butterBror.Utils.Tools.API
         [ConsoleSector("butterBror.Utils.Tools.API.Weather", "GetLocation")]
         public static async Task<List<Place>> GetLocation(string placeName)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
 
             List<Place> ErrorResult() => new() { new Place { name = "err", lat = "", lon = "" } };
 
             try
             {
-                var tokens = Manager.Get<string[]>(Core.Bot.Pathes.Settings, "weather_token");
+                var tokens = Manager.Get<string[]>(Engine.Bot.Pathes.Settings, "weather_token");
                 string dateKey = DateTime.UtcNow.ToString("ddMMyyyy");
-                var cache = Manager.Get<Dictionary<string, LocationCacheData>>(Core.Bot.Pathes.Cache, "Data")
+                var cache = Manager.Get<Dictionary<string, LocationCacheData>>(Engine.Bot.Pathes.Cache, "Data")
                             ?? new Dictionary<string, LocationCacheData>();
                 var cached = cache.Values
                                   .Where(c => c.Tags?.Contains(placeName, StringComparer.OrdinalIgnoreCase) == true
@@ -99,11 +99,11 @@ namespace butterBror.Utils.Tools.API
                 foreach (var token in tokens)
                 {
                     string usageKey = dateKey + token;
-                    int uses = Manager.Get<int>(Core.Bot.Pathes.APIUses, usageKey);
+                    int uses = Manager.Get<int>(Engine.Bot.Pathes.APIUses, usageKey);
                     if (uses >= 10)
                         continue;
 
-                    SafeManager.Save(Core.Bot.Pathes.APIUses, usageKey, ++uses);
+                    SafeManager.Save(Engine.Bot.Pathes.APIUses, usageKey, ++uses);
 
                     var uri = new Uri(
                         $"https://ai-weather-by-meteosource.p.rapidapi.com/find_places" +
@@ -143,7 +143,7 @@ namespace butterBror.Utils.Tools.API
                         }
                     }
 
-                    SafeManager.Save(Core.Bot.Pathes.Cache, "Data", cache);
+                    SafeManager.Save(Engine.Bot.Pathes.Cache, "Data", cache);
                     return places;
                 }
 
@@ -190,7 +190,7 @@ namespace butterBror.Utils.Tools.API
         }
         public static string GetEmoji(double temperature)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             if (temperature > 35)
                 return "🔥";
             else if (temperature > 30)
@@ -210,7 +210,7 @@ namespace butterBror.Utils.Tools.API
         }
         public static string GetSummary(string lang, string summary, string channelID, Platforms platform)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             switch (summary.ToLower())
             {
                 case "sunny":
@@ -239,7 +239,7 @@ namespace butterBror.Utils.Tools.API
         }
         public static string GetSummaryEmoji(string summary)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             switch (summary.ToLower())
             {
                 case "sunny":

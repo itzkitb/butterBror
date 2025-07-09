@@ -3,7 +3,9 @@ using butterBror.Utils.Tools;
 using butterBror.Utils.Tools.Device;
 using butterBror.Utils.Types;
 using Microsoft.TeamFoundation.Common;
+using Microsoft.VisualStudio.Services.Common;
 using Pastel;
+using System;
 using System.Diagnostics;
 using System.Management;
 using System.Runtime.InteropServices;
@@ -14,13 +16,9 @@ namespace butterBror
     /// <summary>
     /// Central class managing bot statistics, performance metrics, and system-wide operations.
     /// </summary>
-    public class Core
+    public class Engine
     {
-        /// <summary>
-        /// Gets the number of times the bot has been restarted.
-        /// </summary>
-        public static int RestartedTimes = 0;
-
+        #region Variables
         /// <summary>
         /// Gets the count of completed commands.
         /// </summary>
@@ -54,7 +52,7 @@ namespace butterBror
         /// <summary>
         /// Gets the current patch version.
         /// </summary>
-        public static string Patch = "3";
+        public static string Patch = "4";
 
         /// <summary>
         /// Gets or sets the previous version string.
@@ -64,17 +62,17 @@ namespace butterBror
         /// <summary>
         /// Gets or sets TPS counter value.
         /// </summary>
-        public static long TPSCounter = 0;
+        public static long TelemetryTPS = 0;
 
         /// <summary>
         /// Gets or sets CPU counter items count.
         /// </summary>
-        public static long CPUCounterItems = 0;
+        public static long TelemetryCPUItems = 0;
 
         /// <summary>
         /// Gets or sets TPS counter items count.
         /// </summary>
-        public static long TPSCounterItems = 0;
+        public static long TelemetryTPSItems = 0;
 
         /// <summary>
         /// Gets or sets total tick count since startup.
@@ -109,7 +107,7 @@ namespace butterBror
         /// <summary>
         /// Gets or sets CPU counter value.
         /// </summary>
-        public static decimal CPUCounter = 0;
+        public static decimal TelemetryCPU = 0;
 
         /// <summary>
         /// Gets or sets application start time.
@@ -121,9 +119,18 @@ namespace butterBror
         /// </summary>
         public static InternalBot Bot = new InternalBot();
 
+        /// <summary>
+        /// Gets or sets the core name.
+        /// </summary>
+        public static string hostName = null;
+
+        /// <summary>
+        /// Gets or sets the core version.
+        /// </summary>
+        public static string hostVersion = null;
+
         private static float _lastCoinAmount = 0;
-        private static bool _isTickEnded = true;
-        private static long _lastTickCount = 0;
+        private static long _tpsCounter = 0;
         private static long _lastSendTick = 0;
         private static PerformanceCounter _CPU = new PerformanceCounter("Processor", "% Processor Time", "_Total");
 
@@ -137,9 +144,8 @@ namespace butterBror
             public static long Checks = 0;
         }
 
-        private static Timer _ticksTimer;
+        private static Task _ticksTimer;
         private static Timer _secondTimer;
-        private static Task _botTask;
 
         public class Statistics
         {
@@ -155,13 +161,13 @@ namespace butterBror
                 public static StatisticItem Checks = new();
             }
         }
+        #endregion
 
         /// <summary>
         /// Starts the bot core with specified configuration.
         /// </summary>
         /// <param name="mainPath">Optional custom path for data storage.</param>
         /// <param name="customTickSpeed">Optional TPS override (default: 20).</param>
-        /// <param name="runsInConsole">Indicates whether running in console mode.</param>
         /// <remarks>
         /// - Initializes system metrics tracking
         /// - Sets up hardware information gathering
@@ -169,29 +175,172 @@ namespace butterBror
         /// - Starts periodic tick timer
         /// </remarks>
         [ConsoleSector("butterBror.Core", "Start")]
-        public static async void Start(string? mainPath = null, int customTickSpeed = 20, bool runsInConsole = true)
+        public static void Main(string[] args)
         {
             Statistics.FunctionsUsed.Add();
-            if (Environment.OSVersion.Platform == PlatformID.Win32NT)
-            {
-                _CPU.NextValue();
-            }
 
-            Ticks = customTickSpeed;
-            if (customTickSpeed > 1000)
-            {
-                Write(new Exception("Ticks cannot exceed 1000 per second!"));
-                return;
-            }
-            else if (customTickSpeed < 1)
-            {
-                Write(new Exception("Ticks cannot be less than 1 per second!"));
-                return;
-            }
-            int ticks_time = 1000 / Ticks;
+            Initialize(args);
+            ButterBrorFetch(Ticks);
+            StartEngine();
 
+            Console.ReadLine();
+        }
+
+        /// <summary>
+        /// Periodic task handler for system metrics and data persistence.
+        /// </summary>
+        /// <param name="timer">Timer state object.</param>
+        /// <remarks>
+        /// - Updates database statistics
+        /// - Tracks currency metrics
+        /// - Manages semaphore cleanup
+        /// - Sends telemetry data every 10 minutes
+        /// - Handles bot restart operations
+        /// </remarks>
+        [ConsoleSector("butterBror.Engine", "StartTickLoop")]
+        private static async Task StartTickLoop(int ticksTime)
+        {
+            Statistics.FunctionsUsed.Add();
+
+            while (true)
+            {
+                Stopwatch elapsedTime = new Stopwatch();
+                elapsedTime.Start();
+
+                try
+                {
+                    if (Bot.Initialized)
+                    {
+                        int cache_reads = (int)((long)DankDB.Statistics.cache_reads - DankDBPreviousStatistics.CacheReads);
+                        int cache_writes = (int)((long)DankDB.Statistics.cache_writes - DankDBPreviousStatistics.CacheWrites);
+                        int writes = (int)((long)DankDB.Statistics.writes - DankDBPreviousStatistics.FileWrites);
+                        int reads = (int)((long)DankDB.Statistics.reads - DankDBPreviousStatistics.FileReads);
+                        int checks = (int)((long)DankDB.Statistics.checks - DankDBPreviousStatistics.Checks);
+
+                        Statistics.DataBase.CacheReads.Add(cache_reads);
+                        Statistics.DataBase.CacheWrites.Add(cache_writes);
+                        Statistics.DataBase.FileWrites.Add(writes);
+                        Statistics.DataBase.FileReads.Add(reads);
+                        Statistics.DataBase.Checks.Add(checks);
+                        Statistics.DataBase.Operations.Add(cache_reads + cache_writes + writes + reads + checks);
+
+                        DankDBPreviousStatistics.CacheReads = (long)DankDB.Statistics.cache_reads;
+                        DankDBPreviousStatistics.CacheWrites = (long)DankDB.Statistics.cache_writes;
+                        DankDBPreviousStatistics.FileReads = (long)DankDB.Statistics.reads;
+                        DankDBPreviousStatistics.FileWrites = (long)DankDB.Statistics.writes;
+                        DankDBPreviousStatistics.Checks = (long)DankDB.Statistics.checks;
+
+                        if (Bot is not null && Bot.Initialized && Coins != 0 && Users != 0 && _lastCoinAmount != Coins)
+                        {
+                            var date = DateTime.UtcNow;
+                            Dictionary<string, dynamic> currencyData = new()
+                            {
+                                    { "amount", Coins },
+                                    { "users", Users },
+                                    { "dollars", BankDollars },
+                                    { "cost", BankDollars / Coins },
+                                    { "middleBalance", Coins / Users }
+                            };
+
+                            if (!Bot.Pathes.Currency.IsNullOrEmpty())
+                            {
+                                SafeManager.Save(Bot.Pathes.Currency, "totalAmount", Coins, false);
+                                SafeManager.Save(Bot.Pathes.Currency, "totalUsers", Users, false);
+                                SafeManager.Save(Bot.Pathes.Currency, "totalDollarsInTheBank", BankDollars, false);
+                                SafeManager.Save(Bot.Pathes.Currency, $"[{date.Day}.{date.Month}.{date.Year}]", "", false);
+                                SafeManager.Save(Bot.Pathes.Currency, $"[{date.Day}.{date.Month}.{date.Year}] cost", (BankDollars / Coins), false);
+                                SafeManager.Save(Bot.Pathes.Currency, $"[{date.Day}.{date.Month}.{date.Year}] amount", Coins, false);
+                                SafeManager.Save(Bot.Pathes.Currency, $"[{date.Day}.{date.Month}.{date.Year}] users", Users, false);
+                                SafeManager.Save(Bot.Pathes.Currency, $"[{date.Day}.{date.Month}.{date.Year}] dollars", BankDollars);
+                            }
+
+                            _lastCoinAmount = Coins;
+                        }
+
+                        if (DateTime.UtcNow.Minute % 10 == 0 && DateTime.UtcNow.Second == 0 && TicksCounter - _lastSendTick > Ticks)
+                        {
+                            _lastSendTick = TicksCounter;
+                            Bot.Pathes.UpdatePaths();
+                            Bot.SaveEmoteCache();
+                            await Bot.SendTelemetry();
+
+                            // Clearing semaphore
+                            var now = DateTime.UtcNow;
+                            var timeout = TimeSpan.FromMinutes(10);
+
+                            foreach (var (userId, (semaphore, lastUsed)) in Command.messagesSemaphores.ToList())
+                            {
+                                if (now - lastUsed > timeout)
+                                {
+                                    if (Command.messagesSemaphores.TryRemove(userId, out var entry))
+                                    {
+                                        try
+                                        {
+                                            if (entry.Semaphore.CurrentCount == 0)
+                                                entry.Semaphore.Release();
+                                        }
+                                        finally
+                                        {
+                                            entry.Semaphore.Dispose();
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    TicksCounter++;
+                    TickDelay = elapsedTime.ElapsedMilliseconds;
+                }
+                catch (Exception e)
+                {
+                    Write(e);
+                }
+                finally
+                {
+                    elapsedTime.Stop();
+                    var delayTime = Math.Max(0, ticksTime - (int)elapsedTime.ElapsedMilliseconds);
+                    await Task.Delay(delayTime);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Responds to ping requests with status confirmation.
+        /// </summary>
+        /// <returns>"Pong!" status response</returns>
+        [ConsoleSector("butterBror.Engine", "Ping")]
+        public static string Ping()
+        {
+            Statistics.FunctionsUsed.Add();
+            return "Pong!";
+        }
+
+        /// <summary>
+        /// Closes the application with a specific code.
+        /// </summary>
+        [ConsoleSector("butterBror.Engine", "Exit")]
+        public static void Exit(int exitCode)
+        {
+            Statistics.FunctionsUsed.Add();
+            Environment.Exit(exitCode);
+        }
+
+        /// <summary>
+        /// Fetches and displays system hardware and software information for the ButterBror bot.
+        /// </summary>
+        /// <param name="customTickSpeed">The custom tick speed (TPS - ticks per second) set for the bot's operation.</param>
+        /// <remarks>
+        /// This method gathers detailed system information including processor name, operating system details, 
+        /// total and available memory (RAM), and disk space statistics. It then formats and displays this 
+        /// information in a stylized console output along with bot version, framework, and host details.
+        /// If any information cannot be retrieved due to exceptions, appropriate error messages are logged.
+        /// </remarks>
+        [ConsoleSector("butterBror.Engine", "ButterBrorFetch")]
+        private static void ButterBrorFetch(int customTickSpeed)
+        {
+            Statistics.FunctionsUsed.Add();
             Write("Please wait...", "kernel");
-
             string proccessor = "Unnamed processor";
             string OSName = "Unknown";
             double memory = 0;
@@ -229,7 +378,7 @@ namespace butterBror
                 {
                     if (drive.IsReady)
                     {
-                        totalDiskSpace += drive.TotalFreeSpace;
+                        totalDiskSpace += drive.TotalSize;
                         totalFreeDiskSpace += drive.AvailableFreeSpace;
                     }
                 }
@@ -255,237 +404,113 @@ namespace butterBror
             :::::::::                  
         :::::::::::::::::              
       ::i:::::::::::::::::::           
-  :::::::::::::::::::::::::::::        
- ::::::::::::::::::::::::::::::::      Framework: {(runsInConsole ? RuntimeInformation.FrameworkDescription.Pastel("#ff7b42") : RuntimeInformation.FrameworkDescription)}
- {{~:::::::::::::::::::::::::::::::     v.{(runsInConsole ? Version.ToString().Pastel("#ff7b42") : Version.ToString())}.{Patch}
- 0000XI::::::::::::::::::::::tC00:     {(runsInConsole ? customTickSpeed.ToString().Pastel("#ff7b42") : customTickSpeed)} TPS
- ::c0000nI::::::::::::::::(v1::<l      {(runsInConsole ? OSName.Pastel("#ff7b42") : OSName)}
- ((((:n0000f-::::::::}}x00(::n000(:     {(runsInConsole ? proccessor.Pastel("#ff7b42") : proccessor)}
- n0((::::c0000f(:::>}}X(l!00QQ0((::     RAM: {(runsInConsole ? memory.ToString().Pastel("#ff7b42") : memory)} GB
-  :():::::::C000000000000:::::+l:      Total disks space: {(runsInConsole ? Math.Round(Memory.BytesToGB(totalDiskSpace)).ToString().Pastel("#ff7b42") : Math.Round(Memory.BytesToGB(totalDiskSpace)))} GB
-     Ix:(((((((:-}}-:((:::100_:         Available disks space: {(runsInConsole ? Math.Round(Memory.BytesToGB(totalFreeDiskSpace)).ToString().Pastel("#ff7b42") : Math.Round(Memory.BytesToGB(totalFreeDiskSpace)))} GB
+  :::::::::::::::::::::::::::::        Host: {hostName} v.{hostVersion}
+ ::::::::::::::::::::::::::::::::      Framework: {RuntimeInformation.FrameworkDescription.Pastel("#ff7b42")}
+ {{~:::::::::::::::::::::::::::::::     v.{Version.ToString().Pastel("#ff7b42")}.{Patch}
+ 0000XI::::::::::::::::::::::tC00:     {customTickSpeed.ToString().Pastel("#ff7b42")} TPS
+ ::c0000nI::::::::::::::::(v1::<l      {OSName.Pastel("#ff7b42")}
+ ((((:n0000f-::::::::}}x00(::n000(:     {proccessor.Pastel("#ff7b42")}
+ n0((::::c0000f(:::>}}X(l!00QQ0((::     RAM: {memory.ToString().Pastel("#ff7b42")} GB
+  :():::::::C000000000000:::::+l:      Total disks space: {Math.Round(Memory.BytesToGB(totalDiskSpace)).ToString().Pastel("#ff7b42")} GB
+     Ix:(((((((:-}}-:((:::100_:         Available disks space: {Math.Round(Memory.BytesToGB(totalFreeDiskSpace)).ToString().Pastel("#ff7b42")} GB
         :X00:((:::::]000x;:            
             :x0000000n:                
               :::::::
 ", "kernel");
-
-            Write($"The engine is currently starting...", "kernel");
-
-            Bot = new InternalBot();
-
-            if (mainPath != null)
-            {
-                Bot.Pathes.General = mainPath;
-                Bot.Pathes.Main = mainPath + "butterBror/";
-
-                Write($"Main path: {Bot.Pathes.Main}", "kernel");
-                Write($"The paths are set!", "kernel");
-            }
-            else
-            {
-                Bot.Pathes.General = $"{Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)}/ItzKITb/";
-                Bot.Pathes.Main = Bot.Pathes.General + "butterBror/";
-            }
-
-            _ticksTimer = new(OnTick, null, 0, ticks_time);
-            _secondTimer = new((object? timer) =>
-            {
-                TicksPerSecond = TicksCounter - _lastTickCount;
-                _lastTickCount = TicksCounter;
-
-                TPSCounter += TicksPerSecond;
-                TPSCounterItems++;
-
-                if (Environment.OSVersion.Platform == PlatformID.Win32NT)
-                {
-                    CPUPercentage = _CPU.NextValue();
-                    CPUCounter += (decimal)CPUPercentage;
-                    CPUCounterItems++;
-                }
-            }, null, 0, 1000);
-            Write($"TPS counter successfully started.", "kernel");
-
-            try
-            {
-                StartTime = DateTime.Now;
-                _botTask = Task.Run(() => { Bot.Start(0); });
-            }
-            catch (Exception e)
-            {
-                Write(e);
-            }
         }
 
         /// <summary>
-        /// Periodic task handler for system metrics and data persistence.
+        /// Initializes the core settings and environment for the ButterBror bot.
         /// </summary>
-        /// <param name="timer">Timer state object.</param>
+        /// <param name="args">Command-line arguments passed to the application.</param>
         /// <remarks>
-        /// - Updates database statistics
-        /// - Tracks currency metrics
-        /// - Manages semaphore cleanup
-        /// - Sends telemetry data every 10 minutes
-        /// - Handles bot restart operations
+        /// This method sets up the console title, parses command-line arguments to configure core name and version,
+        /// and initializes performance counters for CPU usage monitoring on Windows. It also validates the tick speed 
+        /// (TPS) to ensure it falls within acceptable limits (1 to 1000 ticks per second). If critical parameters like 
+        /// core name or version are missing, or if tick speed validation fails, the method logs errors and halts execution.
         /// </remarks>
-        [ConsoleSector("butterBror.Core", "OnTick")]
-        public static async void OnTick(object? timer)
+        [ConsoleSector("butterBror.Engine", "Initialize")]
+        private static void Initialize(string[] args)
         {
-            Statistics.FunctionsUsed.Add();
+            Console.Title = $"butterBror | v.{Version}.{Patch}";
 
-            if (!_isTickEnded)
+            int customTickSpeed = 20;
+            for (int i = 0; i < args.Length; i++)
             {
-                SkippedTicks++;
+                if (args[i] == "--core-version" && i + 1 < args.Length)
+                {
+                    hostVersion = args[i + 1];
+                }
+
+                if (args[i] == "--core-name" && i + 1 < args.Length)
+                {
+                    hostName = args[i + 1];
+                }
+            }
+
+            if (hostName is null || hostVersion is null)
+            {
+                Write("The bot is running without a host! Please run it from the host, not directly.", "kernel");
+                Console.ReadLine();
                 return;
             }
 
-            try
+            if (Environment.OSVersion.Platform == PlatformID.Win32NT)
             {
-                if (Bot.Initialized)
-                {
-                    int cache_reads = (int)((long)DankDB.Statistics.cache_reads - DankDBPreviousStatistics.CacheReads);
-                    int cache_writes = (int)((long)DankDB.Statistics.cache_writes - DankDBPreviousStatistics.CacheWrites);
-                    int writes = (int)((long)DankDB.Statistics.writes - DankDBPreviousStatistics.FileWrites);
-                    int reads = (int)((long)DankDB.Statistics.reads - DankDBPreviousStatistics.FileReads);
-                    int checks = (int)((long)DankDB.Statistics.checks - DankDBPreviousStatistics.Checks);
-
-                    Statistics.DataBase.CacheReads.Add(cache_reads);
-                    Statistics.DataBase.CacheWrites.Add(cache_writes);
-                    Statistics.DataBase.FileWrites.Add(writes);
-                    Statistics.DataBase.FileReads.Add(reads);
-                    Statistics.DataBase.Checks.Add(checks);
-                    Statistics.DataBase.Operations.Add(cache_reads + cache_writes + writes + reads + checks);
-
-                    DankDBPreviousStatistics.CacheReads = (long)DankDB.Statistics.cache_reads;
-                    DankDBPreviousStatistics.CacheWrites = (long)DankDB.Statistics.cache_writes;
-                    DankDBPreviousStatistics.FileReads = (long)DankDB.Statistics.reads;
-                    DankDBPreviousStatistics.FileWrites = (long)DankDB.Statistics.writes;
-                    DankDBPreviousStatistics.Checks = (long)DankDB.Statistics.checks;
-
-                    DateTime startTime = DateTime.Now;
-
-                    if (!Bot.NeedRestart && Bot.Initialized && Coins != 0 && Users != 0 && _lastCoinAmount != Coins)
-                    {
-                        var date = DateTime.UtcNow;
-                        Dictionary<string, dynamic> currencyData = new()
-                            {
-                                    { "amount", Coins },
-                                    { "users", Users },
-                                    { "dollars", BankDollars },
-                                    { "cost", BankDollars / Coins },
-                                    { "middleBalance", Coins / Users }
-                            };
-
-                        if (!Bot.Pathes.Currency.IsNullOrEmpty())
-                        {
-                            SafeManager.Save(Bot.Pathes.Currency, "totalAmount", Coins, false);
-                            SafeManager.Save(Bot.Pathes.Currency, "totalUsers", Users, false);
-                            SafeManager.Save(Bot.Pathes.Currency, "totalDollarsInTheBank", BankDollars, false);
-                            SafeManager.Save(Bot.Pathes.Currency, $"[{date.Day}.{date.Month}.{date.Year}]", "", false);
-                            SafeManager.Save(Bot.Pathes.Currency, $"[{date.Day}.{date.Month}.{date.Year}] cost", (BankDollars / Coins), false);
-                            SafeManager.Save(Bot.Pathes.Currency, $"[{date.Day}.{date.Month}.{date.Year}] amount", Coins, false);
-                            SafeManager.Save(Bot.Pathes.Currency, $"[{date.Day}.{date.Month}.{date.Year}] users", Users, false);
-                            SafeManager.Save(Bot.Pathes.Currency, $"[{date.Day}.{date.Month}.{date.Year}] dollars", BankDollars);
-                        }
-
-                        _lastCoinAmount = Coins;
-                    }
-
-                    if (DateTime.UtcNow.Minute % 10 == 0 && DateTime.UtcNow.Second == 0 && TicksCounter - _lastSendTick > Ticks)
-                    {
-                        _lastSendTick = TicksCounter;
-                        Bot.Pathes.UpdatePaths();
-                        Bot.SaveEmoteCache();
-                        await Bot.SendTelemetry();
-
-                        // Clearing semaphore
-                        var now = DateTime.UtcNow;
-                        var timeout = TimeSpan.FromMinutes(10);
-
-                        foreach (var (userId, (semaphore, lastUsed)) in Command.messagesSemaphores.ToList())
-                        {
-                            if (now - lastUsed > timeout)
-                            {
-                                if (Command.messagesSemaphores.TryRemove(userId, out var entry))
-                                {
-                                    try
-                                    {
-                                        if (entry.Semaphore.CurrentCount == 0)
-                                            entry.Semaphore.Release();
-                                    }
-                                    finally
-                                    {
-                                        entry.Semaphore.Dispose();
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    _isTickEnded = false;
-                    TicksCounter++;
-                    TickDelay = (DateTime.Now - startTime).TotalMilliseconds;
-                }
-                else if (Bot.NeedRestart)
-                {
-                    Restart();
-                }
+                _CPU.NextValue();
             }
-            catch (Exception e)
+
+            Ticks = customTickSpeed;
+            if (customTickSpeed > 1000)
             {
-                Write(e);
+                Write(new Exception("Ticks cannot exceed 1000 per second!"));
+                Console.ReadLine();
+                return;
             }
-            finally
+            else if (customTickSpeed < 1)
             {
-                _isTickEnded = true;
+                Write(new Exception("Ticks cannot be less than 1 per second!"));
+                Console.ReadLine();
+                return;
             }
         }
 
         /// <summary>
-        /// Restarts the bot instance with preserved state.
+        /// Starts the core engine of the ButterBror bot, initializing timers and bot instance.
         /// </summary>
         /// <remarks>
-        /// - Increments restart counter
-        /// - Disposes old timers
-        /// - Preserves statistics between restarts
+        /// This method initializes the main bot instance, sets up file paths for data storage, and starts the tick loop 
+        /// with a calculated interval based on the specified ticks per second (TPS). It also sets up a secondary timer 
+        /// for periodic updates of performance metrics like TPS and CPU usage. Finally, it records the application start 
+        /// time and triggers the bot's startup process, logging progress to the console.
         /// </remarks>
-        [ConsoleSector("butterBror.Core", "Restart")]
-        private static void Restart()
+        [ConsoleSector("butterBror.Engine", "StartEngine")]
+        private static void StartEngine()
         {
-            Statistics.FunctionsUsed.Add();
+            Write($"The engine is currently starting...", "kernel");
 
-            RestartedTimes++;
-            _ticksTimer?.Dispose();
-            _secondTimer?.Dispose();
-            _botTask.Dispose();
-
-            _botTask = Task.Run(() => { Bot.Start(RestartedTimes); });
+            Bot = new InternalBot();
+            Bot.Pathes.General = $"{Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)}/ItzKITb/";
+            Bot.Pathes.Main = Bot.Pathes.General + "butterBror/";
 
             int ticks_time = 1000 / Ticks;
-            _ticksTimer = new Timer(OnTick, null, 0, ticks_time);
+            _ticksTimer = Task.Run(() => StartTickLoop(ticks_time));
             _secondTimer = new((object? timer) =>
             {
-                TicksPerSecond = TicksCounter - _lastTickCount;
-                _lastTickCount = TicksCounter;
+                TicksPerSecond = _tpsCounter;
+                _tpsCounter = 0;
 
-                TPSCounter += TicksPerSecond;
-                TPSCounterItems++;
+                TelemetryTPS += TicksPerSecond;
+                TelemetryTPSItems++;
 
-                if (Environment.OSVersion.Platform == PlatformID.Win32NT)
-                {
-                    CPUCounter += (decimal)_CPU.NextValue();
-                    CPUCounterItems++;
-                }
+                CPUPercentage = _CPU.NextValue();
+                TelemetryCPU += (decimal)CPUPercentage;
+                TelemetryCPUItems++;
             }, null, 0, 1000);
-        }
+            Write($"TPS counter successfully started.", "kernel");
 
-        /// <summary>
-        /// Responds to ping requests with status confirmation.
-        /// </summary>
-        /// <returns>"Pong!" status response</returns>
-        [ConsoleSector("butterBror.Core", "Ping")]
-        public static string Ping()
-        {
-            return "Pong!";
+            StartTime = DateTime.Now;
+            Bot.Start();
         }
     }
 }

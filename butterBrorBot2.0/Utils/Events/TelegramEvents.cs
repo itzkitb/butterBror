@@ -33,14 +33,14 @@ namespace butterBror.Utils
         [ConsoleSector("butterBror.Utils.TelegramEvents", "UpdateHandler")]
         public static async Task UpdateHandler(ITelegramBotClient client, Update update, CancellationToken cancellation_token)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 if (update.Type is not UpdateType.Message) return;
 
                 Telegram.Bot.Types.Message message = update.Message;
                 User user = message.From;
-                User my_data = Core.Bot.Clients.Telegram.GetMe().Result;
+                User my_data = Engine.Bot.Clients.Telegram.GetMe().Result;
                 string text = message.Text;
 
                 Telegram.Bot.Types.Chat chat = message.Chat;
@@ -55,22 +55,22 @@ namespace butterBror.Utils
                 {
                     await client.SendMessage(chat.Id, TranslationManager.GetTranslation(lang, "telegram:welcome", chat.Id.ToString(), Platforms.Telegram, new() {
                         { "ID", user.Id.ToString() },
-                        { "WorkTime", FormatTimeSpan(DateTime.Now - Core.StartTime, lang) },
-                        { "Version", Core.Version },
+                        { "WorkTime", FormatTimeSpan(DateTime.Now - Engine.StartTime, lang) },
+                        { "Version", Engine.Version },
                         { "Ping", new Ping().Send(URLs.telegram, 1000).RoundtripTime.ToString() } }), replyParameters: message.MessageId
 , cancellationToken: cancellation_token);
                 }
                 else if (text.StartsWith("/ping", StringComparison.OrdinalIgnoreCase)
                     || text.StartsWith("/ping@" + my_data.Username, StringComparison.OrdinalIgnoreCase))
                 {
-                    var workTime = DateTime.Now - Core.StartTime;
+                    var workTime = DateTime.Now - Engine.StartTime;
                     PingReply reply = new Ping().Send(URLs.telegram, 1000);
                     string returnMessage = TranslationManager.GetTranslation(lang, "command:ping", chat.Id.ToString(), Platforms.Telegram, new(){
-                        { "version", Core.Version },
+                        { "version", Engine.Version },
                         { "workTime", FormatTimeSpan(workTime, lang) },
-                        { "tabs", (Core.Bot.Clients.Twitch.JoinedChannels.Count + Core.Bot.Clients.Discord.Guilds.Count) + " (Twitch, Discord)" },
+                        { "tabs", (Engine.Bot.Clients.Twitch.JoinedChannels.Count + Engine.Bot.Clients.Discord.Guilds.Count) + " (Twitch, Discord)" },
                         { "loadedCMDs", Commands.commands.Count().ToString() },
-                        { "completedCMDs", Core.CompletedCommands.ToString() },
+                        { "completedCMDs", Engine.CompletedCommands.ToString() },
                         { "ping", reply.RoundtripTime.ToString() }
                     });
                     await client.SendMessage(
@@ -102,7 +102,7 @@ namespace butterBror.Utils
                         cancellationToken: cancellation_token
                     );
                 }
-                else if (text.StartsWith(Core.Bot.Executor))
+                else if (text.StartsWith(Engine.Bot.Executor))
                 {
                     text = text[1..];
                     Commands.Telegram(message);
@@ -129,7 +129,7 @@ namespace butterBror.Utils
         [ConsoleSector("butterBror.Utils.TelegramEvents", "ErrorHandler")]
         public static Task ErrorHandler(ITelegramBotClient botClient, Exception error, CancellationToken cancellationToken)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             var ErrorMessage = error switch
             {
                 ApiRequestException apiRequestException

@@ -20,7 +20,7 @@ namespace butterBror.Utils.Tools.Device
         /// <returns>An array of DriveInfo objects representing all logical drives.</returns>
         public static DriveInfo[] Get()
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             DriveInfo[] drives = DriveInfo.GetDrives();
             return drives;
         }

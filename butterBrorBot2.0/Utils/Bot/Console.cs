@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Pastel;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -20,31 +21,7 @@ namespace butterBror.Utils.Bot
     /// </summary>
     public class Console
     {
-        /// <summary>
-        /// Delegate for handling chat line events.
-        /// </summary>
-        /// <param name="line">The log line information.</param>
-        public delegate void ConsoleHandler(LineInfo line);
-
-        /// <summary>
-        /// Event raised when a chat line is logged.
-        /// </summary>
-        public static event ConsoleHandler OnChatLine;
-
-        /// <summary>
-        /// Delegate for handling error events.
-        /// </summary>
-        /// <param name="line">The error line information.</param>
-        public delegate void ErrorHandler(LineInfo line);
-
-        /// <summary>
-        /// Event raised when an error occurs.
-        /// </summary>
-        public static event ErrorHandler ErrorOccured;
-
         private static readonly object _fileLock = new object();
-        private static string _logPath = Core.Bot.Pathes.Logs;
-        private static string _logDirectory = Path.GetDirectoryName(_logPath);
         private static bool _directoryChecked = false;
 
         /// <summary>
@@ -68,13 +45,7 @@ namespace butterBror.Utils.Bot
                 Debug.WriteLine($"Failed to write log to file: {ex.Message}\n{ex.StackTrace}");
             }
 
-            RaiseEvent(new LineInfo
-            {
-                Message = message,
-                Channel = channel,
-                DateTime = DateTime.Now,
-                Level = type.ToString().ToUpper()
-            });
+            System.Console.WriteLine($"{DateTime.Now.ToString("HH:mm:ss.FF").PadRight(11).Pastel("#666666")} [ {channel.Pastel("#ff7b42")} ] {message.Pastel("#bababa")}");
         }
 
         /// <summary>
@@ -97,13 +68,7 @@ namespace butterBror.Utils.Bot
                 Debug.WriteLine($"Failed to write log to file: {ex.Message}\n{ex.StackTrace}");
             }
 
-            ErrorOccured?.Invoke(new LineInfo
-            {
-                Message = logEntry,
-                Channel = "errors",
-                DateTime = DateTime.Now,
-                Level = "ERROR"
-            });
+            System.Console.WriteLine($"{DateTime.Now.ToString("HH:mm:ss.FF").PadRight(11).Pastel("#666666")} [ {"errors".Pastel("#ff4f4f")} ] {logEntry.Pastel("#bababa")}");
         }
 
         /// <summary>
@@ -133,9 +98,11 @@ namespace butterBror.Utils.Bot
         /// </summary>
         private static void EnsureDirectoryExists()
         {
-            if (!_directoryChecked && !Directory.Exists(_logDirectory))
+            string logDirectory = Path.GetDirectoryName(Engine.Bot.Pathes.Logs);
+
+            if (!_directoryChecked && !Directory.Exists(logDirectory))
             {
-                Directory.CreateDirectory(_logDirectory);
+                Directory.CreateDirectory(logDirectory);
                 _directoryChecked = true;
             }
         }
@@ -148,18 +115,9 @@ namespace butterBror.Utils.Bot
         {
             lock (_fileLock) // Thread-safe writing
             {
-                using var writer = new StreamWriter(_logPath, true);
+                using var writer = new StreamWriter(Engine.Bot.Pathes.Logs, true);
                 writer.WriteLine(logEntry);
             }
-        }
-
-        /// <summary>
-        /// Safely raises the OnChatLine event with provided log data.
-        /// </summary>
-        /// <param name="line">The log line information to propagate.</param>
-        private static void RaiseEvent(LineInfo line)
-        {
-            OnChatLine?.Invoke(line);
         }
 
         /// <summary>

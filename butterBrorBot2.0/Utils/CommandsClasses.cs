@@ -32,7 +32,7 @@ namespace butterBror
         [ConsoleSector("butterBror.Commands", "SendCommandReply#1")]
         public static async void SendCommandReply(TwitchMessageSendData data)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 string message = data.Message;
@@ -56,13 +56,13 @@ namespace butterBror
                     });
                 }
 
-                if (!Core.Bot.Clients.Twitch.JoinedChannels.Contains(new JoinedChannel(data.Channel)))
-                    Core.Bot.Clients.Twitch.JoinChannel(data.Channel);
+                if (!Engine.Bot.Clients.Twitch.JoinedChannels.Contains(new JoinedChannel(data.Channel)))
+                    Engine.Bot.Clients.Twitch.JoinChannel(data.Channel);
 
                 if (data.SafeExecute || new NoBanwords().Check(message, data.ChannelID, Platforms.Twitch))
-                    Core.Bot.Clients.Twitch.SendReply(data.Channel, data.MessageID, message);
+                    Engine.Bot.Clients.Twitch.SendReply(data.Channel, data.MessageID, message);
                 else
-                    Core.Bot.Clients.Twitch.SendReply(data.Channel, data.MessageID, TranslationManager.GetTranslation(data.Language, "error:message_could_not_be_sent", data.ChannelID, Platforms.Twitch));
+                    Engine.Bot.Clients.Twitch.SendReply(data.Channel, data.MessageID, TranslationManager.GetTranslation(data.Language, "error:message_could_not_be_sent", data.ChannelID, Platforms.Twitch));
             }
             catch (Exception ex)
             {
@@ -84,7 +84,7 @@ namespace butterBror
         [ConsoleSector("butterBror.Commands", "SendCommandReply#2")]
         public static async void SendCommandReply(TelegramMessageSendData data)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 string messageToSend = data.Message;
@@ -109,9 +109,9 @@ namespace butterBror
                 }
 
                 if (data.SafeExecute || new NoBanwords().Check(messageToSend, data.ChannelID, Platforms.Telegram))
-                    await Core.Bot.Clients.Telegram.SendMessage(long.Parse(data.ChannelID), data.Message, replyParameters: int.Parse(data.MessageID));
+                    await Engine.Bot.Clients.Telegram.SendMessage(long.Parse(data.ChannelID), data.Message, replyParameters: int.Parse(data.MessageID));
                 else
-                    await Core.Bot.Clients.Telegram.SendMessage(long.Parse(data.ChannelID), TranslationManager.GetTranslation(data.Language, "error:message_could_not_be_sent", data.ChannelID, Platforms.Telegram), replyParameters: int.Parse(data.MessageID));
+                    await Engine.Bot.Clients.Telegram.SendMessage(long.Parse(data.ChannelID), TranslationManager.GetTranslation(data.Language, "error:message_could_not_be_sent", data.ChannelID, Platforms.Telegram), replyParameters: int.Parse(data.MessageID));
                 
 
                 if (messageToSendPart2 != null)
@@ -141,7 +141,7 @@ namespace butterBror
         [ConsoleSector("butterBror.Commands", "SendCommandReply#3")]
         public static async void SendCommandReply(DiscordCommandSendData data)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 Write($"Discord - A message response was sent to the {data.Server}: {data.Message}", "info");
@@ -202,7 +202,7 @@ namespace butterBror
                         messageToSendPart2.Message = part2;
                     }
 
-                    ITextChannel sender = await Core.Bot.Clients.Discord.GetChannelAsync(ulong.Parse(data.ChannelID)) as ITextChannel;
+                    ITextChannel sender = await Engine.Bot.Clients.Discord.GetChannelAsync(ulong.Parse(data.ChannelID)) as ITextChannel;
 
                     if ((data.SafeExecute | data.IsEphemeral) || new NoBanwords().Check(data.Message, data.ServerID, Platforms.Discord) && new NoBanwords().Check(data.Description, data.ServerID, Platforms.Discord))
                     {

@@ -38,7 +38,7 @@ namespace butterBror.Utils.Tools
         [ConsoleSector("butterBror.Utils.Tools.Chat", "ReturnFromAFK")]
         public static void ReturnFromAFK(string UserID, string RoomID, string channel, string username, string message_id, Telegram.Bot.Types.Message message_reply, Platforms platform)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             var language = "ru";
 
             try
@@ -163,7 +163,7 @@ namespace butterBror.Utils.Tools
         [ConsoleSector("butterBror.Utils.Tools.Chat", "TwitchSend")]
         public static void TwitchSend(string channel, string message, string channelID, string messageID, string lang, bool isSafeEx = false, bool asciiClean = true)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 //Write($"Twitch - A message was sent to the {channel} channel: {message}", "info");
@@ -188,13 +188,13 @@ namespace butterBror.Utils.Tools
                     });
                 }
 
-                if (!Core.Bot.Clients.Twitch.JoinedChannels.Contains(new JoinedChannel(channel)))
-                    Core.Bot.Clients.Twitch.JoinChannel(channel);
+                if (!Engine.Bot.Clients.Twitch.JoinedChannels.Contains(new JoinedChannel(channel)))
+                    Engine.Bot.Clients.Twitch.JoinChannel(channel);
 
                 if (isSafeEx || new NoBanwords().Check(message, channelID, Platforms.Twitch))
-                    Core.Bot.Clients.Twitch.SendMessage(channel, message);
+                    Engine.Bot.Clients.Twitch.SendMessage(channel, message);
                 else
-                    Core.Bot.Clients.Twitch.SendReply(channel, messageID, TranslationManager.GetTranslation(lang, "error:message_could_not_be_sent", channelID, Platforms.Twitch));
+                    Engine.Bot.Clients.Twitch.SendReply(channel, messageID, TranslationManager.GetTranslation(lang, "error:message_could_not_be_sent", channelID, Platforms.Twitch));
             }
             catch (Exception ex)
             {
@@ -220,7 +220,7 @@ namespace butterBror.Utils.Tools
         [ConsoleSector("butterBror.Utils.Tools.Chat", "TwitchReply")]
         public static void TwitchReply(string channel, string channelID, string message, string messageID, string lang, bool isSafeEx = false)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 //Write($"Twitch - A response to a message was sent to the {channel} channel: {message}", "info");
@@ -242,13 +242,13 @@ namespace butterBror.Utils.Tools
                     });
                 }
 
-                if (!Core.Bot.Clients.Twitch.JoinedChannels.Contains(new JoinedChannel(channel)))
-                    Core.Bot.Clients.Twitch.JoinChannel(channel);
+                if (!Engine.Bot.Clients.Twitch.JoinedChannels.Contains(new JoinedChannel(channel)))
+                    Engine.Bot.Clients.Twitch.JoinChannel(channel);
 
                 if (isSafeEx || new NoBanwords().Check(message, channelID, Platforms.Twitch))
-                    Core.Bot.Clients.Twitch.SendReply(channel, messageID, message);
+                    Engine.Bot.Clients.Twitch.SendReply(channel, messageID, message);
                 else
-                    Core.Bot.Clients.Twitch.SendReply(channel, messageID, TranslationManager.GetTranslation(lang, "error:message_could_not_be_sent", channelID, Platforms.Twitch));
+                    Engine.Bot.Clients.Twitch.SendReply(channel, messageID, TranslationManager.GetTranslation(lang, "error:message_could_not_be_sent", channelID, Platforms.Twitch));
             }
             catch (Exception ex)
             {
@@ -274,7 +274,7 @@ namespace butterBror.Utils.Tools
         [ConsoleSector("butterBror.Utils.Tools.Chat", "TelegramReply")]
         public static void TelegramReply(string channel, long channelID, string message, Telegram.Bot.Types.Message messageReply, string lang, bool isSafeEx = false)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 Write($"Telegram - A message was sent to {channel}: {message}", "info");
@@ -283,13 +283,13 @@ namespace butterBror.Utils.Tools
                     message = TranslationManager.GetTranslation(lang, "error:too_large_text", channelID.ToString(), Platforms.Telegram);
 
                 if (isSafeEx || new NoBanwords().Check(message, channelID.ToString(), Platforms.Telegram))
-                    Core.Bot.Clients.Telegram.SendMessage(
+                    Engine.Bot.Clients.Telegram.SendMessage(
                         channelID,
                         message,
                         replyParameters: messageReply.Id
                     );
                 else
-                    Core.Bot.Clients.Telegram.SendMessage(
+                    Engine.Bot.Clients.Telegram.SendMessage(
                         channelID,
                         TranslationManager.GetTranslation(lang, "error:message_could_not_be_sent", channelID.ToString(), Platforms.Telegram),
                         replyParameters: messageReply.Id

@@ -30,10 +30,10 @@ namespace butterBror.Utils.Tools
         [ConsoleSector("butterBror.Utils.Tools.Emotes", "GetEmotesForChannel")]
         public static async Task<List<string>?> GetEmotesForChannel(string channel, string channel_id)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             try
             {
-                if (Core.Bot.ChannelsSevenTVEmotes.TryGetValue(channel_id, out var cached) &&
+                if (Engine.Bot.ChannelsSevenTVEmotes.TryGetValue(channel_id, out var cached) &&
                     DateTime.UtcNow < cached.expiration)
                 {
                     return cached.emotes;
@@ -42,14 +42,14 @@ namespace butterBror.Utils.Tools
                 await _cacheLock.WaitAsync();
                 try
                 {
-                    if (Core.Bot.ChannelsSevenTVEmotes.TryGetValue(channel_id, out cached) &&
+                    if (Engine.Bot.ChannelsSevenTVEmotes.TryGetValue(channel_id, out cached) &&
                         DateTime.UtcNow < cached.expiration)
                     {
                         return cached.emotes;
                     }
 
                     var emotes = await GetEmotes(channel);
-                    Core.Bot.ChannelsSevenTVEmotes[channel_id] = (emotes, DateTime.UtcNow.Add(Core.Bot.CacheTTL));
+                    Engine.Bot.ChannelsSevenTVEmotes[channel_id] = (emotes, DateTime.UtcNow.Add(Engine.Bot.CacheTTL));
                     return emotes;
                 }
                 finally
@@ -73,7 +73,7 @@ namespace butterBror.Utils.Tools
         [ConsoleSector("butterBror.Utils.Tools.Emotes", "RandomEmote")]
         public static async Task<string> RandomEmote(string channel, string channel_id)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 var emotes = await GetEmotesForChannel(channel, channel_id);
@@ -100,11 +100,11 @@ namespace butterBror.Utils.Tools
         [ConsoleSector("butterBror.Utils.Tools.Emotes", "EmoteUpdate")]
         public static async Task EmoteUpdate(string channel, string channel_id)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 var emotes = await GetEmotes(channel);
-                Core.Bot.ChannelsSevenTVEmotes[channel_id] = (emotes, DateTime.UtcNow.Add(Core.Bot.CacheTTL));
+                Engine.Bot.ChannelsSevenTVEmotes[channel_id] = (emotes, DateTime.UtcNow.Add(Engine.Bot.CacheTTL));
             }
             catch (Exception ex)
             {
@@ -124,23 +124,23 @@ namespace butterBror.Utils.Tools
         [ConsoleSector("butterBror.Utils.Tools.Emotes", "GetEmotes")]
         public static async Task<List<string>> GetEmotes(string channel)
         {
-            Core.Statistics.FunctionsUsed.Add();
+            Engine.Statistics.FunctionsUsed.Add();
             try
             {
-                if (Core.Bot.UsersSearchCache.TryGetValue(channel, out var userCache) &&
+                if (Engine.Bot.UsersSearchCache.TryGetValue(channel, out var userCache) &&
                     DateTime.UtcNow < userCache.expiration)
                 {
                     return await GetEmotesFromCache(userCache.userId);
                 }
 
-                var userId = Core.Bot.SevenTvService.SearchUser(channel, Core.Bot.Tokens.SevenTV).Result;
+                var userId = Engine.Bot.SevenTvService.SearchUser(channel, Engine.Bot.Tokens.SevenTV).Result;
                 if (string.IsNullOrEmpty(userId))
                 {
                     Write($"SevenTV - #{channel} doesn't exist on 7tv!", "info");
                     return new List<string>();
                 }
 
-                Core.Bot.UsersSearchCache[channel] = (userId, DateTime.UtcNow.Add(Core.Bot.CacheTTL));
+                Engine.Bot.UsersSearchCache[channel] = (userId, DateTime.UtcNow.Add(Engine.Bot.CacheTTL));
                 return await GetEmotesFromCache(userId);
             }
             catch (Exception ex)
@@ -162,8 +162,8 @@ namespace butterBror.Utils.Tools
         [ConsoleSector("butterBror.Utils.Tools.Emotes", "GetEmotesFromCache")]
         private static async Task<List<string>> GetEmotesFromCache(string userId)
         {
-            Core.Statistics.FunctionsUsed.Add();
-            var emote = await Core.Bot.Clients.SevenTV.rest.GetUser(userId);
+            Engine.Statistics.FunctionsUsed.Add();
+            var emote = await Engine.Bot.Clients.SevenTV.rest.GetUser(userId);
             if (emote?.connections?[0].emote_set?.emotes == null)
             {
                 Write($"SevenTV - No emotes found for user {userId}", "info");

@@ -36,7 +36,7 @@ namespace butterBror
             };
             public CommandReturn Index(CommandData data)
             {
-                Core.Statistics.FunctionsUsed.Add();
+                Engine.Statistics.FunctionsUsed.Add();
                 CommandReturn commandReturn = new CommandReturn();
 
                 try
@@ -47,7 +47,7 @@ namespace butterBror
 
                     if (data.Arguments.Count == 0)
                     {
-                        var workTime = DateTime.Now - Core.StartTime;
+                        var workTime = DateTime.Now - Engine.StartTime;
                         string host = "";
                         long pingSpeed = 0;
                         if (data.Platform == Platforms.Telegram)
@@ -65,16 +65,16 @@ namespace butterBror
                         }
 
                         commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:ping", data.ChannelID, data.Platform)
-                                    .Replace("%version%", Core.Version)
+                                    .Replace("%version%", Engine.Version)
                                     .Replace("%workTime%", Text.FormatTimeSpan(workTime, data.User.Language))
-                                    .Replace("%tabs%", data.Platform == Platforms.Twitch ? Core.Bot.Clients.Twitch.JoinedChannels.Count.ToString() : (data.Platform == Platforms.Discord ? Core.Bot.Clients.Discord.Guilds.Count.ToString() : (Core.Bot.Clients.Twitch.JoinedChannels.Count + Core.Bot.Clients.Discord.Guilds.Count) + " (Twitch, Discord)"))
+                                    .Replace("%tabs%", data.Platform == Platforms.Twitch ? Engine.Bot.Clients.Twitch.JoinedChannels.Count.ToString() : (data.Platform == Platforms.Discord ? Engine.Bot.Clients.Discord.Guilds.Count.ToString() : (Engine.Bot.Clients.Twitch.JoinedChannels.Count + Engine.Bot.Clients.Discord.Guilds.Count) + " (Twitch, Discord)"))
                                     .Replace("%loadedCMDs%", Commands.commands.Count.ToString())
-                                    .Replace("%completedCMDs%", Core.CompletedCommands.ToString())
+                                    .Replace("%completedCMDs%", Engine.CompletedCommands.ToString())
                                     .Replace("%ping%", pingSpeed.ToString()));
                     }
                     else if (argument.Equals("isp"))
                     {
-                        var workTime = DateTime.Now - Core.StartTime;
+                        var workTime = DateTime.Now - Engine.StartTime;
                         PingReply reply = new Ping().Send("192.168.1.1", 1000);
                         long pingSpeed = -1;
                         if (reply.Status == IPStatus.Success) pingSpeed = reply.RoundtripTime;
@@ -89,7 +89,7 @@ namespace butterBror
                     }
                     else if (argument.Equals("dev"))
                     {
-                        var workTime = DateTime.Now - Core.StartTime;
+                        var workTime = DateTime.Now - Engine.StartTime;
                         string host = "";
                         long pingSpeed = 0;
                         if (data.Platform == Platforms.Telegram)
@@ -107,18 +107,18 @@ namespace butterBror
                         }
 
                         commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:ping:development", data.ChannelID, data.Platform)
-                                    .Replace("%version%", Core.Version)
-                                    .Replace("%patch%", Core.Patch)
+                                    .Replace("%version%", Engine.Version)
+                                    .Replace("%patch%", Engine.Patch)
                                     .Replace("%workTime%", Text.FormatTimeSpan(workTime, data.User.Language))
-                                    .Replace("%tabs%", (Core.Bot.Clients.Twitch.JoinedChannels.Count + Core.Bot.Clients.Discord.Guilds.Count) + " (Twitch, Discord)")
+                                    .Replace("%tabs%", (Engine.Bot.Clients.Twitch.JoinedChannels.Count + Engine.Bot.Clients.Discord.Guilds.Count) + " (Twitch, Discord)")
                                     .Replace("%loadedCMDs%", Commands.commands.Count.ToString())
-                                    .Replace("%completedCMDs%", Core.CompletedCommands.ToString())
+                                    .Replace("%completedCMDs%", Engine.CompletedCommands.ToString())
                                     .Replace("%ping%", pingSpeed.ToString())
-                                    .Replace("%tps%", Core.TicksPerSecond.ToString())
-                                    .Replace("%max_tps%", Core.Ticks.ToString())
-                                    .Replace("%tick_delay%", Core.TickDelay.ToString())
-                                    .Replace("%tick_counted%", Core.TicksCounter.ToString())
-                                    .Replace("%skiped_ticks%", Core.SkippedTicks.ToString()));
+                                    .Replace("%tps%", Engine.TicksPerSecond.ToString())
+                                    .Replace("%max_tps%", Engine.Ticks.ToString())
+                                    .Replace("%tick_delay%", Engine.TickDelay.ToString())
+                                    .Replace("%tick_counted%", Engine.TicksCounter.ToString())
+                                    .Replace("%skiped_ticks%", Engine.SkippedTicks.ToString()));
                     }
                 }
                 catch (Exception e)
