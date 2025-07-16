@@ -52,7 +52,7 @@ namespace butterBror
         /// <summary>
         /// Gets the current patch version.
         /// </summary>
-        public static string Patch = "5";
+        public static string Patch = "6";
 
         /// <summary>
         /// Gets or sets the previous version string.

@@ -149,7 +149,9 @@ namespace butterBror.Utils.Tools.API
 
                     if (chatHistory)
                     {
-                        var history = UsersData.Get<List<string>>(userID, "gpt_history", platform);
+                        List<string> loadedHistory = UsersData.Get<List<string>>(userID, "gpt_history", platform);
+                        List<string> history = loadedHistory ?? new List<string>(); // Fix #AC1
+
                         history.Add($"{requestTime.ToString("dd-MM-yyyy HH:mm")} [user]: {request}");
                         history.Add($"{DateTime.UtcNow.ToString("dd-MM-yyyy HH:mm")} [AI]: {result.choices[0].message.content}");
 
