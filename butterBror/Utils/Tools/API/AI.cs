@@ -112,11 +112,14 @@ namespace butterBror.Utils.Tools.API
             if (chatHistory)
             {
                 var history = UsersData.Get<List<string>>(userID, "gpt_history", platform);
-                messages.Insert(0, new Types.AI.Message
+                if (history is not null) // Fix #AC0
                 {
-                    role = "system",
-                    content = $"Chat history:\n{string.Join('\n', history)}"
-                });
+                    messages.Insert(0, new Types.AI.Message
+                    {
+                        role = "system",
+                        content = $"Chat history:\n{string.Join('\n', history)}"
+                    });
+                }
             }
 
             RequestBody request_body = new RequestBody

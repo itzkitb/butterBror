@@ -12,7 +12,7 @@ namespace hostBror
         private static Process _botProcess;
         private static bool _isRestarting = false;
         private static int _restartCount = 0;
-        private static string _version = "2.0.0";
+        private static string _version = "2.0.1";
         private static readonly string _botExecutablePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Process", "butterBror.exe");
 
         public static void Main(string[] args)
@@ -28,7 +28,7 @@ namespace hostBror
             {
                 if (_isRestarting)
                 {
-                    Console.WriteLine($"{"│".Pastel("#ff7b42")} Bot is restarting...");
+                    Console.WriteLine($"{"│".Pastel("#ff7b42")} {GetTime()} Bot is restarting...");
                 }
 
                 StartBotProcess();
@@ -38,7 +38,7 @@ namespace hostBror
                 if (!_isRestarting)
                 {
                     _restartCount++;
-                    Console.WriteLine($"{"│".Pastel("#ff4f4f")} Bot process exited with code {_botProcess.ExitCode}. Restarting... (Attempt {_restartCount})");
+                    Console.WriteLine($"{"│".Pastel("#ff4f4f")} {GetTime()} Bot process exited with code {_botProcess.ExitCode}. Restarting... (Attempt {_restartCount})");
                     _isRestarting = true;
                     Thread.Sleep(5000);
                 }
@@ -72,13 +72,18 @@ namespace hostBror
                 };
 
                 _botProcess.Start();
-                Console.WriteLine($"{"│".Pastel("#ff7b42")} Bot process started.");
+                Console.WriteLine($"{"│".Pastel("#ff7b42")} {GetTime()} Bot process started.");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"{"│".Pastel("#ff4f4f")} Error starting bot process: {ex.Message}");
+                Console.WriteLine($"{"│".Pastel("#ff4f4f")} {GetTime()} Error starting bot process: {ex.Message}");
                 Thread.Sleep(1000);
             }
+        }
+
+        private static string GetTime()
+        {
+            return DateTime.Now.ToString("dd.MM HH:mm.ss").Pastel("#696969");
         }
     }
 }

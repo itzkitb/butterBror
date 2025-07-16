@@ -337,7 +337,7 @@ namespace butterBror
                                 if (arguments.Count > 1)
                                 {
                                     Engine.Bot.Clients.Twitch.JoinChannel(arguments[1]);
-                                    Chat.TwitchReply(channel, channel_id, TranslationManager.GetTranslation(language, "command:bot:connect", channel_id, data.Platform), message_id, data.User.Language, true);
+                                    commandReturn.SetMessage(TranslationManager.GetTranslation(language, "command:bot:connect", channel_id, data.Platform)); // Fix #AB8
                                 }
                                 else
                                 {
@@ -352,7 +352,7 @@ namespace butterBror
                                 if (arguments.Count > 1)
                                 {
                                     Engine.Bot.Clients.Twitch.LeaveChannel(arguments[1]);
-                                    Chat.TwitchReply(channel, channel_id, TranslationManager.GetTranslation(language, "command:bot:leave", channel_id, data.Platform), message_id, data.User.Language, true);
+                                    commandReturn.SetMessage(TranslationManager.GetTranslation(language, "command:bot:leave", channel_id, data.Platform)); // Fix #AB8
                                 }
                                 else
                                 {
