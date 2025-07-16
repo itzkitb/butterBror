@@ -27,7 +27,7 @@ namespace hostBror
             Console.Title = $"hostBror | v.{_version}";
             Console.WriteLine($"{"┌".Pastel("#ff7b42")} Starting hostBror v.{_version}...");
 
-            _updateTimer = new Timer(CheckForUpdates, null, TimeSpan.FromMinutes(1), TimeSpan.FromHours(1));
+            _updateTimer = new Timer(CheckForUpdates, null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(5));
 
             StartBotMonitor();
 
