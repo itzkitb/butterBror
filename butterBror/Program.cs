@@ -1,15 +1,15 @@
-﻿using butterBror.Utils.DataManagers;
-using butterBror.Utils.Tools;
-using butterBror.Utils.Tools.Device;
-using butterBror.Utils.Types;
+﻿using butterBror.Core.Bot;
+using butterBror.Data;
+using butterBror.Models;
+using butterBror.Services.System;
+using butterBror.Utils;
 using Microsoft.TeamFoundation.Common;
 using Microsoft.VisualStudio.Services.Common;
 using Pastel;
-using System;
 using System.Diagnostics;
 using System.Management;
 using System.Runtime.InteropServices;
-using static butterBror.Utils.Bot.Console;
+using static butterBror.Core.Bot.Console;
 
 namespace butterBror
 {
@@ -47,12 +47,12 @@ namespace butterBror
         /// <summary>
         /// Gets the current version string.
         /// </summary>
-        public static string Version = "2.16";
+        public static string Version = "2.17";
 
         /// <summary>
         /// Gets the current patch version.
         /// </summary>
-        public static string Patch = "5";
+        public static string Patch = "1";
 
         /// <summary>
         /// Gets or sets the previous version string.
@@ -177,13 +177,15 @@ namespace butterBror
         [ConsoleSector("butterBror.Core", "Start")]
         public static void Main(string[] args)
         {
+            System.Console.Title = "Loading libraries...";
+            System.Console.WriteLine("Loading libraries...");
             Statistics.FunctionsUsed.Add();
 
             Initialize(args);
             ButterBrorFetch(Ticks);
             StartEngine();
 
-            Console.ReadLine();
+            System.Console.ReadLine();
         }
 
         /// <summary>
@@ -206,7 +208,7 @@ namespace butterBror
             {
                 Stopwatch elapsedTime = new Stopwatch();
                 elapsedTime.Start();
-
+                _tpsCounter++; // Fix #AC3
                 try
                 {
                     if (Bot.Initialized)
@@ -432,7 +434,8 @@ namespace butterBror
         [ConsoleSector("butterBror.Engine", "Initialize")]
         private static void Initialize(string[] args)
         {
-            Console.Title = $"butterBror | v.{Version}.{Patch}";
+            System.Console.Title = $"butterBror | v.{Version}.{Patch}";
+            System.Console.Clear();
 
             int customTickSpeed = 20;
             for (int i = 0; i < args.Length; i++)
@@ -451,7 +454,7 @@ namespace butterBror
             if (hostName is null || hostVersion is null)
             {
                 Write("The bot is running without a host! Please run it from the host, not directly.", "kernel");
-                Console.ReadLine();
+                System.Console.ReadLine();
                 return;
             }
 
@@ -464,13 +467,13 @@ namespace butterBror
             if (customTickSpeed > 1000)
             {
                 Write(new Exception("Ticks cannot exceed 1000 per second!"));
-                Console.ReadLine();
+                System.Console.ReadLine();
                 return;
             }
             else if (customTickSpeed < 1)
             {
                 Write(new Exception("Ticks cannot be less than 1 per second!"));
-                Console.ReadLine();
+                System.Console.ReadLine();
                 return;
             }
         }
