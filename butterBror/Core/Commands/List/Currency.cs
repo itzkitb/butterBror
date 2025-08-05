@@ -14,8 +14,8 @@ namespace butterBror.Core.Commands.List
         public override string GithubSource => $"{URLs.githubSource}blob/master/butterBror/Core/Commands/List/Currency.cs";
         public override Version Version => new("1.0.0");
         public override Dictionary<string, string> Description => new() {
-            { "ru", "Конвертер валют." },
-            { "en", "Currency converter." }
+            { "ru-RU", "Конвертер валют." },
+            { "en-US", "Currency converter." }
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=currency";
         public override int CooldownPerUser => 10;
@@ -108,10 +108,7 @@ namespace butterBror.Core.Commands.List
                         if (!currencySet.Contains(initialCurrency) || !currencySet.Contains(wantedCurrency))
                         {
                             string notFounded = !currencySet.Contains(initialCurrency) ? initialCurrency : wantedCurrency;
-                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:currency_not_found", data.ChannelID, data.Platform, new()
-                                {
-                                    { "currency", notFounded }
-                                }));
+                            commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:currency_not_found", data.ChannelId, data.Platform, notFounded));
                             return commandReturn;
                         }
 
@@ -123,27 +120,25 @@ namespace butterBror.Core.Commands.List
 
                         CurrencyClass res = JsonConvert.DeserializeObject<CurrencyClass>(await resp.Content.ReadAsStringAsync());
 
-                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:currency", data.ChannelID, data.Platform, new Dictionary<string, string>()
-                            {
-                                { "currencyQuantity", currencyQuantity.ToString() },
-                                { "initialCurrency", initialCurrency.ToString() },
-                                { "result", Math.Round(Convert.ToDouble(res.rates[wantedCurrency]) * currencyQuantity, 2).ToString() },
-                                { "wantedCurrency", wantedCurrency }
-                            }));
+                        commandReturn.SetMessage(LocalizationService.GetString(
+                            data.User.Language,
+                            "command:currency",
+                            data.ChannelId,
+                            data.Platform,
+                            currencyQuantity,
+                            initialCurrency,
+                            Math.Round(Convert.ToDouble(res.rates[wantedCurrency]) * currencyQuantity, 2),
+                            wantedCurrency));
                     }
                     else
                     {
                         string notFounded = !currencySet.Contains(initialCurrency) ? initialCurrency : wantedCurrency;
-                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:currency_not_found", data.ChannelID, data.Platform, new()
-                                {
-                                    { "currency", notFounded }
-                                }));
+                        commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:currency_not_found", data.ChannelId, data.Platform, notFounded));
                     }
                 }
                 else
                 {
-                    commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:not_enough_arguments", data.ChannelID, data.Platform)
-                        .Replace("%command_example%", $"{Engine.Bot.Executor}currency 1 USD to RUB"));
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:not_enough_arguments", data.ChannelId, data.Platform, $"{Engine.Bot.Executor}currency 1 USD to RUB"));
                 }
             }
             catch (Exception e)

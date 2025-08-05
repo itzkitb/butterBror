@@ -16,7 +16,7 @@ namespace butterBror.Events
         /// </summary>
         /// <param name="log">The log message from Discord client.</param>
         /// <returns>A completed task representing the asynchronous operation.</returns>
-        [ConsoleSector("butterBror.Utils.DiscordEvents", "LogAsync")]
+        
         public static Task LogAsync(LogMessage log)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -36,7 +36,7 @@ namespace butterBror.Events
         /// </summary>
         /// <param name="g">The guild (server) that was connected to.</param>
         /// <returns>A task representing the asynchronous operation.</returns>
-        [ConsoleSector("butterBror.Utils.DiscordEvents", "ConnectToGuilt")]
+        
         public static async Task ConnectToGuilt(SocketGuild g)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -49,7 +49,7 @@ namespace butterBror.Events
         /// </summary>
         /// <param name="arg">The message that might contain a command.</param>
         /// <returns>A task representing the asynchronous operation.</returns>
-        [ConsoleSector("butterBror.Utils.DiscordEvents", "HandleCommandAsync")]
+        
         public static async Task HandleCommandAsync(SocketMessage arg)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -80,7 +80,7 @@ namespace butterBror.Events
         /// </summary>
         /// <param name="command">The slash command interaction data.</param>
         /// <returns>A task representing the asynchronous operation.</returns>
-        [ConsoleSector("butterBror.Utils.DiscordEvents", "SlashCommandHandler")]
+        
         public static async Task SlashCommandHandler(SocketSlashCommand command)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -92,7 +92,7 @@ namespace butterBror.Events
         /// </summary>
         /// <param name="e">The created application command data.</param>
         /// <returns>A task representing the asynchronous operation.</returns>
-        [ConsoleSector("butterBror.Utils.DiscordEvents", "ApplicationCommandCreated")]
+        
         public static async Task ApplicationCommandCreated(SocketApplicationCommand e)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -104,7 +104,7 @@ namespace butterBror.Events
         /// </summary>
         /// <param name="e">The deleted application command data.</param>
         /// <returns>A task representing the asynchronous operation.</returns>
-        [ConsoleSector("butterBror.Utils.DiscordEvents", "ApplicationCommandDeleted")]
+        
         public static async Task ApplicationCommandDeleted(SocketApplicationCommand e)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -116,7 +116,7 @@ namespace butterBror.Events
         /// </summary>
         /// <param name="e">The updated application command data.</param>
         /// <returns>A task representing the asynchronous operation.</returns>
-        [ConsoleSector("butterBror.Utils.DiscordEvents", "ApplicationCommandUpdated")]
+        
         public static async Task ApplicationCommandUpdated(SocketApplicationCommand e)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -128,7 +128,7 @@ namespace butterBror.Events
         /// </summary>
         /// <param name="e">The created channel data.</param>
         /// <returns>A task representing the asynchronous operation.</returns>
-        [ConsoleSector("butterBror.Utils.DiscordEvents", "ChannelCreated")]
+        
         public static async Task ChannelCreated(SocketChannel e)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -140,7 +140,7 @@ namespace butterBror.Events
         /// </summary>
         /// <param name="e">The deleted channel data.</param>
         /// <returns>A task representing the asynchronous operation.</returns>
-        [ConsoleSector("butterBror.Utils.DiscordEvents", "ChannelDeleted")]
+        
         public static async Task ChannelDeleted(SocketChannel e)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -153,7 +153,7 @@ namespace butterBror.Events
         /// <param name="e">The original channel data before update.</param>
         /// <param name="a">The updated channel data.</param>
         /// <returns>A task representing the asynchronous operation.</returns>
-        [ConsoleSector("butterBror.Utils.DiscordEvents", "ChannelUpdated")]
+        
         public static async Task ChannelUpdated(SocketChannel e, SocketChannel a)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -164,7 +164,7 @@ namespace butterBror.Events
         /// Handles connection established event for the Discord client.
         /// </summary>
         /// <returns>A task representing the asynchronous operation.</returns>
-        [ConsoleSector("butterBror.Utils.DiscordEvents", "Connected")]
+        
         public static async Task Connected()
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -176,7 +176,7 @@ namespace butterBror.Events
         /// </summary>
         /// <param name="e">The button interaction data.</param>
         /// <returns>A task representing the asynchronous operation.</returns>
-        [ConsoleSector("butterBror.Utils.DiscordEvents", "ButtonTouched")]
+        
         public static async Task ButtonTouched(SocketMessageComponent e)
         {
             Engine.Statistics.FunctionsUsed.Add();

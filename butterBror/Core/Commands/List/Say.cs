@@ -11,8 +11,8 @@ namespace butterBror.Core.Commands.List
         public override string GithubSource => $"{URLs.githubSource}blob/master/butterBror/Core/Commands/List/Say.cs";
         public override Version Version => new Version("1.0.0");
         public override Dictionary<string, string> Description => new() {
-            { "ru", "Отправляет сообщение от лица бота в текущий чат." },
-            { "en", "Sends a message on behalf of the bot to the current chat." }
+            { "ru-RU", "Отправляет сообщение от лица бота в текущий чат." },
+            { "en-US", "Sends a message on behalf of the bot to the current chat." }
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=say";
         public override int CooldownPerUser => 5;

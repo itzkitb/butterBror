@@ -13,8 +13,8 @@ namespace butterBror.Core.Commands.List
         public override string GithubSource => $"{URLs.githubSource}blob/master/butterBror/Core/Commands/List/RussianRoullete.cs";
         public override Version Version => new("1.0.0");
         public override Dictionary<string, string> Description => new() {
-            { "ru", "Mike Klubnika <3" },
-            { "en", "Mike Klubnika <3" }
+            { "ru-RU", "Mike Klubnika <3" },
+            { "en-US", "Mike Klubnika <3" }
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=rr";
         public override int CooldownPerUser => 5;
@@ -60,12 +60,11 @@ namespace butterBror.Core.Commands.List
                         }
                         commandReturn.SetColor(ChatColorPresets.Red);
                     }
-                    commandReturn.SetMessage("🔫 " + TranslationManager.GetTranslation(data.User.Language, translationParam, data.ChannelID, data.Platform));
+                    commandReturn.SetMessage("🔫 " + LocalizationService.GetString(data.User.Language, translationParam, data.ChannelId, data.Platform));
                 }
                 else
                 {
-                    commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:roulette_not_enough_coins", data.ChannelID, data.Platform)
-                        .Replace("%balance%", Utils.Balance.GetBalance(data.UserID, data.Platform).ToString()));
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:roulette_not_enough_coins", data.ChannelId, data.Platform, Utils.Balance.GetBalance(data.UserID, data.Platform)));
                 }
             }
             catch (Exception e)

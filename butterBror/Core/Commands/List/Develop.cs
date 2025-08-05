@@ -14,8 +14,8 @@ namespace butterBror.Core.Commands.List
         public override Version Version => new("1.0.0");
         public override Dictionary<string, string> Description => new()
         {
-            { "ru", "Эта команда не для тебя PauseChamp" },
-            { "en", "This command is not for you PauseChamp" }
+            { "ru-RU", "Эта команда не для тебя PauseChamp" },
+            { "en-US", "This command is not for you PauseChamp" }
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=dev";
         public override int CooldownPerUser => 0;
@@ -42,16 +42,12 @@ namespace butterBror.Core.Commands.List
                 {
                     string result = Command.ExecuteCode(data.ArgumentsString);
                     DateTime EndTime = DateTime.Now;
-                    commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:csharp:result", data.ChannelID, data.Platform)
-                        .Replace("%time%", ((int)(EndTime - StartTime).TotalMilliseconds).ToString())
-                        .Replace("%result%", result));
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:csharp:result", data.ChannelId, data.Platform, result, (int)(EndTime - StartTime).TotalMilliseconds));
                 }
                 catch (Exception ex)
                 {
                     DateTime EndTime = DateTime.Now;
-                    commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:csharp:error", data.ChannelID, data.Platform)
-                        .Replace("%time%", ((int)(EndTime - StartTime).TotalMilliseconds).ToString())
-                        .Replace("%result%", ex.Message));
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:csharp:error", data.ChannelId, data.Platform, ex.Message, (int)(EndTime - StartTime).TotalMilliseconds));
                     commandReturn.SetColor(ChatColorPresets.Red);
                 }
             }

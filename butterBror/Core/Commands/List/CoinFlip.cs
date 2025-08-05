@@ -13,8 +13,8 @@ namespace butterBror.Core.Commands.List
         public override Version Version => new("1.0.0");
         public override Dictionary<string, string> Description => new()
         {
-            { "ru", "Подкинь монетку!" },
-            { "en", "Flip a coin!" }
+            { "ru-RU", "Подкинь монетку!" },
+            { "en-US", "Flip a coin!" }
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=coinflip";
         public override int CooldownPerUser => 5;
@@ -38,11 +38,11 @@ namespace butterBror.Core.Commands.List
                 int coin = new Random().Next(1, 3);
                 if (coin == 1)
                 {
-                    commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "symbol:coin", data.ChannelID, data.Platform) + TranslationManager.GetTranslation(data.User.Language, "command:coinflip:heads", data.ChannelID, data.Platform));
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "symbol:coin", data.ChannelId, data.Platform) + LocalizationService.GetString(data.User.Language, "command:coinflip:heads", data.ChannelId, data.Platform));
                 }
                 else
                 {
-                    commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "symbol:coin", data.ChannelID, data.Platform) + TranslationManager.GetTranslation(data.User.Language, "command:coinflip:tails", data.ChannelID, data.Platform));
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "symbol:coin", data.ChannelId, data.Platform) + LocalizationService.GetString(data.User.Language, "command:coinflip:tails", data.ChannelId, data.Platform));
                 }
             }
             catch (Exception e)

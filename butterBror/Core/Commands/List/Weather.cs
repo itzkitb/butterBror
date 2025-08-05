@@ -1,398 +1,569 @@
-﻿using System.Text.RegularExpressions;
-using TwitchLib.Client.Enums;
-using butterBror.Utils;
-using static butterBror.Services.External.WeatherService;
-using static butterBror.Core.Bot.Console;
+﻿using butterBror.Core.Bot;
+using butterBror.Core.Bot.SQLColumnNames;
 using butterBror.Data;
 using butterBror.Models;
-using butterBror.Core.Bot;
+using butterBror.Services.External;
+using butterBror.Utils;
+using Microsoft.Extensions.Caching.Memory;
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+using TwitchLib.Client.Enums;
+using static butterBror.Core.Bot.Console;
 
 namespace butterBror.Core.Commands.List
 {
+    /// <summary>
+    /// Команда для получения информации о погоде с использованием Open-Meteo API
+    /// </summary>
     public class Weather : CommandBase
     {
+        private IWeatherService _weatherService;
+        private const int ResultsPerPage = 5;
+        private const string WeatherResultKey = "WeatherResultLocations";
+        private static IMemoryCache _cache = new MemoryCache(new MemoryCacheOptions());
+
         public override string Name => "Weather";
         public override string Author => "ItzKITb";
         public override string AuthorsGithub => "https://github.com/itzkitb";
         public override string GithubSource => $"{URLs.githubSource}blob/master/butterBror/Core/Commands/List/Weather.cs";
-        public override Version Version => new("1.0.0");
+        public override Version Version => new("2.0.0");
         public override Dictionary<string, string> Description => new()
         {
-            { "ru", "Узнать погоду в городе." },
-            { "en", "Find out the weather in the city." }
+            { "ru-RU", "Узнать погоду в городе с использованием современного API" },
+            { "en-US", "Find out the weather in the city using modern API" }
         };
         public override string WikiLink => "https://itzkitb.ru/bot/command?name=weather";
-        public override int CooldownPerUser => 10;
-        public override int CooldownPerChannel => 5;
-        public override string[] Aliases => ["weather", "погода", "wthr", "пгд", "пугода"];
-        public override string HelpArguments => "(city name)";
+        public override int CooldownPerUser => 15;
+        public override int CooldownPerChannel => 10;
+        public override string[] Aliases => ["weather", "погода", "wthr", "пгд", "пугода", "meteo"];
+        public override string HelpArguments => "[location] | [action] [parameters]";
         public override DateTime CreationDate => DateTime.Parse("07/04/2024");
         public override bool OnlyBotModerator => false;
         public override bool OnlyBotDeveloper => false;
         public override bool OnlyChannelModerator => false;
         public override PlatformsEnum[] Platforms => [PlatformsEnum.Twitch, PlatformsEnum.Telegram, PlatformsEnum.Discord];
-        public override bool IsAsync => false;
+        public override bool IsAsync => true;
 
-        [ConsoleSector("butterBror.Commands.Weather", "Index")]
-        public override CommandReturn Execute(CommandData data)
+        
+        public override async Task<CommandReturn> ExecuteAsync(CommandData data)
         {
             Engine.Statistics.FunctionsUsed.Add();
-            CommandReturn commandReturn = new CommandReturn();
+            var commandReturn = new CommandReturn();
+
+            _weatherService = new OpenMeteoWeatherService(new HttpClient(), _cache);
 
             try
             {
-                string[] show_alias = ["show", "s", "показать", "п"];
-                string[] page_alias = ["page", "p", "страница", "с"];
-                string[] set_alias = ["set", "установить", "у"];
-                string[] get_alias = ["get", "g", "получить"];
+                var action = ParseCommandAction(data);
 
-                string location = "";
-                bool is_show_action = false;
-                bool is_page_action = false;
-                bool is_set_action = false;
-                bool is_get_action = false;
-                string? setLocation = "";
-                long page = 0;
-                long show_place_id = 0;
-
-                if (data.Platform is PlatformsEnum.Twitch || data.Platform is PlatformsEnum.Telegram)
+                switch (action.Type)
                 {
-                    location = Text.CleanAscii(data.ArgumentsString);
-                    if (data.Arguments.Count >= 2)
-                    {
-                        if (show_alias.Contains(data.Arguments[0].ToLowerInvariant()))
-                        {
-                            is_show_action = true;
-                            show_place_id = Utils.Format.ToInt(data.Arguments[1].ToLowerInvariant());
-                        }
-                        else if (page_alias.Contains(data.Arguments[0].ToLowerInvariant()))
-                        {
-                            is_page_action = true;
-                            page = Utils.Format.ToInt(data.Arguments[1].ToLowerInvariant());
-                        }
-                        else if (set_alias.Contains(data.Arguments[0].ToLowerInvariant()))
-                        {
-                            is_set_action = true;
-                            setLocation = Text.CleanAscii(data.Arguments[1]);
-                        }
-                    }
-                    else if (data.Arguments.Count >= 1)
-                    {
-                        if (get_alias.Contains(data.Arguments[0].ToLowerInvariant()))
-                        {
-                            is_get_action = true;
-                        }
-                    }
-                }
-                else if (data.Platform == PlatformsEnum.Discord)
-                {
-                    if (data.DiscordArguments.ContainsKey("location"))
-                    {
-                        location = data.DiscordArguments.GetValueOrDefault("location");
-                    }
-                    if (data.DiscordArguments.ContainsKey("showpage"))
-                    {
-                        page = data.DiscordArguments.GetValueOrDefault("showpage");
-                        is_page_action = true;
-                    }
-                    else if (data.DiscordArguments.ContainsKey("page"))
-                    {
-                        show_place_id = data.DiscordArguments.GetValueOrDefault("page");
-                        is_show_action = true;
-                    }
-                }
-
-                if (is_page_action)
-                {
-                    var weatherResultLocationsUnworked = UsersData.Get<string[]>(data.UserID, "weatherResultLocations", data.Platform);
-                    var weatherResultLocations = new List<Place>();
-
-                    foreach (var data2 in weatherResultLocationsUnworked)
-                    {
-                        string pattern = @"name: ""(.*?)"", lat: ""(.*?)"", lon: ""(.*?)""";
-                        Match match = Regex.Match(data2, pattern);
-
-                        if (match.Success)
-                        {
-                            string name = match.Groups[1].Value;
-                            string lat = match.Groups[2].Value;
-                            string lon = match.Groups[3].Value;
-                            Place placeData = new()
-                            {
-                                name = name,
-                                lat = lat,
-                                lon = lon
-                            };
-                            weatherResultLocations.Add(placeData);
-                        }
-                    }
-                    if (weatherResultLocations != default)
-                    {
-                        int maxPages = (int)Math.Ceiling((double)(weatherResultLocations.Count / 5));
-                        if (maxPages >= page)
-                        {
-                            string locationPage = "";
-                            int startID = (int)((page * 5) - 4);
-                            if (weatherResultLocations.Count > 5)
-                            {
-                                int index = startID;
-                                for (int i = 0; i < 5; i++)
-                                {
-                                    locationPage += $"{index}. {weatherResultLocations[index - 1].name} (lat: {Text.ShortenCoordinate(weatherResultLocations[index - 1].lat)}, lon: {Text.ShortenCoordinate(weatherResultLocations[index - 1].lon)}), ";
-                                    index++;
-                                }
-                                locationPage = locationPage.TrimEnd(',', ' ');
-                            }
-                            else
-                            {
-                                int index = startID;
-                                foreach (var location2 in weatherResultLocations)
-                                {
-                                    index++;
-                                    locationPage += $"{index}. {location2.name} (lat: {location2.lat}, lon: {location2.lon}), ";
-                                }
-                            }
-                            locationPage = (locationPage + "\n").Replace(", \n", "");
-                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:weather:a_few_places", data.ChannelID, data.Platform)
-                                .Replace("%places%", locationPage)
-                                .Replace("%page%", page.ToString())
-                                .Replace("%pages%", maxPages.ToString()));
-                        }
-                        else
-                        {
-                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:page_not_found", data.ChannelID, data.Platform));
-                            commandReturn.SetColor(ChatColorPresets.Red);
-                        }
-                    }
-                    else
-                    {
-                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:no_pages", data.ChannelID, data.Platform));
+                    case WeatherActionType.ShowPage:
+                        commandReturn = await HandleShowPageActionAsync(data, action);
+                        break;
+                    case WeatherActionType.ShowLocation:
+                        commandReturn = await HandleShowLocationActionAsync(data, action);
+                        break;
+                    case WeatherActionType.SetLocation:
+                        commandReturn = await HandleSetLocationActionAsync(data, action);
+                        break;
+                    case WeatherActionType.GetLocation:
+                        commandReturn = await HandleGetLocationActionAsync(data);
+                        break;
+                    case WeatherActionType.GetWeather:
+                        commandReturn = await HandleGetWeatherActionAsync(data, action);
+                        break;
+                    default:
+                        commandReturn.SetMessage(LocalizationService.GetString(
+                            data.User.Language,
+                            "error:invalid_command",
+                            data.ChannelId,
+                            data.Platform));
                         commandReturn.SetColor(ChatColorPresets.Red);
-                    }
-                }
-                else if (is_show_action)
-                {
-                    var weatherResultLocationsUnworked = UsersData.Get<string[]>(data.UserID, "weatherResultLocations", data.Platform);
-                    var weatherResultLocations = new List<Place>();
-                    foreach (var data2 in weatherResultLocationsUnworked)
-                    {
-                        string pattern = @"name: ""(.*?)"", lat: ""(.*?)"", lon: ""(.*?)""";
-                        Match match = Regex.Match(data2, pattern);
-
-                        if (match.Success)
-                        {
-                            string name = match.Groups[1].Value;
-                            string lat = match.Groups[2].Value;
-                            string lon = match.Groups[3].Value;
-                            Place placeData = new()
-                            {
-                                name = name,
-                                lat = lat,
-                                lon = lon
-                            };
-                            weatherResultLocations.Add(placeData);
-                        }
-                    }
-                    if (weatherResultLocations?.Count > 1)
-                    {
-                        if (show_place_id <= weatherResultLocations?.Count)
-                        {
-                            var weather = Get(weatherResultLocations[(int)show_place_id - 1].lat, weatherResultLocations[(int)show_place_id - 1].lon);
-                            var result = weather.Result.current;
-                            if (result.temperature != -400)
-                            {
-                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:weather", data.ChannelID, data.Platform)
-                                    .Replace("%emote%", GetEmoji(result.temperature))
-                                    .Replace("%name%", weatherResultLocations[(int)show_place_id - 1].name)
-                                    .Replace("%temperature%", result.temperature.ToString())
-                                    .Replace("%feelsLike%", result.feels_like.ToString())
-                                    .Replace("%windSpeed%", result.wind.speed.ToString())
-                                    .Replace("%summary%", GetSummary(data.User.Language, result.summary.ToString(), data.ChannelID, data.Platform))
-                                    .Replace("%pressure%", result.pressure.ToString())
-                                    .Replace("%uvIndex%", result.uv_index.ToString())
-                                    .Replace("%humidity%", result.humidity.ToString())
-                                    .Replace("%visibility%", result.visibility.ToString())
-                                    .Replace("%skyEmote%", GetSummaryEmoji(result.summary.ToString())));
-                            }
-                            else
-                            {
-                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:place_not_found", data.ChannelID, data.Platform));
-                                commandReturn.SetColor(ChatColorPresets.Red);
-                            }
-                        }
-                        else
-                        {
-                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:page_not_found", data.ChannelID, data.Platform));
-                            commandReturn.SetColor(ChatColorPresets.Red);
-                        }
-                    }
-                    else
-                    {
-                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:no_pages", data.ChannelID, data.Platform));
-                        commandReturn.SetColor(ChatColorPresets.Red);
-                    }
-                }
-                else if (is_set_action)
-                {
-                    var places = GetLocation(setLocation).Result;
-                    if (places.Count == 0 || places[0].name == "err")
-                    {
-                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:place_not_found", data.ChannelID, data.Platform));
-                        commandReturn.SetColor(ChatColorPresets.Red);
-                    }
-                    else
-                    {
-                        var first = places[0];
-                        UsersData.Save(data.UserID, "userPlace", first.name, data.Platform);
-                        UsersData.Save(data.UserID, "userLat", first.lat, data.Platform);
-                        UsersData.Save(data.UserID, "userLon", first.lon, data.Platform);
-
-                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:weather:set_location", data.ChannelID, data.Platform, new Dictionary<string, string> { { "%city%", first.name } }));
-                        commandReturn.SetColor(ChatColorPresets.YellowGreen);
-                    }
-                }
-                else if (is_get_action)
-                {
-                    if (UsersData.Get<string>(data.UserID, "userPlace", data.Platform) is not "")
-                    {
-                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:weather:get_location", data.ChannelID, data.Platform, new() { { "city", UsersData.Get<string>(data.UserID, "userPlace", data.Platform) } }));
-                    }
-                    else
-                    {
-                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:location_not_set", data.ChannelID, data.Platform));
-                        commandReturn.SetColor(ChatColorPresets.Red);
-                    }
-                }
-                else
-                {
-                    if (location is "")
-                    {
-                        if (UsersData.Get<string>(data.UserID, "userPlace", data.Platform) is not "")
-                        {
-                            var weather = Get(UsersData.Get<string>(data.UserID, "userLat", data.Platform), UsersData.Get<string>(data.UserID, "userLon", data.Platform));
-                            var result = weather.Result.current;
-                            if (result.temperature != -400)
-                            {
-                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:weather", data.ChannelID, data.Platform)
-                                    .Replace("%emote%", GetEmoji(result.temperature))
-                                    .Replace("%name%", UsersData.Get<string>(data.UserID, "userPlace", data.Platform))
-                                    .Replace("%temperature%", result.temperature.ToString())
-                                    .Replace("%feelsLike%", result.feels_like.ToString())
-                                    .Replace("%windSpeed%", result.wind.speed.ToString())
-                                    .Replace("%summary%", GetSummary(data.User.Language, result.summary.ToString(), data.ChannelID, data.Platform))
-                                    .Replace("%pressure%", result.pressure.ToString())
-                                    .Replace("%uvIndex%", result.uv_index.ToString())
-                                    .Replace("%humidity%", result.humidity.ToString())
-                                    .Replace("%visibility%", result.visibility.ToString())
-                                    .Replace("%skyEmote%", GetSummaryEmoji(result.summary.ToString())));
-                            }
-                            else
-                            {
-                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:place_not_found", data.ChannelID, data.Platform));
-                                commandReturn.SetColor(ChatColorPresets.Red);
-                            }
-                        }
-                        else
-                        {
-                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:location_not_set", data.ChannelID, data.Platform));
-                            commandReturn.SetColor(ChatColorPresets.Red);
-                        }
-                    }
-                    else
-                    {
-                        try
-                        {
-                            var result_location = GetLocation(location).Result;
-                            if (result_location.Count == 0)
-                            {
-                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:place_not_found", data.ChannelID, data.Platform));
-                                commandReturn.SetColor(ChatColorPresets.Red);
-                            }
-                            else if (result_location.Count == 1)
-                            {
-                                if (result_location.ElementAt(0).name == "err")
-                                {
-                                    commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:place_not_found", data.ChannelID, data.Platform));
-                                    commandReturn.SetColor(ChatColorPresets.Red);
-                                }
-                                else
-                                {
-                                    var weather = Get(result_location[0].lat, result_location[0].lon);
-                                    weather.Wait();
-                                    var result = weather.Result.current;
-                                    if (result.temperature != -400)
-                                    {
-                                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:weather", data.ChannelID, data.Platform)
-                                            .Replace("%emote%", GetEmoji(result.temperature))
-                                            .Replace("%name%", result_location[0].name)
-                                            .Replace("%temperature%", result.temperature.ToString())
-                                            .Replace("%feelsLike%", result.feels_like.ToString())
-                                            .Replace("%windSpeed%", result.wind.speed.ToString())
-                                            .Replace("%summary%", GetSummary(data.User.Language, result.summary.ToString(), data.ChannelID, data.Platform))
-                                            .Replace("%pressure%", result.pressure.ToString())
-                                            .Replace("%uvIndex%", result.uv_index.ToString())
-                                            .Replace("%humidity%", result.humidity.ToString())
-                                            .Replace("%visibility%", result.visibility.ToString())
-                                            .Replace("%skyEmote%", GetSummaryEmoji(result.summary.ToString())));
-                                    }
-                                    else
-                                    {
-                                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:place_not_found", data.ChannelID, data.Platform));
-                                        commandReturn.SetColor(ChatColorPresets.Red);
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                List<string> jsons = new();
-                                foreach (var loc in result_location)
-                                {
-                                    jsons.Add($"name: \"{loc.name}\", lat: \"{loc.lat}\", lon: \"{loc.lon}\"");
-                                }
-                                UsersData.Save(data.UserID, "weatherResultLocations", jsons, data.Platform);
-                                string locationPage = "";
-                                int maxPage = (int)Math.Ceiling((double)(result_location.Count / 5));
-                                if (result_location.Count > 5)
-                                {
-                                    int index = 1;
-                                    for (int i = 0; i < 5; i++)
-                                    {
-                                        locationPage += $"{index}. {result_location[index - 1].name} (lat: {Text.ShortenCoordinate(result_location[index - 1].lat)}, lon: {Text.ShortenCoordinate(result_location[index - 1].lon)}), ";
-                                        index++;
-                                    }
-                                    locationPage = locationPage.TrimEnd(',', ' ');
-                                }
-                                else
-                                {
-                                    int index = 0;
-                                    foreach (var location2 in result_location)
-                                    {
-                                        index++;
-                                        locationPage += $"{index}. {location2.name} (lat: {location2.lat}, lon: {location2.lon}), ";
-                                    }
-                                }
-                                locationPage = (locationPage + "\n").Replace(", \n", "");
-                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:weather:a_few_places", data.ChannelID, data.Platform)
-                                    .Replace("%places%", locationPage)
-                                    .Replace("%page%", "1")
-                                    .Replace("%pages%", maxPage.ToString()));
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            Write(ex);
-                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:place_not_found", data.ChannelID, data.Platform));
-                            commandReturn.SetColor(ChatColorPresets.Red);
-                        }
-                    }
+                        break;
                 }
             }
-            catch (Exception e)
+            catch (WeatherApiException ex)
             {
-                commandReturn.SetError(e);
+                LogError(data, "API_ERROR", ex);
+                commandReturn.SetMessage(LocalizationService.GetString(
+                    data.User.Language,
+                    "error:api_unavailable",
+                    data.ChannelId,
+                    data.Platform));
+                commandReturn.SetColor(ChatColorPresets.Red);
+            }
+            catch (Exception ex)
+            {
+                LogError(data, "GENERAL_ERROR", ex);
+                commandReturn.SetMessage(LocalizationService.GetString(
+                    data.User.Language,
+                    "error:general",
+                    data.ChannelId,
+                    data.Platform));
+                commandReturn.SetColor(ChatColorPresets.Red);
             }
 
             return commandReturn;
         }
+
+        private WeatherAction ParseCommandAction(CommandData data)
+        {
+            var action = new WeatherAction { Type = WeatherActionType.GetWeather };
+
+            if (data.Arguments.Count >= 2)
+            {
+                var actionType = data.Arguments[0].ToLowerInvariant();
+                var parameter = data.Arguments[1];
+
+                if (IsShowAction(actionType))
+                {
+                    action.Type = WeatherActionType.ShowLocation;
+                    action.Page = long.TryParse(parameter, out var page) ? page : 1;
+                }
+                else if (IsPageAction(actionType))
+                {
+                    action.Type = WeatherActionType.ShowPage;
+                    action.Page = long.TryParse(parameter, out var page) ? page : 1;
+                }
+                else if (IsSetAction(actionType))
+                {
+                    action.Type = WeatherActionType.SetLocation;
+                    action.Location = Text.CleanAscii(parameter);
+                }
+            }
+            else if (data.Arguments.Count == 1)
+            {
+                if (IsGetAction(data.Arguments[0].ToLowerInvariant()))
+                {
+                    action.Type = WeatherActionType.GetLocation;
+                }
+                else
+                {
+                    action.Type = WeatherActionType.GetWeather;
+                    action.Location = Text.CleanAscii(data.ArgumentsString);
+                }
+            }
+            else
+            {
+                action.Type = WeatherActionType.GetWeather;
+            }
+
+            return action;
+        }
+
+        private async Task<CommandReturn> HandleShowPageActionAsync(CommandData data, WeatherAction action)
+        {
+            var savedLocations = await GetSavedLocationsAsync(data);
+
+            if (savedLocations == null || !savedLocations.Any())
+            {
+                return CreateErrorReturn(data, "error:no_pages");
+            }
+
+            var maxPages = (int)Math.Ceiling((double)savedLocations.Count / ResultsPerPage);
+            if (action.Page < 1 || action.Page > maxPages)
+            {
+                return CreateErrorReturn(data, "error:page_not_found");
+            }
+
+            var pageContent = BuildLocationPage(savedLocations, action.Page);
+
+            CommandReturn commandReturn = new CommandReturn();
+            commandReturn.SetMessage(LocalizationService.GetString(
+                    data.User.Language,
+                    "command:weather:a_few_places",
+                    data.ChannelId,
+                    data.Platform,
+                    pageContent,
+                    action.Page.ToString(),
+                    maxPages.ToString()));
+
+            return commandReturn;
+        }
+
+        private async Task<CommandReturn> HandleShowLocationActionAsync(CommandData data, WeatherAction action)
+        {
+            var savedLocations = await GetSavedLocationsAsync(data);
+
+            if (savedLocations == null || savedLocations.Count < action.Page)
+            {
+                return CreateErrorReturn(data, "error:page_not_found");
+            }
+
+            var selectedLocation = savedLocations[(int)action.Page - 1];
+
+            var (lat, lon) = ParseCoordinates(selectedLocation.Latitude.ToString(),
+                                    selectedLocation.Longitude.ToString());
+            if (lat == null || lon == null)
+            {
+                return CreateErrorReturn(data, "error:invalid_coordinates");
+            }
+
+            var weatherData = await _weatherService.GetCurrentWeatherAsync(
+                lat.Value.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                lon.Value.ToString(System.Globalization.CultureInfo.InvariantCulture));
+
+            if (weatherData == null || weatherData.Temperature == -400)
+            {
+                return CreateErrorReturn(data, "error:place_not_found");
+            }
+
+            return BuildWeatherMessage(data, weatherData, selectedLocation.Name);
+        }
+
+        private async Task<CommandReturn> HandleSetLocationActionAsync(CommandData data, WeatherAction action)
+        {
+            var locations = await _weatherService.SearchLocationsAsync(action.Location);
+
+            if (locations == null || locations.Count == 0 || locations[0].Name == "err")
+            {
+                return CreateErrorReturn(data, "error:place_not_found");
+            }
+
+            var firstLocation = locations[0];
+            Engine.Bot.SQL.Users.SetParameter(data.Platform, Format.ToLong(data.User.ID), Users.Location, firstLocation.Name);
+            Engine.Bot.SQL.Users.SetParameter(data.Platform, Format.ToLong(data.User.ID), Users.Latitude, firstLocation.Latitude.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            Engine.Bot.SQL.Users.SetParameter(data.Platform, Format.ToLong(data.User.ID), Users.Longitude, firstLocation.Longitude.ToString(System.Globalization.CultureInfo.InvariantCulture));
+
+            CommandReturn commandReturn = new CommandReturn();
+            commandReturn.SetMessage(LocalizationService.GetString(
+                    data.User.Language,
+                    "command:weather:set_location",
+                    data.ChannelId,
+                    data.Platform,
+                    firstLocation.Name));
+            commandReturn.SetColor(ChatColorPresets.YellowGreen);
+
+            return commandReturn;
+        }
+
+        private async Task<CommandReturn> HandleGetLocationActionAsync(CommandData data)
+        {
+            var userPlace = (string)Engine.Bot.SQL.Users.GetParameter(data.Platform, Format.ToLong(data.UserID), Users.Location);
+
+            if (string.IsNullOrEmpty(userPlace))
+            {
+                return CreateErrorReturn(data, "error:location_not_set");
+            }
+
+            CommandReturn commandReturn = new CommandReturn();
+            commandReturn.SetMessage(LocalizationService.GetString(
+                    data.User.Language,
+                    "command:weather:get_location",
+                    data.ChannelId,
+                    data.Platform,
+                    userPlace));
+
+            return commandReturn;
+        }
+
+        private async Task<CommandReturn> HandleGetWeatherActionAsync(CommandData data, WeatherAction action)
+        {
+            if (string.IsNullOrWhiteSpace(action.Location))
+            {
+                var userPlace = (string)Engine.Bot.SQL.Users.GetParameter(data.Platform, Format.ToLong(data.UserID), Users.Location);
+                var userLat = (string)Engine.Bot.SQL.Users.GetParameter(data.Platform, Format.ToLong(data.UserID), Users.Latitude);
+                var userLon = (string)Engine.Bot.SQL.Users.GetParameter(data.Platform, Format.ToLong(data.UserID), Users.Longitude);
+
+                if (string.IsNullOrEmpty(userPlace) ||
+                    string.IsNullOrEmpty(userLat) ||
+                    string.IsNullOrEmpty(userLon))
+                {
+                    return CreateErrorReturn(data, "error:location_not_set");
+                }
+
+                var (lat, lon) = ParseCoordinates(userLat, userLon);
+                var weatherData = await _weatherService.GetCurrentWeatherAsync(lat.Value.ToString(System.Globalization.CultureInfo.InvariantCulture), lon.Value.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                if (weatherData == null || weatherData.Temperature == -400)
+                {
+                    return CreateErrorReturn(data, "error:place_not_found");
+                }
+
+                return BuildWeatherMessage(data, weatherData, userPlace);
+            }
+
+            var searchResults = await _weatherService.SearchLocationsAsync(action.Location);
+
+            if (searchResults == null || searchResults.Count == 0)
+            {
+                return CreateErrorReturn(data, "error:place_not_found");
+            }
+
+            if (searchResults.Count == 1 && searchResults[0].Name == "err")
+            {
+                return CreateErrorReturn(data, "error:place_not_found");
+            }
+
+            if (searchResults.Count == 1)
+            {
+                var weatherData = await _weatherService.GetCurrentWeatherAsync(
+                    searchResults[0].Latitude.ToString(CultureInfo.InvariantCulture),
+                    searchResults[0].Longitude.ToString(CultureInfo.InvariantCulture));
+
+                if (weatherData == null || weatherData.Temperature == -400)
+                {
+                    return CreateErrorReturn(data, "error:place_not_found");
+                }
+
+                return BuildWeatherMessage(data, weatherData, searchResults[0].Name);
+            }
+
+            await SaveSearchResultsAsync(data, searchResults);
+
+            var pageContent = BuildLocationPage(searchResults, 1);
+            var maxPages = (int)Math.Ceiling((double)searchResults.Count / ResultsPerPage);
+
+            CommandReturn commandReturn = new CommandReturn();
+            commandReturn.SetMessage(LocalizationService.GetString(
+                    data.User.Language,
+                    "command:weather:a_few_places",
+                    data.ChannelId,
+                    data.Platform,
+                    pageContent,
+                    "1",
+                    maxPages.ToString()));
+
+            return commandReturn;
+        }
+
+        private async Task<List<LocationResult>> GetSavedLocationsAsync(CommandData data)
+        {
+            string weatherResultLocationsUnworkedString = (string)Engine.Bot.SQL.Users.GetParameter(data.Platform, Format.ToLong(data.UserID), Users.WeatherResultLocations);
+            if (weatherResultLocationsUnworkedString == null || weatherResultLocationsUnworkedString.Length == 0)
+            {
+                return null;
+            }
+
+            var weatherResultLocationsUnworked = Format.ParseStringArray(weatherResultLocationsUnworkedString);
+
+            if (weatherResultLocationsUnworked == null || weatherResultLocationsUnworked.Length == 0)
+            {
+                return null;
+            }
+
+            var locations = new List<LocationResult>();
+            foreach (var locationData in weatherResultLocationsUnworked)
+            {
+                var match = Regex.Match(locationData, @"name:\s*""(.*?)""[\s,]+lat:\s*""(.*?)""[\s,]+lon:\s*""(.*?)""");
+                if (match.Success)
+                {
+                    locations.Add(new LocationResult
+                    {
+                        Name = match.Groups[1].Value,
+                        Latitude = Format.ToDouble(match.Groups[2].Value),
+                        Longitude = Format.ToDouble(match.Groups[3].Value)
+                    });
+                }
+            }
+
+            return locations;
+        }
+
+        private async Task SaveSearchResultsAsync(CommandData data, List<LocationResult> locations)
+        {
+            List<string> jsons = locations.Select(loc =>
+                $"name: \"{loc.Name}\", lat: \"{loc.Latitude}\", lon: \"{loc.Longitude}\"").ToList();
+
+            Engine.Bot.SQL.Users.SetParameter(data.Platform, Format.ToLong(data.User.ID), Users.WeatherResultLocations, Format.SerializeStringList(jsons));
+        }
+
+        private string BuildLocationPage(List<LocationResult> locations, long page)
+        {
+            var startIndex = (int)((page - 1) * ResultsPerPage);
+            var endIndex = Math.Min(startIndex + ResultsPerPage, locations.Count);
+
+            var pageContent = new System.Text.StringBuilder();
+
+            for (var i = startIndex; i < endIndex; i++)
+            {
+                var index = i + 1;
+                var location = locations[i];
+                pageContent.Append($"{index}. {location.Name} (lat: {location.Latitude.ToString()}, lon: {location.Longitude.ToString()}), ");
+            }
+
+            return pageContent.ToString().TrimEnd(',', ' ');
+        }
+
+        private CommandReturn BuildWeatherMessage(CommandData data, WeatherData weather, string locationName)
+        {
+            CommandReturn commandReturn = new CommandReturn();
+            commandReturn.SetMessage(LocalizationService.GetString(
+                    data.User.Language,
+                    "command:weather",
+                    data.ChannelId,
+                    data.Platform,
+                    GetWeatherEmoji(weather.Temperature),
+                    locationName,
+                    weather.Temperature.ToString("0.0"),
+                    weather.FeelsLike.ToString("0.0"),
+                    weather.WindSpeed.ToString("0.0"),
+                    GetWeatherSummary(data.User.Language, weather.WeatherCode, data.ChannelId, data.Platform),
+                    GetWeatherSummaryEmoji(weather.WeatherCode),
+                    weather.Pressure.ToString("0"),
+                    weather.UvIndex.ToString("0.0"),
+                    weather.Humidity.ToString("0"),
+                    weather.Visibility.ToString("0")));
+
+            return commandReturn;
+        }
+
+        private CommandReturn CreateErrorReturn(CommandData data, string errorKey)
+        {
+            CommandReturn commandReturn = new CommandReturn();
+            commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, errorKey, data.ChannelId, data.Platform));
+            commandReturn.SetColor(ChatColorPresets.Red);
+
+            return commandReturn;
+        }
+
+        private void LogError(CommandData data, string errorType, Exception ex)
+        {
+            Write($"[{errorType}] Weather command error for user {data.User.Name}: {ex.Message}", "info");
+            Write(ex);
+        }
+
+        private bool IsShowAction(string action) =>
+            new[] { "show", "s", "показать", "п" }.Contains(action);
+
+        private bool IsPageAction(string action) =>
+            new[] { "page", "p", "страница", "с" }.Contains(action);
+
+        private bool IsSetAction(string action) =>
+            new[] { "set", "установить", "у" }.Contains(action);
+
+        private bool IsGetAction(string action) =>
+            new[] { "get", "g", "получить" }.Contains(action);
+
+        private string GetWeatherEmoji(double temperature) =>
+            temperature switch
+            {
+                < -10 => "❄️",
+                < 0 => "🌨️",
+                < 10 => "🧥",
+                < 20 => "🌤️",
+                < 30 => "☀️",
+                _ => "🔥"
+            };
+
+        private string GetWeatherSummary(string language, int weatherCode, string channelId, PlatformsEnum platform)
+        {
+            // https://open-meteo.com/en/docs
+            var summary = weatherCode switch
+            {
+                0 => "clear_sky",
+                1 => "mainly_clear",
+                2 => "partly_cloudy",
+                3 => "overcast",
+                45 => "fog",
+                48 => "depositing_rime_fog",
+                51 => "light_drizzle",
+                53 => "medium_drizzle",
+                55 => "intensity_drizzle",
+                56 => "light_freezing_drizzle",
+                57 => "intensity_freezing_drizzle",
+                61 => "light_rain",
+                63 => "medium_rain",
+                65 => "intensity_rain",
+                66 => "light_freezing_rain",
+                67 => "intensity_freezing_rain",
+                71 => "light_snowfall",
+                73 => "medium_snowfall",
+                75 => "intensity_snowfall",
+                77 => "snow_grains",
+                80 => "light_rain_showers",
+                81 => "medium_rain_showers",
+                82 => "intensity_rain_showers",
+                85 => "light_snow_showers",
+                86 => "intensity_snow_showers",
+                95 => "thunderstorm",
+                96 => "thunderstorm_with_light_hail",
+                99 => "thunderstorm_with_intensity_hail",
+                _ => "unknown"
+            };
+
+            return LocalizationService.GetString(
+                language,
+                $"text:weather:{summary}",
+                channelId,
+                platform);
+        }
+
+        private string GetWeatherSummaryEmoji(int weatherCode) =>
+            weatherCode switch
+            {
+                0 => "☀️",                    // Clear sky
+                1 or 2 or 3 => "🌤️",         // Mainly clear, partly cloudy, overcast
+                45 or 48 => "🌫️",            // Fog
+                51 or 53 or 55 => "🌦️",      // Drizzle
+                56 or 57 => "🌧️",            // Freezing drizzle
+                61 or 63 or 65 => "🌧️",      // Rain
+                66 or 67 => "🌨️",            // Freezing rain
+                71 or 73 or 75 or 77 => "❄️", // Snow
+                80 or 81 or 82 => "🌦️",      // Rain showers
+                85 or 86 => "🌨️",            // Snow showers
+                95 => "⛈️",                  // Thunderstorm
+                96 or 99 => "⛈️❄️",          // Thunderstorm with hail
+                _ => "❓"
+            };
+
+        private (double? latitude, double? longitude) ParseCoordinates(string latStr, string lonStr)
+        {
+            if (string.IsNullOrEmpty(latStr) || string.IsNullOrEmpty(lonStr))
+                return (null, null);
+
+            // Обработка широты
+            double latitude;
+            bool isSouth = latStr.EndsWith("S", StringComparison.OrdinalIgnoreCase);
+            string latValue = isSouth ?
+                latStr.Substring(0, latStr.Length - 1) :
+                latStr.TrimEnd('N', 'n');
+
+            latitude = Format.ToDouble(latValue);
+
+            if (isSouth)
+                latitude = -latitude;
+
+            // Обработка долготы
+            double longitude;
+            bool isWest = lonStr.EndsWith("W", StringComparison.OrdinalIgnoreCase);
+            string lonValue = isWest ?
+                lonStr.Substring(0, lonStr.Length - 1) :
+                lonStr.TrimEnd('E', 'e');
+
+            longitude = Format.ToDouble(lonValue);
+
+            if (isWest)
+                longitude = -longitude;
+
+            return (latitude, longitude);
+        }
+    }
+
+    // Вспомогательные классы для структурирования кода
+    internal class WeatherAction
+    {
+        public WeatherActionType Type { get; set; }
+        public string Location { get; set; } = string.Empty;
+        public long Page { get; set; } = 1;
+    }
+
+    internal enum WeatherActionType
+    {
+        GetWeather,
+        ShowPage,
+        ShowLocation,
+        SetLocation,
+        GetLocation
+    }
+
+    public class WeatherApiException : Exception
+    {
+        public WeatherApiException(string message) : base(message) { }
+        public WeatherApiException(string message, Exception inner) : base(message, inner) { }
     }
 }

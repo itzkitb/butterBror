@@ -19,8 +19,8 @@ namespace butterBror.Core.Commands
                 AuthorLink = "twitch.tv/itzkitb",
                 AuthorAvatar = "https://static-cdn.jtvnw.net/jtv_user_pictures/c3a9af55-d7af-4b4a-82de-39a4d8b296d3-profile_image-70x70.png",
                 Description = new() { 
-                    { "ru", "Загрузить картинку на imgur.com" }, 
-                    { "en", "Upload image to imgur.com" } 
+                    { "ru-RU", "Загрузить картинку на imgur.com" }, 
+                    { "en-US", "Upload image to imgur.com" } 
                 },
                 WikiLink = "https://itzkitb.lol/bot/command?q=imguruploader",
                 CooldownPerUser = 30,
@@ -35,7 +35,7 @@ namespace butterBror.Core.Commands
                 Platforms = [PlatformsEnum.Twitch, PlatformsEnum.Telegram, PlatformsEnum.Discord]
             };
 
-            [ConsoleSector("butterBror.Commands.UploadToImgur", "Index")]
+            
             public CommandReturn Index(CommandData data)
             {
                 Engine.Statistics.FunctionsUsed.Add();
@@ -68,7 +68,7 @@ namespace butterBror.Core.Commands
                             string response = responseTask.Result;
                             stage++;
                             string link = ImgurService.GetLinkFromResponse(response);
-                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:imgur:uploaded", data.ChannelID, data.Platform).Replace("%link%", link));
+                            commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:imgur:uploaded", data.ChannelID, data.Platform).Replace("%link%", link));
                         }
                         catch (Exception ex)
                         {
@@ -88,13 +88,13 @@ namespace butterBror.Core.Commands
                                     errorTranslation = "error:unhandled";
                                     break;
                             }
-                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, errorTranslation, data.ChannelID, data.Platform));
+                            commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, errorTranslation, data.ChannelID, data.Platform));
                             Write(ex);
                         }
                     }
                     else
                     {
-                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:not_enough_arguments", data.ChannelID, data.Platform).Replace("%command_example%", "imguruploadimage [url]"));
+                        commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:not_enough_arguments", data.ChannelID, data.Platform).Replace("%command_example%", "imguruploadimage [url]"));
                     }
                 }
                 catch (Exception e)

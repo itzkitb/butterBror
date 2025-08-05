@@ -4,6 +4,7 @@ using butterBror.Utils;
 using DankDB;
 using Newtonsoft.Json.Linq;
 using TwitchLib.Client.Events;
+using TwitchLib.Client.Models;
 using TwitchLib.Communication.Events;
 using static butterBror.Core.Bot.Console;
 
@@ -19,7 +20,7 @@ namespace butterBror.Events
         /// </summary>
         /// <param name="sender">The source of the event.</param>
         /// <param name="e">Event arguments containing connection details.</param>
-        [ConsoleSector("butterBror.TwitchEvents", "OnConnected")]
+        
         public static void OnConnected(object sender, OnConnectedArgs e)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -30,7 +31,7 @@ namespace butterBror.Events
         /// </summary>
         /// <param name="s">The source of the event.</param>
         /// <param name="e">Event arguments containing message details.</param>
-        [ConsoleSector("butterBror.TwitchEvents", "OnMessageSend")]
+        
         public static void OnMessageSend(object s, OnMessageSentArgs e)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -42,7 +43,7 @@ namespace butterBror.Events
         /// </summary>
         /// <param name="s">The source of the event.</param>
         /// <param name="e">Event arguments containing throttled message details.</param>
-        [ConsoleSector("butterBror.TwitchEvents", "OnMessageThrottled")]
+        
         public static void OnMessageThrottled(object s, OnMessageThrottledEventArgs e)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -54,7 +55,7 @@ namespace butterBror.Events
         /// </summary>
         /// <param name="s">The source of the event.</param>
         /// <param name="e">Event arguments containing log data.</param>
-        [ConsoleSector("butterBror.TwitchEvents", "OnLog")]
+        
         public static void OnLog(object s, OnLogArgs e)
         {
             // Tools.LOG($"Twitch LOG: {e.Data}");
@@ -65,7 +66,7 @@ namespace butterBror.Events
         /// </summary>
         /// <param name="s">The source of the event.</param>
         /// <param name="e">Event arguments containing ban details.</param>
-        [ConsoleSector("butterBror.TwitchEvents", "OnUserBanned")]
+        
         public static void OnUserBanned(object s, OnUserBannedArgs e)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -77,11 +78,11 @@ namespace butterBror.Events
         /// </summary>
         /// <param name="s">The source of the event.</param>
         /// <param name="e">Event arguments containing suspension details.</param>
-        [ConsoleSector("butterBror.TwitchEvents", "OnSuspended")]
+        
         public static void OnSuspended(object s, OnSuspendedArgs e)
         {
             Engine.Statistics.FunctionsUsed.Add();
-            Chat.TwitchSend(Engine.Bot.BotName, $"What #{e.Channel} suspended", "", "", "en", true);
+            Chat.TwitchSend(Engine.Bot.BotName, $"What #{e.Channel} suspended", "", "", "en-US", true);
             Write($"Twitch - #{e.Channel} suspended", "err");
         }
 
@@ -90,7 +91,7 @@ namespace butterBror.Events
         /// </summary>
         /// <param name="s">The source of the event.</param>
         /// <param name="e">Event arguments containing timeout details.</param>
-        [ConsoleSector("butterBror.TwitchEvents", "OnUserTimedout")]
+        
         public static void OnUserTimedout(object s, OnUserTimedoutArgs e)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -102,7 +103,7 @@ namespace butterBror.Events
         /// </summary>
         /// <param name="s">The source of the event.</param>
         /// <param name="e">Event arguments containing resubscription details.</param>
-        [ConsoleSector("butterBror.TwitchEvents", "OnReSubscriber")]
+        
         public static void OnReSubscriber(object s, OnReSubscriberArgs e)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -114,7 +115,7 @@ namespace butterBror.Events
         /// </summary>
         /// <param name="s">The source of the event.</param>
         /// <param name="e">Event arguments containing gift subscription details.</param>
-        [ConsoleSector("butterBror.TwitchEvents", "OnGiftedSubscription")]
+        
         public static void OnGiftedSubscription(object s, OnGiftedSubscriptionArgs e)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -126,7 +127,7 @@ namespace butterBror.Events
         /// </summary>
         /// <param name="s">The source of the event.</param>
         /// <param name="e">Event arguments containing raid details.</param>
-        [ConsoleSector("butterBror.TwitchEvents", "OnRaidNotification")]
+        
         public static void OnRaidNotification(object s, OnRaidNotificationArgs e)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -138,7 +139,7 @@ namespace butterBror.Events
         /// </summary>
         /// <param name="s">The source of the event.</param>
         /// <param name="e">Event arguments containing subscription details.</param>
-        [ConsoleSector("butterBror.TwitchEvents", "OnNewSubscriber")]
+        
         public static void OnNewSubscriber(object s, OnNewSubscriberArgs e)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -150,7 +151,7 @@ namespace butterBror.Events
         /// </summary>
         /// <param name="s">The source of the event.</param>
         /// <param name="e">Event arguments containing message deletion details.</param>
-        [ConsoleSector("butterBror.TwitchEvents", "OnMessageCleared")]
+        
         public static void OnMessageCleared(object s, OnMessageClearedArgs e)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -163,7 +164,7 @@ namespace butterBror.Events
         /// </summary>
         /// <param name="s">The source of the event.</param>
         /// <param name="e">Event arguments containing login error details.</param>
-        [ConsoleSector("butterBror.TwitchEvents", "OnIncorrectLogin")]
+        
         public static void OnIncorrectLogin(object s, OnIncorrectLoginArgs e)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -176,7 +177,7 @@ namespace butterBror.Events
         /// </summary>
         /// <param name="s">The source of the event.</param>
         /// <param name="e">Event arguments containing chat clear details.</param>
-        [ConsoleSector("butterBror.TwitchEvents", "OnChatCleared")]
+        
         public static void OnChatCleared(object s, OnChatClearedArgs e)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -188,11 +189,11 @@ namespace butterBror.Events
         /// </summary>
         /// <param name="s">The source of the event.</param>
         /// <param name="e">Event arguments containing error details.</param>
-        [ConsoleSector("butterBror.TwitchEvents", "OnError")]
+        
         public static void OnError(object s, OnErrorEventArgs e)
         {
             Engine.Statistics.FunctionsUsed.Add();
-            Chat.TwitchSend(Engine.Bot.BotName, $"DeadAss TwitchLib error: {e.Exception.Message}", "", "", "en", true);
+            Chat.TwitchSend(Engine.Bot.BotName, $"DeadAss TwitchLib error: {e.Exception.Message}", "", "", "en-US", true);
             Write($"Twitch - Library error! {e.Exception.Message}", "info", LogLevel.Error);
         }
 
@@ -201,7 +202,7 @@ namespace butterBror.Events
         /// </summary>
         /// <param name="s">The source of the event.</param>
         /// <param name="e">Event arguments containing leave details.</param>
-        [ConsoleSector("butterBror.TwitchEvents", "OnLeftChannel")]
+        
         public static void OnLeftChannel(object s, OnLeftChannelArgs e)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -213,12 +214,12 @@ namespace butterBror.Events
         /// </summary>
         /// <param name="s">The source of the event.</param>
         /// <param name="e">Event arguments containing reconnection details.</param>
-        [ConsoleSector("butterBror.TwitchEvents", "OnReconnected")]
+        
         public static void OnReconnected(object s, OnReconnectedEventArgs e)
         {
             Engine.Statistics.FunctionsUsed.Add();
             Write("Twitch - Reconnected!", "info");
-            Chat.TwitchSend(Engine.Bot.BotName, $"BREAKDANCECAT Reconnected", "", "", "en", true);
+            Chat.TwitchSend(Engine.Bot.BotName, $"BREAKDANCECAT Reconnected", "", "", "en-US", true);
             Engine.Bot.TwitchReconnected = true;
         }
 
@@ -227,7 +228,7 @@ namespace butterBror.Events
         /// </summary>
         /// <param name="s">The source of the event.</param>
         /// <param name="e">Event arguments containing disconnection details.</param>
-        [ConsoleSector("butterBror.TwitchEvents", "OnTwitchDisconnected")]
+        
         public static void OnTwitchDisconnected(object s, OnDisconnectedEventArgs e)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -240,7 +241,7 @@ namespace butterBror.Events
         /// </summary>
         /// <param name="s">The source of the event.</param>
         /// <param name="e">Event arguments containing community gift details.</param>
-        [ConsoleSector("butterBror.TwitchEvents", "OnCommunitySubscription")]
+        
         public static void OnCommunitySubscription(object s, OnCommunitySubscriptionArgs e)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -252,7 +253,7 @@ namespace butterBror.Events
         /// </summary>
         /// <param name="s">The source of the event.</param>
         /// <param name="e">Event arguments containing announcement details.</param>
-        [ConsoleSector("butterBror.TwitchEvents", "OnAnnounce")]
+        
         public static void OnAnnounce(object s, OnAnnouncementArgs e)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -264,7 +265,7 @@ namespace butterBror.Events
         /// </summary>
         /// <param name="s">The source of the event.</param>
         /// <param name="e">Event arguments containing continuation details.</param>
-        [ConsoleSector("butterBror.TwitchEvents", "OnContinuedGiftedSubscription")]
+        
         public static void OnContinuedGiftedSubscription(object s, OnContinuedGiftedSubscriptionArgs e)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -276,28 +277,25 @@ namespace butterBror.Events
         /// </summary>
         /// <param name="s">The source of the event.</param>
         /// <param name="e">Event arguments containing ban details.</param>
-        [ConsoleSector("butterBror.TwitchEvents", "OnBanned")]
+        
         public static async void OnBanned(object s, OnBannedArgs e)
         {
             Engine.Statistics.FunctionsUsed.Add();
             try
             {
-                var N2IPath = Engine.Bot.Pathes.Nick2ID + PlatformsPathName.strings[(int)PlatformsEnum.Twitch] + "/" + e.Channel.ToLower() + ".txt";
-                string disconnectedChannel = FileUtil.GetFileContent(N2IPath);
-
                 Write($"Twitch - Bot was banned in channel #{e.Channel}!", "info");
-                Chat.TwitchSend(Engine.Bot.BotName, $"DeadAss Bot was banned in channel #{e.Channel}!", "", "", "en", true);
+                Chat.TwitchSend(Engine.Bot.BotName, $"DeadAss Bot was banned in channel #{e.Channel}!", "", "", "en-US", true);
 
                 string[] channels = Manager.Get<string[]>(Engine.Bot.Pathes.Settings, "channels");
                 List<string> list = new();
                 foreach (var channel in channels)
                 {
-                    if (channel.ToLower() != disconnectedChannel.ToLower())
+                    if (!channel.Equals(Names.GetUserID(e.Channel, PlatformsEnum.Twitch, true), StringComparison.CurrentCultureIgnoreCase))
                     {
                         list.Add(channel);
                     }
                 }
-                SafeManager.Save(Engine.Bot.Pathes.Settings, "channels", JToken.FromObject(list));
+                Manager.Save(Engine.Bot.Pathes.Settings, "channels", JToken.FromObject(list));
             }
             catch (Exception ex)
             {
@@ -310,7 +308,7 @@ namespace butterBror.Events
         /// </summary>
         /// <param name="s">The source of the event.</param>
         /// <param name="e">Event arguments containing connection error details.</param>
-        [ConsoleSector("butterBror.TwitchEvents", "OnConnectionError")]
+        
         public static void OnConnectionError(object s, OnConnectionErrorArgs e)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -323,20 +321,20 @@ namespace butterBror.Events
         /// </summary>
         /// <param name="sender">The source of the event.</param>
         /// <param name="e">Event arguments containing join details.</param>
-        [ConsoleSector("butterBror.TwitchEvents", "OnJoin")]
+        
         public static async void OnJoin(object sender, OnJoinedChannelArgs e)
         {
             Engine.Statistics.FunctionsUsed.Add();
             //Write($"Twitch - Connected to #{e.Channel}", "info");
 
             if (Engine.PreviousVersion != $"{Engine.Version}.{Engine.Patch}" && Engine.PreviousVersion != string.Empty && (Engine.Bot.TwitchNewVersionAnnounce.Contains(Names.GetUserID(e.Channel, PlatformsEnum.Twitch)) || e.Channel.Equals(Engine.Bot.BotName.ToLower())))
-                Chat.TwitchSend(e.Channel, $"butterBror v.{Engine.PreviousVersion} > v.{Engine.Version}.{Engine.Patch}", e.Channel, "", "ru", true);
+                Chat.TwitchSend(e.Channel, $"butterBror v.{Engine.PreviousVersion} > v.{Engine.Version}.{Engine.Patch}", e.Channel, "", "ru-RU", true);
 
             if (Engine.Bot.TwitchConnectAnnounce.Contains(Names.GetUserID(e.Channel, PlatformsEnum.Twitch)))
-                Chat.TwitchSend(e.Channel, "butterBror Connected!", e.Channel, "", "ru", true);
+                Chat.TwitchSend(e.Channel, "butterBror Connected!", e.Channel, "", "ru-RU", true);
 
             if (Engine.Bot.TwitchReconnected && Engine.Bot.TwitchReconnectAnnounce.Contains(Names.GetUserID(e.Channel, PlatformsEnum.Twitch)) || e.Channel.Equals(Engine.Bot.BotName.ToLower()))
-                Chat.TwitchSend(e.Channel, "butterBror Reconnected!", e.Channel, "", "ru", true);
+                Chat.TwitchSend(e.Channel, "butterBror Reconnected!", e.Channel, "", "ru-RU", true);
 
             if (!Engine.Bot.TwitchChannels.Contains(e.Channel))
                 Engine.Bot.TwitchChannels.Append(e.Channel);
@@ -347,14 +345,27 @@ namespace butterBror.Events
         /// </summary>
         /// <param name="sender">The source of the event.</param>
         /// <param name="e">Event arguments containing message details.</param>
-        [ConsoleSector("butterBror.TwitchEvents", "OnMessageReceived")]
+        
         public static async void OnMessageReceived(object sender, OnMessageReceivedArgs e)
         {
             Engine.Statistics.FunctionsUsed.Add();
 
             try
             {
-                await Command.ProcessMessageAsync(e.ChatMessage.UserId, e.ChatMessage.RoomId, e.ChatMessage.Username, e.ChatMessage.Message, e, e.ChatMessage.Channel, PlatformsEnum.Twitch, null);
+                ChatMessage message = e.ChatMessage;
+
+                await Command.ProcessMessageAsync(
+                    message.UserId,
+                    message.RoomId,
+                    message.Username,
+                    message.Message,
+                    message,
+                    message.Channel,
+                    PlatformsEnum.Twitch,
+                    null,
+                    message.Id,
+                    null,
+                    null);
             }
             catch (Exception ex)
             {

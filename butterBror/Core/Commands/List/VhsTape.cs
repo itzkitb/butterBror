@@ -15,8 +15,8 @@ namespace butterBror.Core.Commands.List
         public override Version Version => new("1.0.0");
         public override Dictionary<string, string> Description => new()
         {
-            { "ru", "0K8g0L1O0YcwzLXQs82i0L7NnyDQvc2gMyDQss2P0LjQtjQuzLggzLYxzaFZ0YLMmyDRgdC7Ts2c0YhrMNKJ0LzNmCDRgs2YZU3NmEjQvi7NniDNgdCiYnwgONKJ0LjNnzTQuMy20YhizaAg0LwzzYDQvcy00Y8/zKg=" },
-            { "en", "Scy2zL8gzLhjzLbMlTRuzLYnzLXNg3QgzLjMjXPMt2UzzLTMjyDMt8yEzKNhzLVuzLTMkHnMtXTMt8yNaMy1zYQxbsy0zYFnzLQuzLTMjiDMtUnMt82bdCfMt82ANcy0zZEgzLfMlXTMtjDMuG/MtsyAIMy1zI3Mr2TMtM2QNHLMtc2Ya8y0zZ0uzLggQzTMtc2XzKduzLjMgsy8IMy1ecy3zIXMmG/MtnXMtSDMuM2bc8y2M2XMtMy/IMy4bcy4zYMzzLbNkD/Mtw==" }
+            { "ru-RU", "0K8g0L1O0YcwzLXQs82i0L7NnyDQvc2gMyDQss2P0LjQtjQuzLggzLYxzaFZ0YLMmyDRgdC7Ts2c0YhrMNKJ0LzNmCDRgs2YZU3NmEjQvi7NniDNgdCiYnwgONKJ0LjNnzTQuMy20YhizaAg0LwzzYDQvcy00Y8/zKg=" },
+            { "en-US", "Scy2zL8gzLhjzLbMlTRuzLYnzLXNg3QgzLjMjXPMt2UzzLTMjyDMt8yEzKNhzLVuzLTMkHnMtXTMt8yNaMy1zYQxbsy0zYFnzLQuzLTMjiDMtUnMt82bdCfMt82ANcy0zZEgzLfMlXTMtjDMuG/MtsyAIMy1zI3Mr2TMtM2QNHLMtc2Ya8y0zZ0uzLggQzTMtc2XzKduzLjMgsy8IMy1ecy3zIXMmG/MtnXMtSDMuM2bc8y2M2XMtMy/IMy4bcy4zYMzzLbNkD/Mtw==" }
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=vhs";
         public override int CooldownPerUser => 60;
@@ -30,7 +30,7 @@ namespace butterBror.Core.Commands.List
         public override PlatformsEnum[] Platforms => [PlatformsEnum.Twitch, PlatformsEnum.Telegram, PlatformsEnum.Discord];
         public override bool IsAsync => true;
 
-        [ConsoleSector("butterBror.Commands.Vhs", "Index")]
+        
         public override async Task<CommandReturn> ExecuteAsync(CommandData data)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -38,10 +38,10 @@ namespace butterBror.Core.Commands.List
 
             try
             {
-                if (Command.CheckCooldown(3600, 1, "vhs_reset", data.UserID, data.ChannelID, data.Platform, false, true, true))
+                if (Command.CheckCooldown(3600, 1, "VhsReset", data.UserID, data.ChannelId, data.Platform, false, true))
                 {
                     var platform = data.Platform;
-                    var channelId = data.ChannelID;
+                    var channelId = data.ChannelId;
                     var channel = data.Channel;
                     var serverId = data.ServerID;
                     var server = data.Server;
@@ -51,7 +51,7 @@ namespace butterBror.Core.Commands.List
                     var messageId = data.MessageID;
                     var telegramMessage = data.TelegramMessage;
 
-                    commandReturn.SetMessage(TranslationManager.GetTranslation(language, "command:vhs:wait", channelId, platform)); // fix AB4
+                    commandReturn.SetMessage(LocalizationService.GetString(language, "command:vhs:wait", channelId, platform)); // fix AB4
 
                     _ = Task.Run(async () =>
                     {
@@ -67,7 +67,7 @@ namespace butterBror.Core.Commands.List
                             int index = rand.Next(videos.Length);
                             string randomUrl = videos[index];
 
-                            Chat.SendReply(platform, channel, channelId, TranslationManager.GetTranslation(language, "command:vhs", channelId, platform).Replace("%url%", randomUrl),
+                            Chat.SendReply(platform, channel, channelId, LocalizationService.GetString(language, "command:vhs", channelId, platform, randomUrl),
                                 language, username, userId, server, serverId, messageId, telegramMessage, true);
                         }
                         catch (Exception ex)
@@ -78,7 +78,7 @@ namespace butterBror.Core.Commands.List
                 }
                 else
                 {
-                    commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:vhs:wait_for_timeout", data.ChannelID, data.Platform));
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:vhs:wait_for_timeout", data.ChannelId, data.Platform));
                 }
             }
             catch (Exception e)

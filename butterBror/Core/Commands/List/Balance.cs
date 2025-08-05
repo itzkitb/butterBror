@@ -13,8 +13,8 @@ namespace butterBror.Core.Commands.List
         public override string GithubSource => $"{URLs.githubSource}blob/master/butterBror/Core/Commands/List/Balance.cs";
         public override Version Version => new("1.0.0");
         public override Dictionary<string, string> Description => new() {
-            { "ru", "Узнать баланс в экономике бота." },
-            { "en", "Find out the balance in the bot's economy." }
+            { "ru-RU", "Узнать баланс в экономике бота." },
+            { "en-US", "Find out the balance in the bot's economy." }
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=wallet";
         public override int CooldownPerUser => 10;
@@ -37,22 +37,34 @@ namespace butterBror.Core.Commands.List
             {
                 if (data.Arguments.Count == 0)
                 {
-                    commandReturn.SetMessage(Text.ArgumentReplacement(TranslationManager.GetTranslation(data.User.Language, "command:balance", data.ChannelID, data.Platform),
-                        "amount", Utils.Balance.GetBalance(data.UserID, data.Platform) + "." + Utils.Balance.GetSubbalance(data.UserID, data.Platform)));
+                    commandReturn.SetMessage(LocalizationService.GetString(
+                        data.User.Language,
+                        "command:balance",
+                        data.ChannelId,
+                        data.Platform,
+                        Utils.Balance.GetBalance(data.UserID, data.Platform) + "." + Utils.Balance.GetSubbalance(data.UserID, data.Platform)));
                 }
                 else
                 {
                     var userID = Names.GetUserID(data.Arguments[0].Replace("@", "").Replace(",", ""), data.Platform);
                     if (userID != null)
                     {
-                        commandReturn.SetMessage(Text.ArgumentsReplacement(TranslationManager.GetTranslation(data.User.Language, "command:balance:user", data.ChannelID, data.Platform),
-                            new(){ { "amount", Utils.Balance.GetBalance(userID, data.Platform) + "." + Utils.Balance.GetSubbalance(userID, data.Platform) },
-                                { "name", Names.DontPing(Text.UsernameFilter(data.ArgumentsString)) }}));
+                        commandReturn.SetMessage(LocalizationService.GetString(
+                            data.User.Language,
+                            "command:balance:user",
+                            data.ChannelId,
+                            data.Platform,
+                            Names.DontPing(Text.UsernameFilter(data.ArgumentsString)),
+                            Utils.Balance.GetBalance(userID, data.Platform) + "." + Utils.Balance.GetSubbalance(userID, data.Platform)));
                     }
                     else
                     {
-                        commandReturn.SetMessage(Text.ArgumentReplacement(TranslationManager.GetTranslation(data.User.Language, "error:user_not_found", data.ChannelID, data.Platform),
-                            "user", Names.DontPing(Text.UsernameFilter(data.ArgumentsString))));
+                        commandReturn.SetMessage(LocalizationService.GetString(
+                            data.User.Language,
+                            "error:user_not_found",
+                            data.ChannelId,
+                            data.Platform,
+                            Names.DontPing(Text.UsernameFilter(data.ArgumentsString))));
                         commandReturn.SetColor(ChatColorPresets.Red);
                     }
                 }

@@ -23,7 +23,7 @@ namespace butterBror.Workers
         /// - Updates server count statistics
         /// - Handles connection errors internally
         /// </remarks>
-        [ConsoleSector("butterBror.Utils.DiscordWorker", "ReadyAsync")]
+        
         public static async Task ReadyAsync()
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -49,15 +49,26 @@ namespace butterBror.Workers
         /// - Handles prefix-based command detection
         /// - Integrates with chat processing and AFK systems
         /// </remarks>
-        [ConsoleSector("butterBror.Utils.DiscordWorker", "MessageReceivedAsync")]
+        
         public static async Task MessageReceivedAsync(SocketMessage message)
         {
             Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 if (!(message is SocketUserMessage msg) || message.Author.IsBot) return;
-                OnMessageReceivedArgs e = default;
-                await Command.ProcessMessageAsync(message.Author.Id.ToString(), ((SocketGuildChannel)message.Channel).Guild.Id.ToString(), message.Author.Username.ToLower(), message.Content, e, ((SocketGuildChannel)message.Channel).Guild.Name, PlatformsEnum.Discord, null, message.Channel.ToString());
+                
+                await Command.ProcessMessageAsync(
+                    message.Author.Id.ToString(),
+                    message.Channel.Id.ToString(),
+                    message.Author.Username.ToLower(),
+                    message.Content,
+                    null,
+                    message.Channel.Name,
+                    PlatformsEnum.Discord,
+                    null,
+                    message.Id.ToString(),
+                    ((SocketGuildChannel)message.Channel).Guild.Name,
+                    ((SocketGuildChannel)message.Channel).Guild.Id.ToString());
 
                 if (message.Content.StartsWith(Engine.Bot.Executor))
                 {
@@ -80,7 +91,7 @@ namespace butterBror.Workers
         /// - Loads command modules from assembly
         /// - Handles command registration errors
         /// </remarks>
-        [ConsoleSector("butterBror.Utils.DiscordWorker", "RegisterCommandsAsync")]
+        
         public static async Task RegisterCommandsAsync()
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -108,7 +119,7 @@ namespace butterBror.Workers
         ///   - weather: Weather lookup with location options
         /// - Logs command registration progress
         /// </remarks>
-        [ConsoleSector("butterBror.Utils.DiscordWorker", "RegisterSlashCommands")]
+        
         private static async Task RegisterSlashCommands()
         {
             Engine.Statistics.FunctionsUsed.Add();

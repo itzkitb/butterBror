@@ -15,7 +15,7 @@ namespace butterBror.Services.External
         /// <param name="imageUrl">The URL of the image to download.</param>
         /// <returns>A byte array representing the downloaded image.</returns>
         /// <exception cref="HttpRequestException">Thrown when the HTTP request fails.</exception>
-        [ConsoleSector("butterBror.Utils.Tools.API.Imgur", "DownloadAsync")]
+        
         public static async Task<byte[]> DownloadAsync(string imageUrl)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -35,7 +35,7 @@ namespace butterBror.Services.External
         /// <remarks>
         /// Uses multipart/form-data encoding and requires valid Imgur credentials.
         /// </remarks>
-        [ConsoleSector("butterBror.Utils.Tools.API.Imgur", "UploadAsync")]
+        
         public static async Task<string> UploadAsync(byte[] imageBytes, string description, string title, string ImgurClientId, string ImgurUploadUrl)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -76,7 +76,7 @@ namespace butterBror.Services.External
         /// <remarks>
         /// Validates the "success" flag in the response before extracting the link.
         /// </remarks>
-        [ConsoleSector("butterBror.Utils.Tools.API.Imgur", "GetLinkFromResponse")]
+        
         public static string GetLinkFromResponse(string response)
         {
             Engine.Statistics.FunctionsUsed.Add();

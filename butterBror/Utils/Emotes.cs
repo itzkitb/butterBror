@@ -22,7 +22,7 @@ namespace butterBror.Utils
         /// Uses double-check locking pattern with semaphore to ensure thread-safe cache updates.
         /// Returns cached emotes if valid, otherwise fetches and caches new emotes.
         /// </remarks>
-        [ConsoleSector("butterBror.Utils.Tools.Emotes", "GetEmotesForChannel")]
+        
         public static async Task<List<string>?> GetEmotesForChannel(string channel, string channel_id)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -65,7 +65,7 @@ namespace butterBror.Utils
         /// <param name="channel">The channel name to select emote from.</param>
         /// <param name="channel_id">The unique channel identifier.</param>
         /// <returns>A random emote name, or null if no emotes are available.</returns>
-        [ConsoleSector("butterBror.Utils.Tools.Emotes", "RandomEmote")]
+        
         public static async Task<string> RandomEmote(string channel, string channel_id)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -92,7 +92,7 @@ namespace butterBror.Utils
         /// Bypasses cache expiration time and refreshes emotes immediately.
         /// Updates the global cache with new expiration timestamp.
         /// </remarks>
-        [ConsoleSector("butterBror.Utils.Tools.Emotes", "EmoteUpdate")]
+        
         public static async Task EmoteUpdate(string channel, string channel_id)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -116,7 +116,7 @@ namespace butterBror.Utils
         /// Uses two-level caching: first checks channel-to-user mapping cache,
         /// then fetches emotes from 7TV API if needed.
         /// </remarks>
-        [ConsoleSector("butterBror.Utils.Tools.Emotes", "GetEmotes")]
+        
         public static async Task<List<string>> GetEmotes(string channel)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -154,7 +154,7 @@ namespace butterBror.Utils
         /// Processes raw 7TV API response and extracts emote names.
         /// Returns empty list if user has no emotes or API call fails.
         /// </remarks>
-        [ConsoleSector("butterBror.Utils.Tools.Emotes", "GetEmotesFromCache")]
+        
         private static async Task<List<string>> GetEmotesFromCache(string userId)
         {
             Engine.Statistics.FunctionsUsed.Add();

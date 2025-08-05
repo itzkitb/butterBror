@@ -13,8 +13,8 @@ namespace butterBror.Core.Commands.List
         public override string GithubSource => $"{URLs.githubSource}blob/master/butterBror/Core/Commands/List/Roulette.cs";
         public override Version Version => new("1.0.0");
         public override Dictionary<string, string> Description => new() {
-            { "ru", "Сыграйте в рулетку! Подробности: https://bit.ly/bb_roulette " },
-            { "en", "Play Roulette! Details: https://bit.ly/bb_roulette " }
+            { "ru-RU", "Сыграйте в рулетку! Подробности: https://bit.ly/bb_roulette " },
+            { "en-US", "Play Roulette! Details: https://bit.ly/bb_roulette " }
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=roulette";
         public override int CooldownPerUser => 5;
@@ -57,12 +57,16 @@ namespace butterBror.Core.Commands.List
                         commandReturn.SetColor(ChatColorPresets.Red);
 
                         if (bid == 0)
-                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:roulette_wrong_bid", data.ChannelID, data.Platform));
+                            commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:roulette_wrong_bid", data.ChannelId, data.Platform));
                         else if (bid < 0)
-                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:roulette_steal", data.ChannelID, data.Platform));
+                            commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:roulette_steal", data.ChannelId, data.Platform));
                         else if (Utils.Balance.GetBalance(data.UserID, data.Platform) < bid)
-                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:roulette_not_enough_coins", data.ChannelID, data.Platform)
-                                        .Replace("%balance%", Utils.Balance.GetBalance(data.UserID, data.Platform).ToString() + " " + Engine.Bot.CoinSymbol));
+                            commandReturn.SetMessage(LocalizationService.GetString(
+                                data.User.Language,
+                                "error:roulette_not_enough_coins",
+                                data.ChannelId,
+                                data.Platform,
+                                Utils.Balance.GetBalance(data.UserID, data.Platform).ToString() + " " + Engine.Bot.CoinSymbol));
                         else
                         {
                             int moves = new Random().Next(38, 380);
@@ -81,28 +85,40 @@ namespace butterBror.Core.Commands.List
 
                                 int win = (int)(bid * multipliers[result_symbol]);
                                 Utils.Balance.Add(data.UserID, win, 0, data.Platform);
-                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:roulette:result:win", data.ChannelID, data.Platform)
-                                    .Replace("%result%", result_symbol)
-                                    .Replace("%result_number%", result.ToString())
-                                    .Replace("%win%", win.ToString() + " " + Engine.Bot.CoinSymbol)
-                                    .Replace("%multipier%", multipliers[result_symbol].ToString()));
+                                commandReturn.SetMessage(LocalizationService.GetString(
+                                    data.User.Language,
+                                    "command:roulette:result:win",
+                                    data.ChannelId,
+                                    data.Platform,
+                                    result_symbol,
+                                    result.ToString(),
+                                    win.ToString() + " " + Engine.Bot.CoinSymbol,
+                                    multipliers[result_symbol].ToString()));
                             }
                             else
                             {
                                 Utils.Balance.Add(data.UserID, -bid, 0, data.Platform);
-                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:roulette:result:lose", data.ChannelID, data.Platform)
-                                    .Replace("%result%", result_symbol)
-                                    .Replace("%result_number%", result.ToString())
-                                    .Replace("%lose%", bid.ToString() + " " + Engine.Bot.CoinSymbol));
+                                commandReturn.SetMessage(LocalizationService.GetString(
+                                    data.User.Language,
+                                    "command:roulette:result:lose",
+                                    data.ChannelId,
+                                    data.Platform,
+                                    result_symbol,
+                                    result.ToString(),
+                                    bid.ToString() + " " + Engine.Bot.CoinSymbol));
                             }
                         }
                     }
                     else
-                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:roulette_wrong_select", data.ChannelID, data.Platform));
+                        commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:roulette_wrong_select", data.ChannelId, data.Platform));
                 }
                 else
-                    commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:not_enough_arguments", data.ChannelID, data.Platform)
-                        .Replace("%command_example%", $"#roulette [🟩/🟥/⬛] [{TranslationManager.GetTranslation(data.User.Language, "text:bid", data.ChannelID, data.Platform)}]"));
+                    commandReturn.SetMessage(LocalizationService.GetString(
+                        data.User.Language,
+                        "error:not_enough_arguments",
+                        data.ChannelId,
+                        data.Platform,
+                        $"{Engine.Bot.Executor}roulette [🟩/🟥/⬛] [{LocalizationService.GetString(data.User.Language, "text:bid", data.ChannelId, data.Platform)}]"));
             }
             catch (Exception e)
             {

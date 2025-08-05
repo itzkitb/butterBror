@@ -12,8 +12,8 @@ namespace butterBror.Core.Commands.List
         public override string GithubSource => $"{URLs.githubSource}blob/master/butterBror/Core/Commands/List/RandomCMD.cs";
         public override Version Version => new("1.0.0");
         public override Dictionary<string, string> Description => new() {
-            { "ru", "Перемешать текст или вывести рандомное число." },
-            { "en", "Shuffle text or output a random number." }
+            { "ru-RU", "Перемешать текст или вывести рандомное число." },
+            { "en-US", "Shuffle text or output a random number." }
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=random";
         public override int CooldownPerUser => 5;
@@ -40,15 +40,15 @@ namespace butterBror.Core.Commands.List
                     {
                         string[] numbers = data.ArgumentsString.Split('-');
                         if (numbers.Length == 2 && int.TryParse(numbers[0], out int min) && int.TryParse(numbers[1], out int max))
-                            commandReturn.SetMessage($"{TranslationManager.GetTranslation(data.User.Language, "command:random", data.ChannelID, data.Platform)}{new Random().Next(min, max + 1)}");
+                            commandReturn.SetMessage($"{LocalizationService.GetString(data.User.Language, "command:random", data.ChannelId, data.Platform)}{new Random().Next(min, max + 1)}");
                         else
-                            commandReturn.SetMessage($"{TranslationManager.GetTranslation(data.User.Language, "command:random", data.ChannelID, data.Platform)}{string.Join(" ", [.. data.ArgumentsString.Split(' ').OrderBy(x => new Random().Next())])}");
+                            commandReturn.SetMessage($"{LocalizationService.GetString(data.User.Language, "command:random", data.ChannelId, data.Platform)}{string.Join(" ", [.. data.ArgumentsString.Split(' ').OrderBy(x => new Random().Next())])}");
                     }
                     else
-                        commandReturn.SetMessage($"{TranslationManager.GetTranslation(data.User.Language, "command:random", data.ChannelID, data.Platform)}{string.Join(" ", [.. data.ArgumentsString.Split(' ').OrderBy(x => new Random().Next())])}");
+                        commandReturn.SetMessage($"{LocalizationService.GetString(data.User.Language, "command:random", data.ChannelId, data.Platform)}{string.Join(" ", [.. data.ArgumentsString.Split(' ').OrderBy(x => new Random().Next())])}");
                 }
                 else
-                    commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:random", data.ChannelID, data.Platform) + "DinoDance");
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:random", data.ChannelId, data.Platform) + "aceStare");
             }
             catch (Exception e)
             {

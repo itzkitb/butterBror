@@ -3,6 +3,7 @@ using butterBror.Data;
 using butterBror.Models;
 using butterBror.Services.System;
 using butterBror.Utils;
+using DankDB;
 using Microsoft.TeamFoundation.Common;
 using Microsoft.VisualStudio.Services.Common;
 using Pastel;
@@ -52,7 +53,7 @@ namespace butterBror
         /// <summary>
         /// Gets the current patch version.
         /// </summary>
-        public static string Patch = "1";
+        public static string Patch = "2";
 
         /// <summary>
         /// Gets or sets the previous version string.
@@ -133,6 +134,8 @@ namespace butterBror
         private static long _tpsCounter = 0;
         private static long _lastSendTick = 0;
         private static PerformanceCounter _CPU = new PerformanceCounter("Processor", "% Processor Time", "_Total");
+        private static bool _debug = false;
+        private static DateTime _lastBackupDate = DateTime.MinValue;
 
 
         private class DankDBPreviousStatistics
@@ -174,7 +177,7 @@ namespace butterBror
         /// - Configures performance counters
         /// - Starts periodic tick timer
         /// </remarks>
-        [ConsoleSector("butterBror.Core", "Start")]
+        
         public static void Main(string[] args)
         {
             System.Console.Title = "Loading libraries...";
@@ -199,7 +202,7 @@ namespace butterBror
         /// - Sends telemetry data every 10 minutes
         /// - Handles bot restart operations
         /// </remarks>
-        [ConsoleSector("butterBror.Engine", "StartTickLoop")]
+        
         private static async Task StartTickLoop(int ticksTime)
         {
             Statistics.FunctionsUsed.Add();
@@ -246,14 +249,14 @@ namespace butterBror
 
                             if (!Bot.Pathes.Currency.IsNullOrEmpty())
                             {
-                                SafeManager.Save(Bot.Pathes.Currency, "totalAmount", Coins, false);
-                                SafeManager.Save(Bot.Pathes.Currency, "totalUsers", Users, false);
-                                SafeManager.Save(Bot.Pathes.Currency, "totalDollarsInTheBank", BankDollars, false);
-                                SafeManager.Save(Bot.Pathes.Currency, $"[{date.Day}.{date.Month}.{date.Year}]", "", false);
-                                SafeManager.Save(Bot.Pathes.Currency, $"[{date.Day}.{date.Month}.{date.Year}] cost", (BankDollars / Coins), false);
-                                SafeManager.Save(Bot.Pathes.Currency, $"[{date.Day}.{date.Month}.{date.Year}] amount", Coins, false);
-                                SafeManager.Save(Bot.Pathes.Currency, $"[{date.Day}.{date.Month}.{date.Year}] users", Users, false);
-                                SafeManager.Save(Bot.Pathes.Currency, $"[{date.Day}.{date.Month}.{date.Year}] dollars", BankDollars);
+                                Manager.Save(Bot.Pathes.Currency, "totalAmount", Coins);
+                                Manager.Save(Bot.Pathes.Currency, "totalUsers", Users);
+                                Manager.Save(Bot.Pathes.Currency, "totalDollarsInTheBank", BankDollars);
+                                Manager.Save(Bot.Pathes.Currency, $"[{date.Day}.{date.Month}.{date.Year}]", "");
+                                Manager.Save(Bot.Pathes.Currency, $"[{date.Day}.{date.Month}.{date.Year}] cost", (BankDollars / Coins));
+                                Manager.Save(Bot.Pathes.Currency, $"[{date.Day}.{date.Month}.{date.Year}] amount", Coins);
+                                Manager.Save(Bot.Pathes.Currency, $"[{date.Day}.{date.Month}.{date.Year}] users", Users);
+                                Manager.Save(Bot.Pathes.Currency, $"[{date.Day}.{date.Month}.{date.Year}] dollars", BankDollars);
                             }
 
                             _lastCoinAmount = Coins;
@@ -289,6 +292,12 @@ namespace butterBror
                                 }
                             }
                         }
+
+                        if (DateTime.UtcNow.Hour == 0 && DateTime.UtcNow.Minute == 0 && DateTime.UtcNow.Second < Ticks && DateTime.UtcNow.Date != _lastBackupDate)
+                        {
+                            _lastBackupDate = DateTime.UtcNow.Date;
+                            _ = Bot.BackupDataAsync();
+                        }
                     }
 
                     TicksCounter++;
@@ -301,8 +310,8 @@ namespace butterBror
                 finally
                 {
                     elapsedTime.Stop();
-                    var delayTime = Math.Max(0, ticksTime - (int)elapsedTime.ElapsedMilliseconds);
-                    await Task.Delay(delayTime);
+                    var delayTime = Math.Max(0, ticksTime - elapsedTime.ElapsedMilliseconds);
+                    await Task.Delay((int)delayTime);
                 }
             }
         }
@@ -311,7 +320,7 @@ namespace butterBror
         /// Responds to ping requests with status confirmation.
         /// </summary>
         /// <returns>"Pong!" status response</returns>
-        [ConsoleSector("butterBror.Engine", "Ping")]
+        
         public static string Ping()
         {
             Statistics.FunctionsUsed.Add();
@@ -321,7 +330,7 @@ namespace butterBror
         /// <summary>
         /// Closes the application with a specific code.
         /// </summary>
-        [ConsoleSector("butterBror.Engine", "Exit")]
+        
         public static void Exit(int exitCode)
         {
             Statistics.FunctionsUsed.Add();
@@ -338,7 +347,7 @@ namespace butterBror
         /// information in a stylized console output along with bot version, framework, and host details.
         /// If any information cannot be retrieved due to exceptions, appropriate error messages are logged.
         /// </remarks>
-        [ConsoleSector("butterBror.Engine", "ButterBrorFetch")]
+        
         private static void ButterBrorFetch(int customTickSpeed)
         {
             Statistics.FunctionsUsed.Add();
@@ -431,7 +440,7 @@ namespace butterBror
         /// (TPS) to ensure it falls within acceptable limits (1 to 1000 ticks per second). If critical parameters like 
         /// core name or version are missing, or if tick speed validation fails, the method logs errors and halts execution.
         /// </remarks>
-        [ConsoleSector("butterBror.Engine", "Initialize")]
+        
         private static void Initialize(string[] args)
         {
             System.Console.Title = $"butterBror | v.{Version}.{Patch}";
@@ -451,7 +460,7 @@ namespace butterBror
                 }
             }
 
-            if (hostName is null || hostVersion is null)
+            if (!_debug && (hostName is null || hostVersion is null))
             {
                 Write("The bot is running without a host! Please run it from the host, not directly.", "kernel");
                 System.Console.ReadLine();
@@ -487,7 +496,7 @@ namespace butterBror
         /// for periodic updates of performance metrics like TPS and CPU usage. Finally, it records the application start 
         /// time and triggers the bot's startup process, logging progress to the console.
         /// </remarks>
-        [ConsoleSector("butterBror.Engine", "StartEngine")]
+        
         private static void StartEngine()
         {
             Write($"The engine is currently starting...", "kernel");

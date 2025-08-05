@@ -1,7 +1,9 @@
-﻿using butterBror.Utils;
+﻿using butterBror.Core.Bot;
+using butterBror.Core.Bot.SQLColumnNames;
 using butterBror.Data;
 using butterBror.Models;
-using butterBror.Core.Bot;
+using butterBror.Utils;
+using Microsoft.CodeAnalysis;
 
 namespace butterBror.Core.Commands.List
 {
@@ -13,8 +15,8 @@ namespace butterBror.Core.Commands.List
         public override string GithubSource => $"{URLs.githubSource}blob/master/butterBror/Core/Commands/List/Afk.cs";
         public override Version Version => new Version("1.0.0");
         public override Dictionary<string, string> Description => new() {
-            { "ru", "Эта команда поможет вам уйти из чата в афк." },
-            { "en", "This command will help you leave the chat and go afk." }
+            { "ru-RU", "Эта команда поможет вам уйти из чата в афк." },
+            { "en-US", "This command will help you leave the chat and go afk." }
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=afk";
         public override int CooldownPerUser => 20;
@@ -87,27 +89,20 @@ namespace butterBror.Core.Commands.List
 
             try
             {
-                string result = TranslationManager.GetTranslation(data.User.Language, $"command:afk:{afkType}:start", data.ChannelID, data.Platform).Replace("%user%", data.User.Name);
+                string result = LocalizationService.GetString(data.User.Language, $"command:afk:{afkType}:start", data.ChannelId, data.Platform, data.User.Name);
                 string text = data.ArgumentsString;
 
-                if (new NoBanwords().Check(text, data.ChannelID, data.Platform))
-                {
-                    UsersData.Save(data.UserID, "isAfk", true, data.Platform);
-                    UsersData.Save(data.UserID, "afkText", text, data.Platform);
-                    UsersData.Save(data.UserID, "afkType", afkType, data.Platform);
-                    UsersData.Save(data.UserID, "afkTime", DateTime.UtcNow, data.Platform);
-                    UsersData.Save(data.UserID, "lastFromAfkResume", DateTime.UtcNow, data.Platform);
-                    UsersData.Save(data.UserID, "fromAfkResumeTimes", 0, data.Platform);
+                Engine.Bot.SQL.Users.SetParameter(data.Platform, Format.ToLong(data.UserID), Users.IsAFK, 1);
+                Engine.Bot.SQL.Users.SetParameter(data.Platform, Format.ToLong(data.UserID), Users.AFKText, text);
+                Engine.Bot.SQL.Users.SetParameter(data.Platform, Format.ToLong(data.UserID), Users.AFKType, afkType);
+                Engine.Bot.SQL.Users.SetParameter(data.Platform, Format.ToLong(data.UserID), Users.AFKStart, DateTime.UtcNow.ToString("o"));
+                Engine.Bot.SQL.Users.SetParameter(data.Platform, Format.ToLong(data.UserID), Users.AFKResume, DateTime.UtcNow.ToString("o"));
+                Engine.Bot.SQL.Users.SetParameter(data.Platform, Format.ToLong(data.UserID), Users.AFKResumeTimes, 0);
 
-                    if (Text.CleanAsciiWithoutSpaces(text) == "")
-                        commandReturn.SetMessage(result);
-                    else
-                        commandReturn.SetMessage(result + ": " + text);
-                }
+                if (Text.CleanAsciiWithoutSpaces(text) == "")
+                    commandReturn.SetMessage(result);
                 else
-                {
-
-                }
+                    commandReturn.SetMessage(result + ": " + text);
             }
             catch (Exception e)
             {

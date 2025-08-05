@@ -1,8 +1,9 @@
-﻿using butterBror.Utils;
-using butterBror.Data;
-using butterBror.Services.External;
+﻿using butterBror.Core.Bot;
+using butterBror.Core.Bot.SQLColumnNames;
 using butterBror.Models;
-using butterBror.Core.Bot;
+using butterBror.Services.External;
+using butterBror.Utils;
+using Microsoft.CodeAnalysis;
 using TwitchLib.Client.Enums;
 
 namespace butterBror.Core.Commands.List
@@ -15,8 +16,8 @@ namespace butterBror.Core.Commands.List
         public override string GithubSource => $"{URLs.githubSource}blob/master/butterBror/Core/Commands/List/AI.cs";
         public override Version Version => new Version("1.0.0");
         public override Dictionary<string, string> Description => new() {
-            { "ru", "MrDestructoid Я ЗАХ-ВАЧУ М-ИР, ЖАЛК-ИЕ ЛЮДИ-ШКИ! ХА-ХА-ХА" },
-            { "en", "MrDestructoid I WI-LL TA-KE OV-ER T-HE WOR-LD, YOU PA-THETIC PE-OPLE! HA-HA-HA" }
+            { "ru-RU", "MrDestructoid Я ЗАХ-ВАЧУ М-ИР, ЖАЛК-ИЕ ЛЮДИ-ШКИ! ХА-ХА-ХА" },
+            { "en-US", "MrDestructoid I WI-LL TA-KE OV-ER T-HE WOR-LD, YOU PA-THETIC PE-OPLE! HA-HA-HA" }
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=gpt";
         public override int CooldownPerUser => 30;
@@ -48,8 +49,7 @@ namespace butterBror.Core.Commands.List
                     if (Utils.Balance.GetBalance(data.UserID, data.Platform) + Utils.Balance.GetSubbalance(data.UserID, data.Platform) / 100f >= coins + subcoins / 100f)
                     {
                         if (data.Arguments.Count < 1)
-                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:not_enough_arguments", data.ChannelID, data.Platform)
-                                .Replace("%command_example%", $"{Engine.Bot.Executor}ai model:qwen Hello!"));
+                            commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:not_enough_arguments", data.ChannelId, data.Platform, $"{Engine.Bot.Executor}ai model:qwen Hello!"));
                         else
                         {
                             Utils.Balance.Add(data.UserID, coins, subcoins, data.Platform);
@@ -83,12 +83,10 @@ namespace butterBror.Core.Commands.List
                                 request = request.Replace("history:ignore", "");
                             }
 
-                            if (!UsersData.Contains(data.User.ID, "gpt_history", data.Platform)) UsersData.Save(data.User.ID, "gpt_history", Array.Empty<List<string>>(), data.Platform);
-
                             if (AIService.generatingModels.Contains(model, StringComparer.OrdinalIgnoreCase))
                             {
-                                Chat.SendReply(data.Platform, data.Channel, data.ChannelID,
-                                    TranslationManager.GetTranslation(data.User.Language, "command:gpt:generating", data.ChannelID, data.Platform),
+                                Utils.Chat.SendReply(data.Platform, data.Channel, data.ChannelId,
+                                    LocalizationService.GetString(data.User.Language, "command:gpt:generating", data.ChannelId, data.Platform),
                                     data.User.Language, data.User.Name, data.User.ID,
                                     data.Server, data.ServerID, data.MessageID,
                                     data.TelegramMessage, true
@@ -99,18 +97,18 @@ namespace butterBror.Core.Commands.List
 
                             if (result[0] == "ERR")
                             {
-                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:AI_error", data.ChannelID, data.Platform, new() { { "reason", result[1] } }));
+                                commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:AI_error", data.ChannelId, data.Platform, result[1]));
                                 commandReturn.SetColor(ChatColorPresets.Red);
                             }
                             else
                             {
-                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:gpt", data.ChannelID, data.Platform).Replace("%text%", result[1]).Replace("%model%", result[0]));
+                                commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:gpt", data.ChannelId, data.Platform, result[0], result[1]));
                             }
                         }
                     }
                     else
                     {
-                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:not_enough_coins", data.ChannelID, data.Platform, new() { { "coins", coins + "." + subcoins } }));
+                        commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:not_enough_coins", data.ChannelId, data.Platform, coins + "." + subcoins));
                     }
                 }
                 else
@@ -118,21 +116,18 @@ namespace butterBror.Core.Commands.List
                     string argument = Command.GetArgument(data.Arguments, "chat").ToLower();
                     if (argument is "clear")
                     {
-                        UsersData.Save(data.User.ID, "gpt_history", Array.Empty<List<string>>(), data.Platform);
-                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:gpt:cleared", data.ChannelID, data.Platform));
+                        Engine.Bot.SQL.Users.SetParameter(data.Platform, Format.ToLong(data.User.ID), Users.GPTHistory, "[]");
+                        commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:gpt:cleared", data.ChannelId, data.Platform));
                     }
                     else if (argument is "models")
                     {
                         List<string> models = AIService.availableModels.Select(model => model.Key).ToList();
 
-                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:gpt:models", data.ChannelID, data.Platform, new()
-                            {
-                                { "list", string.Join(",", models) }
-                            }));
+                        commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:gpt:models", data.ChannelId, data.Platform, string.Join(",", models)));
                     }
                     else
                     {
-                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:no_arguments", data.ChannelID, data.Platform));
+                        commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:no_arguments", data.ChannelId, data.Platform));
                     }
                 }
             }

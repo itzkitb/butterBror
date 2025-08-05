@@ -14,8 +14,8 @@ namespace butterBror.Core.Commands.List
         public override Version Version => new("1.0.0");
         public override Dictionary<string, string> Description => new()
         {
-            { "ru", "Этот шар умеет отвечать на вопросы." },
-            { "en", "This ball can answer questions." }
+            { "ru-RU", "Этот шар умеет отвечать на вопросы." },
+            { "en-US", "This ball can answer questions." }
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=8ball";
         public override int CooldownPerUser => 5;
@@ -58,7 +58,7 @@ namespace butterBror.Core.Commands.List
                     commandReturn.SetColor(ChatColorPresets.Red);
                     translationParam += "negatively:" + stage2;
                 }
-                commandReturn.SetMessage("🔮 " + TranslationManager.GetTranslation(data.User.Language, translationParam, data.ChannelID, data.Platform));
+                commandReturn.SetMessage("🔮 " + LocalizationService.GetString(data.User.Language, translationParam, data.ChannelId, data.Platform));
             }
             catch (Exception e)
             {

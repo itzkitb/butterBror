@@ -16,8 +16,8 @@ namespace butterBror.Core.Commands.List
         public override Version Version => new("1.0.0");
         public override Dictionary<string, string> Description => new()
         {
-            { "ru", "Спокойной ночи... 👁" },
-            { "en", "Good night... 👁" }
+            { "ru-RU", "Спокойной ночи... 👁" },
+            { "en-US", "Good night... 👁" }
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=tuck";
         public override int CooldownPerUser => 5;
@@ -31,7 +31,7 @@ namespace butterBror.Core.Commands.List
         public override PlatformsEnum[] Platforms => [PlatformsEnum.Twitch, PlatformsEnum.Telegram, PlatformsEnum.Discord];
         public override bool IsAsync => false;
 
-        [ConsoleSector("butterBror.Commands.Tuck", "Index")]
+        
         public override CommandReturn Execute(CommandData data)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -48,12 +48,12 @@ namespace butterBror.Core.Commands.List
                     try
                     {
                         if (userID != null)
-                            isSelectedUserIsNotIgnored = !UsersData.Get<bool>(userID, "isIgnored", data.Platform);
+                            isSelectedUserIsNotIgnored = !(Engine.Bot.SQL.Roles.GetIgnoredUser(data.Platform, Format.ToLong(data.User.ID)) is not null);
                     }
                     catch (Exception) { }
                     if (username.ToLower() == Engine.Bot.BotName.ToLower())
                     {
-                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:tuck:bot", data.ChannelID, data.Platform));
+                        commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:tuck:bot", data.ChannelId, data.Platform));
                         commandReturn.SetColor(ChatColorPresets.CadetBlue);
                     }
                     else if (isSelectedUserIsNotIgnored)
@@ -62,22 +62,22 @@ namespace butterBror.Core.Commands.List
                         {
                             List<string> list = data.Arguments;
                             list.RemoveAt(0);
-                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:tuck:text", data.ChannelID, data.Platform).Replace("%user%", Names.DontPing(username)).Replace("%text%", string.Join(" ", list)));
+                            commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:tuck:text", data.ChannelId, data.Platform, Names.DontPing(username), string.Join(" ", list)));
                         }
                         else
                         {
-                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:tuck", data.ChannelID, data.Platform).Replace("%user%", Names.DontPing(username)));
+                            commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:tuck", data.ChannelId, data.Platform, Names.DontPing(username)));
                         }
                     }
                     else
                     {
                         Write($"User @{data.User.Name} tried to put a user to sleep who is in the ignore list", "info");
-                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:user_ignored", data.ChannelID, data.Platform));
+                        commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:user_ignored", data.ChannelId, data.Platform));
                     }
                 }
                 else
                 {
-                    commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:tuck:none", data.ChannelID, data.Platform));
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:tuck:none", data.ChannelId, data.Platform));
                     commandReturn.SetColor(ChatColorPresets.CadetBlue);
                 }
             }

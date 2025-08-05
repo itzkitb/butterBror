@@ -21,6 +21,7 @@ namespace butterBror.Core.Commands
         bool OnlyChannelModerator { get; }
         PlatformsEnum[] Platforms { get; }
         bool IsAsync { get; }
+        bool TechWorks { get; }
 
         CommandReturn Execute(CommandData data);
         Task<CommandReturn> ExecuteAsync(CommandData data);

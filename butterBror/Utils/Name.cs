@@ -1,5 +1,6 @@
 ﻿using butterBror.Data;
 using butterBror.Models;
+using Microsoft.VisualStudio.Services.Organization.Client;
 using Newtonsoft.Json.Linq;
 using System.Net.Http.Headers;
 using System.Text.RegularExpressions;
@@ -25,7 +26,7 @@ namespace butterBror.Utils
         /// Uses regex pattern "@(\w+)" to identify mentions.
         /// Returns empty string for text without any @mentions.
         /// </remarks>
-        [ConsoleSector("butterBror.Utils.Tools.Names", "GetUsernameFromText")]
+        
         public static string GetUsernameFromText(string text)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -57,19 +58,17 @@ namespace butterBror.Utils
         /// - Caches successful API results for future lookups
         /// - Handles empty/mismatched cache directories automatically
         /// </remarks>
-        [ConsoleSector("butterBror.Utils.Tools.Names", "GetUserID")]
+        
         public static string GetUserID(string user, PlatformsEnum platform, bool requestAPI = false)
         {
             Engine.Statistics.FunctionsUsed.Add();
 
             string key = user.ToLowerInvariant();
-            string dir = Path.Combine(Engine.Bot.Pathes.Nick2ID, PlatformsPathName.strings[(int)platform]);
-            string filePath = Path.Combine(dir, key + ".txt");
 
             try
             {
-                if (FileUtil.FileExists(filePath))
-                    return FileUtil.GetFileContent(filePath);
+                if (Engine.Bot.SQL.Users.GetUserIdByUsername(platform, key) is not null)
+                    return Engine.Bot.SQL.Users.GetUserIdByUsername(platform, key).ToString();
 
                 // Twitch API
                 if (platform is PlatformsEnum.Twitch && requestAPI)
@@ -95,8 +94,7 @@ namespace butterBror.Utils
                         string id = data[0]["id"]?.ToString();
                         if (!string.IsNullOrEmpty(id))
                         {
-                            Directory.CreateDirectory(dir);
-                            FileUtil.SaveFileContent(filePath, id);
+                            Engine.Bot.SQL.Users.AddUsernameMapping(platform, Format.ToLong(id), key);
                             return id;
                         }
                     }
@@ -124,18 +122,15 @@ namespace butterBror.Utils
         /// - Caches successful API results for future lookups
         /// - Handles empty/mismatched cache directories automatically
         /// </remarks>
-        [ConsoleSector("butterBror.Utils.Tools.Names", "GetUsername")]
+        
         public static string GetUsername(string ID, PlatformsEnum platform, bool requestAPI = false)
         {
             Engine.Statistics.FunctionsUsed.Add();
 
-            string dir = Path.Combine(Engine.Bot.Pathes.ID2Nick, PlatformsPathName.strings[(int)platform]);
-            string filePath = Path.Combine(dir, ID + ".txt");
-
             try
             {
-                if (FileUtil.FileExists(filePath))
-                    return FileUtil.GetFileContent(filePath);
+                if (Engine.Bot.SQL.Users.GetUsernameByUserId(platform, Format.ToLong(ID)) is not null)
+                    return Engine.Bot.SQL.Users.GetUsernameByUserId(platform, Format.ToLong(ID));
 
                 // API
                 if (platform is PlatformsEnum.Twitch && requestAPI)
@@ -164,8 +159,7 @@ namespace butterBror.Utils
                         string login = data[0]["login"]?.ToString();
                         if (!string.IsNullOrEmpty(login))
                         {
-                            Directory.CreateDirectory(dir);
-                            FileUtil.SaveFileContent(filePath, login);
+                            Engine.Bot.SQL.Users.AddUsernameMapping(platform, Format.ToLong(ID), login);
                             return login;
                         }
                     }
@@ -192,7 +186,7 @@ namespace butterBror.Utils
         /// Useful for displaying usernames in chat without triggering notifications
         /// Preserves original username display while preventing accidental @mentions
         /// </remarks>
-        [ConsoleSector("butterBror.Utils.Tools.Names", "DontPing")]
+        
         public static string DontPing(string username)
         {
             Engine.Statistics.FunctionsUsed.Add();

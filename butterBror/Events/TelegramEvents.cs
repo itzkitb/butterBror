@@ -1,4 +1,5 @@
 ﻿using butterBror.Core.Bot;
+using butterBror.Core.Bot.SQLColumnNames;
 using butterBror.Core.Commands;
 using butterBror.Data;
 using butterBror.Models;
@@ -29,7 +30,7 @@ namespace butterBror.Events
         /// Processes commands like /start, /ping, /help, and routes them to appropriate handlers.
         /// Interacts with translation system and command processing components.
         /// </remarks>
-        [ConsoleSector("butterBror.Utils.TelegramEvents", "UpdateHandler")]
+        
         public static async Task UpdateHandler(ITelegramBotClient client, Update update, CancellationToken cancellation_token)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -38,40 +39,55 @@ namespace butterBror.Events
                 if (update.Type is not UpdateType.Message) return;
 
                 Message message = update.Message;
+                Telegram.Bot.Types.Chat chat = message.Chat;
                 User user = message.From;
-                User my_data = Engine.Bot.Clients.Telegram.GetMe().Result;
+                User botData = Engine.Bot.Clients.Telegram.GetMe().Result;
                 string text = message.Text;
 
-                Telegram.Bot.Types.Chat chat = message.Chat;
+                await Command.ProcessMessageAsync(
+                    user.Id.ToString(),
+                    chat.Id.ToString(),
+                    user.Username.ToLower(),
+                    text == null ? "[ No text ]" : text,
+                    null,
+                    chat.Title == null ? botData.Username : chat.Title,
+                    PlatformsEnum.Telegram,
+                    message,
+                    message.Id.ToString(),
+                    null,
+                    null);
 
-                await Command.ProcessMessageAsync(user.Id.ToString(), chat.Id.ToString(), user.Username.ToLower(), text == null ? "[ No text ]" : text, new OnMessageReceivedArgs(), chat.Title == null ? my_data.Username : chat.Title, PlatformsEnum.Telegram, message);
+                string lang = (string)Engine.Bot.SQL.Users.GetParameter(PlatformsEnum.Telegram, user.Id, Users.Language) ?? "en-US";
 
-                string lang = UsersData.Get<string>(user.Id.ToString(), "language", PlatformsEnum.Telegram);
-                lang ??= "ru";
-
-                if (text.StartsWith("/start", StringComparison.OrdinalIgnoreCase)
-                    || text.StartsWith("/start@" + my_data.Username, StringComparison.OrdinalIgnoreCase))
+                if (Command.IsEqualsSlashCommand("start", text, botData.Username))
                 {
-                    await client.SendMessage(chat.Id, TranslationManager.GetTranslation(lang, "telegram:welcome", chat.Id.ToString(), PlatformsEnum.Telegram, new() {
-                        { "ID", user.Id.ToString() },
-                        { "WorkTime", Text.FormatTimeSpan(DateTime.Now - Engine.StartTime, lang) },
-                        { "Version", Engine.Version },
-                        { "Ping", new Ping().Send(URLs.telegram, 1000).RoundtripTime.ToString() } }), replyParameters: message.MessageId
-, cancellationToken: cancellation_token);
+                    await client.SendMessage(chat.Id, LocalizationService.GetString(
+                        lang,
+                        "telegram:welcome",
+                        chat.Id.ToString(),
+                        PlatformsEnum.Telegram,
+                        Engine.Version,
+                        user.Id,
+                        Text.FormatTimeSpan(DateTime.Now - Engine.StartTime, lang),
+                        new Ping().Send(URLs.telegram, 1000).RoundtripTime), replyParameters: message.MessageId, cancellationToken: cancellation_token);
                 }
-                else if (text.StartsWith("/ping", StringComparison.OrdinalIgnoreCase)
-                    || text.StartsWith("/ping@" + my_data.Username, StringComparison.OrdinalIgnoreCase))
+                else if (Command.IsEqualsSlashCommand("ping", text, botData.Username))
                 {
                     var workTime = DateTime.Now - Engine.StartTime;
                     PingReply reply = new Ping().Send(URLs.telegram, 1000);
-                    string returnMessage = TranslationManager.GetTranslation(lang, "command:ping", chat.Id.ToString(), PlatformsEnum.Telegram, new(){
-                        { "version", Engine.Version },
-                        { "workTime", Text.FormatTimeSpan(workTime, lang) },
-                        { "tabs", Engine.Bot.Clients.Twitch.JoinedChannels.Count + Engine.Bot.Clients.Discord.Guilds.Count + " (Twitch, Discord)" },
-                        { "loadedCMDs", Runner.commandInstances.Count.ToString() },
-                        { "completedCMDs", Engine.CompletedCommands.ToString() },
-                        { "ping", reply.RoundtripTime.ToString() }
-                    });
+                    string returnMessage = LocalizationService.GetString(
+                        lang,
+                        "command:ping",
+                        chat.Id.ToString(),
+                        PlatformsEnum.Telegram,
+                        Engine.Version,
+                        Engine.Patch,
+                        Text.FormatTimeSpan(workTime, lang),
+                        Engine.Bot.Clients.Twitch.JoinedChannels.Count + Engine.Bot.Clients.Discord.Guilds.Count + " (Twitch, Discord)",
+                        Runner.commandInstances.Count.ToString(),
+                        Engine.CompletedCommands.ToString(),
+                        reply.RoundtripTime.ToString());
+
                     await client.SendMessage(
                         chat.Id,
                         returnMessage,
@@ -79,10 +95,9 @@ namespace butterBror.Events
                         cancellationToken: cancellation_token
                     );
                 }
-                else if (text.StartsWith("/help", StringComparison.OrdinalIgnoreCase)
-                    || text.StartsWith("/help@" + my_data.Username, StringComparison.OrdinalIgnoreCase))
+                else if (Command.IsEqualsSlashCommand("help", text, botData.Username))
                 {
-                    string returnMessage = TranslationManager.GetTranslation(lang, "text:bot_info", chat.Id.ToString(), PlatformsEnum.Telegram);
+                    string returnMessage = LocalizationService.GetString(lang, "text:bot_info", chat.Id.ToString(), PlatformsEnum.Telegram);
                     await client.SendMessage(
                         chat.Id,
                         returnMessage,
@@ -90,10 +105,9 @@ namespace butterBror.Events
                         cancellationToken: cancellation_token
                     );
                 }
-                else if (text.StartsWith("/commands", StringComparison.OrdinalIgnoreCase)
-                    || text.StartsWith("/commands@" + my_data.Username, StringComparison.OrdinalIgnoreCase))
+                else if (Command.IsEqualsSlashCommand("commands", text, botData.Username))
                 {
-                    string returnMessage = TranslationManager.GetTranslation(lang, "command:help", chat.Id.ToString(), PlatformsEnum.Telegram);
+                    string returnMessage = LocalizationService.GetString(lang, "command:help", chat.Id.ToString(), PlatformsEnum.Telegram);
                     await client.SendMessage(
                         chat.Id,
                         returnMessage,
@@ -125,7 +139,7 @@ namespace butterBror.Events
         /// <remarks>
         /// Formats and logs Telegram API errors, including HTTP status codes and API-specific exceptions.
         /// </remarks>
-        [ConsoleSector("butterBror.Utils.TelegramEvents", "ErrorHandler")]
+        
         public static Task ErrorHandler(ITelegramBotClient botClient, Exception error, CancellationToken cancellationToken)
         {
             Engine.Statistics.FunctionsUsed.Add();

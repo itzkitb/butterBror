@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Host", "Host\Host.csproj", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Updater", "Updater\Updater.csproj", "{5BC779FD-C08E-4481-8082-6DF9A036FA44}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DatabaseMigrator", "DatabaseMigrator\DatabaseMigrator.csproj", "{C3E16FF4-7B29-4A99-92EE-C9FD8275EA41}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -61,6 +63,14 @@ Global
 		{5BC779FD-C08E-4481-8082-6DF9A036FA44}.Release|Any CPU.Build.0 = Release|Any CPU
 		{5BC779FD-C08E-4481-8082-6DF9A036FA44}.Release|x86.ActiveCfg = Release|Any CPU
 		{5BC779FD-C08E-4481-8082-6DF9A036FA44}.Release|x86.Build.0 = Release|Any CPU
+		{C3E16FF4-7B29-4A99-92EE-C9FD8275EA41}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C3E16FF4-7B29-4A99-92EE-C9FD8275EA41}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C3E16FF4-7B29-4A99-92EE-C9FD8275EA41}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{C3E16FF4-7B29-4A99-92EE-C9FD8275EA41}.Debug|x86.Build.0 = Debug|Any CPU
+		{C3E16FF4-7B29-4A99-92EE-C9FD8275EA41}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C3E16FF4-7B29-4A99-92EE-C9FD8275EA41}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C3E16FF4-7B29-4A99-92EE-C9FD8275EA41}.Release|x86.ActiveCfg = Release|Any CPU
+		{C3E16FF4-7B29-4A99-92EE-C9FD8275EA41}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

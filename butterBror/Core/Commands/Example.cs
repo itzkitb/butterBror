@@ -13,8 +13,8 @@ namespace butterBror.Core.Commands
                 AuthorLink = "",
                 AuthorAvatar = "",
                 Description = new() {
-                    { "ru", "" },
-                    { "en", "" }
+                    { "ru-RU", "" },
+                    { "en-US", "" }
                 },
                 WikiLink = "https://itzkitb.lol/bot/command?q=",
                 CooldownPerUser = 0,
