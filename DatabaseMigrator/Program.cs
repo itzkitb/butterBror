@@ -20,59 +20,54 @@ class DatabaseMigrator
         string convrtRoot = "CONVRT";
         string gamesRoot = "GAMES_DATA";
 
-        Console.WriteLine("=== НАЧАЛО МИГРАЦИИ ДАННЫХ ===");
-        Console.WriteLine($"Пользовательские данные: {usersDbPath}");
-        Console.WriteLine($"Данные каналов: {channelsDbPath}");
-        Console.WriteLine($"Сообщения пользователей: {messagesDbPath}");
-        Console.WriteLine($"Игровые данные: {gamesDbPath}");
+        Console.WriteLine("=== STARTING DATA MIGRATION ===");
+        Console.WriteLine($"User data: {usersDbPath}");
+        Console.WriteLine($"Channel data: {channelsDbPath}");
+        Console.WriteLine($"User messages: {messagesDbPath}");
+        Console.WriteLine($"Game data: {gamesDbPath}");
 
-        // Создаем подключения к всем базам данных
         using (var usersConnection = new SQLiteConnection($"Data Source={usersDbPath};Version=3;"))
         using (var channelsConnection = new SQLiteConnection($"Data Source={channelsDbPath};Version=3;"))
         using (var messagesConnection = new SQLiteConnection($"Data Source={messagesDbPath};Version=3;"))
         using (var gamesConnection = new SQLiteConnection($"Data Source={gamesDbPath};Version=3;"))
         {
-            // Инициализируем все соединения
             usersConnection.Open();
             channelsConnection.Open();
             messagesConnection.Open();
             gamesConnection.Open();
 
-            Console.WriteLine("\nПодключено ко всем базам данных. Начинаем миграцию...");
+            Console.WriteLine("\nConnected to all databases. Starting migration...");
 
-            // Миграция пользовательских данных
             MigrateUsers(usersConnection, userDbRoot, convrtRoot);
 
-            // Миграция данных каналов
             if (Directory.Exists(channelsRoot))
             {
                 Console.WriteLine("\n" + new string('-', 50));
-                Console.WriteLine("МИГРАЦИЯ ДАННЫХ КАНАЛОВ");
+                Console.WriteLine("CHANNEL DATA MIGRATION");
                 Console.WriteLine(new string('-', 50));
                 MigrateChannels(channelsConnection, messagesConnection, channelsRoot);
             }
             else
             {
-                Console.WriteLine("\nПапка CHNLS не найдена. Пропускаем миграцию каналов.");
+                Console.WriteLine("\nCHNLS folder not found. Skipping channel migration.");
             }
 
             MigrateChannelMessagesCount(usersConnection, channelsRoot);
 
-            // Миграция игровых данных
             if (Directory.Exists(gamesRoot))
             {
                 Console.WriteLine("\n" + new string('-', 50));
-                Console.WriteLine("МИГРАЦИЯ ИГРОВЫХ ДАННЫХ");
+                Console.WriteLine("GAME DATA MIGRATION");
                 Console.WriteLine(new string('-', 50));
                 MigrateGames(gamesConnection, gamesRoot);
             }
             else
             {
-                Console.WriteLine("\nПапка GAMES_DATA не найдена. Пропускаем миграцию игровых данных.");
+                Console.WriteLine("\nGAMES_DATA folder not found. Skipping game data migration.");
             }
 
             Console.WriteLine("\n" + new string('=', 50));
-            Console.WriteLine("МИГРАЦИЯ ЗАВЕРШЕНА УСПЕШНО!");
+            Console.WriteLine("MIGRATION COMPLETED SUCCESSFULLY!");
             Console.WriteLine(new string('=', 50));
             Console.ReadLine();
         }
@@ -83,25 +78,22 @@ class DatabaseMigrator
     {
         if (!Directory.Exists(userDbRoot))
         {
-            Console.WriteLine($"Ошибка: Папка {userDbRoot} не найдена.");
+            Console.WriteLine($"Error: Folder {userDbRoot} not found.");
             return;
         }
 
-        Console.WriteLine("\n=== МИГРАЦИЯ ПОЛЬЗОВАТЕЛЬСКИХ ДАННЫХ ===");
-        Console.WriteLine($"Источник: {userDbRoot}");
+        Console.WriteLine("\n=== USER DATA MIGRATION ===");
+        Console.WriteLine($"Source: {userDbRoot}");
 
-        // Создаем таблицу для маппинга ID-никнейм
         CreateUsernameMappingTable(connection);
 
         foreach (var platformPath in Directory.GetDirectories(userDbRoot))
         {
             string platformName = new DirectoryInfo(platformPath).Name;
-            Console.WriteLine($"\nОбработка платформы пользователей: {platformName}");
+            Console.WriteLine($"\nProcessing user platform: {platformName}");
 
-            // Создаем таблицу для платформы
             CreatePlatformTable(connection, platformName);
 
-            // Обрабатываем все JSON-файлы в папке платформы
             ProcessPlatformFiles(connection, platformPath, platformName);
         }
 
@@ -109,13 +101,13 @@ class DatabaseMigrator
         if (Directory.Exists(convrtRoot))
         {
             Console.WriteLine("\n" + new string('-', 40));
-            Console.WriteLine("МИГРАЦИЯ ДАННЫХ CONVRT");
+            Console.WriteLine("CONVRT DATA MIGRATION");
             Console.WriteLine(new string('-', 40));
             MigrateConvrtData(connection, convrtRoot);
         }
         else
         {
-            Console.WriteLine("\nПапка CONVRT не найдена. Пропускаем миграцию маппинга ID-никнейм.");
+            Console.WriteLine("\nCONVRT folder not found. Skipping ID-username mapping migration.");
         }
     }
 
@@ -137,7 +129,6 @@ class DatabaseMigrator
 
     static void CreatePlatformTable(SQLiteConnection connection, string platformName)
     {
-        // Убираем недопустимые символы из названия таблицы
         string safeTableName = SanitizeTableName(platformName);
 
         string createTableSql = $@"
@@ -201,14 +192,14 @@ class DatabaseMigrator
                 catch (Exception ex)
                 {
                     errorCount++;
-                    if (errorCount <= 3) // Показываем только первые 3 ошибки
-                        Console.WriteLine($"  ! Ошибка при обработке {Path.GetFileName(jsonFile)}: {ex.Message}");
+                    if (errorCount <= 3)
+                        Console.WriteLine($"  ! Error processing {Path.GetFileName(jsonFile)}: {ex.Message}");
                 }
             }
             transaction.Commit();
         }
 
-        Console.WriteLine($"  Обработано файлов: {processedFiles} | Ошибок: {errorCount}");
+        Console.WriteLine($"  Processed files: {processedFiles} | Errors: {errorCount}");
     }
 
     static void ProcessJsonFile(SQLiteConnection connection, SQLiteTransaction transaction,
@@ -236,7 +227,6 @@ class DatabaseMigrator
 
         using (var cmd = new SQLiteCommand(insertSql, connection, transaction))
         {
-            // Основные параметры
             cmd.Parameters.AddWithValue("@ID", userId);
             cmd.Parameters.AddWithValue("@FirstMessage", GetNullableString(jsonData["firstMessage"]));
             cmd.Parameters.AddWithValue("@FirstSeen", GetNullableString(jsonData["firstSeen"]));
@@ -244,7 +234,6 @@ class DatabaseMigrator
             cmd.Parameters.AddWithValue("@LastSeen", GetNullableString(jsonData["lastSeen"]));
             cmd.Parameters.AddWithValue("@LastChannel", GetNullableString(jsonData["lastSeenChannel"]));
 
-            // Числовые параметры
             cmd.Parameters.AddWithValue("@Balance", GetNullableInt(jsonData["balance"]));
             cmd.Parameters.AddWithValue("@AfterDotBalance", GetNullableInt(jsonData["floatBalance"]));
             cmd.Parameters.AddWithValue("@Rating", GetNullableInt(jsonData["rating"]));
@@ -255,7 +244,6 @@ class DatabaseMigrator
             cmd.Parameters.AddWithValue("@AFKResumeTimes", GetNullableInt(jsonData["fromAfkResumeTimes"]));
             cmd.Parameters.AddWithValue("@TotalMessages", GetNullableInt(jsonData["totalMessages"]));
 
-            // Специальные обработки
             cmd.Parameters.AddWithValue("@AFKText", GetNullableString(jsonData["afkText"]));
             cmd.Parameters.AddWithValue("@AFKType", GetNullableString(jsonData["afkType"]));
             cmd.Parameters.AddWithValue("@LastCookie", GetNullableString(jsonData["lastCookieEat"]));
@@ -270,22 +258,21 @@ class DatabaseMigrator
         }
     }
 
-    // ========== Миграция данных CONVRT ==========
+    // ========== CONVRT data migration ==========
     static void MigrateConvrtData(SQLiteConnection connection, string convrtRoot)
     {
         int totalMappings = 0;
         int errors = 0;
 
-        // Обрабатываем I2N (ID to Name)
         string i2nRoot = Path.Combine(convrtRoot, "I2N");
         if (Directory.Exists(i2nRoot))
         {
-            Console.WriteLine("Обработка I2N (ID → никнейм):");
+            Console.WriteLine("Processing I2N (ID → username):");
 
             foreach (var platformPath in Directory.GetDirectories(i2nRoot))
             {
                 string platformName = new DirectoryInfo(platformPath).Name;
-                Console.WriteLine($"  Платформа: {platformName}");
+                Console.WriteLine($"  Platform: {platformName}");
 
                 using (var transaction = connection.BeginTransaction())
                 {
@@ -307,7 +294,7 @@ class DatabaseMigrator
                         {
                             errors++;
                             if (errors <= 3)
-                                Console.WriteLine($"    ! Ошибка при обработке {Path.GetFileName(file)}: {ex.Message}");
+                                Console.WriteLine($"    ! Error processing {Path.GetFileName(file)}: {ex.Message}");
                         }
                     }
                     transaction.Commit();
@@ -315,16 +302,15 @@ class DatabaseMigrator
             }
         }
 
-        // Обрабатываем N2I (Name to ID)
         string n2iRoot = Path.Combine(convrtRoot, "N2I");
         if (Directory.Exists(n2iRoot))
         {
-            Console.WriteLine("\nОбработка N2I (никнейм → ID):");
+            Console.WriteLine("\nProcessing N2I (username → ID):");
 
             foreach (var platformPath in Directory.GetDirectories(n2iRoot))
             {
                 string platformName = new DirectoryInfo(platformPath).Name;
-                Console.WriteLine($"  Платформа: {platformName}");
+                Console.WriteLine($"  Platform: {platformName}");
 
                 using (var transaction = connection.BeginTransaction())
                 {
@@ -345,7 +331,7 @@ class DatabaseMigrator
                         {
                             errors++;
                             if (errors <= 3)
-                                Console.WriteLine($"    ! Ошибка при обработке {Path.GetFileName(file)}: {ex.Message}");
+                                Console.WriteLine($"    ! Error processing {Path.GetFileName(file)}: {ex.Message}");
                         }
                     }
                     transaction.Commit();
@@ -353,8 +339,8 @@ class DatabaseMigrator
             }
         }
 
-        Console.WriteLine($"\nИтоги миграции CONVRT:");
-        Console.WriteLine($"  Создано маппингов: {totalMappings} | Ошибок: {errors}");
+        Console.WriteLine($"\nCONVRT MIGRATION RESULTS:");
+        Console.WriteLine($"  Created mappings: {totalMappings} | Errors: {errors}");
     }
 
     static void InsertUsernameMapping(SQLiteConnection connection, SQLiteTransaction transaction,
@@ -373,13 +359,13 @@ class DatabaseMigrator
         }
     }
 
-    // ========== НОВАЯ ЧАСТЬ: Миграция данных каналов ==========
+    // ========== Channel data migration ==========
     static void MigrateChannels(SQLiteConnection channelsConnection,
                                SQLiteConnection messagesConnection,
                                string channelsRoot)
     {
-        Console.WriteLine($"Источник: {channelsRoot}");
-        Console.WriteLine("Структура баз: Channels.db (каналы), Messages.db (сообщения)");
+        Console.WriteLine($"Source: {channelsRoot}");
+        Console.WriteLine("Database structure: Channels.db (channels), Messages.db (messages)");
 
         int totalChannels = 0;
         int totalErrors = 0;
@@ -390,7 +376,7 @@ class DatabaseMigrator
             string safePlatform = SanitizeTableName(platformName);
 
             Console.WriteLine($"\n{new string('-', 40)}");
-            Console.WriteLine($"ОБРАБОТКА ПЛАТФОРМЫ: {platformName}");
+            Console.WriteLine($"PROCESSING PLATFORM: {platformName}");
             Console.WriteLine(new string('-', 40));
 
             // Создаем таблицы для этой платформы в Channels.db
@@ -401,7 +387,7 @@ class DatabaseMigrator
                 string channelId = new DirectoryInfo(channelPath).Name;
                 totalChannels++;
 
-                Console.WriteLine($"  ➤ Канал: {channelId}");
+                Console.WriteLine($"  ➤ Channel: {channelId}");
 
                 using (var channelsTransaction = channelsConnection.BeginTransaction())
                 using (var messagesTransaction = messagesConnection.BeginTransaction())
@@ -411,15 +397,12 @@ class DatabaseMigrator
 
                     try
                     {
-                        // 1. Обрабатываем основные данные канала (CDD и BANWORDS)
                         ProcessChannelCoreData(channelsConnection, channelsTransaction,
                             platformName, channelId, channelPath);
 
-                        // 2. Обрабатываем первые сообщения пользователей
                         ProcessFirstMessages(channelsConnection, channelsTransaction,
                             platformName, channelId, Path.Combine(channelPath, "FM"));
 
-                        // 3. Обрабатываем историю сообщений (в Messages.db)
                         ProcessUserMessages(messagesConnection, messagesTransaction,
                             platformName, channelId, Path.Combine(channelPath, "MSGS"));
 
@@ -436,23 +419,22 @@ class DatabaseMigrator
                     }
 
                     if (channelSuccess)
-                        Console.WriteLine($"    ✓ Успешно обработан");
+                        Console.WriteLine($"    ✓ Successfully processed");
                     else
-                        Console.WriteLine($"    ✗ ОШИБКА: {channelException.Message}");
+                        Console.WriteLine($"    ✗ ERROR: {channelException.Message}");
                 }
             }
         }
 
-        Console.WriteLine($"\nИТОГИ МИГРАЦИИ КАНАЛОВ:");
-        Console.WriteLine($"  Обработано каналов: {totalChannels}");
-        Console.WriteLine($"  Ошибок: {totalErrors}");
+        Console.WriteLine($"\nCHANNEL MIGRATION RESULTS:");
+        Console.WriteLine($"  Processed channels: {totalChannels}");
+        Console.WriteLine($"  Errors: {totalErrors}");
     }
 
     static void CreateChannelTablesForPlatform(SQLiteConnection connection, string platform)
     {
         string safePlatform = SanitizeTableName(platform);
 
-        // Таблица для основной информации о каналах
         string createChannelsTable = $@"
             CREATE TABLE IF NOT EXISTS ""{safePlatform}"" (
 	            ""ChannelID""	TEXT,
@@ -461,7 +443,6 @@ class DatabaseMigrator
 	            PRIMARY KEY(""ChannelID"")
             )";
 
-        // Таблица для первых сообщений пользователей в каналах
         string createFirstMessagesTable = $@"
             CREATE TABLE IF NOT EXISTS [FirstMessage_{safePlatform}] (
                 ChannelID TEXT NOT NULL,
@@ -491,13 +472,11 @@ class DatabaseMigrator
         string cddData = null;
         string banWords = null;
 
-        // Загружаем CDD.json если существует
         if (File.Exists(cddPath))
         {
             cddData = File.ReadAllText(cddPath);
         }
 
-        // Загружаем BANWORDS.json если существует
         if (File.Exists(banwordsPath))
         {
             banWords = File.ReadAllText(banwordsPath);
@@ -585,7 +564,6 @@ class DatabaseMigrator
         string safePlatform = SanitizeTableName(platform);
         string tableName = $"{safePlatform}_{SanitizeTableName(channelId)}";
 
-        // Создаем таблицу для этого канала в Messages.db
         CreateMessageTableForChannel(connection, tableName);
 
         foreach (var file in Directory.GetFiles(msgsDir, "*.json"))
@@ -657,13 +635,12 @@ class DatabaseMigrator
         ExecuteNonQuery(connection, createTableSql);
     }
 
-    // ========== НОВАЯ ЧАСТЬ: Миграция игровых данных ==========
+    // ========== Game data migration ==========
     static void MigrateGames(SQLiteConnection connection, string gamesRoot)
     {
-        Console.WriteLine($"Источник: {gamesRoot}");
-        Console.WriteLine("Структура базы: Games.db с таблицами для каждой игры");
+        Console.WriteLine($"Source: {gamesRoot}");
+        Console.WriteLine("Database structure: Games.db with tables for each game");
 
-        // Создаем необходимые таблицы
         CreateGamesTables(connection);
 
         int totalPlatforms = 0;
@@ -675,34 +652,31 @@ class DatabaseMigrator
             totalPlatforms++;
 
             Console.WriteLine($"\n{new string('-', 40)}");
-            Console.WriteLine($"ОБРАБОТКА ПЛАТФОРМЫ: {platformName}");
+            Console.WriteLine($"PROCESSING PLATFORM: {platformName}");
             Console.WriteLine(new string('-', 40));
 
-            // Миграция данных печенья
             string cookiesPath = Path.Combine(platformPath, "COOKIES");
             if (Directory.Exists(cookiesPath))
             {
-                Console.WriteLine("  Миграция данных печенья:");
+                Console.WriteLine("  Migrating cookie data:");
                 MigrateCookiesData(connection, platformName, cookiesPath);
             }
 
-            // Миграция данных лягушек
             string frogsPath = Path.Combine(platformPath, "FROGS");
             if (Directory.Exists(frogsPath))
             {
-                Console.WriteLine("  Миграция данных лягушек:");
+                Console.WriteLine("  Migrating frog data:");
                 MigrateFrogsData(connection, platformName, frogsPath);
             }
         }
 
-        Console.WriteLine($"\nИТОГИ МИГРАЦИИ ИГРОВЫХ ДАННЫХ:");
-        Console.WriteLine($"  Обработано платформ: {totalPlatforms}");
-        Console.WriteLine($"  Ошибок: {totalErrors}");
+        Console.WriteLine($"\nGAME DATA MIGRATION RESULTS:");
+        Console.WriteLine($"  Processed platforms: {totalPlatforms}");
+        Console.WriteLine($"  Errors: {totalErrors}");
     }
 
     static void CreateGamesTables(SQLiteConnection connection)
     {
-        // Таблица для топа печенья
         string createCookiesTable = @"
             CREATE TABLE IF NOT EXISTS CookiesLeaderboard (
                 Platform TEXT NOT NULL,
@@ -713,7 +687,6 @@ class DatabaseMigrator
                 PRIMARY KEY (Platform, UserID)
             );";
 
-        // Таблица для данных лягушек
         string createFrogsTable = @"
             CREATE TABLE IF NOT EXISTS Frogs (
                 Platform TEXT NOT NULL,
@@ -732,7 +705,7 @@ class DatabaseMigrator
         string topPath = Path.Combine(cookiesPath, "TOP.js");
         if (!File.Exists(topPath))
         {
-            Console.WriteLine("    • TOP.js не найден, пропускаем");
+            Console.WriteLine("    • TOP.js not found, skipping");
             return;
         }
 
@@ -741,7 +714,6 @@ class DatabaseMigrator
             string jsonData = File.ReadAllText(topPath);
             JObject data = JObject.Parse(jsonData);
 
-            // Собираем все UserID из всех leaderboard'ов
             var allUserIds = new HashSet<string>();
 
             if (data["leaderboard_eaters"] != null)
@@ -756,7 +728,6 @@ class DatabaseMigrator
                 foreach (var item in data["leaderboard_recipients"])
                     allUserIds.Add(item.Path);
 
-            // Обрабатываем каждого пользователя
             int processed = 0;
             using (var transaction = connection.BeginTransaction())
             {
@@ -776,11 +747,11 @@ class DatabaseMigrator
                 transaction.Commit();
             }
 
-            Console.WriteLine($"    • Обработано игроков: {processed}");
+            Console.WriteLine($"    • Processed players: {processed}");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"    ! Ошибка при обработке TOP.js: {ex.Message}");
+            Console.WriteLine($"    ! Error processing TOP.js: {ex.Message}");
         }
     }
 
@@ -817,7 +788,7 @@ class DatabaseMigrator
             transaction.Commit();
         }
 
-        Console.WriteLine($"    • Обработано игроков: {processed} | Ошибок: {errors}");
+        Console.WriteLine($"    • Processed players: {processed} | Errors: {errors}");
     }
 
     static void InsertOrUpdateCookiesLeaderboard(SQLiteConnection connection, SQLiteTransaction transaction,
@@ -866,23 +837,21 @@ class DatabaseMigrator
         }
     }
 
-    // ========== НОВЫЙ МЕТОД: Сбор статистики сообщений по каналам ==========
+    // ========== Channel message statistics collection ==========
     static void MigrateChannelMessagesCount(SQLiteConnection usersConnection, string channelsRoot)
     {
         if (!Directory.Exists(channelsRoot))
         {
-            Console.WriteLine("Папка CHNLS не найдена. Пропускаем сбор статистики сообщений по каналам.");
+            Console.WriteLine("CHNLS folder not found. Skipping channel message statistics collection.");
             return;
         }
 
         Console.WriteLine("\n" + new string('-', 50));
-        Console.WriteLine("СБОР СТАТИСТИКИ СООБЩЕНИЙ ПО КАНАЛАМ (ChannelMessagesCount)");
+        Console.WriteLine("COLLECTING CHANNEL MESSAGE STATISTICS (ChannelMessagesCount)");
         Console.WriteLine(new string('-', 50));
 
-        // Словарь для сбора статистики: [платформа][userId] = словарь {channelId: count}
         var allStats = new Dictionary<string, Dictionary<long, Dictionary<string, int>>>();
 
-        // 1. Собираем статистику из всех каналов
         foreach (var platformPath in Directory.GetDirectories(channelsRoot))
         {
             string platformName = new DirectoryInfo(platformPath).Name;
@@ -905,21 +874,18 @@ class DatabaseMigrator
                         string countText = File.ReadAllText(countFile).Trim();
                         if (!int.TryParse(countText, out int count)) continue;
 
-                        // Инициализируем запись пользователя если нужно
                         if (!allStats[platformName].ContainsKey(userId))
                         {
                             allStats[platformName][userId] = new Dictionary<string, int>();
                         }
 
-                        // Добавляем статистику для канала
                         allStats[platformName][userId][channelId] = count;
                     }
-                    catch { /* Игнорируем ошибки */ }
+                    catch { }
                 }
             }
         }
 
-        // 2. Обновляем записи пользователей
         int totalUpdated = 0;
         int totalErrors = 0;
 
@@ -935,7 +901,6 @@ class DatabaseMigrator
 
                 try
                 {
-                    // Сериализуем статистику в JSON
                     string jsonStats = JsonConvert.SerializeObject(channelStats);
 
                     string updateSql = $@"
@@ -959,22 +924,19 @@ class DatabaseMigrator
             }
         }
 
-        Console.WriteLine($"\nИтоги обновления ChannelMessagesCount:");
-        Console.WriteLine($"  Обновлено записей: {totalUpdated}");
-        Console.WriteLine($"  Ошибок: {totalErrors}");
+        Console.WriteLine($"\nChannelMessagesCount UPDATE RESULTS:");
+        Console.WriteLine($"  Updated records: {totalUpdated}");
+        Console.WriteLine($"  Errors: {totalErrors}");
     }
 
-    // ========== ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ==========
+    // ========== HELPER METHODS ==========
     static string SanitizeTableName(string name)
     {
-        // Удаляем все недопустимые символы из названия таблицы
         string safeName = Regex.Replace(name, @"[^a-zA-Z0-9_]", "_");
 
-        // Убедимся, что имя не пустое
         if (string.IsNullOrWhiteSpace(safeName))
             safeName = "Unknown";
 
-        // Ограничиваем длину имени таблицы
         if (safeName.Length > 50)
             safeName = safeName.Substring(0, 50);
 
