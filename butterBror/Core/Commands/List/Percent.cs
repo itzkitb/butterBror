@@ -11,8 +11,8 @@ namespace butterBror.Core.Commands.List
         public override string GithubSource => $"{URLs.githubSource}blob/master/butterBror/Core/Commands/List/Percent.cs";
         public override Version Version => new("1.0.0");
         public override Dictionary<string, string> Description => new() {
-            { "ru", "Отправляет раномный процент с запятой." },
-            { "en", "Sends a random percentage with a comma." }
+            { "ru-RU", "Отправляет раномный процент с запятой." },
+            { "en-US", "Sends a random percentage with a comma." }
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=percent";
         public override int CooldownPerUser => 5;

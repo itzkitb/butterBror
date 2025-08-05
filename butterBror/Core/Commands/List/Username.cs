@@ -14,8 +14,8 @@ namespace butterBror.Core.Commands.List
         public override Version Version => new("1.0.0");
         public override Dictionary<string, string> Description => new()
         {
-            { "ru", "Получить имя из ID." },
-            { "en", "Get name from ID." }
+            { "ru-RU", "Получить имя из ID." },
+            { "en-US", "Get name from ID." }
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=name";
         public override int CooldownPerUser => 5;
@@ -41,21 +41,21 @@ namespace butterBror.Core.Commands.List
                     string name = Names.GetUsername(data.Arguments[0], PlatformsEnum.Twitch, true);
                     if (name == data.UserID)
                     {
-                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:name", data.ChannelID, data.Platform).Replace("%name%", data.UserID)); // Fix AB3
+                        commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:name", data.ChannelId, data.Platform, data.UserID)); // Fix AB3
                     }
                     else if (name == null)
                     {
-                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:user_not_found", data.ChannelID, data.Platform).Replace("%user%", data.Arguments[0])); // Fix AB3
+                        commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:user_not_found", data.ChannelId, data.Platform, data.Arguments[0])); // Fix AB3
                         commandReturn.SetColor(ChatColorPresets.CadetBlue);
                     }
                     else
                     {
-                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:name:user", data.ChannelID, data.Platform).Replace("%name%", name).Replace("%id%", data.Arguments[0])); // Fix AB3
+                        commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:name:user", data.ChannelId, data.Platform, data.Arguments[0], name)); // Fix AB3
                     }
                 }
                 else
                 {
-                    commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:name", data.ChannelID, data.Platform).Replace("%name%", data.UserID)); // Fix AB3
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:name", data.ChannelId, data.Platform, data.UserID)); // Fix AB3
                 }
             }
             catch (Exception e)

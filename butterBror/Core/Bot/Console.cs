@@ -25,10 +25,15 @@ namespace butterBror.Core.Bot
         /// <param name="message">The message to log.</param>
         /// <param name="channel">The channel associated with the log message.</param>
         /// <param name="type">The log level (Info/Warning/Error).</param>
-        public static void Write(string message, string channel, LogLevel type = LogLevel.Info)
+        public static void Write(
+            string message,
+            string channel,
+            LogLevel type = LogLevel.Info,
+            [CallerFilePath] string filePath = "",
+            [CallerLineNumber] int lineNumber = 0,
+            [CallerMemberName] string memberName = "")
         {
-            string sector = GetCallingMethodSector();
-            string logEntry = FormatLogEntry(sector, type, message);
+            string logEntry = FormatLogEntry(filePath, lineNumber, memberName, type, message);
 
             try
             {
@@ -47,11 +52,14 @@ namespace butterBror.Core.Bot
         /// Writes an exception to the log file and raises the ErrorOccured event.
         /// </summary>
         /// <param name="exception">The exception to log.</param>
-        public static void Write(Exception exception)
+        public static void Write(
+            Exception exception,
+            [CallerFilePath] string filePath = "",
+            [CallerLineNumber] int lineNumber = 0,
+            [CallerMemberName] string memberName = "")
         {
-            string sector = GetCallingMethodSector();
             string text = FormatException(exception);
-            string logEntry = FormatLogEntry(sector, LogLevel.Error, text);
+            string logEntry = FormatLogEntry(filePath, lineNumber, memberName, LogLevel.Error, text);
 
             try
             {
@@ -73,9 +81,21 @@ namespace butterBror.Core.Bot
         /// <param name="level">The log severity level.</param>
         /// <param name="message">The message to log.</param>
         /// <returns>A formatted log string.</returns>
-        private static string FormatLogEntry(string sector, LogLevel level, string message)
+        private static string FormatLogEntry(string filePath, int lineNumber, string memberName, LogLevel level, string message)
         {
-            return $"[{DateTime.UtcNow:dd-MM-yyyy HH:mm:ss.fff}] ({sector}/{level}): {message}";
+            string timestamp = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff") + "Z";
+
+            string levelAbbr = level switch
+            {
+                LogLevel.Info => "INF",
+                LogLevel.Warning => "WRN",
+                LogLevel.Error => "ERR",
+                _ => new string(level.ToString().ToUpperInvariant().Take(3).ToArray())
+            };
+
+            string fileName = Path.GetFileName(filePath) ?? "Unknown";
+
+            return $"[{timestamp}] {levelAbbr} [{fileName}:{lineNumber}({memberName})] {message}";
         }
 
         /// <summary>
@@ -115,75 +135,11 @@ namespace butterBror.Core.Bot
             }
         }
 
-        /// <summary>
-        /// Attribute used to specify sector information for logging purposes.
-        /// </summary>
-        [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class, Inherited = true)]
-        public class ConsoleSectorAttribute : Attribute
-        {
-            public string Class { get; }
-            public string Name { get; }
-
-            public ConsoleSectorAttribute(string @class, string name)
-            {
-                Class = @class;
-                Name = name;
-            }
-        }
-
-        /// <summary>
-        /// Gets the calling method's sector information from attributes.
-        /// </summary>
-        /// <returns>A string representing the sector information.</returns>
-        private static string GetCallingMethodSector()
-        {
-            var stack = new StackTrace();
-            foreach (var frame in stack.GetFrames() ?? Array.Empty<StackFrame>())
-            {
-                var method = frame.GetMethod();
-                if (method?.DeclaringType?.FullName.StartsWith("System") == true ||
-                    method.Name.Contains("lambda") ||
-                    method.Name.Contains("Invoke"))
-                    continue;
-
-                if (method.Name == "MoveNext" &&
-                    method.DeclaringType?.GetCustomAttributes(false).Any(attr =>
-                        attr is AsyncStateMachineAttribute or IteratorStateMachineAttribute) == true)
-                    continue;
-
-                var attribute = Attribute.GetCustomAttribute(method, typeof(ConsoleSectorAttribute))
-                    as ConsoleSectorAttribute;
-
-                if (attribute != null)
-                    return $"{attribute.Class}.{attribute.Name}";
-
-                var classAttribute = Attribute.GetCustomAttribute(method.DeclaringType, typeof(ConsoleSectorAttribute))
-                    as ConsoleSectorAttribute;
-
-                if (classAttribute != null)
-                    return $"{classAttribute.Class}.{classAttribute.Name}";
-            }
-
-            return "Unknown";
-        }
-
-
         public enum LogLevel
         {
             Info,
             Warning,
             Error
-        }
-
-        /// <summary>
-        /// Represents log line information for event handlers.
-        /// </summary>
-        public class LineInfo
-        {
-            public string Message { get; set; }
-            public string Level { get; set; }
-            public string Channel { get; set; }
-            public DateTime DateTime { get; set; }
         }
     }
 }

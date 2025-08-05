@@ -13,8 +13,8 @@ namespace butterBror.Core.Commands.List
         public override string GithubSource => $"{URLs.githubSource}blob/master/butterBror/Core/Commands/List/Pinger.cs";
         public override Version Version => new("1.0.0");
         public override Dictionary<string, string> Description => new() {
-            { "ru", "Узнать пинг бота." },
-            { "en", "Find out the bot's ping." }
+            { "ru-RU", "Узнать пинг бота." },
+            { "en-US", "Find out the bot's ping." }
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=ping";
         public override int CooldownPerUser => 30;
@@ -58,13 +58,20 @@ namespace butterBror.Core.Commands.List
                         pingSpeed = reply.Status == IPStatus.Success ? reply.RoundtripTime : -1;
                     }
 
-                    commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:ping", data.ChannelID, data.Platform)
-                                .Replace("%version%", Engine.Version)
-                                .Replace("%workTime%", Text.FormatTimeSpan(workTime, data.User.Language))
-                                .Replace("%tabs%", data.Platform == PlatformsEnum.Twitch ? Engine.Bot.Clients.Twitch.JoinedChannels.Count.ToString() : (data.Platform == PlatformsEnum.Discord ? Engine.Bot.Clients.Discord.Guilds.Count.ToString() : (Engine.Bot.Clients.Twitch.JoinedChannels.Count + Engine.Bot.Clients.Discord.Guilds.Count) + " (Twitch, Discord)"))
-                                .Replace("%loadedCMDs%", Runner.commandInstances.Count.ToString())
-                                .Replace("%completedCMDs%", Engine.CompletedCommands.ToString())
-                                .Replace("%ping%", pingSpeed.ToString()));
+                    long joinedTabs = data.Platform == PlatformsEnum.Twitch ? Engine.Bot.Clients.Twitch.JoinedChannels.Count : (data.Platform == PlatformsEnum.Discord ? Engine.Bot.Clients.Discord.Guilds.Count : (Engine.Bot.Clients.Twitch.JoinedChannels.Count + Engine.Bot.Clients.Discord.Guilds.Count));
+
+                    commandReturn.SetMessage(LocalizationService.GetString(
+                        data.User.Language,
+                        "command:ping",
+                        data.ChannelId,
+                        data.Platform,
+                        Engine.Version,
+                        Engine.Patch,
+                        Text.FormatTimeSpan(workTime, data.User.Language),
+                        LocalizationService.GetPluralString(data.User.Language, "text:tab", data.ChannelId, data.Platform, joinedTabs, joinedTabs),
+                        LocalizationService.GetPluralString(data.User.Language, "text:commands", data.ChannelId, data.Platform, Runner.commandInstances.Count, Runner.commandInstances.Count),
+                        Engine.CompletedCommands,
+                        pingSpeed.ToString()));
                 }
                 else if (argument.Equals("isp"))
                 {
@@ -78,8 +85,7 @@ namespace butterBror.Core.Commands.List
                         if (reply.Status == IPStatus.Success) pingSpeed = reply.RoundtripTime;
                     }
 
-                    commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:ping:isp", data.ChannelID, data.Platform)
-                                .Replace("%ping%", pingSpeed.ToString()));
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:ping:isp", data.ChannelId, data.Platform, pingSpeed.ToString()));
                 }
                 else if (argument.Equals("dev"))
                 {
@@ -100,19 +106,22 @@ namespace butterBror.Core.Commands.List
                         pingSpeed = reply.Status == IPStatus.Success ? reply.RoundtripTime : -1;
                     }
 
-                    commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:ping:development", data.ChannelID, data.Platform)
-                                .Replace("%version%", Engine.Version)
-                                .Replace("%patch%", Engine.Patch)
-                                .Replace("%workTime%", Text.FormatTimeSpan(workTime, data.User.Language))
-                                .Replace("%tabs%", (Engine.Bot.Clients.Twitch.JoinedChannels.Count + Engine.Bot.Clients.Discord.Guilds.Count) + " (Twitch, Discord)")
-                                .Replace("%loadedCMDs%", Runner.commandInstances.Count.ToString())
-                                .Replace("%completedCMDs%", Engine.CompletedCommands.ToString())
-                                .Replace("%ping%", pingSpeed.ToString())
-                                .Replace("%tps%", Engine.TicksPerSecond.ToString())
-                                .Replace("%max_tps%", Engine.Ticks.ToString())
-                                .Replace("%tick_delay%", Engine.TickDelay.ToString())
-                                .Replace("%tick_counted%", Engine.TicksCounter.ToString())
-                                .Replace("%skiped_ticks%", Engine.SkippedTicks.ToString()));
+                    commandReturn.SetMessage(LocalizationService.GetString(
+                        data.User.Language,
+                        "command:ping:development",
+                        data.ChannelId,
+                        data.Platform,
+                        Engine.Version,
+                        Engine.Patch,
+                        Text.FormatTimeSpan(workTime, data.User.Language),
+                        (Engine.Bot.Clients.Twitch.JoinedChannels.Count + Engine.Bot.Clients.Discord.Guilds.Count) + " (Twitch, Discord)",
+                        Runner.commandInstances.Count,
+                        pingSpeed.ToString(),
+                        Engine.TicksPerSecond.ToString(),
+                        Engine.Ticks.ToString(),
+                        Engine.TickDelay.ToString(),
+                        Engine.TicksCounter.ToString(),
+                        Engine.SkippedTicks.ToString()));
                 }
             }
             catch (Exception e)

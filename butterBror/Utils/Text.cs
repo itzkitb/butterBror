@@ -20,7 +20,7 @@ namespace butterBror.Utils
         /// Allows both English and Russian keyboard layouts for command input.
         /// Used for command validation and processing.
         /// </remarks>
-        [ConsoleSector("butterBror.Utils.Tools.Text", "FilterCommand")]
+        
         public static string FilterCommand(string input)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -36,7 +36,7 @@ namespace butterBror.Utils
         /// Handles both uppercase and lowercase letters.
         /// Returns null if an exception occurs during conversion.
         /// </remarks>
-        [ConsoleSector("butterBror.Utils.Tools.Text", "ChangeLayout")]
+        
         public static string ChangeLayout(string text)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -68,7 +68,7 @@ namespace butterBror.Utils
         /// Preserves spaces and standard punctuation.
         /// Returns empty string for null/empty input.
         /// </remarks>
-        [ConsoleSector("butterBror.Utils.Tools.Text", "CleanAscii")]
+        
         public static string CleanAscii(string input)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -88,7 +88,7 @@ namespace butterBror.Utils
         /// Uses CleanAscii internally before removing spaces.
         /// Useful for creating compact identifier strings.
         /// </remarks>
-        [ConsoleSector("butterBror.Utils.Tools.Text", "CleanAsciiWithoutSpaces")]
+        
         public static string CleanAsciiWithoutSpaces(string input)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -103,7 +103,7 @@ namespace butterBror.Utils
         /// <example>
         /// Input: "aaabbbcc" → Output: "abbc"
         /// </example>
-        [ConsoleSector("butterBror.Utils.Tools.Text", "RemoveDuplicates")]
+        
         public static string RemoveDuplicates(string text)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -120,7 +120,7 @@ namespace butterBror.Utils
         /// Allows alphanumeric characters, underscores, and hyphens.
         /// Used for validating user identifiers.
         /// </remarks>
-        [ConsoleSector("butterBror.Utils.Tools.Text", "UsernameFilter")]
+        
         public static string UsernameFilter(string input)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -136,7 +136,7 @@ namespace butterBror.Utils
         /// Returns original string if parsing fails.
         /// </returns>
         /// <exception cref="ArgumentException">Thrown when coordinate format is invalid.</exception>
-        [ConsoleSector("butterBror.Utils.Tools.Text", "ShortenCoordinate")]
+        
         public static string ShortenCoordinate(string coordinate)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -162,26 +162,74 @@ namespace butterBror.Utils
         /// Uses different translations for start/end phases.
         /// Automatically selects appropriate message based on current date.
         /// </remarks>
-        [ConsoleSector("butterBror.Utils.Tools.Text", "TimeTo")]
-        public static string TimeTo(DateTime startTime, DateTime endTime, string type, int endYearAdd, string lang, string argsText, string channelID, PlatformsEnum platform)
+        
+        public static string TimeTo(DateTime startTime, DateTime endTime, string type, string lang, string argsText, string channelID, PlatformsEnum platform)
         {
             Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 var selectedUser = Names.GetUsernameFromText(argsText);
                 DateTime now = DateTime.UtcNow;
-                DateTime winterStart = new(now.Year, startTime.Month, startTime.Day);
-                DateTime winterEnd = new(now.Year + endYearAdd, endTime.Month, endTime.Day);
-                winterEnd.AddDays(-1);
-                DateTime winter = now < winterStart ? winterStart : winterEnd;
-                if (now < winterStart)
-                    return ArgumentsReplacement(TranslationManager.GetTranslation(lang, $"command:{type}:start", channelID, platform),
-                        new(){ { "time", FormatTimeSpan(Format.GetTimeTo(winter, now), lang) },
-                            { "sUser", selectedUser } });
+
+                bool crossesYear = startTime.Month > endTime.Month;
+
+                int startYear;
+                if (crossesYear)
+                {
+                    startYear = now.Month >= startTime.Month ? now.Year : now.Year - 1;
+                }
                 else
-                    return ArgumentsReplacement(TranslationManager.GetTranslation(lang, $"command:{type}:end", channelID, platform),
-                        new(){ { "time", FormatTimeSpan(Format.GetTimeTo(winter, now), lang) },
-                            { "sUser", selectedUser } });
+                {
+                    startYear = now.Year;
+                }
+
+                DateTime seasonStart = new(startYear, startTime.Month, startTime.Day);
+                DateTime seasonEnd;
+
+                if (crossesYear)
+                {
+                    seasonEnd = new DateTime(startYear + 1, endTime.Month, endTime.Day).AddMilliseconds(-1);
+                }
+                else
+                {
+                    seasonEnd = new DateTime(startYear, endTime.Month, endTime.Day).AddMilliseconds(-1);
+                }
+
+                if (now > seasonEnd)
+                {
+                    startYear = crossesYear ? now.Year : now.Year + 1;
+
+                    seasonStart = new(startYear, startTime.Month, startTime.Day);
+                    seasonEnd = crossesYear
+                        ? new DateTime(startYear + 1, endTime.Month, endTime.Day).AddMilliseconds(-1)
+                        : new DateTime(startYear, endTime.Month, endTime.Day).AddMilliseconds(-1);
+                }
+
+                DateTime targetDate;
+                string templateKey;
+
+                if (now < seasonStart)
+                {
+                    targetDate = seasonStart;
+                    templateKey = "start";
+                }
+                else
+                {
+                    targetDate = seasonEnd;
+                    templateKey = "end";
+                }
+
+                TimeSpan timeSpan = targetDate - now;
+                string formattedTime = FormatTimeSpan(timeSpan, lang);
+
+                return LocalizationService.GetString(
+                    lang,
+                    $"command:{type}:{templateKey}",
+                    channelID,
+                    platform,
+                    selectedUser,
+                    formattedTime
+                );
             }
             catch (Exception ex)
             {
@@ -200,7 +248,7 @@ namespace butterBror.Utils
         /// Uses translation system for unit labels (day/hour/minute/second).
         /// Handles negative time spans by using absolute values.
         /// </remarks>
-        [ConsoleSector("butterBror.Utils.Tools.Text", "FormatTimeSpan")]
+        
         public static string FormatTimeSpan(TimeSpan timeSpan, string lang)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -209,10 +257,10 @@ namespace butterBror.Utils
             int minutes = Math.Abs(timeSpan.Minutes);
             int seconds = Math.Abs(timeSpan.Seconds);
 
-            string days_str = $"{days} {TranslationManager.GetTranslation(lang, "text:day", "", PlatformsEnum.Twitch)}.";
-            string hours_str = $"{hours} {TranslationManager.GetTranslation(lang, "text:hour", "", PlatformsEnum.Twitch)}.";
-            string minutes_str = $"{minutes} {TranslationManager.GetTranslation(lang, "text:minute", "", PlatformsEnum.Twitch)}.";
-            string seconds_str = $"{seconds} {TranslationManager.GetTranslation(lang, "text:second", "", PlatformsEnum.Twitch)}.";
+            string days_str = $"{days} {LocalizationService.GetString(lang, "text:day", string.Empty, PlatformsEnum.Twitch)}.";
+            string hours_str = $"{hours} {LocalizationService.GetString(lang, "text:hour", string.Empty, PlatformsEnum.Twitch)}.";
+            string minutes_str = $"{minutes} {LocalizationService.GetString(lang, "text:minute", string.Empty, PlatformsEnum.Twitch)}.";
+            string seconds_str = $"{seconds} {LocalizationService.GetString(lang, "text:second", string.Empty, PlatformsEnum.Twitch)}.";
 
             if (timeSpan.TotalSeconds < 0)
                 timeSpan = -timeSpan;
@@ -228,44 +276,6 @@ namespace butterBror.Utils
         }
 
         /// <summary>
-        /// Replaces multiple placeholders in a string with dictionary values.
-        /// </summary>
-        /// <param name="original">Template string containing %key% placeholders.</param>
-        /// <param name="replacements">Dictionary of key-value replacements.</param>
-        /// <returns>String with all replacements applied.</returns>
-        /// <example>
-        /// "%time% until %user%" → "5 hours until @viewer"
-        /// </example>
-        [ConsoleSector("butterBror.Utils.Tools.Text", "ArgumentsReplacement")]
-        public static string ArgumentsReplacement(string original, Dictionary<string, string> replacements)
-        {
-            string result = original;
-
-            foreach (var replace in replacements)
-            {
-                result = result.Replace($"%{replace.Key}%", replace.Value);
-            }
-
-            return result;
-        }
-
-        /// <summary>
-        /// Replaces a single placeholder in a string with specified value.
-        /// </summary>
-        /// <param name="original">Template string containing %key% placeholder.</param>
-        /// <param name="key">Placeholder name to replace.</param>
-        /// <param name="value">Value to substitute in place of the placeholder.</param>
-        /// <returns>String with single replacement applied.</returns>
-        /// <example>
-        /// "%user% joined" → "viewer joined"
-        /// </example>
-        [ConsoleSector("butterBror.Utils.Tools.Text", "ArgumentReplacement")]
-        public static string ArgumentReplacement(string original, string key, string value)
-        {
-            return original.Replace($"%{key}%", value);
-        }
-
-        /// <summary>
         /// Safely handles null string values by returning "null" string.
         /// </summary>
         /// <param name="input">The string to check.</param>
@@ -274,7 +284,7 @@ namespace butterBror.Utils
         /// Prevents NullReferenceExceptions in string operations.
         /// Not intended for numeric null handling.
         /// </remarks>
-        [ConsoleSector("butterBror.Utils.Tools.Text", "CheckNull")]
+        
         public static string CheckNull(string input)
         {
             if (input is null)

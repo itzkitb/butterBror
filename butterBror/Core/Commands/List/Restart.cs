@@ -1,6 +1,7 @@
 ﻿using butterBror.Data;
 using butterBror.Models;
 using butterBror.Core.Bot;
+using butterBror.Utils;
 
 namespace butterBror.Core.Commands.List
 {
@@ -12,8 +13,8 @@ namespace butterBror.Core.Commands.List
         public override string GithubSource => $"{URLs.githubSource}blob/master/butterBror/Core/Commands/List/Restart.cs";
         public override Version Version => new("1.0.0");
         public override Dictionary<string, string> Description => new() {
-            { "ru", "Этот маленький манёвр будет стоить нам 51 год." },
-            { "en", "This Little Maneuver's Gonna Cost Us 51 Years." }
+            { "ru-RU", "Этот маленький манёвр будет стоить нам 51 год." },
+            { "en-US", "This Little Maneuver's Gonna Cost Us 51 Years." }
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=restart";
         public override int CooldownPerUser => 1;
@@ -34,7 +35,7 @@ namespace butterBror.Core.Commands.List
 
             try
             {
-                if (UsersData.Contains(data.UserID, "isBotModerator", data.Platform) || UsersData.Contains(data.UserID, "isBotDev", data.Platform))
+                if (Engine.Bot.SQL.Roles.GetDeveloper(data.Platform, Format.ToLong(data.User.ID)) is not null || Engine.Bot.SQL.Roles.GetModerator(data.Platform, Format.ToLong(data.User.ID)) is not null)
                 {
                     commandReturn.SetMessage("❄ Перезагрузка...");
                     Engine.Bot.Restart();

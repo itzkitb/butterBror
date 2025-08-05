@@ -20,7 +20,7 @@ namespace butterBror.Services.External
         /// YouTube's HTML structure changes and may break if the page format changes. For production use, 
         /// consider using the official YouTube Data API instead.
         /// </remarks>
-        [ConsoleSector("butterBror.Utils.Tools.API.YouTube", "GetPlaylistVideos")]
+        
         public static string[] GetPlaylistVideos(string playlistUrl)
         {
             Engine.Statistics.FunctionsUsed.Add();

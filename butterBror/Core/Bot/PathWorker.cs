@@ -28,39 +28,9 @@ namespace butterBror.Core.Bot
         }
 
         /// <summary>
-        /// Gets the path to the channels directory.
-        /// </summary>
-        public string Channels { get; private set; } = string.Empty;
-
-        /// <summary>
-        /// Gets the path to the users database directory.
-        /// </summary>
-        public string Users { get; private set; } = string.Empty;
-
-        /// <summary>
-        /// Gets the path to the nickname conversion data directory.
-        /// </summary>
-        public string NicknamesData { get; private set; } = string.Empty;
-
-        /// <summary>
-        /// Gets the path to the nickname-to-ID mapping directory.
-        /// </summary>
-        public string Nick2ID { get; private set; } = string.Empty;
-
-        /// <summary>
-        /// Gets the path to the ID-to-nickname mapping directory.
-        /// </summary>
-        public string ID2Nick { get; private set; } = string.Empty;
-
-        /// <summary>
         /// Gets the path to the settings configuration file.
         /// </summary>
         public string Settings { get; private set; } = string.Empty;
-
-        /// <summary>
-        /// Gets the path to the cookies storage file.
-        /// </summary>
-        public string Cookies { get; private set; } = string.Empty;
 
         /// <summary>
         /// Gets the path to the translations directory.
@@ -98,11 +68,6 @@ namespace butterBror.Core.Bot
         public string Logs { get; private set; } = string.Empty;
 
         /// <summary>
-        /// Gets the path to the error log file.
-        /// </summary>
-        public string Errors { get; private set; } = string.Empty;
-
-        /// <summary>
         /// Gets the path to the local cache file.
         /// </summary>
         public string Cache { get; private set; } = string.Empty;
@@ -123,19 +88,43 @@ namespace butterBror.Core.Bot
         public string Reserve { get; private set; } = string.Empty;
 
         /// <summary>
+        /// Gets the path to the reserve directory for backup operations.
+        /// </summary>
+        public string MessagesDatabase { get; private set; } = string.Empty;
+
+        /// <summary>
+        /// Gets the path to the reserve directory for backup operations.
+        /// </summary>
+        public string ChannelsDatabase { get; private set; } = string.Empty;
+
+        /// <summary>
+        /// Gets the path to the reserve directory for backup operations.
+        /// </summary>
+        public string GamesDatabase { get; private set; } = string.Empty;
+
+        /// <summary>
+        /// Gets the path to the reserve directory for backup operations.
+        /// </summary>
+        public string UsersDatabase { get; private set; } = string.Empty;
+
+        /// <summary>
+        /// Gets the path to the reserve directory for backup operations.
+        /// </summary>
+        public string RolesDatabase { get; private set; } = string.Empty;
+
+        /// <summary>
         /// Updates all derived paths based on the current Main directory.
         /// </summary>
         public void UpdatePaths()
         {
             FunctionsUsed.Add();
 
-            Channels = Format(Path.Combine(Main, "CHNLS/"));
-            Users = Format(Path.Combine(Main, "USERSDB/"));
-            NicknamesData = Format(Path.Combine(Main, "CONVRT/"));
-            Nick2ID = Format(Path.Combine(NicknamesData, "N2I/"));
-            ID2Nick = Format(Path.Combine(NicknamesData, "I2N/"));
+            ChannelsDatabase = Format(Path.Combine(Main, "Channels.db"));
+            GamesDatabase = Format(Path.Combine(Main, "Games.db"));
+            UsersDatabase = Format(Path.Combine(Main, "Users.db"));
+            MessagesDatabase = Format(Path.Combine(Main, "Messages.db"));
+            RolesDatabase = Format(Path.Combine(Main, "Roles.db"));
             Settings = Format(Path.Combine(Main, "SETTINGS.json"));
-            Cookies = Format(Path.Combine(Main, "COOKIES.MDS"));
             Translations = Format(Path.Combine(Main, "TRNSLT/"));
             TranslateDefault = Format(Path.Combine(Translations, "DEFAULT/"));
             TranslateCustom = Format(Path.Combine(Translations, "CUSTOM/"));
@@ -143,7 +132,6 @@ namespace butterBror.Core.Bot
             BlacklistReplacements = Format(Path.Combine(Main, "BNWORDSREP.txt"));
             APIUses = Format(Path.Combine(Main, "API.json"));
             Logs = Format(Path.Combine(Main, "LOGS", $"{DateTime.UtcNow.ToString("dd_MM_yyyy HH.mm.ss")}.log"));
-            Errors = Format(Path.Combine(Main, "ERRORS.log"));
             Cache = Format(Path.Combine(Main, "LOC.cache"));
             Currency = Format(Path.Combine(Main, "CURR.json"));
             SevenTVCache = Format(Path.Combine(Main, "7TV.json"));

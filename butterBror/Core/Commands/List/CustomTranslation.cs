@@ -14,8 +14,8 @@ namespace butterBror.Core.Commands.List
         public override Version Version => new("1.0.0");
         public override Dictionary<string, string> Description => new()
         {
-            { "ru", "Заменить стандартные сообщения собственными." },
-            { "en", "Replace the default messages with your own." }
+            { "ru-RU", "Заменить стандартные сообщения собственными." },
+            { "en-US", "Replace the default messages with your own." }
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=customtranslation";
         public override int CooldownPerUser => 10;
@@ -41,7 +41,7 @@ namespace butterBror.Core.Commands.List
                 string[] originalAliases = ["original", "оригинал", "о", "o"];
                 string[] deleteAliases = ["delete", "del", "d", "remove", "reset", "сбросить", "удалить", "с"];
 
-                string[] langs = ["ru", "en"];
+                string[] langs = ["ru-RU", "en"];
 
                 string[] uneditableitems = ["text:bot_info", "cantSend", "lowArgs", "lang", "wrongArgs", "changedLang", "commandDoesntWork", "noneExistUser", "noAccess", "userBanned",
                     "userPardon", "rejoinedChannel", "joinedChannel", "leavedChannel", "modAdded", "modDel", "addedChannel", "delChannel", "welcomeChannel", "error", "botVerified",
@@ -65,104 +65,129 @@ namespace butterBror.Core.Commands.List
                                     string text = string.Join(' ', textArgs);
                                     if (uneditableitems.Contains(paramName))
                                     {
-                                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:translation_secured", "", data.Platform));
+                                        commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:translation_secured", "", data.Platform));
                                         commandReturn.SetColor(ChatColorPresets.Red);
                                     }
                                     else
                                     {
-                                        if (TranslationManager.TranslateContains(paramName))
+                                        if (LocalizationService.TranslateContains(paramName))
                                         {
-                                            if (TranslationManager.SetCustomTranslation(paramName, text, data.ChannelID, lang, data.Platform))
+                                            if (LocalizationService.SetCustomTranslation(paramName, text, data.ChannelId, lang, data.Platform))
                                             {
-                                                TranslationManager.UpdateTranslation(lang, data.ChannelID, data.Platform);
-                                                commandReturn.SetMessage(Text.ArgumentReplacement(TranslationManager.GetTranslation(data.User.Language, "command:custom_translation:set", "", data.Platform),
-                                                    "key", paramName));
+                                                LocalizationService.UpdateTranslation(lang, data.ChannelId, data.Platform);
+                                                commandReturn.SetMessage(LocalizationService.GetString(
+                                                    data.User.Language,
+                                                    "command:custom_translation:set",
+                                                    string.Empty,
+                                                    data.Platform,
+                                                    paramName));
                                             }
                                             else
                                             {
-                                                commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:translation_set", "", data.Platform));
+                                                commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:translation_set", "", data.Platform));
                                                 commandReturn.SetColor(ChatColorPresets.Red);
                                             }
                                         }
                                         else
                                         {
-                                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:translation_key_is_not_exist", "", data.Platform));
+                                            commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:translation_key_is_not_exist", "", data.Platform));
                                             commandReturn.SetColor(ChatColorPresets.GoldenRod);
                                         }
                                     }
                                 }
                                 else
                                 {
-                                    commandReturn.SetMessage(Text.ArgumentReplacement(TranslationManager.GetTranslation(data.User.Language, "error:not_enough_arguments", "", data.Platform),
-                                        "command_example", "#ct set [paramName] [en/ru] [text]"));
+                                    commandReturn.SetMessage(LocalizationService.GetString(
+                                        data.User.Language,
+                                        "error:not_enough_arguments",
+                                        string.Empty,
+                                        data.Platform,
+                                        $"{Engine.Bot.Executor}ct set [paramName] [en/ru] [text]"));
                                     commandReturn.SetColor(ChatColorPresets.Red);
                                 }
                             }
                             else if (getAliases.Contains(arg1) && ((bool)data.User.IsModerator || (bool)data.User.IsBroadcaster || (bool)data.User.IsBotModerator))
                             {
-                                if (TranslationManager.TranslateContains(paramName))
+                                if (LocalizationService.TranslateContains(paramName))
                                 {
-                                    commandReturn.SetMessage(Text.ArgumentsReplacement(TranslationManager.GetTranslation(data.User.Language, "command:custom_translation:get", "", data.Platform),
-                                        new(){
-                                                { "key", paramName },
-                                                { "translation", TranslationManager.GetTranslation(lang, paramName, data.ChannelID, data.Platform) }
-                                        }));
+                                    commandReturn.SetMessage(LocalizationService.GetString(
+                                        data.User.Language,
+                                        "command:custom_translation:get",
+                                        string.Empty,
+                                        data.Platform,
+                                        paramName,
+                                        LocalizationService.GetString(lang, paramName, data.ChannelId, data.Platform)));
                                 }
                                 else
                                 {
-                                    commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:translation_key_is_not_exist", "", data.Platform));
+                                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:translation_key_is_not_exist", "", data.Platform));
                                     commandReturn.SetColor(ChatColorPresets.GoldenRod);
                                 }
                             }
                             else if (originalAliases.Contains(arg1))
                             {
-                                commandReturn.SetMessage(Text.ArgumentsReplacement(TranslationManager.GetTranslation(data.User.Language, "command:custom_translation:original", "", data.Platform),
-                                    new(){
-                                            { "key", paramName },
-                                            { "translation", TranslationManager.GetTranslation(lang, paramName, string.Empty, data.Platform) }
-                                   }));
+                                commandReturn.SetMessage(LocalizationService.GetString(
+                                    data.User.Language,
+                                    "command:custom_translation:original",
+                                    string.Empty,
+                                    data.Platform,
+                                    paramName,
+                                    LocalizationService.GetString(lang, paramName, string.Empty, data.Platform)));
                             }
                             else if (deleteAliases.Contains(arg1) && ((bool)data.User.IsModerator || (bool)data.User.IsBroadcaster || (bool)data.User.IsBotModerator))
                             {
-                                if (TranslationManager.TranslateContains(paramName))
+                                if (LocalizationService.TranslateContains(paramName))
                                 {
-                                    if (TranslationManager.DeleteCustomTranslation(paramName, data.ChannelID, lang, data.Platform))
+                                    if (LocalizationService.DeleteCustomTranslation(paramName, data.ChannelId, lang, data.Platform))
                                     {
-                                        commandReturn.SetMessage(Text.ArgumentReplacement(TranslationManager.GetTranslation(data.User.Language, "command:custom_translation:delete", "", data.Platform), "key", paramName));
-                                        TranslationManager.UpdateTranslation(lang, data.ChannelID, data.Platform);
+                                        commandReturn.SetMessage(LocalizationService.GetString(
+                                            data.User.Language,
+                                            "command:custom_translation:delete",
+                                            string.Empty,
+                                            data.Platform,
+                                            paramName));
+                                        LocalizationService.UpdateTranslation(lang, data.ChannelId, data.Platform);
                                     }
                                     else
                                     {
-                                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:translation_delete", "", data.Platform));
+                                        commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:translation_delete", "", data.Platform));
                                         commandReturn.SetColor(ChatColorPresets.Red);
                                     }
                                 }
                                 else
                                 {
-                                    commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:translation_key_is_not_exist", "", data.Platform));
+                                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:translation_key_is_not_exist", "", data.Platform));
                                     commandReturn.SetColor(ChatColorPresets.GoldenRod);
                                 }
                             }
                         }
                         else
                         {
-                            commandReturn.SetMessage(Text.ArgumentsReplacement(TranslationManager.GetTranslation(data.User.Language, "error:translation_lang_is_not_exist", "", data.Platform),
-                                    new(){
-                                            { "lang", lang },
-                                            { "langs", string.Join(", ", langs) }
-                                   }));
+                            commandReturn.SetMessage(LocalizationService.GetString(
+                                data.User.Language, 
+                                "error:translation_lang_is_not_exist", 
+                                string.Empty, 
+                                data.Platform, 
+                                lang, 
+                                string.Join(", ", langs)));
+
                             commandReturn.SetColor(ChatColorPresets.Red);
                         }
                     }
                     catch (Exception ex)
                     {
-                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:unknown", data.Channel, data.Platform));
+                        commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:unknown", data.Channel, data.Platform));
                         commandReturn.SetColor(ChatColorPresets.Red);
                     }
                 }
                 else
                 {
-                    commandReturn.SetMessage(Text.ArgumentReplacement(TranslationManager.GetTranslation(data.User.Language, "error:not_enough_arguments", "", data.Platform), "command_example", "#ct set [paramName] [en/ru] [text]"));
+                    commandReturn.SetMessage(LocalizationService.GetString(
+                        data.User.Language,
+                        "error:not_enough_arguments",
+                        string.Empty,
+                        data.Platform,
+                        $"{Engine.Bot.Executor}ct set [paramName] [en/ru] [text]"));
                     commandReturn.SetColor(ChatColorPresets.Red);
                 }
             }

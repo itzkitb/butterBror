@@ -13,8 +13,8 @@ namespace butterBror.Core.Commands.List
         public override Version Version => new("1.0.0");
         public override Dictionary<string, string> Description => new()
         {
-            { "ru", "Эта команда... Просто зачем-то существует" },
-            { "en", "This command... Just exists for some reason" }
+            { "ru-RU", "Эта команда... Просто зачем-то существует" },
+            { "en-US", "This command... Just exists for some reason" }
         };
         public override string WikiLink => "https://itzkitb.ru/bot/command?name=me";
         public override int CooldownPerUser => 15;
@@ -67,7 +67,7 @@ namespace butterBror.Core.Commands.List
                 }
                 else
                 {
-                    commandReturn.SetMessage("/me " + TranslationManager.GetTranslation(data.User.Language, "text:ad", data.ChannelID, data.Platform));
+                    commandReturn.SetMessage("/me " + LocalizationService.GetString(data.User.Language, "text:ad", data.ChannelId, data.Platform));
                 }
             }
             catch (Exception e)

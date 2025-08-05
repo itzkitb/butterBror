@@ -13,7 +13,7 @@ namespace butterBror.Models
         public string MessageID { get; set; }
         public required string UserID { get; set; }
         public string? Channel { get; set; }
-        public string? ChannelID { get; set; }
+        public string? ChannelId { get; set; }
         public required string ArgumentsString { get; set; }
         public SocketCommandBase? DiscordCommandBase { get; set; }
         public required PlatformsEnum Platform { get; set; }

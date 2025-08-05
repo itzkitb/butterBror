@@ -11,8 +11,8 @@ namespace butterBror.Core.Commands.List
         public override string GithubSource => $"{URLs.githubSource}blob/master/butterBror/Core/Commands/List/Translation.cs";
         public override Version Version => new Version("1.0.0");
         public override Dictionary<string, string> Description => new() {
-            { "ru", "Установить язык бота" },
-            { "en", "Set bot language" }
+            { "ru-RU", "Установить язык бота" },
+            { "en-US", "Set bot language" }
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=translate";
         public override int CooldownPerUser => 0;

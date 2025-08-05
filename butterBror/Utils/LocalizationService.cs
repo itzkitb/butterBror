@@ -1,25 +1,86 @@
-﻿using DankDB;
-using Newtonsoft.Json;
-using static butterBror.Core.Bot.Console;
-using butterBror.Data;
+﻿using butterBror.Data;
 using butterBror.Models;
+using DankDB;
+using Microsoft.CodeAnalysis;
+using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
+using TwitchLib.Client.Models;
+using TwitchLib.EventSub.Core.SubscriptionTypes.Channel;
+using static butterBror.Core.Bot.Console;
 
 namespace butterBror.Utils
 {
     /// <summary>
     /// Manages multilingual translations with support for default and custom overrides per channel/platform.
     /// </summary>
-    public class TranslationManager
+    public class LocalizationService
     {
         private static Dictionary<string, Dictionary<string, string>> _translations = new();
         private static Dictionary<string, Dictionary<string, Dictionary<string, string>>> _customTranslations = new();
+        private static readonly Dictionary<string, Func<long, string>> _pluralRules = new Dictionary<string, Func<long, string>>
+        {
+            { "en-US", n => n == 1 ? "one" : "other" },
+            { "ru-RU", n =>
+                n % 10 == 1 && n % 100 != 11 ? "one" :
+                n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? "few" : "many" }
+        };
+
+        public static string GetPluralString(string userLang, string key, string channelId, PlatformsEnum platform, long number, params object[] args)
+        {
+            Engine.Statistics.FunctionsUsed.Add();
+            try
+            {
+                if (!_translations.ContainsKey(userLang))
+                    _translations[userLang] = LoadTranslations(userLang);
+
+                if (!_customTranslations.ContainsKey(channelId))
+                    _customTranslations[channelId] = new();
+
+                if (!_customTranslations[channelId].ContainsKey(userLang))
+                    _customTranslations[channelId][userLang] = LoadCustomTranslations(userLang, channelId, platform);
+
+                string pluralForm = GetPluralForm(userLang, number);
+                string pluralKey = $"{key}:{pluralForm}";
+
+                var custom = _customTranslations[channelId][userLang];
+                if (custom.TryGetValue(pluralKey, out var pluralCustomValue))
+                {
+                    return string.Format(pluralCustomValue, args);
+                }
+
+                if (_translations[userLang].TryGetValue(pluralKey, out var pluralDefaultValue))
+                {
+                    return string.Format(pluralDefaultValue, args);
+                }
+
+                Write($"Plural translate \"{pluralKey}\" in lang \"{userLang}\" was not found!", "info", Core.Bot.Console.LogLevel.Warning);
+                return key;
+            }
+            catch (Exception ex)
+            {
+                Write(ex);
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Determines plural form for a given number using language rules.
+        /// </summary>
+        private static string GetPluralForm(string fullLanguage, long number)
+        {
+            if (_pluralRules.TryGetValue(fullLanguage, out var rule))
+            {
+                return rule(number);
+            }
+            return "other"; // Fallback
+        }
 
         /// <summary>
         /// Retrieves a localized translation with optional parameter replacements.
         /// </summary>
-        /// <param name="userLang">Language code (e.g., "ru", "en")</param>
+        /// <param name="userLang">Language code (e.g., "ru-RU", "en")</param>
         /// <param name="key">Translation key path (e.g., "command:ping")</param>
-        /// <param name="channel_id">Channel/Room identifier for custom translations</param>
+        /// <param name="channelId">Channel/Room identifier for custom translations</param>
         /// <param name="platform">Target platform context</param>
         /// <param name="replacements">Optional dictionary of %key% replacements</param>
         /// <returns>Localized string or key if not found</returns>
@@ -29,8 +90,61 @@ namespace butterBror.Utils
         /// 2. Default language translations
         /// Returns null if error occurs during retrieval
         /// </remarks>
-        [ConsoleSector("butterBror.Utils.Tools.TranslationManager", "GetTranslation")]
-        public static string GetTranslation(string userLang, string key, string channel_id, PlatformsEnum platform, Dictionary<string, string> replacements = null)
+        
+        public static string GetString(string userLang, string key, string channelId, PlatformsEnum platform)
+        {
+            Engine.Statistics.FunctionsUsed.Add();
+            try
+            {
+                if (userLang == null || key == null || channelId == null || platform == null)
+                    return "🚨 Something went wrong...";
+
+                if (!_translations.ContainsKey(userLang))
+                    _translations[userLang] = LoadTranslations(userLang);
+
+                if (!_customTranslations.ContainsKey(channelId))
+                    _customTranslations[channelId] = new();
+
+                if (!_customTranslations[channelId].ContainsKey(userLang))
+                    _customTranslations[channelId][userLang] = LoadCustomTranslations(userLang, channelId, platform);
+
+                var custom = _customTranslations[channelId][userLang];
+                if (custom.TryGetValue(key, out var customValue))
+                {
+                    return customValue;
+                }
+
+                if (_translations[userLang].TryGetValue(key, out var defaultVal))
+                {
+                    return defaultVal;
+                }
+
+                Write($"Translate \"{key}\" in lang \"{userLang}\" was not found!", "info", Core.Bot.Console.LogLevel.Warning);
+                return key;
+            }
+            catch (Exception ex)
+            {
+                Write(ex);
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Retrieves a localized translation with optional parameter replacements.
+        /// </summary>
+        /// <param name="userLang">Language code (e.g., "ru-RU", "en")</param>
+        /// <param name="key">Translation key path (e.g., "command:ping")</param>
+        /// <param name="channelId">Channel/Room identifier for custom translations</param>
+        /// <param name="platform">Target platform context</param>
+        /// <param name="replacements">Optional dictionary of %key% replacements</param>
+        /// <returns>Localized string or key if not found</returns>
+        /// <remarks>
+        /// Checks in order: 
+        /// 1. Custom translations for channel/platform
+        /// 2. Default language translations
+        /// Returns null if error occurs during retrieval
+        /// </remarks>
+        public static string GetString(string userLang, string key, string channelId, PlatformsEnum platform, params object[] args)
         {
             Engine.Statistics.FunctionsUsed.Add();
             try
@@ -38,26 +152,26 @@ namespace butterBror.Utils
                 if (!_translations.ContainsKey(userLang))
                     _translations[userLang] = LoadTranslations(userLang);
 
-                if (!_customTranslations.ContainsKey(channel_id))
-                    _customTranslations[channel_id] = new();
+                if (!_customTranslations.ContainsKey(channelId))
+                    _customTranslations[channelId] = new();
 
-                if (!_customTranslations[channel_id].ContainsKey(userLang))
-                    _customTranslations[channel_id][userLang] = LoadCustomTranslations(userLang, channel_id, platform);
+                if (!_customTranslations[channelId].ContainsKey(userLang))
+                    _customTranslations[channelId][userLang] = LoadCustomTranslations(userLang, channelId, platform);
 
-                var custom = _customTranslations[channel_id][userLang];
+                var custom = _customTranslations[channelId][userLang];
                 if (custom.TryGetValue(key, out var customValue))
                 {
-                    if (replacements is not null) customValue = Text.ArgumentsReplacement(customValue, replacements);
+                    if (args is not null) customValue = string.Format(customValue, args);
                     return customValue;
                 }
 
                 if (_translations[userLang].TryGetValue(key, out var defaultVal))
                 {
-                    if (replacements is not null) defaultVal = Text.ArgumentsReplacement(defaultVal, replacements);
+                    if (args is not null) defaultVal = string.Format(defaultVal, args);
                     return defaultVal;
                 }
 
-                Write($"Translate \"{key}\" in lang \"{userLang}\" was not found!", "info", LogLevel.Warning);
+                Write($"Translate \"{key}\" in lang \"{userLang}\" was not found!", "info", Core.Bot.Console.LogLevel.Warning);
                 return key;
             }
             catch (Exception ex)
@@ -81,7 +195,7 @@ namespace butterBror.Utils
         /// - Updates both memory cache and persistent storage
         /// - Returns false if file operations fail
         /// </remarks>
-        [ConsoleSector("butterBror.Utils.Tools.TranslationManager", "SetCustomTranslation")]
+        
         public static bool SetCustomTranslation(string key, string value, string channel, string lang, PlatformsEnum platform)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -122,7 +236,7 @@ namespace butterBror.Utils
         /// - Only affects custom translations
         /// - Returns false if translation doesn't exist or operation fails
         /// </remarks>
-        [ConsoleSector("butterBror.Utils.Tools.TranslationManager", "DeleteCustomTranslation")]
+        
         public static bool DeleteCustomTranslation(string key, string channel, string lang, PlatformsEnum platform)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -157,7 +271,7 @@ namespace butterBror.Utils
         /// Uses Manager.Get to load from JSON files.
         /// Returns empty dictionary if file is missing or invalid.
         /// </remarks>
-        [ConsoleSector("butterBror.Utils.Tools.TranslationManager", "LoadTranslations")]
+        
         private static Dictionary<string, string> LoadTranslations(string userLang)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -178,7 +292,7 @@ namespace butterBror.Utils
         /// Uses Manager.Get to load from channel-specific JSON files.
         /// Returns empty dictionary if file is missing or invalid.
         /// </remarks>
-        [ConsoleSector("butterBror.Utils.Tools.TranslationManager", "LoadCustomTranslations")]
+        
         private static Dictionary<string, string> LoadCustomTranslations(string userLang, string channel, PlatformsEnum platform)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -197,7 +311,7 @@ namespace butterBror.Utils
         /// Always checks against Russian ("ru") translations first.
         /// Loads Russian dictionary if not already loaded.
         /// </remarks>
-        [ConsoleSector("butterBror.Utils.Tools.TranslationManager", "TranslateContains")]
+        
         public static bool TranslateContains(string key)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -221,7 +335,7 @@ namespace butterBror.Utils
         /// - Reloads translations from disk
         /// - Returns false if default translations fail to reload
         /// </remarks>
-        [ConsoleSector("butterBror.Utils.Tools.TranslationManager", "UpdateTranslation")]
+        
         public static bool UpdateTranslation(string userLang, string channel, PlatformsEnum platform)
         {
             Engine.Statistics.FunctionsUsed.Add();

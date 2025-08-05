@@ -29,7 +29,7 @@ namespace butterBror.Utils
         /// - Applies character replacements before final check
         /// - Logs detailed information about detected banned words
         /// </remarks>
-        [ConsoleSector("butterBror.Utils.Tools.NoBanwords", "Check")]
+        
         public bool Check(string message, string channelID, PlatformsEnum platform)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -47,14 +47,12 @@ namespace butterBror.Utils
                 string cleared_message_changed_layout = Text.ChangeLayout(cleared_message);
 
                 string banned_words_path = Engine.Bot.Pathes.BlacklistWords;
-                string channel_banned_words_path = Engine.Bot.Pathes.Channels + PlatformsPathName.strings[(int)platform] + "/" + channelID + "/BANWORDS.json";
                 string replacement_path = Engine.Bot.Pathes.BlacklistReplacements;
 
                 List<string> single_banwords = Manager.Get<List<string>>(banned_words_path, "single_word");
                 Dictionary<string, string> replacements = Manager.Get<Dictionary<string, string>>(replacement_path, "list") ?? new Dictionary<string, string>();
                 List<string> banned_words = Manager.Get<List<string>>(banned_words_path, "list");
-                if (FileUtil.FileExists(channel_banned_words_path))
-                    banned_words.AddRange(Manager.Get<List<string>>(channel_banned_words_path, "list"));
+                banned_words.AddRange(Engine.Bot.SQL.Channels.GetBanWords(platform, channelID));
 
                 _replacementPattern = string.Join("|", replacements.Keys.Select(Regex.Escape));
                 _replacementRegex = new Regex(_replacementPattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);
@@ -108,7 +106,7 @@ namespace butterBror.Utils
         /// 7. Layout-changed full message check
         /// 8. Final layout-changed check with replacements
         /// </remarks>
-        [ConsoleSector("butterBror.Utils.Tools.NoBanwords", "RunCheck")]
+        
         private (bool, string) RunCheck(
     string channelID, string checkUUID, List<string> bannedWords,
     List<string> singleBanwords, Dictionary<string, string> replacements,
@@ -153,7 +151,7 @@ namespace butterBror.Utils
         /// - Uses case-insensitive comparison
         /// - Updates internal cache with detected banned words
         /// </remarks>
-        [ConsoleSector("butterBror.Utils.Tools.NoBanwords", "CheckBanWords")]
+        
         private bool CheckBanWords(string message, string channelID, string checkUUID,
     List<string> bannedWords, List<string> singleBanwords)
         {
@@ -197,7 +195,7 @@ namespace butterBror.Utils
         /// - Delegates to CheckBanWords for final validation
         /// - Uses compiled regex for better performance
         /// </remarks>
-        [ConsoleSector("butterBror.Utils.Tools.NoBanwords", "CheckReplacements")]
+        
         private bool CheckReplacements(string message, string channelID, string checkUUID,
     List<string> bannedWords, List<string> singleBanwords, Dictionary<string, string> replacements)
         {

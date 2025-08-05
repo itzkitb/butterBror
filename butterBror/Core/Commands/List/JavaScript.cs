@@ -15,8 +15,8 @@ namespace butterBror.Core.Commands.List
         public override string GithubSource => $"{URLs.githubSource}blob/master/butterBror/Core/Commands/List/JavaScript.cs";
         public override Version Version => new("1.0.0");
         public override Dictionary<string, string> Description => new() {
-            { "ru", "Выполнить JavaScript код в V8 и получить ответ." },
-            { "en", "Execute JavaScript code in V8 and get the response." }
+            { "ru-RU", "Выполнить JavaScript код в V8 и получить ответ." },
+            { "en-US", "Execute JavaScript code in V8 and get the response." }
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=jaba";
         public override int CooldownPerUser => 10;
@@ -30,7 +30,7 @@ namespace butterBror.Core.Commands.List
         public override PlatformsEnum[] Platforms => [PlatformsEnum.Twitch, PlatformsEnum.Telegram, PlatformsEnum.Discord];
         public override bool IsAsync => false;
 
-        [ConsoleSector("butterBror.Commands.Java", "Index")]
+        
         public override CommandReturn Execute(CommandData data)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -38,7 +38,7 @@ namespace butterBror.Core.Commands.List
 
             try
             {
-                if (new NoBanwords().Check(data.ArgumentsString, data.ChannelID, data.Platform))
+                if (new NoBanwords().Check(data.ArgumentsString, data.ChannelId, data.Platform))
                 {
                     try
                     {
@@ -57,20 +57,18 @@ namespace butterBror.Core.Commands.List
 
                         if (isSafe)
                         {
-                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:js", data.ChannelID, data.Platform)
-                                .Replace("%result%", result.ToString()));
+                            commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:js", data.ChannelId, data.Platform, result.ToString()));
                         }
                         else
                         {
                             commandReturn.SetColor(ChatColorPresets.OrangeRed);
-                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:js", data.ChannelID, data.Platform).Replace("%err%", "Not allowed"));
+                            commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:js", data.ChannelId, data.Platform, "Not allowed"));
                         }
                     }
                     catch (Exception ex)
                     {
                         commandReturn.SetColor(ChatColorPresets.Firebrick);
-                        commandReturn.SetMessage("/me " + TranslationManager.GetTranslation(data.User.Language, "error:js", data.ChannelID, data.Platform)
-                            .Replace("%err%", ex.Message));
+                        commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:js", data.ChannelId, data.Platform, ex.Message));
                         Write(ex);
                     }
                 }

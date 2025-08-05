@@ -12,8 +12,8 @@ namespace butterBror.Core.Commands.List
         public override string GithubSource => $"{URLs.githubSource}blob/master/butterBror/Core/Commands/List/Status.cs";
         public override Version Version => new("1.0.0");
         public override Dictionary<string, string> Description => new() {
-            { "ru", "MrDestructoid БО-Т НЕ РАБ-ОТАЕТ... НЕТ, Я СЕР-ЬЕЗНО!" },
-            { "en", "MrDestructoid THE BO-T DOES-N'T WORK... NO, I'M SER-IOUS!" }
+            { "ru-RU", "MrDestructoid БО-Т НЕ РАБ-ОТАЕТ... НЕТ, Я СЕР-ЬЕЗНО!" },
+            { "en-US", "MrDestructoid THE BO-T DOES-N'T WORK... NO, I'M SER-IOUS!" }
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=status";
         public override int CooldownPerUser => 20;

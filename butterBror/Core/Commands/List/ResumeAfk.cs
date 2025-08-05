@@ -1,7 +1,9 @@
-﻿using butterBror.Utils;
+﻿using butterBror.Core.Bot;
+using butterBror.Core.Bot.SQLColumnNames;
 using butterBror.Data;
 using butterBror.Models;
-using butterBror.Core.Bot;
+using butterBror.Utils;
+using System.Globalization;
 using TwitchLib.Client.Enums;
 
 namespace butterBror.Core.Commands.List
@@ -14,8 +16,8 @@ namespace butterBror.Core.Commands.List
         public override string GithubSource => $"{URLs.githubSource}blob/master/butterBror/Core/Commands/List/ResumeAfk.cs";
         public override Version Version => new("1.0.0");
         public override Dictionary<string, string> Description => new() {
-            { "ru", "Вернуться в АФК, если вы вышли из него." },
-            { "en", "Return to AFK if you left it." }
+            { "ru-RU", "Вернуться в АФК, если вы вышли из него." },
+            { "en-US", "Return to AFK if you left it." }
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=rafk";
         public override int CooldownPerUser => 30;
@@ -36,33 +38,27 @@ namespace butterBror.Core.Commands.List
 
             try
             {
-                if (UsersData.Contains(data.UserID, "fromAfkResumeTimes", data.Platform) && UsersData.Contains(data.UserID, "lastFromAfkResume", data.Platform))
+                long AFKResumeTimes = (long)Engine.Bot.SQL.Users.GetParameter(data.Platform, Format.ToLong(data.UserID), Users.AFKResumeTimes);
+                DateTime AFKResume = DateTime.Parse((string)Engine.Bot.SQL.Users.GetParameter(data.Platform, Format.ToLong(data.UserID), Users.AFKResume), null, DateTimeStyles.AdjustToUniversal);
+
+                if (AFKResumeTimes <= 5)
                 {
-                    var resumeTimes = UsersData.Get<int>(data.UserID, "fromAfkResumeTimes", data.Platform);
-                    if (resumeTimes <= 5)
+                    TimeSpan cache = DateTime.UtcNow - AFKResume;
+                    if (cache.TotalMinutes <= 5)
                     {
-                        DateTime lastResume = UsersData.Get<DateTime>(data.UserID, "lastFromAfkResume", data.Platform);
-                        TimeSpan cache = DateTime.UtcNow - lastResume;
-                        if (cache.TotalMinutes <= 5)
-                        {
-                            UsersData.Save(data.UserID, "isAfk", true, data.Platform);
-                            UsersData.Save(data.UserID, "fromAfkResumeTimes", resumeTimes + 1, data.Platform);
-                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:rafk", data.ChannelID, data.Platform));
-                            commandReturn.SetColor(ChatColorPresets.YellowGreen);
-                        }
-                        else
-                        {
-                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:afk_resume_after_5_minutes", data.ChannelID, data.Platform));
-                        }
+                        Engine.Bot.SQL.Users.SetParameter(data.Platform, Format.ToLong(data.UserID), Users.IsAFK, 1);
+                        Engine.Bot.SQL.Users.SetParameter(data.Platform, Format.ToLong(data.UserID), Users.AFKResumeTimes, AFKResumeTimes + 1);
+                        commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:rafk", data.ChannelId, data.Platform));
+                        commandReturn.SetColor(ChatColorPresets.YellowGreen);
                     }
                     else
                     {
-                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:afk_resume", data.ChannelID, data.Platform));
+                        commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:afk_resume_after_5_minutes", data.ChannelId, data.Platform));
                     }
                 }
                 else
                 {
-                    commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:no_afk", data.ChannelID, data.Platform));
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:afk_resume", data.ChannelId, data.Platform));
                 }
             }
             catch (Exception e)

@@ -1,6 +1,8 @@
-﻿using butterBror.Data;
+﻿using butterBror.Core.Bot.SQLColumnNames;
+using butterBror.Data;
 using butterBror.Models;
 using butterBror.Models.AI;
+using butterBror.Utils;
 using DankDB;
 using Newtonsoft.Json;
 using System.Net.Http.Headers;
@@ -60,7 +62,7 @@ namespace butterBror.Services.External
         /// <param name="chatHistory">Indicates whether to include chat history (default: true).</param>
         /// <returns>An array containing the model name and response, or error information.</returns>
         /// <exception cref="Exception">Any exceptions during API communication are caught and logged.</exception>
-        [ConsoleSector("butterBror.Utils.Tools.API.AI", "Request")]
+        
         public static async Task<string[]> Request(string request, string umodel, PlatformsEnum platform, string username, string userID, string lang, double repetitionPenalty, bool chatHistory = true)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -108,7 +110,7 @@ namespace butterBror.Services.External
 
             if (chatHistory)
             {
-                var history = UsersData.Get<List<string>>(userID, "gpt_history", platform);
+                List<string> history = Format.ParseStringList((string)Engine.Bot.SQL.Users.GetParameter(platform, Format.ToLong(userID), Users.GPTHistory));
                 if (history is not null) // Fix #AC0
                 {
                     messages.Insert(0, new Message
@@ -146,7 +148,7 @@ namespace butterBror.Services.External
 
                     if (chatHistory)
                     {
-                        List<string> loadedHistory = UsersData.Get<List<string>>(userID, "gpt_history", platform);
+                        List<string> loadedHistory = Format.ParseStringList((string)Engine.Bot.SQL.Users.GetParameter(platform, Format.ToLong(userID), Users.GPTHistory));
                         List<string> history = loadedHistory ?? new List<string>(); // Fix #AC1
 
                         history.Add($"{requestTime.ToString("dd-MM-yyyy HH:mm")} [user]: {request}");
@@ -157,7 +159,7 @@ namespace butterBror.Services.External
                             history.RemoveRange(0, history.Count - 6);
                         }
 
-                        UsersData.Save(userID, "gpt_history", chatHistory, platform);
+                        Engine.Bot.SQL.Users.SetParameter(platform, Format.ToLong(userID), Users.GPTHistory, Format.SerializeStringList(history));
                     }
 
                     return new[] { model, result.choices[0].message.content };

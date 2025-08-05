@@ -1,10 +1,13 @@
-﻿using TwitchLib.Client.Enums;
-using TwitchLib.Client.Models;
-using static butterBror.Core.Bot.Console;
-using Telegram.Bot;
+﻿using butterBror.Core.Bot.SQLColumnNames;
 using butterBror.Core.Commands;
+using butterBror.Core.Commands.List;
 using butterBror.Data;
 using butterBror.Models;
+using System.Globalization;
+using Telegram.Bot;
+using TwitchLib.Client.Enums;
+using TwitchLib.Client.Models;
+using static butterBror.Core.Bot.Console;
 
 namespace butterBror.Utils
 {
@@ -16,12 +19,12 @@ namespace butterBror.Utils
         /// <summary>
         /// Processes a user returning from AFK status with appropriate message generation based on AFK duration and type.
         /// </summary>
-        /// <param name="UserID">User identifier</param>
-        /// <param name="RoomID">Channel/room identifier</param>
+        /// <param name="userId">User identifier</param>
+        /// <param name="channelId">Channel/room identifier</param>
         /// <param name="channel">Target channel name</param>
         /// <param name="username">Username to mention</param>
-        /// <param name="message_id">Message ID for reply context</param>
-        /// <param name="message_reply">Telegram message context for replies</param>
+        /// <param name="messageId">Message ID for reply context</param>
+        /// <param name="messageReply">Telegram message context for replies</param>
         /// <param name="platform">Target platform (Twitch/Telegram)</param>
         /// <remarks>
         /// - Determines appropriate AFK response based on duration and type
@@ -29,32 +32,30 @@ namespace butterBror.Utils
         /// - Sends formatted message with time elapsed since AFK
         /// - Handles multiple AFK types (draw, sleep, study, etc.)
         /// </remarks>
-        [ConsoleSector("butterBror.Utils.Tools.Chat", "ReturnFromAFK")]
-        public static void ReturnFromAFK(string UserID, string RoomID, string channel, string username, string message_id, Telegram.Bot.Types.Message message_reply, PlatformsEnum platform)
+        
+        public static void ReturnFromAFK(string userId, string channelId, string channel, string username, string messageId, Telegram.Bot.Types.Message messageReply, PlatformsEnum platform, string messageContent, string server, string serverId)
         {
             Engine.Statistics.FunctionsUsed.Add();
-            var language = "ru";
+            var language = "en-US";
+            string dbLanguage = (string)Engine.Bot.SQL.Users.GetParameter(platform, Format.ToLong(userId), Users.Language);
 
-            try
+            if (dbLanguage == string.Empty)
             {
-                if (UsersData.Get<string>(UserID, "language", platform) == default)
-                    UsersData.Save(UserID, "language", "ru", platform);
-                else
-                    language = UsersData.Get<string>(UserID, "language", platform);
+                Engine.Bot.SQL.Users.SetParameter(platform, Format.ToLong(userId), Users.Language, LanguageDetector.DetectLanguage(messageContent));
             }
-            catch (Exception ex)
+            else
             {
-                Write(ex);
+                language = dbLanguage;
             }
 
-            string? message = UsersData.Get<string>(UserID, "afkText", platform);
-            if (!new NoBanwords().Check(message, RoomID, platform))
+            string? message = (string)Engine.Bot.SQL.Users.GetParameter(platform, Format.ToLong(userId), Users.AFKText);
+            if (!new NoBanwords().Check(message, platform == PlatformsEnum.Discord ? serverId : channelId, platform))
                 return;
 
             string send = (Text.CleanAsciiWithoutSpaces(message) == "" ? "" : ": " + message);
 
-            TimeSpan timeElapsed = DateTime.UtcNow - UsersData.Get<DateTime>(UserID, "afkTime", platform);
-            var afkType = UsersData.Get<string>(UserID, "afkType", platform);
+            TimeSpan timeElapsed = DateTime.UtcNow - DateTime.Parse((string)Engine.Bot.SQL.Users.GetParameter(platform, Format.ToLong(userId), Users.AFKStart), null, DateTimeStyles.AdjustToUniversal);
+            var afkType = (string)Engine.Bot.SQL.Users.GetParameter(platform, Format.ToLong(userId), Users.AFKType);
             string translateKey = "";
 
             if (afkType == "draw")
@@ -128,14 +129,12 @@ namespace butterBror.Utils
                 else if (timeElapsed.TotalHours >= 8) translateKey = "shower:8h";
                 else translateKey = "shower:default";
             }
-            string text = TranslationManager.GetTranslation(language, "afk:" + translateKey, RoomID, platform); // FIX AA0
-            UsersData.Save(UserID, "lastFromAfkResume", DateTime.UtcNow, platform);
-            UsersData.Save(UserID, "isAfk", false, platform);
+            string text = LocalizationService.GetString(language, "afk:" + translateKey, platform == PlatformsEnum.Discord ? serverId : channelId, platform, username); // FIX AA0
+            Engine.Bot.SQL.Users.SetParameter(platform, Format.ToLong(userId), Users.AFKResume, DateTime.UtcNow.ToString("o"));
+            Engine.Bot.SQL.Users.SetParameter(platform, Format.ToLong(userId), Users.IsAFK, 0);
 
-            if (platform.Equals(PlatformsEnum.Twitch))
-                TwitchReply(channel, RoomID, text.Replace("%user%", username) + send + " (" + Text.FormatTimeSpan(timeElapsed, language) + ")", message_id, language, true);
-            if (platform.Equals(PlatformsEnum.Telegram))
-                TelegramReply(channel, message_reply.Chat.Id, text.Replace("%user%", username) + send + " (" + Text.FormatTimeSpan(timeElapsed, language) + ")", message_reply, language);
+            string reply = text + send + " (" + Text.FormatTimeSpan(timeElapsed, language) + ")";
+            SendReply(platform, channel, channelId, reply, language, username, userId, server, serverId, messageId, messageReply, false);
         }
 
         /// <summary>
@@ -154,7 +153,7 @@ namespace butterBror.Utils
         /// - Includes safety checks for banned words
         /// - Automatically joins channel if not already joined
         /// </remarks>
-        [ConsoleSector("butterBror.Utils.Tools.Chat", "TwitchSend")]
+        
         public static void TwitchSend(string channel, string message, string channelID, string messageID, string lang, bool isSafeEx = false, bool asciiClean = true)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -167,7 +166,7 @@ namespace butterBror.Utils
                 }
 
                 if (message.Length > 1500)
-                    message = TranslationManager.GetTranslation(lang, "error:too_large_text", channelID, PlatformsEnum.Twitch);
+                    message = LocalizationService.GetString(lang, "error:too_large_text", channelID, PlatformsEnum.Twitch);
                 else if (message.Length > 500)
                 {
                     int splitIndex = message.LastIndexOf(' ', 450);
@@ -188,7 +187,10 @@ namespace butterBror.Utils
                 if (isSafeEx || new NoBanwords().Check(message, channelID, PlatformsEnum.Twitch))
                     Engine.Bot.Clients.Twitch.SendMessage(channel, message);
                 else
-                    Engine.Bot.Clients.Twitch.SendReply(channel, messageID, TranslationManager.GetTranslation(lang, "error:message_could_not_be_sent", channelID, PlatformsEnum.Twitch));
+                    Engine.Bot.Clients.Twitch.SendReply(
+                        channel,
+                        messageID,
+                        LocalizationService.GetString(lang, "error:message_could_not_be_sent", channelID, PlatformsEnum.Twitch));
             }
             catch (Exception ex)
             {
@@ -211,7 +213,7 @@ namespace butterBror.Utils
         /// - Handles Twitch reply limitations
         /// - Includes ASCII character cleaning
         /// </remarks>
-        [ConsoleSector("butterBror.Utils.Tools.Chat", "TwitchReply")]
+        
         public static void TwitchReply(string channel, string channelID, string message, string messageID, string lang, bool isSafeEx = false)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -221,7 +223,7 @@ namespace butterBror.Utils
                 message = Text.CleanAscii(message);
 
                 if (message.Length > 1500)
-                    message = TranslationManager.GetTranslation(lang, "error:too_large_text", channelID, PlatformsEnum.Twitch);
+                    message = LocalizationService.GetString(lang, "error:too_large_text", channelID, PlatformsEnum.Twitch);
                 else if (message.Length > 500)
                 {
                     int splitIndex = message.LastIndexOf(' ', 450);
@@ -242,7 +244,10 @@ namespace butterBror.Utils
                 if (isSafeEx || new NoBanwords().Check(message, channelID, PlatformsEnum.Twitch))
                     Engine.Bot.Clients.Twitch.SendReply(channel, messageID, message);
                 else
-                    Engine.Bot.Clients.Twitch.SendReply(channel, messageID, TranslationManager.GetTranslation(lang, "error:message_could_not_be_sent", channelID, PlatformsEnum.Twitch));
+                    Engine.Bot.Clients.Twitch.SendReply(
+                        channel,
+                        messageID,
+                        LocalizationService.GetString(lang, "error:message_could_not_be_sent", channelID, PlatformsEnum.Twitch));
             }
             catch (Exception ex)
             {
@@ -265,7 +270,7 @@ namespace butterBror.Utils
         /// - Includes safety checks for banned words
         /// - Supports message replies in Telegram
         /// </remarks>
-        [ConsoleSector("butterBror.Utils.Tools.Chat", "TelegramReply")]
+        
         public static void TelegramReply(string channel, long channelID, string message, Telegram.Bot.Types.Message messageReply, string lang, bool isSafeEx = false)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -274,7 +279,7 @@ namespace butterBror.Utils
                 Write($"Telegram - A message was sent to {channel}: {message}", "info");
 
                 if (message.Length > 4096)
-                    message = TranslationManager.GetTranslation(lang, "error:too_large_text", channelID.ToString(), PlatformsEnum.Telegram);
+                    message = LocalizationService.GetString(lang, "error:too_large_text", channelID.ToString(), PlatformsEnum.Telegram);
 
                 if (isSafeEx || new NoBanwords().Check(message, channelID.ToString(), PlatformsEnum.Telegram))
                     Engine.Bot.Clients.Telegram.SendMessage(
@@ -285,7 +290,7 @@ namespace butterBror.Utils
                 else
                     Engine.Bot.Clients.Telegram.SendMessage(
                         channelID,
-                        TranslationManager.GetTranslation(lang, "error:message_could_not_be_sent", channelID.ToString(), PlatformsEnum.Telegram),
+                        LocalizationService.GetString(lang, "error:message_could_not_be_sent", channelID.ToString(), PlatformsEnum.Telegram),
                         replyParameters: messageReply.Id
                     );
             }
@@ -317,8 +322,8 @@ namespace butterBror.Utils
         /// - Maintains consistent message formatting across platforms
         /// - Supports ephemeral messages and embeds for Discord
         /// </remarks>
-        [ConsoleSector("butterBror.Utils.Tools.Chat", "SendReply")]
-        public static void SendReply(PlatformsEnum platform, string channel, string channelID, string message, string language, string username, string userID, string server, string serverID, string messageID, Telegram.Bot.Types.Message messageReply, bool isSafe = false, ChatColorPresets usernameColor = ChatColorPresets.YellowGreen)
+        
+        public static void SendReply(PlatformsEnum platform, string channel, string channelID, string message, string language, string username, string userID, string server, string serverID, string messageID, Telegram.Bot.Types.Message messageReply, bool isSafe = false, ChatColorPresets usernameColor = ChatColorPresets.YellowGreen, bool isReply = true)
         {
             switch (platform)
             {
@@ -333,7 +338,7 @@ namespace butterBror.Utils
                         Username = username,
                         SafeExecute = isSafe,
                         UsernameColor = usernameColor
-                    });
+                    }, isReply);
                     break;
                 case PlatformsEnum.Discord:
                     Sender.SendCommandReply(new DiscordCommandSendData
@@ -367,7 +372,7 @@ namespace butterBror.Utils
                         ChannelID = channelID,
                         MessageID = messageID,
                         Username = username
-                    });
+                    }, isReply);
                     break;
             }
         }

@@ -20,7 +20,7 @@ namespace butterBror.Core.Commands
         /// - Routes command to execution pipeline
         /// - Handles empty command cases gracefully
         /// </remarks>
-        [ConsoleSector("butterBror.Commands", "Twitch")]
+        
         public static async void Twitch(object sender, OnChatCommandReceivedArgs command)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -57,7 +57,7 @@ namespace butterBror.Core.Commands
                     Arguments = CommandArguments,
                     ArgumentsString = CommandArgumentsAsString,
                     Channel = command.Command.ChatMessage.Channel,
-                    ChannelID = command.Command.ChatMessage.RoomId,
+                    ChannelId = command.Command.ChatMessage.RoomId,
                     MessageID = command.Command.ChatMessage.Id,
                     Platform = PlatformsEnum.Twitch,
                     User = user,
@@ -89,7 +89,7 @@ namespace butterBror.Core.Commands
         /// - Uses GUID for request tracing
         /// - Maintains support for slash command responses
         /// </remarks>
-        [ConsoleSector("butterBror.Commands", "Discord#1")]
+        
         public static async void Discord(SocketSlashCommand command)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -120,7 +120,7 @@ namespace butterBror.Core.Commands
                     UserID = command.User.Id.ToString(),
                     DiscordArguments = argsDS,
                     Channel = command.Channel.Name,
-                    ChannelID = command.Channel.Id.ToString(),
+                    ChannelId = command.Channel.Id.ToString(),
                     Server = ((SocketGuildChannel)command.Channel).Guild.Name,
                     ServerID = ((SocketGuildChannel)command.Channel).Guild.Id.ToString(),
                     Platform = PlatformsEnum.Discord,
@@ -148,7 +148,7 @@ namespace butterBror.Core.Commands
         /// - Builds command context with user/permission data
         /// - Routes processed command to execution pipeline
         /// </remarks>
-        [ConsoleSector("butterBror.Commands", "Discord#2")]
+        
         public static async void Discord(SocketMessage message)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -181,7 +181,7 @@ namespace butterBror.Core.Commands
                     Name = CommandName,
                     UserID = message.Author.Id.ToString(),
                     Channel = message.Channel.Name,
-                    ChannelID = message.Channel.Id.ToString(),
+                    ChannelId = message.Channel.Id.ToString(),
                     Server = ((SocketGuildChannel)message.Channel).Guild.Name,
                     ServerID = ((SocketGuildChannel)message.Channel).Guild.Id.ToString(),
                     Platform = PlatformsEnum.Discord,
@@ -209,7 +209,7 @@ namespace butterBror.Core.Commands
         /// - Supports both public and private chat contexts
         /// - Routes command to execution pipeline
         /// </remarks>
-        [ConsoleSector("butterBror.Commands", "Telegram")]
+        
         public static async void Telegram(Message message)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -232,7 +232,7 @@ namespace butterBror.Core.Commands
                     Arguments = message.Text.Split(' ').Skip(1).ToList(),
                     ArgumentsString = string.Join(" ", message.Text.Split(' ').Skip(1)),
                     Channel = message.Chat.Title ?? message.Chat.Username ?? message.Chat.Id.ToString(),
-                    ChannelID = message.Chat.Id.ToString(),
+                    ChannelId = message.Chat.Id.ToString(),
                     Platform = PlatformsEnum.Telegram,
                     User = user,
                     CommandInstanceID = command_execution_uid.ToString(),

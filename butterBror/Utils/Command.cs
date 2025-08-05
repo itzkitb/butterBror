@@ -1,15 +1,20 @@
-﻿using butterBror.Data;
+﻿using butterBror.Core.Bot.SQLColumnNames;
+using butterBror.Data;
 using butterBror.Models;
+using butterBror.Models.SevenTVLib;
 using DankDB;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using System.Collections.Concurrent;
+using System.Globalization;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using Telegram.Bot.Types;
 using TwitchLib.Client.Events;
+using TwitchLib.Client.Models;
 using static butterBror.Core.Bot.Console;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace butterBror.Utils
 {
@@ -19,6 +24,8 @@ namespace butterBror.Utils
     public class Command
     {
         public static readonly ConcurrentDictionary<string, (SemaphoreSlim Semaphore, DateTime LastUsed)> messagesSemaphores = new(StringComparer.Ordinal);
+        private static readonly RegexOptions regexOptions = RegexOptions.Compiled;
+        private static readonly Regex MentionRegex = new(@"@(\w+)", regexOptions);
 
         /// <summary>
         /// Retrieves an argument from a list by index position.
@@ -26,7 +33,7 @@ namespace butterBror.Utils
         /// <param name="args">List of command arguments</param>
         /// <param name="index">Zero-based index of the argument to retrieve</param>
         /// <returns>The argument at specified index or null if index out of range</returns>
-        [ConsoleSector("butterBror.Utils.Tools.Command", "GetArgument#1")]
+        
         public static string GetArgument(List<string> args, int index)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -41,7 +48,7 @@ namespace butterBror.Utils
         /// <param name="args">List of command arguments</param>
         /// <param name="arg_name">Name prefix to search for (e.g., "user:")</param>
         /// <returns>The value after the colon for matching argument, or null if not found</returns>
-        [ConsoleSector("butterBror.Utils.Tools.Command", "GetArgument#2")]
+        
         public static string GetArgument(List<string> args, string arg_name)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -56,7 +63,7 @@ namespace butterBror.Utils
         /// Logs command execution details and increments the completed commands counter.
         /// </summary>
         /// <param name="data">Command data containing execution context</param>
-        [ConsoleSector("butterBror.Utils.Tools.Command", "ExecutedCommand")]
+        
         public static void ExecutedCommand(CommandData data)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -71,28 +78,32 @@ namespace butterBror.Utils
             }
         }
 
+        public static bool IsEqualsSlashCommand(string commandName, string message, string botName)
+        {
+            return message.StartsWith($"/{commandName}", StringComparison.OrdinalIgnoreCase)
+                   || message.StartsWith($"/{commandName}@{botName}", StringComparison.OrdinalIgnoreCase);
+        }
+
         /// <summary>
         /// Checks user and global cooldowns for command execution.
         /// </summary>
-        /// <param name="userSecondsCooldown">User-specific cooldown in seconds</param>
+        /// <param name="userCooldown">User-specific cooldown in seconds</param>
         /// <param name="globalCooldown">Global cooldown in seconds</param>
-        /// <param name="cooldownParamName">Unique identifier for the cooldown parameter</param>
+        /// <param name="cooldownName">Unique identifier for the cooldown parameter</param>
         /// <param name="userID">User ID to check</param>
         /// <param name="roomID">Channel/Room ID context</param>
         /// <param name="platform">Target platform (Twitch/Discord/Telegram)</param>
-        /// <param name="resetUseTimeIfCommandIsNotReseted">Whether to reset timer on failed global cooldown</param>
         /// <param name="ignoreUserVIP">Bypass VIP/moderator cooldown exemptions</param>
         /// <param name="ignoreGlobalCooldown">Bypass global cooldown check</param>
         /// <returns>True if cooldown requirements are satisfied</returns>
-        [ConsoleSector("butterBror.Utils.Tools.Command", "CheckCooldown")]
+        
         public static bool CheckCooldown(
-            int userSecondsCooldown,
+            int userCooldown,
             int globalCooldown,
-            string cooldownParamName,
+            string cooldownName,
             string userID,
             string roomID,
             PlatformsEnum platform,
-            bool resetUseTimeIfCommandIsNotReseted = true,
             bool ignoreUserVIP = false,
             bool ignoreGlobalCooldown = false
         )
@@ -102,71 +113,57 @@ namespace butterBror.Utils
             try
             {
                 // VIP or dev/mod bypass
-                bool isVipOrStaff = UsersData.Get<bool>(userID, "isBotModerator", platform)
-                                    || UsersData.Get<bool>(userID, "isBotDev", platform);
-
-                if (isVipOrStaff && !ignoreUserVIP)
+                bool isVipOrStaff = Engine.Bot.SQL.Roles.GetModerator(platform, Format.ToLong(userID)) is not null
+                                    || Engine.Bot.SQL.Roles.GetDeveloper(platform, Format.ToLong(userID)) is not null;
+                
+                if (isVipOrStaff && ignoreUserVIP)
                 {
                     return true;
                 }
 
-                string userKey = $"LU_{cooldownParamName}";
-                string channelPath = Path.Combine(Engine.Bot.Pathes.Channels, PlatformsPathName.strings[(int)platform], roomID);
-                string cddFile = Path.Combine(channelPath, "CDD.json");
-
-                DateTime now = DateTime.UtcNow;
-
-                // First user use
-                if (!UsersData.Contains(userID, userKey, platform))
+                string lastUsesJson = (string)Engine.Bot.SQL.Users.GetParameter(platform, Format.ToLong(userID), Users.LastUse);
+                
+                if (lastUsesJson != null)
                 {
-                    UsersData.Save(userID, userKey, now, platform);
-                    return true;
+                    Dictionary<string, string> lastUses = Format.ParseStringDictionary(lastUsesJson);
+                    DateTime now = DateTime.UtcNow;
+
+                    // First user use
+                    if (!lastUses.ContainsKey(cooldownName))
+                    {
+                        lastUses.Add(cooldownName, now.ToString("o"));
+                        Engine.Bot.SQL.Users.SetParameter(platform, Format.ToLong(userID), Users.LastUse, Format.SerializeStringDictionary(lastUses));
+                        return true;
+                    }
+
+                    // User cooldown check
+                    DateTime lastUserUse = DateTime.Parse(lastUses[cooldownName], null, DateTimeStyles.AdjustToUniversal);
+                    double userElapsedSec = (now - lastUserUse).TotalSeconds;
+                    if (userElapsedSec < userCooldown)
+                    {
+                        Write($"#{userID} tried to use the command, but it's on cooldown! (userElapsedSec: {userElapsedSec}, userCooldown: {userCooldown}, now: {now}, lastUserUse: {lastUserUse})", "info", LogLevel.Warning);
+                        return false;
+                    }
+
+                    // Reset user timer
+                    lastUses[cooldownName] = now.ToString("o");
+                    Engine.Bot.SQL.Users.SetParameter(platform, Format.ToLong(userID), Users.LastUse, Format.SerializeStringDictionary(lastUses));
+
+                    // Global cooldown bypass
+                    if (ignoreGlobalCooldown)
+                    {
+                        return true;
+                    }
+
+                    // Global cooldown check
+                    bool isOnGlobalCooldown = !Engine.Bot.SQL.Channels.IsCommandCooldown(platform, roomID, cooldownName, globalCooldown);
+                    if (!isOnGlobalCooldown)
+                    {
+                        Write($"#{userID} tried to use the command, but it is on global cooldown!", "info", LogLevel.Warning);
+                    }
+                    return isOnGlobalCooldown;
                 }
-
-                // User cooldown check
-                DateTime lastUserUse = UsersData.Get<DateTime>(userID, userKey, platform);
-                double userElapsedSec = (now - lastUserUse).TotalSeconds;
-                if (userElapsedSec < userSecondsCooldown)
-                {
-                    if (resetUseTimeIfCommandIsNotReseted)
-                        UsersData.Save(userID, userKey, now, platform);
-
-                    var name = Names.GetUsername(userID, platform);
-                    Write($"User {name} tried to use the command, but it's on cooldown!", "info", LogLevel.Warning);
-                    return false;
-                }
-
-                // Reset user timer
-                UsersData.Save(userID, userKey, now, platform);
-
-                // Global cooldown bypass
-                if (ignoreGlobalCooldown)
-                {
-                    return true;
-                }
-
-                // Ensure channel cooldowns file exists
-                if (!FileUtil.FileExists(cddFile))
-                {
-                    Directory.CreateDirectory(channelPath);
-                    SafeManager.Save(cddFile, userKey, DateTime.MinValue);
-                }
-
-                // Global cooldown check
-                DateTime lastGlobalUse = Manager.Get<DateTime>(cddFile, userKey);
-                double globalElapsedSec = (now - lastGlobalUse).TotalSeconds;
-
-                if (lastGlobalUse == default || globalElapsedSec >= globalCooldown)
-                {
-                    SafeManager.Save(cddFile, userKey, now);
-                    return true;
-                }
-                else
-                {
-                    var name = Names.GetUsername(userID, platform);
-                    Write($"User {name} tried to use the command, but it is on global cooldown!", "info", LogLevel.Warning);
-                    return false;
-                }
+                return true;
             }
             catch (Exception ex)
             {
@@ -179,14 +176,14 @@ namespace butterBror.Utils
         /// Gets remaining cooldown time for a user's command.
         /// </summary>
         /// <param name="userID">User ID to check</param>
-        /// <param name="cooldownParamName">Cooldown parameter name</param>
+        /// <param name="cooldownName">Cooldown parameter name</param>
         /// <param name="userSecondsCooldown">Total cooldown duration in seconds</param>
         /// <param name="platform">Target platform</param>
         /// <returns>TimeSpan representing remaining cooldown</returns>
-        [ConsoleSector("butterBror.Utils.Tools.Command", "GetCooldownTime")]
+        
         public static TimeSpan GetCooldownTime(
             string userID,
-            string cooldownParamName,
+            string cooldownName,
             int userSecondsCooldown,
             PlatformsEnum platform
         )
@@ -194,7 +191,15 @@ namespace butterBror.Utils
             Engine.Statistics.FunctionsUsed.Add();
             try
             {
-                return TimeSpan.FromSeconds(userSecondsCooldown) - (DateTime.UtcNow - UsersData.Get<DateTime>(userID, $"LU_{cooldownParamName}", platform));
+                Dictionary<string, string> LastUses = Format.ParseStringDictionary((string)Engine.Bot.SQL.Users.GetParameter(platform, Format.ToLong(userID), Users.LastUse));
+                if (LastUses.TryGetValue(cooldownName, out var lastUse))
+                {
+                    return TimeSpan.FromSeconds(userSecondsCooldown) - (DateTime.UtcNow - DateTime.Parse(lastUse, null, DateTimeStyles.AdjustToUniversal));
+                }
+                else
+                {
+                    return TimeSpan.FromSeconds(0);
+                }
             }
             catch (Exception ex)
             {
@@ -206,185 +211,119 @@ namespace butterBror.Utils
         /// <summary>
         /// Processes incoming chat messages across platforms with rate limiting and message tracking.
         /// </summary>
-        /// <param name="UserID">User identifier</param>
-        /// <param name="RoomId">Channel/Room identifier</param>
-        /// <param name="Username">Display name of the user</param>
-        /// <param name="Message">Message content</param>
-        /// <param name="Twitch">Twitch-specific message context</param>
-        /// <param name="Room">Channel/Room name</param>
-        /// <param name="Platform">Target platform (Twitch/Discord/Telegram)</param>
-        /// <param name="Telegram">Telegram-specific message context</param>
+        /// <param name="userId">User identifier</param>
+        /// <param name="channelId">Channel/Room identifier</param>
+        /// <param name="username">Display name of the user</param>
+        /// <param name="message">Message content</param>
+        /// <param name="twitchMessageContext">Twitch-specific message context</param>
+        /// <param name="channel">Channel/Room name</param>
+        /// <param name="platform">Target platform (Twitch/Discord/Telegram)</param>
+        /// <param name="telegramMessageContext">Telegram-specific message context</param>
         /// <param name="ServerChannel">Discord server channel (optional)</param>
         /// <remarks>
         /// Handles message counting, AFK return detection, currency rewards, nickname mapping, 
         /// and message persistence across platforms.
         /// </remarks>
-        [ConsoleSector("butterBror.Utils.Tools.Command", "ProcessMessageAsync")]
+        
         public static async Task ProcessMessageAsync(
-            string UserID,
-            string RoomId,
-            string Username,
-            string Message,
-            OnMessageReceivedArgs Twitch,
-            string Room,
-            PlatformsEnum Platform,
-            Message Telegram,
-            string ServerChannel = ""
+            string userId,
+            string channelId,
+            string username,
+            string message,
+            ChatMessage twitchMessageContext,
+            string channel,
+            PlatformsEnum platform,
+            Message telegramMessageContext,
+            string messageId,
+            string server = "",
+            string serverId = ""
         )
         {
             Engine.Statistics.FunctionsUsed.Add();
             Engine.Statistics.MessagesReaded.Add();
             var now = DateTime.UtcNow;
-            var semaphore = messagesSemaphores.GetOrAdd(UserID, id => (new SemaphoreSlim(1, 1), now));
+            var semaphore = messagesSemaphores.GetOrAdd(userId, id => (new SemaphoreSlim(1, 1), now));
             try
             {
                 await semaphore.Semaphore.WaitAsync().ConfigureAwait(false);
-                messagesSemaphores.TryUpdate(UserID, (semaphore.Semaphore, now), semaphore);
+                messagesSemaphores.TryUpdate(userId, (semaphore.Semaphore, now), semaphore);
+
                 // Skip banned or ignored users
-                if (UsersData.Get<bool>(UserID, "isBanned", Platform) ||
-                    UsersData.Get<bool>(UserID, "isIgnored", Platform))
+                if (Engine.Bot.SQL.Roles.GetBannedUser(platform, Format.ToLong(userId)) is not null ||
+                    Engine.Bot.SQL.Roles.GetIgnoredUser(platform, Format.ToLong(userId)) is not null)
                     return;
 
-                // Prepare paths and counters
-                string platform_key = PlatformsPathName.strings[(int)Platform];
-                string channel_base = Path.Combine(Engine.Bot.Pathes.Channels, platform_key, RoomId);
-                string count_dir = Path.Combine(channel_base, "MS");
-                string user_count_file = Path.Combine(count_dir, UserID + ".txt");
-                int messages_count = 0;
                 DateTime now_utc = DateTime.UtcNow;
-
-                string nick2id = Path.Combine(Engine.Bot.Pathes.Nick2ID, platform_key, Username + ".txt");
-                string id2nick = Path.Combine(Engine.Bot.Pathes.ID2Nick, platform_key, UserID + ".txt");
-
-                // Ensure directories exist
-                FileUtil.CreateDirectory(channel_base);
-                FileUtil.CreateDirectory(Path.Combine(channel_base, "MSGS"));
-                FileUtil.CreateDirectory(count_dir);
-
-                // Count and increment
-                if (FileUtil.FileExists(user_count_file))
-                    messages_count = Format.ToInt(FileUtil.GetFileContent(user_count_file)) + 1;
                 Engine.Bot.MessagesProccessed++;
 
-                bool isNewUser = !FileUtil.FileExists(
-                    Path.Combine(Engine.Bot.Pathes.Users, platform_key, UserID + ".json")
-                );
-
-                // Build message prefix
-                var prefix = new StringBuilder();
-                if (isNewUser)
+                if (!Engine.Bot.SQL.Users.CheckUserExists(platform, Format.ToLong(userId)))
                 {
-                    UsersData.Register(UserID, Message, Platform);
-                    prefix.Append(Platform == PlatformsEnum.Discord
-                        ? $"{Room} | {ServerChannel} · {Username}: "
-                        : $"{Room} · {Username}: ");
+                    Engine.Bot.SQL.Users.RegisterNewUser(platform, Format.ToLong(userId), LanguageDetector.DetectLanguage(message), message, channel);
+                    Engine.Bot.SQL.Users.AddUsernameMapping(platform, Format.ToLong(userId), username.ToLower());
                 }
                 else
                 {
                     // Handle AFK return
-                    if ((Platform == PlatformsEnum.Twitch || Platform == PlatformsEnum.Telegram) &&
-                        UsersData.Get<bool>(UserID, "isAfk", Platform))
+                    if ((long)Engine.Bot.SQL.Users.GetParameter(platform, Format.ToLong(userId), Users.IsAFK) == 1)
                     {
-                        if (Platform == PlatformsEnum.Twitch)
-                            Chat.ReturnFromAFK(UserID, RoomId, Room, Username, Twitch.ChatMessage.Id, null, Platform);
-                        else
-                            Chat.ReturnFromAFK(UserID, RoomId, Room, Username, "", Telegram, Platform);
+                        Chat.ReturnFromAFK(userId, channelId, channel, username, messageId, telegramMessageContext, platform, message, server, serverId);
                     }
 
                     // Award coins
-                    int add_coins = Message.Length / 6 + 1;
-                    Balance.Add(UserID, 0, add_coins, Platform);
-                    int floatBal = Balance.GetSubbalance(UserID, Platform);
-                    int bal = Balance.GetBalance(UserID, Platform);
-
-                    prefix.Append(Platform == PlatformsEnum.Discord
-                        ? $"{Room} | {ServerChannel} · {Username} ({messages_count}/{bal}.{floatBal} {Engine.Bot.CoinSymbol}): "
-                        : $"{Room} | {Username} ({messages_count}/{bal}.{floatBal} {Engine.Bot.CoinSymbol}): ");
+                    int add_coins = message.Length / 6 + 1;
+                    Balance.Add(userId, 0, add_coins, platform);
                 }
 
-                // Currency init for new users
-                if (!UsersData.Get<bool>(UserID, "isReadedCurrency", Platform))
-                {
-                    UsersData.Save(UserID, "isReadedCurrency", true, Platform);
-                    Engine.Coins += (float)(UsersData.Get<int>(UserID, "balance", Platform)
-                                   + UsersData.Get<int>(UserID, "floatBalance", Platform) / 100.0);
-                    Engine.Users++;
-                    prefix.Append("(Added to currency) ");
-                }
-
-                // Append actual message
-                prefix.Append(Message);
-                string outputMessage = prefix.ToString();
-
-                // Additional processing
-                new CAFUS().Maintrance(UserID, Username, Platform);
+                Engine.Bot.SQL.Users.IncrementGlobalMessageCount(platform, Format.ToLong(userId));
+                Engine.Bot.SQL.Users.IncrementMessageCountInChannel(platform, Format.ToLong(userId), platform == PlatformsEnum.Discord ? serverId : channelId);
 
                 // Mentions handling
-                foreach (Match m in Regex.Matches(Message, @"@(\w+)"))
+                List<string> mentionedList = new List<string>();
+                int addToUser = 0;
+
+                foreach (Match m in MentionRegex.Matches(message))
                 {
-                    var mentioned = m.Groups[1].Value.TrimEnd(',');
-                    var mentionedId = Names.GetUserID(mentioned, Platform);
-                    if (!string.Equals(mentioned, Username, StringComparison.OrdinalIgnoreCase)
-                        && mentionedId != null)
+                    string mentioned = m.Groups[1].Value.TrimEnd(',');
+                    string mentionedId = Names.GetUserID(mentioned, platform);
+
+                    if (!string.Equals(mentioned, username, StringComparison.OrdinalIgnoreCase)
+                        && mentionedId != null && !mentionedList.Contains(mentionedId))
                     {
-                        Balance.Add(mentionedId, 0, Engine.Bot.CurrencyMentioned, Platform);
-                        Balance.Add(UserID, 0, Engine.Bot.CurrencyMentioner, Platform);
-                        prefix.Append($" ({mentioned} +{Engine.Bot.CurrencyMentioned}) " +
-                                      $"({Username} +{Engine.Bot.CurrencyMentioner})");
+                        mentionedList.Add(mentionedId);
+                        Balance.Add(mentionedId, 0, Engine.Bot.CurrencyMentioned, platform);
+                        addToUser += Engine.Bot.CurrencyMentioner;
                     }
                 }
 
+                if (addToUser > 0)
+                {
+                    Balance.Add(userId, 0, addToUser, platform);
+                }
+
                 // Save user state
-                UsersData.Save(UserID, "lastSeenMessage", Message, Platform);
-                UsersData.Save(UserID, "lastSeen", now_utc, Platform);
-                try
-                {
-                    UsersData.Save(
-                        UserID,
-                        "totalMessages",
-                        UsersData.Get<int>(UserID, "totalMessages", Platform) + 1,
-                        Platform
-                    );
-                }
-                catch (Exception ex)
-                {
-                    Write(ex);
-                }
+                Engine.Bot.SQL.Users.SetParameter(platform, Format.ToLong(userId), Users.LastMessage, message);
+                Engine.Bot.SQL.Users.SetParameter(platform, Format.ToLong(userId), Users.LastChannel, channel);
+                Engine.Bot.SQL.Users.SetParameter(platform, Format.ToLong(userId), Users.LastSeen, now_utc.ToString("o"));
 
                 // Persist message history
                 var msg = new Models.DataBase.Message
                 {
                     messageDate = now_utc,
-                    messageText = Message,
-                    isMe = Platform == PlatformsEnum.Twitch && Twitch.ChatMessage.IsMe,
-                    isModerator = Platform == PlatformsEnum.Twitch && Twitch.ChatMessage.IsModerator,
-                    isPartner = Platform == PlatformsEnum.Twitch && Twitch.ChatMessage.IsPartner,
-                    isStaff = Platform == PlatformsEnum.Twitch && Twitch.ChatMessage.IsStaff,
-                    isSubscriber = Platform == PlatformsEnum.Twitch && Twitch.ChatMessage.IsSubscriber,
-                    isTurbo = Platform == PlatformsEnum.Twitch && Twitch.ChatMessage.IsTurbo,
-                    isVip = Platform == PlatformsEnum.Twitch && Twitch.ChatMessage.IsVip
+                    messageText = message,
+                    isMe = platform == PlatformsEnum.Twitch && twitchMessageContext.IsMe,
+                    isVip = platform == PlatformsEnum.Twitch && twitchMessageContext.IsVip,
+                    isTurbo = platform == PlatformsEnum.Twitch && twitchMessageContext.IsTurbo,
+                    isStaff = platform == PlatformsEnum.Twitch && twitchMessageContext.IsStaff,
+                    isPartner = platform == PlatformsEnum.Twitch && twitchMessageContext.IsPartner,
+                    isModerator = platform == PlatformsEnum.Twitch && twitchMessageContext.IsModerator,
+                    isSubscriber = platform == PlatformsEnum.Twitch && twitchMessageContext.IsSubscriber,
                 };
-                MessagesWorker.SaveMessage(RoomId, UserID, msg, Platform);
 
-                // Nickname mappings
-                if (!FileUtil.FileExists(nick2id) || !FileUtil.FileExists(id2nick))
+                if (Engine.Bot.SQL.Channels.GetFirstMessage(platform, channelId, Format.ToLong(userId)) is null)
                 {
-                    FileUtil.SaveFileContent(nick2id, UserID);
-                    FileUtil.SaveFileContent(id2nick, Username);
+                    Engine.Bot.SQL.Channels.SaveFirstMessage(platform, channelId, Format.ToLong(userId), msg);
                 }
-
-                UsersData.Save(UserID, "lastSeenChannel", Room, Platform);
-                FileUtil.SaveFileContent(user_count_file, messages_count.ToString());
-
-                // Final console output
-                var logTag = Platform switch
-                {
-                    PlatformsEnum.Twitch => "tw_chat",
-                    PlatformsEnum.Discord => "ds_chat",
-                    PlatformsEnum.Telegram => "tg_chat",
-                    _ => "chat"
-                };
-                //Write(outputMessage, logTag);
+                Engine.Bot.SQL.Messages.SaveMessage(platform, platform == PlatformsEnum.Discord ? serverId : channelId, Format.ToLong(userId), msg);
             }
             catch (Exception ex)
             {
@@ -406,7 +345,7 @@ namespace butterBror.Utils
         /// Uses Roslyn compiler with restricted assembly references for security.
         /// Requires proper permissions to execute.
         /// </remarks>
-        [ConsoleSector("butterBror.Utils.Tools.Command", "ExecuteCode")]
+        
         public static string ExecuteCode(string userCode)
         {
             Engine.Statistics.FunctionsUsed.Add();

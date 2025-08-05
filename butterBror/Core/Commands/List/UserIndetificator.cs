@@ -14,8 +14,8 @@ namespace butterBror.Core.Commands.List
         public override Version Version => new("1.0.0");
         public override Dictionary<string, string> Description => new()
         {
-            { "ru", "Узнать ID пользователя." },
-            { "en", "Find out user ID." }
+            { "ru-RU", "Узнать ID пользователя." },
+            { "en-US", "Find out user ID." }
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=id";
         public override int CooldownPerUser => 5;
@@ -42,21 +42,21 @@ namespace butterBror.Core.Commands.List
                     string ID = Names.GetUserID(username, data.Platform, true);
                     if (ID == data.UserID)
                     {
-                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:id", data.ChannelID, data.Platform).Replace("%id%", data.UserID));
+                        commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:id", data.ChannelId, data.Platform, data.UserID));
                     }
                     else if (ID == null)
                     {
-                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:user_not_found", data.ChannelID, data.Platform).Replace("%user%", username));
+                        commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:user_not_found", data.ChannelId, data.Platform, username));
                         commandReturn.SetColor(ChatColorPresets.CadetBlue);
                     }
                     else
                     {
-                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:id:user", data.ChannelID, data.Platform).Replace("%id%", ID).Replace("%user%", Names.DontPing(username)));
+                        commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:id:user", data.ChannelId, data.Platform, Names.DontPing(username), ID));
                     }
                 }
                 else
                 {
-                    commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:id", data.ChannelID, data.Platform).Replace("%id%", data.UserID));
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:id", data.ChannelId, data.Platform, data.UserID));
                 }
             }
             catch (Exception e)

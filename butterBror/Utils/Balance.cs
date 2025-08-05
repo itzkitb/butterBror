@@ -1,5 +1,8 @@
-﻿using butterBror.Data;
+﻿using butterBror.Core.Bot.SQLColumnNames;
+using butterBror.Core.Commands.List;
+using butterBror.Data;
 using butterBror.Models;
+using Microsoft.CodeAnalysis;
 
 namespace butterBror.Utils
 {
@@ -21,11 +24,11 @@ namespace butterBror.Utils
         /// - Handles underflow/overflow with negative balance adjustments
         /// Updates both main balance and float balance in user data storage
         /// </remarks>
-        public static void Add(string userID, int buttersAdd, int crumbsAdd, PlatformsEnum platform)
+        public static void Add(string userID, long buttersAdd, long crumbsAdd, PlatformsEnum platform)
         {
             Engine.Statistics.FunctionsUsed.Add();
-            int crumbs = GetSubbalance(userID, platform) + crumbsAdd;
-            int butters = GetBalance(userID, platform) + buttersAdd;
+            long crumbs = GetSubbalance(userID, platform) + crumbsAdd;
+            long butters = GetBalance(userID, platform) + buttersAdd;
 
             Engine.Coins += buttersAdd + crumbsAdd / 100f;
             while (crumbs > 100)
@@ -40,8 +43,8 @@ namespace butterBror.Utils
                 butters -= 1;
             }
 
-            UsersData.Save(userID, "floatBalance", crumbs, platform);
-            UsersData.Save(userID, "balance", butters, platform);
+            Engine.Bot.SQL.Users.SetParameter(platform, Format.ToLong(userID), Users.AfterDotBalance, crumbs);
+            Engine.Bot.SQL.Users.SetParameter(platform, Format.ToLong(userID), Users.Balance, butters);
         }
 
         /// <summary>
@@ -50,10 +53,10 @@ namespace butterBror.Utils
         /// <param name="userID">The unique identifier of the user.</param>
         /// <param name="platform">The platform context for the balance retrieval.</param>
         /// <returns>The user's current balance in butters.</returns>
-        public static int GetBalance(string userID, PlatformsEnum platform)
+        public static long GetBalance(string userID, PlatformsEnum platform)
         {
             Engine.Statistics.FunctionsUsed.Add();
-            return UsersData.Get<int>(userID, "balance", platform);
+            return (long)Engine.Bot.SQL.Users.GetParameter(platform, Format.ToLong(userID), Users.Balance);
         }
 
         /// <summary>
@@ -62,10 +65,10 @@ namespace butterBror.Utils
         /// <param name="userID">The unique identifier of the user.</param>
         /// <param name="platform">The platform context for the balance retrieval.</param>
         /// <returns>The user's current fractional balance in crumbs (0-99).</returns>
-        public static int GetSubbalance(string userID, PlatformsEnum platform)
+        public static long GetSubbalance(string userID, PlatformsEnum platform)
         {
             Engine.Statistics.FunctionsUsed.Add();
-            return UsersData.Get<int>(userID, "floatBalance", platform);
+            return (long)Engine.Bot.SQL.Users.GetParameter(platform, Format.ToLong(userID), Users.AfterDotBalance);
         }
     }
 }

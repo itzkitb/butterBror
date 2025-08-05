@@ -14,8 +14,8 @@ namespace butterBror.Core.Commands.List
         public override string GithubSource => $"{URLs.githubSource}blob/master/butterBror/Core/Commands/List/Calculator.cs";
         public override Version Version => new("1.0.0");
         public override Dictionary<string, string> Description => new(){
-            { "ru", "Получить ответ на арифметическое выражение." },
-            { "en", "Get the answer to the arithmetic expression." }
+            { "ru-RU", "Получить ответ на арифметическое выражение." },
+            { "en-US", "Get the answer to the arithmetic expression." }
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=math";
         public override int CooldownPerUser => 15;
@@ -58,16 +58,16 @@ namespace butterBror.Core.Commands.List
                         throw new DivideByZeroException();
                     }
 
-                    commandReturn.SetMessage(Text.ArgumentReplacement(TranslationManager.GetTranslation(data.User.Language, "command:calculator:result", data.ChannelID, data.Platform), "result", mathResult.ToString()));
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:calculator:result", data.ChannelId, data.Platform, mathResult.ToString()));
                 }
                 catch (DivideByZeroException)
                 {
-                    commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:divide_by_zero", data.ChannelID, data.Platform));
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:divide_by_zero", data.ChannelId, data.Platform));
                     commandReturn.SetColor(ChatColorPresets.Red);
                 }
                 catch (Exception)
                 {
-                    commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:invalid_mathematical_expression", data.ChannelID, data.Platform));
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:invalid_mathematical_expression", data.ChannelId, data.Platform));
                     commandReturn.SetColor(ChatColorPresets.Red);
                 }
             }

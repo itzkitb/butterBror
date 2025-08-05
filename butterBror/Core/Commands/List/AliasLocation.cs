@@ -11,8 +11,8 @@ namespace butterBror.Core.Commands.List
         public override string GithubSource => $"{URLs.githubSource}blob/master/butterBror/Core/Commands/List/SetLocation.cs";
         public override Version Version => new Version("1.0.0");
         public override Dictionary<string, string> Description => new() {
-            { "ru", "Установить местоположение, для получения информации о погоде." },
-            { "en", "Set your location to get weather information." }
+            { "ru-RU", "Установить местоположение, для получения информации о погоде." },
+            { "en-US", "Set your location to get weather information." }
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=setlocation";
         public override int CooldownPerUser => 0;
@@ -41,7 +41,7 @@ namespace butterBror.Core.Commands.List
                     exdata.Arguments = new List<string>();
                     exdata.Arguments.Insert(0, "get");
                 }
-                var command = new Weather();
+                var command = new butterBror.Core.Commands.List.Weather();
                 return command.Execute(exdata);
             }
             catch (Exception e)

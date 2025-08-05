@@ -36,7 +36,7 @@ namespace butterBror.Core.Bot
         /// Asynchronously retrieves a valid Twitch API token, refreshing if necessary.
         /// </summary>
         /// <returns>A valid TokenData object or null on failure</returns>
-        [ConsoleSector("butterBror.Utils.Tools.TwitchToken", "GetTokenAsync")]
+        
         public static async Task<TokenData> GetTokenAsync()
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -62,7 +62,7 @@ namespace butterBror.Core.Bot
         /// </summary>
         /// <param name="listener">HttpListener instance for handling the redirect</param>
         /// <returns>A new TokenData object or null on failure</returns>
-        [ConsoleSector("butterBror.Utils.Tools.TwitchToken", "PerformAuthorizationFlow")]
+        
         private static async Task<TokenData> PerformAuthorizationFlow()
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -112,7 +112,7 @@ namespace butterBror.Core.Bot
         /// </summary>
         /// <param name="token">The token to refresh</param>
         /// <returns>An updated TokenData object or null on failure</returns>
-        [ConsoleSector("butterBror.Utils.Tools.TwitchToken", "RefreshAccessToken")]
+        
         public static async Task<TokenData> RefreshAccessToken(TokenData token)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -157,14 +157,14 @@ namespace butterBror.Core.Bot
         /// </summary>
         /// <param name="listener">HttpListener instance to receive the response</param>
         /// <returns>The authorization code string or null on failure</returns>
-        [ConsoleSector("butterBror.Utils.Tools.TwitchToken", "GetAuthorizationCodeAsync")]
+        
         private static async Task<string> GetAuthorizationCodeAsync(HttpListener listener)
         {
             Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 Write("Twitch oauth - Getting auth data...", "info");
-                var url = $"https://id.twitch.tv/oauth2/authorize?client_id={_clientId}&redirect_uri={_redirectURL}&response_type=code&scope=user:manage:chat_color+chat:edit+chat:read";
+                var url = $"https://id.twitch.tv/oauth2/authorize?client_id={_clientId}&redirect_uri={_redirectURL}&response_type=code&scope=user:manage:chat_color+chat:edit+chat:read+moderator:read:chatters+user:manage:blocked_users";
                 var psi = new ProcessStartInfo
                 {
                     FileName = url,
@@ -191,7 +191,7 @@ namespace butterBror.Core.Bot
         /// </summary>
         /// <param name="code">The authorization code to exchange</param>
         /// <returns>A new TokenData object or null on failure</returns>
-        [ConsoleSector("butterBror.Utils.Tools.TwitchToken", "ExchangeCodeForTokenAsync")]
+        
         private static async Task<TokenData> ExchangeCodeForTokenAsync(string code)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -231,7 +231,7 @@ namespace butterBror.Core.Bot
         /// </summary>
         /// <param name="query">The HTTP query string</param>
         /// <returns>The authorization code or null if not found</returns>
-        [ConsoleSector("butterBror.Utils.Tools.TwitchToken", "GetCodeFromResponse")]
+        
         private static string GetCodeFromResponse(string query)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -243,7 +243,7 @@ namespace butterBror.Core.Bot
         /// Loads stored token data from persistent storage.
         /// </summary>
         /// <returns>The loaded TokenData or null if loading failed</returns>
-        [ConsoleSector("butterBror.Utils.Tools.TwitchToken", "LoadTokenData")]
+        
         private static TokenData LoadTokenData()
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -269,7 +269,7 @@ namespace butterBror.Core.Bot
         /// Saves token data to persistent storage.
         /// </summary>
         /// <param name="tokenData">The token data to save</param>
-        [ConsoleSector("butterBror.Utils.Tools.TwitchToken", "SaveTokenData")]
+        
         private static void SaveTokenData(TokenData tokenData)
         {
             Engine.Statistics.FunctionsUsed.Add();

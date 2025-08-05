@@ -48,7 +48,7 @@ namespace butterBror.Services.External
         /// - Performs fresh search if cache is empty or expired
         /// - Stores successful results in cache for future requests
         /// </remarks>
-        [ConsoleSector("butterBror.Utils.SevenTvService", "SearchUser")]
+        
         public async Task<string> SearchUser(string nickname, string bearer_token)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -77,7 +77,7 @@ namespace butterBror.Services.External
         /// - Performs fresh search if cache is empty or expired
         /// - Stores successful results in cache for future requests
         /// </remarks>
-        [ConsoleSector("butterBror.Utils.SevenTvService", "SearchEmote")]
+        
         public async Task<string> SearchEmote(string emoteName, string bearer_token)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -107,7 +107,7 @@ namespace butterBror.Services.External
         /// Uses GraphQL mutation to modify emote sets.
         /// Requires valid bearer token with edit permissions.
         /// </remarks>
-        [ConsoleSector("butterBror.Utils.SevenTvService", "Add")]
+        
         public async Task<bool> Add(string set_id, string emote_name, string emote_id, string bearer_token)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -151,7 +151,7 @@ namespace butterBror.Services.External
         /// Uses GraphQL mutation to modify emote sets.
         /// Requires valid bearer token with edit permissions.
         /// </remarks>
-        [ConsoleSector("butterBror.Utils.SevenTvService", "Remove")]
+        
         public async Task<bool> Remove(string set_id, string emote_id, string bearer_token)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -195,7 +195,7 @@ namespace butterBror.Services.External
         /// Uses GraphQL mutation to update emote alias.
         /// Requires valid bearer token with edit permissions.
         /// </remarks>
-        [ConsoleSector("butterBror.Utils.SevenTvService", "Rename")]
+        
         public async Task<bool> Rename(string set_id, string new_name, string emote_id, string bearer_token)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -238,7 +238,7 @@ namespace butterBror.Services.External
         /// Handles HTTP POST requests with Bearer authentication.
         /// Returns false for non-success status codes.
         /// </remarks>
-        [ConsoleSector("butterBror.Utils.SevenTvService", "SendRequestAsync")]
+        
         private async Task<bool> SendRequestAsync(object requestData, string bearerToken)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -279,7 +279,7 @@ namespace butterBror.Services.External
         /// - Uses 7TV's user search GraphQL endpoint
         /// - Returns first matching user ID from results
         /// </remarks>
-        [ConsoleSector("butterBror.Utils.SevenTvService", "PerformSearchUser")]
+        
         public async Task<string> PerformSearchUser(string nickname)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -330,7 +330,7 @@ namespace butterBror.Services.External
         /// - Returns first matching emote ID from results
         /// - Supports various search filters through GraphQL parameters
         /// </remarks>
-        [ConsoleSector("butterBror.Utils.SevenTvService", "PerformSearchEmote")]
+        
         public async Task<string> PerformSearchEmote(string emoteName)
         {
             Engine.Statistics.FunctionsUsed.Add();

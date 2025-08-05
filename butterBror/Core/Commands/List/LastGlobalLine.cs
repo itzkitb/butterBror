@@ -1,7 +1,9 @@
-﻿using butterBror.Utils;
+﻿using butterBror.Core.Bot;
+using butterBror.Core.Bot.SQLColumnNames;
 using butterBror.Data;
 using butterBror.Models;
-using butterBror.Core.Bot;
+using butterBror.Utils;
+using System.Globalization;
 using TwitchLib.Client.Enums;
 
 namespace butterBror.Core.Commands.List
@@ -14,8 +16,8 @@ namespace butterBror.Core.Commands.List
         public override string GithubSource => $"{URLs.githubSource}blob/master/butterBror/Core/Commands/List/LastGlobalLine.cs";
         public override Version Version => new("1.0.0");
         public override Dictionary<string, string> Description => new() {
-            { "ru", "Последнее сообщение определенного пользователя." },
-            { "en", "The last message of the selected user." }
+            { "ru-RU", "Последнее сообщение определенного пользователя." },
+            { "en-US", "The last message of the selected user." }
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=lgl";
         public override int CooldownPerUser => 10;
@@ -38,39 +40,45 @@ namespace butterBror.Core.Commands.List
             {
                 if (data.Arguments.Count != 0)
                 {
-                    var name = Text.UsernameFilter(data.Arguments.ElementAt(0).ToLower());
-                    var userID = Names.GetUserID(name, PlatformsEnum.Twitch);
+                    string name = Text.UsernameFilter(data.Arguments.ElementAt(0).ToLower());
+                    string userID = Names.GetUserID(name, PlatformsEnum.Twitch, true);
+
                     if (userID == null)
                     {
-                        commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "error:user_not_found", data.ChannelID, data.Platform)
-                            .Replace("%user%", Names.DontPing(name)));
+                        commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:user_not_found", data.ChannelId, data.Platform, Names.DontPing(name)));
                         commandReturn.SetColor(ChatColorPresets.Red);
                     }
                     else
                     {
-                        var lastLine = UsersData.Get<string>(userID, "lastSeenMessage", data.Platform);
-                        var lastLineDate = UsersData.Get<DateTime>(userID, "lastSeen", data.Platform);
-                        DateTime now = DateTime.UtcNow;
+                        string lastLine = (string)Engine.Bot.SQL.Users.GetParameter(data.Platform, Format.ToLong(userID), Users.LastMessage);
+                        string lastChannel = (string)Engine.Bot.SQL.Users.GetParameter(data.Platform, Format.ToLong(userID), Users.LastChannel);
+                        DateTime lastLineDate = DateTime.Parse((string)Engine.Bot.SQL.Users.GetParameter(data.Platform, Format.ToLong(userID), Users.LastSeen), null, DateTimeStyles.AdjustToUniversal);
+
                         if (name == Engine.Bot.BotName.ToLower())
                         {
-                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:last_global_line:bot", data.ChannelID, data.Platform));
+                            commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:last_global_line:bot", data.ChannelId, data.Platform));
                         }
                         else if (name == data.User.Name.ToLower())
                         {
-                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "text:you_right_there", data.ChannelID, data.Platform));
+                            commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "text:you_right_there", data.ChannelId, data.Platform));
                         }
                         else
                         {
-                            commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "command:last_global_line", data.ChannelID, data.Platform)
-                                .Replace("%user%", Names.DontPing(Names.GetUsername(userID, data.Platform)))
-                                .Replace("&timeAgo&", Text.FormatTimeSpan(Utils.Format.GetTimeTo(lastLineDate, now, false), data.User.Language))
-                                .Replace("%message%", lastLine));
+                            commandReturn.SetMessage(LocalizationService.GetString(
+                                data.User.Language,
+                                "command:last_global_line",
+                                data.ChannelId,
+                                data.Platform,
+                                Names.DontPing(Names.GetUsername(userID, data.Platform)),
+                                lastLine,
+                                Text.FormatTimeSpan(Utils.Format.GetTimeTo(lastLineDate, DateTime.UtcNow, false), data.User.Language),
+                                lastChannel));
                         }
                     }
                 }
                 else
                 {
-                    commandReturn.SetMessage(TranslationManager.GetTranslation(data.User.Language, "text:you_right_there", data.ChannelID, data.Platform));
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "text:you_right_there", data.ChannelId, data.Platform));
                 }
             }
             catch (Exception e)

@@ -1,30 +1,33 @@
-﻿using DankDB;
+﻿using butterBror.Core.Commands;
+using butterBror.Data;
+using butterBror.Events;
+using butterBror.Models;
+using butterBror.Models.DataBase;
+using butterBror.Services.External;
+using butterBror.Services.System;
+using butterBror.Utils;
+using butterBror.Workers;
+using DankDB;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.IO.Compression;
 using System.Net.NetworkInformation;
 using Telegram.Bot;
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types.Enums;
+using TwitchLib.Api;
+using TwitchLib.Api.Core.Enums;
 using TwitchLib.Client;
 using TwitchLib.Client.Models;
 using TwitchLib.Communication.Clients;
 using TwitchLib.Communication.Models;
-using static butterBror.Engine.Statistics;
 using static butterBror.Core.Bot.Console;
 using static butterBror.Core.Bot.TwitchToken;
-using butterBror.Data;
-using butterBror.Events;
-using butterBror.Services.External;
-using butterBror.Services.System;
-using butterBror.Workers;
-using butterBror.Core.Commands;
-using butterBror.Utils;
-using butterBror.Models;
-using butterBror.Models.DataBase;
+using static butterBror.Engine.Statistics;
 
 namespace butterBror.Core.Bot
 {
@@ -36,6 +39,7 @@ namespace butterBror.Core.Bot
         internal ClientWorker Clients = new ClientWorker();
         public PathWorker Pathes = new PathWorker();
         internal Tokens Tokens = new Tokens();
+        public SQLWorker SQL;
 
         public bool TwitchReconnected = false;
         public bool Initialized = false;
@@ -80,7 +84,7 @@ namespace butterBror.Core.Bot
         /// - Initializes settings and connects to Twitch
         /// - Handles version tracking and file persistence
         /// </remarks>
-        [ConsoleSector("butterBror.InternalBot", "Start")]
+        
         public async void Start()
         {
             FunctionsUsed.Add();
@@ -98,18 +102,14 @@ namespace butterBror.Core.Bot
             try
             {
                 Write("Checking directories right now...", "initialization");
-                string[] directories = {
-                        Pathes.General, Pathes.Main, Pathes.Channels, Pathes.Users, Pathes.NicknamesData,
-                        Pathes.Nick2ID, Pathes.ID2Nick, Pathes.TranslateDefault, Pathes.TranslateCustom
-                    };
+                string[] directories = { Pathes.General, Pathes.Main, Pathes.TranslateDefault, Pathes.TranslateCustom };
+                
                 foreach (var dir in directories)
                 {
                     FileUtil.CreateDirectory(dir);
                 }
-                string[] directories_with_platforms = {
-                        Pathes.Channels, Pathes.Users, Pathes.NicknamesData, Pathes.TranslateDefault, Pathes.TranslateCustom
-                    };
 
+                string[] directories_with_platforms = { Pathes.TranslateDefault, Pathes.TranslateCustom };
 
                 Write("Checking files right now...", "initialization");
                 if (!FileUtil.FileExists(Pathes.Settings))
@@ -120,10 +120,10 @@ namespace butterBror.Core.Bot
                 }
 
                 string[] files = {
-                            Pathes.Cookies, Pathes.BlacklistWords, Pathes.BlacklistReplacements,
+                            Pathes.BlacklistWords, Pathes.BlacklistReplacements,
                             Pathes.Currency, Pathes.Cache, Pathes.Logs, Pathes.APIUses,
-                            Path.Combine(Pathes.TranslateDefault, "ru.json"),
-                            Path.Combine(Pathes.TranslateDefault, "en.json"), Path.Combine(Pathes.Main, "VERSION.txt")
+                            Path.Combine(Pathes.TranslateDefault, "ru-RU.json"),
+                            Path.Combine(Pathes.TranslateDefault, "en-US.json"), Path.Combine(Pathes.Main, "VERSION.txt")
                     };
 
                 Write("Creating files...", "initialization");
@@ -138,6 +138,17 @@ namespace butterBror.Core.Bot
                 Write("Loading settigns...", "initialization");
                 LoadSettings();
 
+                Write("Initializing SQL...", "initialization");
+                this.SQL = new()
+                {
+                    Messages = new(Pathes.MessagesDatabase),
+                    Users = new(Pathes.UsersDatabase),
+                    Games = new(Pathes.GamesDatabase),
+                    Channels = new(Pathes.ChannelsDatabase),
+                    Roles = new(Pathes.RolesDatabase)
+                };
+
+                Write("Getting twitch token...", "initialization");
                 Tokens.TwitchGetter = new(TwitchClientId, Tokens.TwitchSecretToken, Pathes.Main + "TWITCH_AUTH.json");
                 var token = await GetTokenAsync();
 
@@ -168,7 +179,7 @@ namespace butterBror.Core.Bot
         /// - Starts Telegram message reception
         /// - Loads cached emote data
         /// </remarks>
-        [ConsoleSector("butterBror.InternalBot", "Connect")]
+        
         public async Task Connect()
         {
             FunctionsUsed.Add();
@@ -208,7 +219,7 @@ namespace butterBror.Core.Bot
         /// - Joins configured channels and the bot's own channel
         /// - Sends connection announcement message
         /// </remarks>
-        [ConsoleSector("butterBror.InternalBot", "ConnectToTwitch")]
+        
         private void ConnectToTwitch()
         {
             FunctionsUsed.Add();
@@ -222,6 +233,10 @@ namespace butterBror.Core.Bot
             var webSocket_client = new WebSocketClient(client_options);
             Clients.Twitch = new TwitchClient(webSocket_client);
             Clients.Twitch.Initialize(credentials, BotName, Executor);
+            Clients.TwitchAPI = new TwitchAPI();
+            Clients.TwitchAPI.Settings.AccessToken = Tokens.Twitch.AccessToken;
+            Clients.TwitchAPI.Settings.ClientId = TwitchClientId;
+            Clients.TwitchAPI.Settings.Scopes = [AuthScopes.Chat_Read, AuthScopes.Helix_Moderator_Read_Chatters, AuthScopes.Chat_Edit, AuthScopes.Helix_Moderator_Manage_Banned_Users];
 
             #region Events subscription
             Clients.Twitch.OnJoinedChannel += TwitchEvents.OnJoin;
@@ -254,7 +269,7 @@ namespace butterBror.Core.Bot
             var not_founded_channels = new List<string>();
             string send_channels = string.Join(", ", TwitchChannels.Select(channel =>
             {
-                var channel2 = Names.GetUsername(channel, PlatformsEnum.Twitch);
+                var channel2 = Names.GetUsername(channel, PlatformsEnum.Twitch, true);
                 if (channel2 == null) not_founded_channels.Add(channel);
                 return channel2;
             }).Where(channel => channel != "NONE\n"));
@@ -280,7 +295,7 @@ namespace butterBror.Core.Bot
         /// - Registers command handlers and event subscriptions
         /// - Starts the Discord bot instance
         /// </remarks>
-        [ConsoleSector("butterBror.InternalBot", "ConnectToDiscord")]
+        
         private async Task ConnectToDiscord()
         {
             FunctionsUsed.Add();
@@ -323,7 +338,7 @@ namespace butterBror.Core.Bot
         /// - Initializes Telegram bot client
         /// - Starts message reception with configured options
         /// </remarks>
-        [ConsoleSector("butterBror.InternalBot", "ConnectToTelegram")]
+        
         private void ConnectToTelegram()
         {
             FunctionsUsed.Add();
@@ -346,7 +361,7 @@ namespace butterBror.Core.Bot
         /// - Reports command execution times and database operations
         /// - Sends detailed metrics to bot's Twitch channel
         /// </remarks>
-        [ConsoleSector("butterBror.InternalBot", "StatusSender")]
+        
         public async Task SendTelemetry()
         {
             FunctionsUsed.Add();
@@ -354,18 +369,16 @@ namespace butterBror.Core.Bot
             try
             {
                 Write("Twitch - Telemetry started!", "telemetry");
-                Chat.TwitchSend(BotName.ToLower(), $"glorp 📡 ᴛᴇʟᴇᴍᴇᴛʀʏ sᴛᴀʀᴛᴇᴅ...", "", "", "", true, false);
                 Stopwatch Start = Stopwatch.StartNew();
 
                 int cacheItemsBefore = Worker.cache.count;
-                long memoryBefore = Process.GetCurrentProcess().PrivateMemorySize64 / (1024 * 1024);
                 Worker.cache.Clear(TimeSpan.FromMinutes(10));
 
                 #region Ethernet ping
                 Ping ping = new();
                 PingReply twitch = ping.Send(URLs.twitch, 1000);
                 PingReply discord = ping.Send(URLs.discord, 1000);
-                long telegram = await Services.External.TelegramService.Ping();
+                long telegram = await TelegramService.Ping();
                 PingReply sevenTV = ping.Send(URLs.seventv, 1000);
                 PingReply ISP = ping.Send("192.168.1.1", 1000);
 
@@ -398,7 +411,7 @@ namespace butterBror.Core.Bot
                     Arguments = CommandArguments,
                     ArgumentsString = CommandArgumentsAsString,
                     Channel = "test",
-                    ChannelID = "a123456789",
+                    ChannelId = "a123456789",
                     MessageID = "a123456789",
                     Platform = PlatformsEnum.Telegram,
                     User = user,
@@ -408,15 +421,6 @@ namespace butterBror.Core.Bot
 
                 await Runner.Run(data, true);
                 CommandExecute.Stop();
-                #endregion
-                #region DB ping
-                Manager.CreateDatabase("DBPing.json");
-
-                Stopwatch DBPing = Stopwatch.StartNew();
-                Manager.Save("DBPing.json", "test", 123);
-                DBPing.Stop();
-
-                File.Delete("DBPing.json");
                 #endregion
                 #region MessageSaver ping
                 Stopwatch MessageSaver = Stopwatch.StartNew();
@@ -435,12 +439,10 @@ namespace butterBror.Core.Bot
                     isTurbo = true,
                     isVip = true
                 };
-                MessagesWorker.SaveMessage("a123456789", "a123456789", message, PlatformsEnum.Telegram);
+
+                Engine.Bot.SQL.Messages.SaveMessage(PlatformsEnum.Telegram, "TESTIFICATE", 123, message);
 
                 MessageSaver.Stop();
-
-                File.Delete(Path.Combine(Engine.Bot.Pathes.Users, "TELEGRAM", "a123456789.json"));
-                Directory.Delete(Path.Combine(Engine.Bot.Pathes.Channels, "TELEGRAM", "a123456789"), true);
                 #endregion
                 #region Local ping
                 Stopwatch LocalPing = Stopwatch.StartNew();
@@ -458,40 +460,33 @@ namespace butterBror.Core.Bot
                 Engine.TelemetryTPSItems = 0;
                 Start.Stop();
 
-                await Task.Delay(500);
                 long memory = Process.GetCurrentProcess().PrivateMemorySize64 / (1024 * 1024);
 
-                Chat.TwitchSend(BotName.ToLower(), $"/me glorp 📡 ᴛᴇʟᴇᴍᴇᴛʀʏ №1 | " +
-                    $"🏃‍♂️ Work time: {DateTime.Now - Engine.StartTime:dd\\:hh\\:mm\\.ss} | " +
-                    $"📲 Memory: {memoryBefore}Mbyte → {memory}Mbyte | " +
-                    $"🔋 Battery: {Battery.GetBatteryCharge()}% ({Battery.IsCharging()}) | " +
-                    $"⚡ CPU: {cpuPercent:0.00}% | " +
-                    $"⌛ TPS: {tpsAverage:0.00} | " +
-                    $"⌚ TT: {Engine.TicksCounter} | " +
-                    $"⚠ ST: {Engine.SkippedTicks} | " +
-                    $"👾 DankDB: {cacheItemsBefore} → {Worker.cache.count} | " +
-                    $"🤨 Emotes: {EmotesCache.Count} | " +
-                    $"📺 7tv: {ChannelsSevenTVEmotes.Count} | " +
-                    $"🤔 Emote sets: {EmoteSetsCache.Count} | " +
-                    $"🔍 7tv USC: {UsersSearchCache.Count} | " +
-                    $"💬 Messages: {MessagesProccessed} | " +
-                    $"🤖 Discord: {Clients.Discord.Guilds.Count} | " +
-                    $"📋 Commands: {Engine.CompletedCommands} | " +
-                    $"👥 Users: {Engine.Users}", "", "", "", true, false);
-
-                await Task.Delay(500);
-                Chat.TwitchSend(BotName.ToLower(), $"/me glorp 📡 ᴛᴇʟᴇᴍᴇᴛʀʏ №2 | " +
+                Chat.TwitchSend(BotName.ToLower(), $"/me glorp 📡 | " +
+                    $"🕒 {Text.FormatTimeSpan(DateTime.Now - Engine.StartTime, "en-US")} | " +
+                    $"{memory}Mbyte | " +
+                    $"🔋 {Battery.GetBatteryCharge()}% {(Battery.IsCharging() ? "(Chaging) " : "")}| " +
+                    $"CPU: {cpuPercent:0.00}% | " +
+                    $"TPS: {tpsAverage:0.00} | " +
+                    $"Ticks: {Engine.TicksCounter}/{Engine.SkippedTicks} | " +
+                    $"DankDB: {cacheItemsBefore} → {Worker.cache.count} | " +
+                    $"Emotes: {EmotesCache.Count} | " +
+                    $"7tv: E:{ChannelsSevenTVEmotes.Count},USC:{UsersSearchCache.Count},ES:{EmoteSetsCache.Count} | " +
+                    $"Messages: {MessagesProccessed} | " +
+                    $"Discord guilds: {Clients.Discord.Guilds.Count} | " +
+                    $"Twitch channels: {Clients.Twitch.JoinedChannels.Count} | " +
+                    $"Completed: {Engine.CompletedCommands} | " +
+                    $"Users: {Engine.Users} | " +
+                    $"Coins: {Engine.Coins:0.00} | " +
+                    $"Currency: ${coinCurrency:0.00000000} | " +
                     $"Twitch: {twitch.RoundtripTime}ms | " +
                     $"Discord: {discord.RoundtripTime}ms | " +
                     $"Telegram: {telegram}ms | " +
                     $"7tv: {sevenTV.RoundtripTime}ms | " +
-                    $"🚄 ISP: {ISP.RoundtripTime}ms | " +
-                    $"{Engine.Bot.CoinSymbol} Coins: {Engine.Coins:0.00} | " +
-                    $"Coin currency: ${coinCurrency:0.00000000} | " +
-                    $"Commands ping: {CommandExecute.ElapsedMilliseconds}ms | " +
-                    $"DB ping: {DBPing.ElapsedMilliseconds}ms | " +
-                    $"MessageSaver ping: {MessageSaver.ElapsedMilliseconds}ms | " +
-                    $"Local ping: {LocalPing.ElapsedMilliseconds}ms", "", "", "", true, false);
+                    $"ISP: {ISP.RoundtripTime}ms | " +
+                    $"Command: {CommandExecute.ElapsedMilliseconds}ms | " +
+                    $"MessageSaver: {MessageSaver.ElapsedMilliseconds}ms | " +
+                    $"Local: {LocalPing.ElapsedTicks} ticks", "", "", "", true, false);
 
                 Write($"Twitch - Telemetry ended! ({Start.ElapsedMilliseconds}ms)", "telemetry");
 
@@ -512,9 +507,48 @@ namespace butterBror.Core.Bot
         }
 
         /// <summary>
+        /// Creates a backup of all data from Pathes.Main folder, compresses it and moves to Pathes.Reserve folder.
+        /// </summary>
+        public async Task BackupDataAsync()
+        {
+            FunctionsUsed.Add();
+            try
+            {
+                Chat.TwitchSend(BotName.ToLower(), "🗃️ Backup started...", "", "", "", true, false);
+                Write("Backup started...", "backup");
+
+                string reservePath = Path.Combine(Pathes.General, "Reserve");
+                Directory.CreateDirectory(reservePath);
+
+                string archiveName = $"backup_{DateTime.UtcNow:yyyyMMdd}.zip";
+                string archivePath = Path.Combine(reservePath, archiveName);
+
+                if (File.Exists(archivePath))
+                    File.Delete(archivePath);
+
+                SaveEmoteCache();
+
+                Stopwatch stopwatch = Stopwatch.StartNew();
+
+                await Task.Run(() => ZipFile.CreateFromDirectory(Pathes.Main, archivePath));
+
+                stopwatch.Stop();
+
+                long archiveSize = new FileInfo(archivePath).Length;
+                double archiveSizeMB = archiveSize / (1024.0 * 1024.0);
+
+                Write($"Backup completed in {stopwatch.Elapsed.TotalSeconds:0} seconds (Archive size: {archiveSizeMB:0.00} MB)!", "backup");
+                Chat.TwitchSend(BotName.ToLower(), $"🗃️ Backup completed in {stopwatch.Elapsed.TotalSeconds:0} seconds (Archive size: {archiveSizeMB:0.00} MB)!", "", "", "", true, false);
+            }
+            catch (Exception ex)
+            {
+                Write(ex);
+            }
+        }
+
+        /// <summary>
         /// Restarts the bot instance gracefully.
         /// </summary>
-        [ConsoleSector("butterBror.InternalBot", "Restart")]
         public void Restart()
         {
             FunctionsUsed.Add();
@@ -533,7 +567,7 @@ namespace butterBror.Core.Bot
         /// <remarks>
         /// - Sends shutdown message to Twitch channels
         /// </remarks>
-        [ConsoleSector("butterBror.InternalBot", "TurnOff")]
+        
         public void TurnOff()
         {
             FunctionsUsed.Add();
@@ -572,30 +606,30 @@ namespace butterBror.Core.Bot
         /// - Sets up default values for all bot parameters
         /// - Preserves existing settings if file exists
         /// </remarks>
-        [ConsoleSector("butterBror.InternalBot", "InitializeSettingsFile")]
+        
         private void InitializeSettingsFile(string path)
         {
             FunctionsUsed.Add();
 
             FileUtil.CreateFile(path);
-            SafeManager.Save(path, "bot_name", "", false);
-            SafeManager.Save(path, "discord_token", "", false);
-            SafeManager.Save(path, "imgur_token", "", false);
-            SafeManager.Save(path, "user_id", "", false);
-            SafeManager.Save(path, "client_id", "", false);
-            SafeManager.Save(path, "twitch_secret_token", "", false);
-            SafeManager.Save(path, "twitch_connect_message_channels", Array.Empty<string>(), false);
-            SafeManager.Save(path, "twitch_reconnect_message_channels", Array.Empty<string>(), false);
-            SafeManager.Save(path, "twitch_connect_channels", new[] { "First channel", "Second channel" }, false);
+            Manager.Save(path, "bot_name", "");
+            Manager.Save(path, "discord_token", "");
+            Manager.Save(path, "imgur_token", "");
+            Manager.Save(path, "user_id", "");
+            Manager.Save(path, "client_id", "");
+            Manager.Save(path, "twitch_secret_token", "");
+            Manager.Save(path, "twitch_connect_message_channels", Array.Empty<string>());
+            Manager.Save(path, "twitch_reconnect_message_channels", Array.Empty<string>());
+            Manager.Save(path, "twitch_connect_channels", new[] { "First channel", "Second channel" });
             string[] apis = { "First api", "Second api" };
-            SafeManager.Save(path, "weather_token", apis, false);
-            SafeManager.Save(path, "gpt_tokens", apis, false);
-            SafeManager.Save(path, "telegram_token", "", false);
-            SafeManager.Save(path, "twitch_version_message_channels", Array.Empty<string>(), false);
-            SafeManager.Save(path, "7tv_token", "", false);
-            SafeManager.Save(path, "coin_symbol", "\U0001f96a", false);
-            SafeManager.Save(path, "currency_mentioned_payment", 8, false);
-            SafeManager.Save(path, "currency_mentioner_payment", 2);
+            Manager.Save(path, "weather_token", apis);
+            Manager.Save(path, "gpt_tokens", apis);
+            Manager.Save(path, "telegram_token", "");
+            Manager.Save(path, "twitch_version_message_channels", Array.Empty<string>());
+            Manager.Save(path, "7tv_token", "");
+            Manager.Save(path, "coin_symbol", "\U0001f96a");
+            Manager.Save(path, "currency_mentioned_payment", 8);
+            Manager.Save(path, "currency_mentioner_payment", 2);
         }
 
         /// <summary>
@@ -606,7 +640,7 @@ namespace butterBror.Core.Bot
         /// - Sets up tokens, connection strings, and bot behavior parameters
         /// - Initializes Twitch token manager with loaded credentials
         /// </remarks>
-        [ConsoleSector("butterBror.InternalBot", "LoadSettings")]
+        
         private void LoadSettings()
         {
             FunctionsUsed.Add();
@@ -637,7 +671,7 @@ namespace butterBror.Core.Bot
         /// - Saves to predefined cache file path
         /// - Handles directory creation if needed
         /// </remarks>
-        [ConsoleSector("butterBror.InternalBot", "SaveEmoteCache")]
+        
         public void SaveEmoteCache()
         {
             FunctionsUsed.Add();
@@ -670,7 +704,7 @@ namespace butterBror.Core.Bot
         /// - Populates all emote-related dictionaries
         /// - Handles missing cache file gracefully
         /// </remarks>
-        [ConsoleSector("butterBror.InternalBot", "LoadEmoteCache")]
+        
         public void LoadEmoteCache()
         {
             FunctionsUsed.Add();

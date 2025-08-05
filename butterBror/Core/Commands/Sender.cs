@@ -23,19 +23,21 @@ namespace butterBror.Core.Commands
         /// - Maintains message threading through message ID
         /// - Applies nickname color formatting
         /// </remarks>
-        [ConsoleSector("butterBror.Commands", "SendCommandReply#1")]
-        public static async void SendCommandReply(TwitchMessageSendData data)
+        
+        public static async void SendCommandReply(TwitchMessageSendData data, bool isReply = true)
         {
             Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 string message = data.Message;
+                if (message is null) return;
+
                 TwitchMessageSendData messageToSendPart2 = null;
                 //Write($"Twitch - A response to message {data.message_id} was sent to channel {data.channel}: {data.message}", "info");
                 message = Text.CleanAscii(data.Message);
 
                 if (message.Length > 1500)
-                    message = TranslationManager.GetTranslation(data.Language, "error:too_large_text", data.ChannelID, PlatformsEnum.Twitch);
+                    message = LocalizationService.GetString(data.Language, "error:too_large_text", data.ChannelID, PlatformsEnum.Twitch);
                 else if (message.Length > 500)
                 {
                     int splitIndex = message.LastIndexOf(' ', 450);
@@ -51,12 +53,28 @@ namespace butterBror.Core.Commands
                 }
 
                 if (!Engine.Bot.Clients.Twitch.JoinedChannels.Contains(new JoinedChannel(data.Channel)))
+                {
                     Engine.Bot.Clients.Twitch.JoinChannel(data.Channel);
+                }
 
                 if (data.SafeExecute || new NoBanwords().Check(message, data.ChannelID, PlatformsEnum.Twitch))
-                    Engine.Bot.Clients.Twitch.SendReply(data.Channel, data.MessageID, message);
+                {
+                    if (isReply)
+                    {
+                        Engine.Bot.Clients.Twitch.SendReply(data.Channel, data.MessageID, message);
+                    }
+                    else
+                    {
+                        Engine.Bot.Clients.Twitch.SendMessage(new JoinedChannel(data.Channel), $"@{data.Username}, " + message);
+                    }
+                }
                 else
-                    Engine.Bot.Clients.Twitch.SendReply(data.Channel, data.MessageID, TranslationManager.GetTranslation(data.Language, "error:message_could_not_be_sent", data.ChannelID, PlatformsEnum.Twitch));
+                {
+                    Engine.Bot.Clients.Twitch.SendReply(
+                        data.Channel,
+                        data.MessageID,
+                        LocalizationService.GetString(data.Language, "error:message_could_not_be_sent", data.ChannelID, PlatformsEnum.Twitch));
+                }
             }
             catch (Exception ex)
             {
@@ -75,8 +93,8 @@ namespace butterBror.Core.Commands
         /// - Includes safety checks for banned words
         /// - Supports reply context preservation
         /// </remarks>
-        [ConsoleSector("butterBror.Commands", "SendCommandReply#2")]
-        public static async void SendCommandReply(TelegramMessageSendData data)
+        
+        public static async void SendCommandReply(TelegramMessageSendData data, bool isReply = true)
         {
             Engine.Statistics.FunctionsUsed.Add();
             try
@@ -87,9 +105,7 @@ namespace butterBror.Core.Commands
                 messageToSend = Text.CleanAscii(data.Message);
 
                 if (messageToSend.Length > 12288)
-                {
-                    messageToSend = TranslationManager.GetTranslation(data.Language, "error:too_large_text", data.ChannelID, PlatformsEnum.Telegram);
-                }
+                    messageToSend = LocalizationService.GetString(data.Language, "error:too_large_text", data.ChannelID, PlatformsEnum.Telegram);
                 else if (messageToSend.Length > 4096)
                 {
                     int splitIndex = messageToSend.LastIndexOf(' ', 4000);
@@ -103,9 +119,27 @@ namespace butterBror.Core.Commands
                 }
 
                 if (data.SafeExecute || new NoBanwords().Check(messageToSend, data.ChannelID, PlatformsEnum.Telegram))
-                    await Engine.Bot.Clients.Telegram.SendMessage(long.Parse(data.ChannelID), data.Message, replyParameters: int.Parse(data.MessageID));
+                {
+                    if (isReply)
+                    {
+                        await Engine.Bot.Clients.Telegram.SendMessage(long.Parse(data.ChannelID), data.Message, replyParameters: int.Parse(data.MessageID));
+                    }
+                    else
+                    {
+                        await Engine.Bot.Clients.Telegram.SendMessage(long.Parse(data.ChannelID), data.Message);
+                    }
+                }
                 else
-                    await Engine.Bot.Clients.Telegram.SendMessage(long.Parse(data.ChannelID), TranslationManager.GetTranslation(data.Language, "error:message_could_not_be_sent", data.ChannelID, PlatformsEnum.Telegram), replyParameters: int.Parse(data.MessageID));
+                {
+                    if (isReply)
+                    {
+                        await Engine.Bot.Clients.Telegram.SendMessage(long.Parse(data.ChannelID), LocalizationService.GetString(data.Language, "error:message_could_not_be_sent", data.ChannelID, PlatformsEnum.Telegram), replyParameters: int.Parse(data.MessageID));
+                    }
+                    else
+                    {
+                        await Engine.Bot.Clients.Telegram.SendMessage(long.Parse(data.ChannelID), LocalizationService.GetString(data.Language, "error:message_could_not_be_sent", data.ChannelID, PlatformsEnum.Telegram));
+                    }
+                }
                 
 
                 if (messageToSendPart2 != null)
@@ -132,7 +166,7 @@ namespace butterBror.Core.Commands
         /// - Falls back to channel-based sending if command context unavailable
         /// - Uses Discord's embed builder for rich message formatting
         /// </remarks>
-        [ConsoleSector("butterBror.Commands", "SendCommandReply#3")]
+        
         public static async void SendCommandReply(DiscordCommandSendData data)
         {
             Engine.Statistics.FunctionsUsed.Add();
@@ -170,7 +204,7 @@ namespace butterBror.Core.Commands
                     else
                     {
                         var embed = new EmbedBuilder()
-                            .WithTitle(TranslationManager.GetTranslation(data.Language, "error:message_could_not_be_sent", "", PlatformsEnum.Discord))
+                            .WithTitle(LocalizationService.GetString(data.Language, "error:message_could_not_be_sent", "", PlatformsEnum.Discord))
                             .WithColor(global::Discord.Color.Red)
                             .Build();
                         data.SocketCommandBase.RespondAsync(embed: embed, ephemeral: data.IsEphemeral);
@@ -181,9 +215,7 @@ namespace butterBror.Core.Commands
                     string messageToSend = "";
                     DiscordCommandSendData messageToSendPart2;
                     if (data.Message.Length > 12288)
-                    {
-                        messageToSend = TranslationManager.GetTranslation(data.Language, "error:too_large_text", data.ChannelID, PlatformsEnum.Telegram);
-                    }
+                        messageToSend = LocalizationService.GetString(data.Language, "error:too_large_text", data.ChannelID, PlatformsEnum.Telegram);
                     else if (messageToSend.Length > 4096)
                     {
                         int splitIndex = messageToSend.LastIndexOf(' ', 4000);
@@ -225,7 +257,7 @@ namespace butterBror.Core.Commands
                     else
                     {
                         var embed = new EmbedBuilder()
-                            .WithTitle(TranslationManager.GetTranslation(data.Language, "error:message_could_not_be_sent", "", PlatformsEnum.Discord))
+                            .WithTitle(LocalizationService.GetString(data.Language, "error:message_could_not_be_sent", "", PlatformsEnum.Discord))
                             .WithColor(global::Discord.Color.Red)
                             .Build();
                         sender.SendMessageAsync($"<@{data.UserID}> {data.Message}", embed: embed);

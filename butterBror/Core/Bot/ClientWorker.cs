@@ -1,6 +1,7 @@
 ﻿using Discord.WebSocket;
 using SevenTV;
 using Telegram.Bot;
+using TwitchLib.Api;
 using TwitchLib.Client;
 
 namespace butterBror.Core.Bot
@@ -14,6 +15,11 @@ namespace butterBror.Core.Bot
         /// Gets or sets the Twitch client instance used for Twitch API interactions.
         /// </summary>
         public TwitchClient? Twitch;
+
+        /// <summary>
+        /// Gets or sets the Twitch API client instance used for Twitch API interactions.
+        /// </summary>
+        public TwitchAPI? TwitchAPI;
 
         /// <summary>
         /// Gets or sets the Discord client instance used for Discord API interactions.
