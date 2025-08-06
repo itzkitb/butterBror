@@ -35,7 +35,6 @@ namespace butterBror.Utils
         
         public static void ReturnFromAFK(string userId, string channelId, string channel, string username, string messageId, Telegram.Bot.Types.Message messageReply, PlatformsEnum platform, string messageContent, string server, string serverId)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             var language = "en-US";
             string dbLanguage = (string)Engine.Bot.SQL.Users.GetParameter(platform, Format.ToLong(userId), Users.Language);
 
@@ -156,7 +155,6 @@ namespace butterBror.Utils
         
         public static void TwitchSend(string channel, string message, string channelID, string messageID, string lang, bool isSafeEx = false, bool asciiClean = true)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 //Write($"Twitch - A message was sent to the {channel} channel: {message}", "info");
@@ -216,7 +214,6 @@ namespace butterBror.Utils
         
         public static void TwitchReply(string channel, string channelID, string message, string messageID, string lang, bool isSafeEx = false)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 //Write($"Twitch - A response to a message was sent to the {channel} channel: {message}", "info");
@@ -273,7 +270,6 @@ namespace butterBror.Utils
         
         public static void TelegramReply(string channel, long channelID, string message, Telegram.Bot.Types.Message messageReply, string lang, bool isSafeEx = false)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 Write($"Telegram - A message was sent to {channel}: {message}", "info");

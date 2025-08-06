@@ -15,7 +15,6 @@ namespace butterBror.Services.System
         /// <returns>An array of DriveInfo objects representing all logical drives.</returns>
         public static DriveInfo[] Get()
         {
-            Engine.Statistics.FunctionsUsed.Add();
             DriveInfo[] drives = DriveInfo.GetDrives();
             return drives;
         }

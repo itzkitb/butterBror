@@ -26,7 +26,6 @@ namespace butterBror.Utils
         /// </remarks>
         public static void Add(string userID, long buttersAdd, long crumbsAdd, PlatformsEnum platform)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             long crumbs = GetSubbalance(userID, platform) + crumbsAdd;
             long butters = GetBalance(userID, platform) + buttersAdd;
 
@@ -55,8 +54,7 @@ namespace butterBror.Utils
         /// <returns>The user's current balance in butters.</returns>
         public static long GetBalance(string userID, PlatformsEnum platform)
         {
-            Engine.Statistics.FunctionsUsed.Add();
-            return (long)Engine.Bot.SQL.Users.GetParameter(platform, Format.ToLong(userID), Users.Balance);
+            return Convert.ToInt64(Engine.Bot.SQL.Users.GetParameter(platform, Format.ToLong(userID), Users.Balance));
         }
 
         /// <summary>
@@ -67,8 +65,7 @@ namespace butterBror.Utils
         /// <returns>The user's current fractional balance in crumbs (0-99).</returns>
         public static long GetSubbalance(string userID, PlatformsEnum platform)
         {
-            Engine.Statistics.FunctionsUsed.Add();
-            return (long)Engine.Bot.SQL.Users.GetParameter(platform, Format.ToLong(userID), Users.AfterDotBalance);
+            return Convert.ToInt64(Engine.Bot.SQL.Users.GetParameter(platform, Format.ToLong(userID), Users.AfterDotBalance));
         }
     }
 }

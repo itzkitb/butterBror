@@ -51,8 +51,7 @@ namespace butterBror.Core.Commands.List
         
         public override async Task<CommandReturn> ExecuteAsync(CommandData data)
         {
-            Engine.Statistics.FunctionsUsed.Add();
-            var commandReturn = new CommandReturn();
+            CommandReturn commandReturn = new CommandReturn();
 
             _weatherService = new OpenMeteoWeatherService(new HttpClient(), _cache);
 

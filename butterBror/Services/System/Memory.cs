@@ -22,7 +22,6 @@ namespace butterBror.Services.System
         /// </remarks>
         public static ulong GetTotalMemoryBytes()
         {
-            Engine.Statistics.FunctionsUsed.Add();
             // fckin piece of sht
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
@@ -70,7 +69,6 @@ namespace butterBror.Services.System
         /// </remarks>
         private static ulong GetLinuxTotalMemory()
         {
-            Engine.Statistics.FunctionsUsed.Add();
             string memInfo = FileUtil.GetFileContent("/proc/meminfo");
             string totalMemoryLine = memInfo.Split('\n')[0];
             string totalMemoryValue = totalMemoryLine.Split([' '], StringSplitOptions.RemoveEmptyEntries)[1];
@@ -87,7 +85,6 @@ namespace butterBror.Services.System
         /// </remarks>
         private static ulong GetMacOSTotalMemory()
         {
-            Engine.Statistics.FunctionsUsed.Add();
             var process = new Process
             {
                 StartInfo = new ProcessStartInfo
@@ -112,7 +109,6 @@ namespace butterBror.Services.System
         /// <returns>The equivalent gigabytes value</returns>
         public static double BytesToGB(long bytes)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             return bytes / (1024.0 * 1024.0 * 1024.0);
         }
 
@@ -123,7 +119,6 @@ namespace butterBror.Services.System
         /// <returns>The equivalent gigabytes value</returns>
         public static double BytesToGB(ulong bytes)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             return bytes / (1024.0 * 1024.0 * 1024.0);
         }
     }

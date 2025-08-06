@@ -36,7 +36,6 @@ namespace butterBror.Core.Commands.List
 
         public override async Task<CommandReturn> ExecuteAsync(CommandData data)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             CommandReturn commandReturn = new CommandReturn();
 
             try
@@ -64,9 +63,9 @@ namespace butterBror.Core.Commands.List
                             return commandReturn;
                         }
 
-                        long eaten = (long)Engine.Bot.SQL.Users.GetParameter(data.Platform, Format.ToLong(data.User.ID), Users.EatedCookies);
-                        long gifted = (long)Engine.Bot.SQL.Users.GetParameter(data.Platform, Format.ToLong(data.User.ID), Users.GiftedCookies);
-                        long received = (long)Engine.Bot.SQL.Users.GetParameter(data.Platform, Format.ToLong(data.User.ID), Users.ReceivedCookies);
+                        long eaten = Convert.ToInt64(Engine.Bot.SQL.Users.GetParameter(data.Platform, Format.ToLong(data.User.ID), Users.EatedCookies));
+                        long gifted = Convert.ToInt64(Engine.Bot.SQL.Users.GetParameter(data.Platform, Format.ToLong(data.User.ID), Users.GiftedCookies));
+                        long received = Convert.ToInt64(Engine.Bot.SQL.Users.GetParameter(data.Platform, Format.ToLong(data.User.ID), Users.ReceivedCookies));
 
                         string statsMessage = LocalizationService.GetString(
                             data.User.Language,

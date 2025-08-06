@@ -33,12 +33,11 @@ namespace butterBror.Core.Commands.List
 
         public override CommandReturn Execute(CommandData data)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             CommandReturn commandReturn = new CommandReturn();
 
             try
             {
-                long AFKResumeTimes = (long)Engine.Bot.SQL.Users.GetParameter(data.Platform, Format.ToLong(data.UserID), Users.AFKResumeTimes);
+                long AFKResumeTimes = Convert.ToInt64(Engine.Bot.SQL.Users.GetParameter(data.Platform, Format.ToLong(data.UserID), Users.AFKResumeTimes));
                 DateTime AFKResume = DateTime.Parse((string)Engine.Bot.SQL.Users.GetParameter(data.Platform, Format.ToLong(data.UserID), Users.AFKResume), null, DateTimeStyles.AdjustToUniversal);
 
                 if (AFKResumeTimes <= 5)

@@ -21,7 +21,6 @@ namespace butterBror.Utils
         /// </remarks>
         public static int ToInt(string input)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             return Int32.Parse(Regex.Replace(input, @"[^-1234567890]", ""));
         }
 
@@ -37,7 +36,6 @@ namespace butterBror.Utils
         /// </remarks>
         public static long ToLong(string input)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             return long.Parse(Regex.Replace(input, @"[^-1234567890]", ""));
         }
 
@@ -54,7 +52,6 @@ namespace butterBror.Utils
         /// </remarks>
         public static ulong ToUlong(string input)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             return ulong.Parse(Regex.Replace(input, @"[^-1234567890]", "").Replace(",", "."));
         }
 
@@ -71,8 +68,6 @@ namespace butterBror.Utils
         /// </remarks>
         public static double ToDouble(string input)
         {
-            Engine.Statistics.FunctionsUsed.Add();
-
             string cleaned = Regex.Replace(input, @"[^-0-9,.]", "")
                                   .Replace(",", ".");
 

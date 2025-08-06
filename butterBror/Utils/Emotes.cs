@@ -25,7 +25,6 @@ namespace butterBror.Utils
         
         public static async Task<List<string>?> GetEmotesForChannel(string channel, string channel_id)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 if (Engine.Bot.ChannelsSevenTVEmotes.TryGetValue(channel_id, out var cached) &&
@@ -68,7 +67,6 @@ namespace butterBror.Utils
         
         public static async Task<string> RandomEmote(string channel, string channel_id)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 var emotes = await GetEmotesForChannel(channel, channel_id);
@@ -95,7 +93,6 @@ namespace butterBror.Utils
         
         public static async Task EmoteUpdate(string channel, string channel_id)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 var emotes = await GetEmotes(channel);
@@ -119,7 +116,6 @@ namespace butterBror.Utils
         
         public static async Task<List<string>> GetEmotes(string channel)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 if (Engine.Bot.UsersSearchCache.TryGetValue(channel, out var userCache) &&
@@ -157,7 +153,6 @@ namespace butterBror.Utils
         
         private static async Task<List<string>> GetEmotesFromCache(string userId)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             var emote = await Engine.Bot.Clients.SevenTV.rest.GetUser(userId);
             if (emote?.connections?[0].emote_set?.emotes == null)
             {

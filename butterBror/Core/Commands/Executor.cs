@@ -23,7 +23,6 @@ namespace butterBror.Core.Commands
         
         public static async void Twitch(object sender, OnChatCommandReceivedArgs command)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 string CommandName = command.Command.CommandText;
@@ -92,7 +91,6 @@ namespace butterBror.Core.Commands
         
         public static async void Discord(SocketSlashCommand command)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 UserData user = new()
@@ -151,7 +149,6 @@ namespace butterBror.Core.Commands
         
         public static async void Discord(SocketMessage message)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 string CommandName = message.Content.Split(' ')[0].Remove(0, 1);
@@ -212,7 +209,6 @@ namespace butterBror.Core.Commands
         
         public static async void Telegram(Message message)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 UserData user = new()

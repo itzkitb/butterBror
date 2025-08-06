@@ -19,6 +19,9 @@ namespace butterBror.Data
         private readonly bool _sharedCache;
         private readonly string _connectionString;
         private bool _disposed;
+        public void BeginTransaction() => ExecuteNonQuery("BEGIN TRANSACTION;");
+        public void CommitTransaction() => ExecuteNonQuery("COMMIT;");
+        public void RollbackTransaction() => ExecuteNonQuery("ROLLBACK;");
         protected SQLiteConnection Connection { get; private set; }
 
         /// <summary>

@@ -15,7 +15,7 @@ namespace butterBror.Core.Commands.List
             { "ru-RU", "Вы только что получили информацию об этой команде, используя эту же команду." },
             { "en-US", "You just got information about this command using this same command." }
         };
-        public override string WikiLink => "https://itzkitb.ru/bot/command?name=help";
+        public override string WikiLink => "https://itzkitb.lol/bot/command?q=help";
         public override int CooldownPerUser => 10;
         public override int CooldownPerChannel => 10;
         public override string[] Aliases => ["help", "помощь", "hlp"];
@@ -29,7 +29,6 @@ namespace butterBror.Core.Commands.List
 
         public override CommandReturn Execute(CommandData data)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             CommandReturn commandReturn = new CommandReturn();
 
             try

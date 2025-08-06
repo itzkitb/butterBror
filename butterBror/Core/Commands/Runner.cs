@@ -57,14 +57,13 @@ namespace butterBror.Core.Commands
             await Task.Run(async () =>
             {
                 InitializeCommands();
-                Engine.Statistics.FunctionsUsed.Add();
                 var start = Stopwatch.StartNew();
 
                 try
                 {
                     // User data initialization
-                    data.User.IsBanned = Engine.Bot.SQL.Roles.GetBannedUser(data.Platform, Format.ToLong(data.User.ID)) is not null;
-                    data.User.Ignored = Engine.Bot.SQL.Roles.GetIgnoredUser(data.Platform, Format.ToLong(data.User.ID)) is not null;
+                    data.User.IsBanned = Engine.Bot.SQL.Roles.IsBanned(data.Platform, Format.ToLong(data.User.ID));
+                    data.User.Ignored = Engine.Bot.SQL.Roles.IsIgnored(data.Platform, Format.ToLong(data.User.ID));
 
                     if ((bool)data.User.IsBanned || (bool)data.User.Ignored ||
                         (data.Platform is PlatformsEnum.Twitch && data.TwitchArguments.Command.ChatMessage.IsMe))
@@ -72,8 +71,8 @@ namespace butterBror.Core.Commands
 
                     string language = (string)Engine.Bot.SQL.Users.GetParameter(data.Platform, Format.ToLong(data.User.ID), Users.Language);
                     data.User.Language = language;
-                    data.User.IsBotModerator = Engine.Bot.SQL.Roles.GetModerator(data.Platform, Format.ToLong(data.User.ID)) is not null;
-                    data.User.IsBotDeveloper = Engine.Bot.SQL.Roles.GetDeveloper(data.Platform, Format.ToLong(data.User.ID)) is not null;
+                    data.User.IsBotModerator = Engine.Bot.SQL.Roles.IsModerator(data.Platform, Format.ToLong(data.User.ID));
+                    data.User.IsBotDeveloper = Engine.Bot.SQL.Roles.IsDeveloper(data.Platform, Format.ToLong(data.User.ID));
 
                     string command = Text.FilterCommand(data.Name).Replace("ё", "е");
                     bool commandFounded = false;

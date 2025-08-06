@@ -36,7 +36,6 @@ namespace butterBror.Utils
         
         public static string GetArgument(List<string> args, int index)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             if (args.Count > index)
                 return args[index];
             return null;
@@ -51,7 +50,6 @@ namespace butterBror.Utils
         
         public static string GetArgument(List<string> args, string arg_name)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             foreach (string arg in args)
             {
                 if (arg.StartsWith(arg_name + ":")) return arg.Replace(arg_name + ":", "");
@@ -66,7 +64,6 @@ namespace butterBror.Utils
         
         public static void ExecutedCommand(CommandData data)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 Write($"Executed command {data.Name} (User: {data.User.Name}, full message: \"{data.Name} {data.ArgumentsString}\", arguments: \"{data.ArgumentsString}\", command: \"{data.Name}\")", "info");
@@ -108,13 +105,11 @@ namespace butterBror.Utils
             bool ignoreGlobalCooldown = false
         )
         {
-            Engine.Statistics.FunctionsUsed.Add();
-
             try
             {
                 // VIP or dev/mod bypass
-                bool isVipOrStaff = Engine.Bot.SQL.Roles.GetModerator(platform, Format.ToLong(userID)) is not null
-                                    || Engine.Bot.SQL.Roles.GetDeveloper(platform, Format.ToLong(userID)) is not null;
+                bool isVipOrStaff = Engine.Bot.SQL.Roles.IsModerator(platform, Format.ToLong(userID))
+                                    || Engine.Bot.SQL.Roles.IsDeveloper(platform, Format.ToLong(userID));
                 
                 if (isVipOrStaff && ignoreUserVIP)
                 {
@@ -188,7 +183,6 @@ namespace butterBror.Utils
             PlatformsEnum platform
         )
         {
-            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 Dictionary<string, string> LastUses = Format.ParseStringDictionary((string)Engine.Bot.SQL.Users.GetParameter(platform, Format.ToLong(userID), Users.LastUse));
@@ -239,8 +233,6 @@ namespace butterBror.Utils
             string serverId = ""
         )
         {
-            Engine.Statistics.FunctionsUsed.Add();
-            Engine.Statistics.MessagesReaded.Add();
             var now = DateTime.UtcNow;
             var semaphore = messagesSemaphores.GetOrAdd(userId, id => (new SemaphoreSlim(1, 1), now));
             try
@@ -249,8 +241,8 @@ namespace butterBror.Utils
                 messagesSemaphores.TryUpdate(userId, (semaphore.Semaphore, now), semaphore);
 
                 // Skip banned or ignored users
-                if (Engine.Bot.SQL.Roles.GetBannedUser(platform, Format.ToLong(userId)) is not null ||
-                    Engine.Bot.SQL.Roles.GetIgnoredUser(platform, Format.ToLong(userId)) is not null)
+                if (Engine.Bot.SQL.Roles.IsBanned(platform, Format.ToLong(userId)) ||
+                    Engine.Bot.SQL.Roles.IsIgnored(platform, Format.ToLong(userId)))
                     return;
 
                 DateTime now_utc = DateTime.UtcNow;
@@ -264,7 +256,7 @@ namespace butterBror.Utils
                 else
                 {
                     // Handle AFK return
-                    if ((long)Engine.Bot.SQL.Users.GetParameter(platform, Format.ToLong(userId), Users.IsAFK) == 1)
+                    if ((int)Engine.Bot.SQL.Users.GetParameter(platform, Format.ToLong(userId), Users.IsAFK) == 1)
                     {
                         Chat.ReturnFromAFK(userId, channelId, channel, username, messageId, telegramMessageContext, platform, message, server, serverId);
                     }
@@ -319,11 +311,11 @@ namespace butterBror.Utils
                     isSubscriber = platform == PlatformsEnum.Twitch && twitchMessageContext.IsSubscriber,
                 };
 
-                if (Engine.Bot.SQL.Channels.GetFirstMessage(platform, channelId, Format.ToLong(userId)) is null)
+                if (Engine.Bot.SQL.Channels.GetFirstMessage(platform, channelId, Format.ToLong(userId)) is null && !Engine.Bot.allFirstMessages.Contains((platform, channelId, Format.ToLong(userId), msg)))
                 {
-                    Engine.Bot.SQL.Channels.SaveFirstMessage(platform, channelId, Format.ToLong(userId), msg);
+                    Engine.Bot.allFirstMessages.Add((platform, channelId, Format.ToLong(userId), msg));
                 }
-                Engine.Bot.SQL.Messages.SaveMessage(platform, platform == PlatformsEnum.Discord ? serverId : channelId, Format.ToLong(userId), msg);
+                Engine.Bot.allMessages.Add((platform, channelId, Format.ToLong(userId), msg));
             }
             catch (Exception ex)
             {
@@ -348,8 +340,6 @@ namespace butterBror.Utils
         
         public static string ExecuteCode(string userCode)
         {
-            Engine.Statistics.FunctionsUsed.Add();
-
             var fullCode = $@"
         using DankDB;
         using butterBror;

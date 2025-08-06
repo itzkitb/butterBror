@@ -38,7 +38,7 @@ namespace butterBror.Core.Commands
             
             public CommandReturn Index(CommandData data)
             {
-                Engine.Statistics.FunctionsUsed.Add();
+                Engine.
                 CommandReturn commandReturn = new CommandReturn();
 
                 try

@@ -27,7 +27,6 @@ using TwitchLib.Communication.Clients;
 using TwitchLib.Communication.Models;
 using static butterBror.Core.Bot.Console;
 using static butterBror.Core.Bot.TwitchToken;
-using static butterBror.Engine.Statistics;
 
 namespace butterBror.Core.Bot
 {
@@ -72,6 +71,8 @@ namespace butterBror.Core.Bot
         public CommandService? DiscordCommandService;
         public SevenTvService SevenTvService = new SevenTvService(new HttpClient());
         private DateTime _startTime = DateTime.UtcNow;
+        public List<(PlatformsEnum platform, string channelId, long userId, Message message)> allMessages = new();
+        public List<(PlatformsEnum platform, string channelId, long userId, Message message)> allFirstMessages = new();
 
         public readonly TimeSpan CacheTTL = TimeSpan.FromMinutes(30);
 
@@ -87,8 +88,6 @@ namespace butterBror.Core.Bot
         
         public async void Start()
         {
-            FunctionsUsed.Add();
-
             _startTime = DateTime.UtcNow;
             Engine.Ready = false;
 
@@ -182,8 +181,6 @@ namespace butterBror.Core.Bot
         
         public async Task Connect()
         {
-            FunctionsUsed.Add();
-
             try
             {
                 Write("Connecting to Twitch...", "initialization");
@@ -222,8 +219,6 @@ namespace butterBror.Core.Bot
         
         private void ConnectToTwitch()
         {
-            FunctionsUsed.Add();
-
             var credentials = new ConnectionCredentials(BotName, "oauth:" + Tokens.Twitch.AccessToken);
             var client_options = new ClientOptions
             {
@@ -298,8 +293,6 @@ namespace butterBror.Core.Bot
         
         private async Task ConnectToDiscord()
         {
-            FunctionsUsed.Add();
-
             var discordConfig = new DiscordSocketConfig
             {
                 MessageCacheSize = 1000,
@@ -341,8 +334,6 @@ namespace butterBror.Core.Bot
         
         private void ConnectToTelegram()
         {
-            FunctionsUsed.Add();
-
             Clients.Telegram = new TelegramBotClient(Tokens.Telegram);
             TelegramReceiverOptions = new ReceiverOptions
             {
@@ -364,8 +355,6 @@ namespace butterBror.Core.Bot
         
         public async Task SendTelemetry()
         {
-            FunctionsUsed.Add();
-
             try
             {
                 Write("Twitch - Telemetry started!", "telemetry");
@@ -422,28 +411,6 @@ namespace butterBror.Core.Bot
                 await Runner.Run(data, true);
                 CommandExecute.Stop();
                 #endregion
-                #region MessageSaver ping
-                Stopwatch MessageSaver = Stopwatch.StartNew();
-                Message message = new()
-                {
-                    isMe = true,
-                    messageDate = DateTime.Now,
-                    messageText = "Wikipedia is a free online encyclopedia that is written and maintained by a community of volunteers, known as Wikipedians, " +
-                    "through open collaboration and the wiki software MediaWiki. Founded by Jimmy Wales and Larry Sanger in 2001, Wikipedia has been hosted since " +
-                    "2003 by the Wikimedia Foundation, an American nonprofit organization funded mainly by donations from readers. Wikipedia is the largest and " +
-                    "most-read reference work in history.",
-                    isModerator = true,
-                    isSubscriber = true,
-                    isPartner = true,
-                    isStaff = true,
-                    isTurbo = true,
-                    isVip = true
-                };
-
-                Engine.Bot.SQL.Messages.SaveMessage(PlatformsEnum.Telegram, "TESTIFICATE", 123, message);
-
-                MessageSaver.Stop();
-                #endregion
                 #region Local ping
                 Stopwatch LocalPing = Stopwatch.StartNew();
                 Engine.Ping();
@@ -451,13 +418,10 @@ namespace butterBror.Core.Bot
                 #endregion
 
                 decimal cpuPercent = Engine.TelemetryCPUItems == 0 ? 0 : Engine.TelemetryCPU / Engine.TelemetryCPUItems;
-                decimal tpsAverage = Engine.TelemetryTPSItems == 0 ? 0 : (decimal)Engine.TelemetryTPS / Engine.TelemetryTPSItems;
                 float coinCurrency = Engine.Coins == 0 ? 0 : Engine.BankDollars / Engine.Coins;
 
                 Engine.TelemetryCPU = 0;
                 Engine.TelemetryCPUItems = 0;
-                Engine.TelemetryTPS = 0;
-                Engine.TelemetryTPSItems = 0;
                 Start.Stop();
 
                 long memory = Process.GetCurrentProcess().PrivateMemorySize64 / (1024 * 1024);
@@ -467,8 +431,6 @@ namespace butterBror.Core.Bot
                     $"{memory}Mbyte | " +
                     $"🔋 {Battery.GetBatteryCharge()}% {(Battery.IsCharging() ? "(Chaging) " : "")}| " +
                     $"CPU: {cpuPercent:0.00}% | " +
-                    $"TPS: {tpsAverage:0.00} | " +
-                    $"Ticks: {Engine.TicksCounter}/{Engine.SkippedTicks} | " +
                     $"DankDB: {cacheItemsBefore} → {Worker.cache.count} | " +
                     $"Emotes: {EmotesCache.Count} | " +
                     $"7tv: E:{ChannelsSevenTVEmotes.Count},USC:{UsersSearchCache.Count},ES:{EmoteSetsCache.Count} | " +
@@ -485,7 +447,6 @@ namespace butterBror.Core.Bot
                     $"7tv: {sevenTV.RoundtripTime}ms | " +
                     $"ISP: {ISP.RoundtripTime}ms | " +
                     $"Command: {CommandExecute.ElapsedMilliseconds}ms | " +
-                    $"MessageSaver: {MessageSaver.ElapsedMilliseconds}ms | " +
                     $"Local: {LocalPing.ElapsedTicks} ticks", "", "", "", true, false);
 
                 Write($"Twitch - Telemetry ended! ({Start.ElapsedMilliseconds}ms)", "telemetry");
@@ -511,7 +472,6 @@ namespace butterBror.Core.Bot
         /// </summary>
         public async Task BackupDataAsync()
         {
-            FunctionsUsed.Add();
             try
             {
                 Chat.TwitchSend(BotName.ToLower(), "🗃️ Backup started...", "", "", "", true, false);
@@ -551,8 +511,6 @@ namespace butterBror.Core.Bot
         /// </summary>
         public void Restart()
         {
-            FunctionsUsed.Add();
-
             Write("Restarting...", "info");
 
             Initialized = false;
@@ -570,8 +528,6 @@ namespace butterBror.Core.Bot
         
         public void TurnOff()
         {
-            FunctionsUsed.Add();
-
             try
             {
                 Clients.Twitch.SendMessage(BotName, "Zevlo Turning off...");
@@ -609,8 +565,6 @@ namespace butterBror.Core.Bot
         
         private void InitializeSettingsFile(string path)
         {
-            FunctionsUsed.Add();
-
             FileUtil.CreateFile(path);
             Manager.Save(path, "bot_name", "");
             Manager.Save(path, "discord_token", "");
@@ -643,8 +597,6 @@ namespace butterBror.Core.Bot
         
         private void LoadSettings()
         {
-            FunctionsUsed.Add();
-
             BotName = Manager.Get<string>(Pathes.Settings, "bot_name");
             TwitchChannels = Manager.Get<string[]>(Pathes.Settings, "twitch_connect_channels");
             TwitchReconnectAnnounce = Manager.Get<string[]>(Pathes.Settings, "twitch_reconnect_message_channels");
@@ -674,8 +626,6 @@ namespace butterBror.Core.Bot
         
         public void SaveEmoteCache()
         {
-            FunctionsUsed.Add();
-
             try
             {
                 var data = new
@@ -707,8 +657,6 @@ namespace butterBror.Core.Bot
         
         public void LoadEmoteCache()
         {
-            FunctionsUsed.Add();
-
             try
             {
                 if (!FileUtil.FileExists(Pathes.SevenTVCache)) return;

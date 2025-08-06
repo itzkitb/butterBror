@@ -37,7 +37,6 @@ namespace butterBror.Core.Commands.List
         
         public override CommandReturn Execute(CommandData data)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             CommandReturn commandReturn = new CommandReturn();
 
             try
@@ -203,8 +202,9 @@ namespace butterBror.Core.Commands.List
                                 }
                                 else
                                 {
-                                    if (is_developer || (!(Engine.Bot.SQL.Roles.GetModerator(data.Platform, Format.ToLong(data.User.ID)) is not null) && !(Engine.Bot.SQL.Roles.GetDeveloper(data.Platform, Format.ToLong(data.User.ID)) is not null)))
+                                    if (is_developer || (!Engine.Bot.SQL.Roles.IsModerator(data.Platform, Format.ToLong(data.User.ID)) && !Engine.Bot.SQL.Roles.IsDeveloper(data.Platform, Format.ToLong(data.User.ID))))
                                     {
+                                        Chat.TwitchSend(Engine.Bot.BotName, $"widelol #{arg2} banned in bot: {reason}", "", "", "en-US", true);
                                         Engine.Bot.SQL.Roles.AddBannedUser(data.Platform, Format.ToLong(bcid), DateTime.UtcNow, data.User.ID, reason);
                                         commandReturn.SetMessage(LocalizationService.GetString(language, "command:bot:user_ban", channel_id, data.Platform, arg2, reason));
                                     }
@@ -235,8 +235,9 @@ namespace butterBror.Core.Commands.List
                                 }
                                 else
                                 {
-                                    if (is_developer || is_moderator && (!(Engine.Bot.SQL.Roles.GetModerator(data.Platform, Format.ToLong(data.User.ID)) is not null) && !(Engine.Bot.SQL.Roles.GetDeveloper(data.Platform, Format.ToLong(data.User.ID)) is not null)))
+                                    if (is_developer || is_moderator && (!Engine.Bot.SQL.Roles.IsModerator(data.Platform, Format.ToLong(data.User.ID)) && !Engine.Bot.SQL.Roles.IsDeveloper(data.Platform, Format.ToLong(data.User.ID))))
                                     {
+                                        Chat.TwitchSend(Engine.Bot.BotName, $"Pag #{arg2} unbanned in bot", "", "", "en-US", true);
                                         Engine.Bot.SQL.Roles.RemoveBannedUser(Engine.Bot.SQL.Roles.GetBannedUser(data.Platform, Format.ToLong(BanChannelID)).ID);
                                         commandReturn.SetMessage(LocalizationService.GetString(language, "command:bot:user_unban", channel_id, data.Platform, arg2));
                                     }
@@ -258,6 +259,7 @@ namespace butterBror.Core.Commands.List
                                 if (Engine.Bot.Clients.Twitch.JoinedChannels.Contains(new JoinedChannel(user)))
                                     Engine.Bot.Clients.Twitch.LeaveChannel(user);
                                 Engine.Bot.Clients.Twitch.JoinChannel(user);
+                                Chat.TwitchSend(Engine.Bot.BotName, $"ppSpin Reconnected to #{user}", "", "", "en-US", true);
                                 commandReturn.SetMessage(LocalizationService.GetString(language, "command:bot:rejoin", channel_id, data.Platform));
                             }
                             else
@@ -280,6 +282,7 @@ namespace butterBror.Core.Commands.List
 
                                     Manager.Save(Engine.Bot.Pathes.Settings, "twitch_connect_channels", output); // Fix AA2
                                     Engine.Bot.Clients.Twitch.JoinChannel(arguments[1]);
+                                    Chat.TwitchSend(Engine.Bot.BotName, $"Pag Added to #{arguments[1]}", "", "", "en-US", true);
                                     Chat.TwitchReply(channel, channel_id, LocalizationService.GetString(language, "command:bot:channel:add", channel_id, data.Platform, arguments[1]), message_id, language, true);
                                     Chat.TwitchSend(arguments[1], LocalizationService.GetString(language, "text:added", channel_id, data.Platform, Engine.Version), channel_id, message_id, language, true);
                                 }
@@ -311,6 +314,7 @@ namespace butterBror.Core.Commands.List
 
                                     Manager.Save(Engine.Bot.Pathes.Settings, "channels", output);
                                     Engine.Bot.Clients.Twitch.LeaveChannel(arguments[1]);
+                                    Chat.TwitchSend(Engine.Bot.BotName, $"What Deleted from #{arguments[1]}", "", "", "en-US", true);
                                     Chat.TwitchReply(channel, channel_id, LocalizationService.GetString(language, "command:bot:channel:delete", channel_id, data.Platform, arguments[1]), message_id, data.User.Language, true);
                                 }
                                 else
@@ -332,6 +336,7 @@ namespace butterBror.Core.Commands.List
                         {
                             if (arguments.Count > 1)
                             {
+                                Chat.TwitchSend(Engine.Bot.BotName, $"Pag Manually joined to #{arguments[1]}", "", "", "en-US", true);
                                 Engine.Bot.Clients.Twitch.JoinChannel(arguments[1]);
                                 commandReturn.SetMessage(LocalizationService.GetString(language, "command:bot:connect", channel_id, data.Platform)); // Fix #AB8
                             }
@@ -346,6 +351,7 @@ namespace butterBror.Core.Commands.List
                         {
                             if (arguments.Count > 1)
                             {
+                                Chat.TwitchSend(Engine.Bot.BotName, $"What Leaved from #{arguments[1]}", "", "", "en-US", true);
                                 Engine.Bot.Clients.Twitch.LeaveChannel(arguments[1]);
                                 commandReturn.SetMessage(LocalizationService.GetString(language, "command:bot:leave", channel_id, data.Platform)); // Fix #AB8
                             }
@@ -365,6 +371,7 @@ namespace butterBror.Core.Commands.List
                                     var userID = Names.GetUserID(arguments[1], data.Platform);
                                     if (userID != null)
                                     {
+                                        Chat.TwitchSend(Engine.Bot.BotName, $"Pag New moderator @{arguments[1]}", "", "", "en-US", true);
                                         Engine.Bot.SQL.Roles.AddModerator(data.Platform, Format.ToLong(userID), DateTime.UtcNow, data.User.ID);
                                         commandReturn.SetMessage(LocalizationService.GetString(language, "command:bot:moderator:add", channel_id, data.Platform, arguments[1]));
                                     }
@@ -388,6 +395,7 @@ namespace butterBror.Core.Commands.List
                                     var userID = Names.GetUserID(arguments[1], data.Platform);
                                     if (userID != null)
                                     {
+                                        Chat.TwitchSend(Engine.Bot.BotName, $"What @{arguments[1]} is no longer a moderator", "", "", "en-US", true);
                                         Engine.Bot.SQL.Roles.RemoveModerator(Engine.Bot.SQL.Roles.GetModerator(data.Platform, Format.ToLong(userID)).ID);
                                         commandReturn.SetMessage(LocalizationService.GetString(language, "command:bot:moderator:delete", channel_id, data.Platform, arguments[1]));
                                     }

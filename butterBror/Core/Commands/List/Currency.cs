@@ -31,7 +31,6 @@ namespace butterBror.Core.Commands.List
 
         public override async Task<CommandReturn> ExecuteAsync(CommandData data)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             CommandReturn commandReturn = new CommandReturn();
 
             try
