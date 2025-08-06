@@ -73,9 +73,9 @@ namespace butterBror.Core.Commands.List
                             if (frog_caught_type == 0)
                                 frogs_caughted = rand.Next(1, 11);
                             else if (frog_caught_type <= 2)
-                                frogs_caughted = rand.Next(11, 101);
+                                frogs_caughted = rand.Next(10, 101);
                             else if (frog_caught_type == 3)
-                                frogs_caughted = rand.Next(101, 1001);
+                                frogs_caughted = rand.Next(100, 1001);
 
                             string text = GetFrogRange(frogs_caughted);
 
@@ -198,25 +198,25 @@ namespace butterBror.Core.Commands.List
         string GetFrogRange(long number)
         {
             var ranges = new Dictionary<string, Tuple<long, long>>
-                    {
-                        {"1", Tuple.Create(1L, 1L)},
-                        {"2", Tuple.Create(2L, 2L)},
-                        {"3", Tuple.Create(3L, 3L)},
-                        {"4-6", Tuple.Create(4L, 6L)},
-                        {"7-10", Tuple.Create(7L, 10L)},
-                        {"26-50", Tuple.Create(26L, 50L)},
-                        {"51-75", Tuple.Create(51L, 75L)},
-                        {"76-100", Tuple.Create(76L, 100L)},
-                        {"101-200", Tuple.Create(101L, 200L)},
-                        {"201-300", Tuple.Create(201L, 300L)},
-                        {"301-400", Tuple.Create(301L, 400L)},
-                        {"401-500", Tuple.Create(401L, 500L)},
-                        {"501-600", Tuple.Create(501L, 600L)},
-                        {"601-700", Tuple.Create(601L, 700L)},
-                        {"701-800", Tuple.Create(701L, 800L)},
-                        {"801-900", Tuple.Create(801L, 900L)},
-                        {"901-1000", Tuple.Create(901L, 1000L)},
-                    };
+            {
+                {"1", Tuple.Create(1L, 1L)},
+                {"2", Tuple.Create(2L, 2L)},
+                {"3", Tuple.Create(3L, 3L)},
+                {"4-6", Tuple.Create(4L, 6L)},
+                {"7-10", Tuple.Create(7L, 10L)},
+                {"26-50", Tuple.Create(10L, 50L)},
+                {"51-75", Tuple.Create(51L, 75L)},
+                {"76-100", Tuple.Create(76L, 100L)},
+                {"101-200", Tuple.Create(101L, 200L)},
+                {"201-300", Tuple.Create(201L, 300L)},
+                {"301-400", Tuple.Create(301L, 400L)},
+                {"401-500", Tuple.Create(401L, 500L)},
+                {"501-600", Tuple.Create(501L, 600L)},
+                {"601-700", Tuple.Create(601L, 700L)},
+                {"701-800", Tuple.Create(701L, 800L)},
+                {"801-900", Tuple.Create(801L, 900L)},
+                {"901-1000", Tuple.Create(901L, 1000L)},
+            };
 
             foreach (var range in ranges)
             {
