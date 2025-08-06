@@ -272,18 +272,18 @@ namespace butterBror.Data
                     Longitude, Latitude, Language,
                     AFKResume, AFKResumeTimes, LastUse, 
                     GPTHistory, WeatherResultLocations,
-                    TotalMessages, TotalMessagesLength, ChannelMessagesCount
+                    TotalMessages, TotalMessagesLength
                 ) VALUES (
                     @ID, @FirstSeen, @FirstMessage, @FirstChannel, 
                     @LastSeen, @LastMessage, @LastChannel,
                     0, 0, 500,
                     0, '', '', '',
-                    '[]', '', 0, 
+                    '{{}}', '', 0, 
                     0, 0, '',
                     '', '', @Language,
-                    '', 0, '[]', 
+                    '', 0, '{{}}', 
                     '[]', '[]',
-                    1, @TotalMessagesLength, '[]'
+                    1, @TotalMessagesLength
                 );";
             ExecuteNonQuery(sql, new[]
             {
@@ -492,6 +492,22 @@ namespace butterBror.Data
         }
 
         /// <summary>
+        /// Retrieves the total messages lenght across all channels for a user.
+        /// </summary>
+        /// <param name="platform">The streaming platform (Twitch, YouTube, etc.)</param>
+        /// <param name="userId">The user ID whose message count should be retrieved</param>
+        /// <returns>The total number of messages sent by the user</returns>
+        public long GetGlobalMessagesLenght(PlatformsEnum platform, long userId)
+        {
+            if (!CheckUserExists(platform, userId))
+            {
+                return 0;
+            }
+            object result = GetParameter(platform, userId, "TotalMessagesLength");
+            return result != null && result != DBNull.Value ? Convert.ToInt64(result) : 0;
+        }
+
+        /// <summary>
         /// Retrieves the message count for a user in a specific channel.
         /// </summary>
         /// <param name="platform">The streaming platform (Twitch, YouTube, etc.)</param>
@@ -581,11 +597,14 @@ namespace butterBror.Data
         /// <param name="userId">The user ID whose message count should be incremented</param>
         /// <param name="increment">The amount to increment the count by (defaults to 1)</param>
         /// <returns>The new total message count value</returns>
-        public int IncrementGlobalMessageCount(PlatformsEnum platform, long userId, int increment = 1)
+        public int IncrementGlobalMessageCountAndLenght(PlatformsEnum platform, long userId, int messageLenght, int increment = 1)
         {
             int currentCount = GetGlobalMessageCount(platform, userId);
+            long messagesLenght = GetGlobalMessagesLenght(platform, userId);
             int newCount = currentCount + increment;
+            long newLenght = messagesLenght + messageLenght;
             SetParameter(platform, userId, "TotalMessages", newCount);
+            SetParameter(platform, userId, "TotalMessagesLength", newLenght);
             return newCount;
         }
 
@@ -617,7 +636,7 @@ namespace butterBror.Data
                 "Balance", "AfterDotBalance", "Rating", "IsAFK", "AFKText", "AFKType", "Reminders", "LastCookie",
                 "GiftedCookies", "EatedCookies", "BuyedCookies", "Location", "Longitude", "Latitude", "Language",
                 "AFKStart", "AFKResume", "AFKResumeTimes", "LastUse", "GPTHistory", "WeatherResultLocations",
-                "TotalMessages", "TotalMessagesLength", "ChannelMessagesCount"
+                "TotalMessages", "TotalMessagesLength"
             };
             if (!validColumns.Contains(columnName))
             {
