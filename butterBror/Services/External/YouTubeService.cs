@@ -23,7 +23,6 @@ namespace butterBror.Services.External
         
         public static string[] GetPlaylistVideos(string playlistUrl)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 MatchCollection matches = new Regex(@"watch\?v=[a-zA-Z0-9_-]{11}").Matches(new WebClient().DownloadString(playlistUrl));

@@ -26,7 +26,6 @@ namespace butterBror.Workers
         
         public static async Task ReadyAsync()
         {
-            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 Write($"Discord - Connected as {Engine.Bot.Clients.Discord.CurrentUser}!", "info");
@@ -52,7 +51,6 @@ namespace butterBror.Workers
         
         public static async Task MessageReceivedAsync(SocketMessage message)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 if (!(message is SocketUserMessage msg) || message.Author.IsBot) return;
@@ -94,7 +92,6 @@ namespace butterBror.Workers
         
         public static async Task RegisterCommandsAsync()
         {
-            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 Engine.Bot.Clients.Discord.Ready += RegisterSlashCommands;
@@ -122,7 +119,6 @@ namespace butterBror.Workers
         
         private static async Task RegisterSlashCommands()
         {
-            Engine.Statistics.FunctionsUsed.Add();
             Write("Discord - Updating commands...", "info");
 
             await Engine.Bot.Clients.Discord.Rest.DeleteAllGlobalCommandsAsync();

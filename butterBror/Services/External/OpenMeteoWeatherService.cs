@@ -41,7 +41,6 @@ namespace butterBror.Services.External
         /// <exception cref="WeatherApiException">Thrown when the API request fails after multiple attempts</exception>
         public async Task<WeatherData> GetCurrentWeatherAsync(string latitude, string longitude)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             string cacheKey = $"weather_{latitude}_{longitude}";
 
             if (_cache.TryGetValue(cacheKey, out WeatherData cachedWeather))
@@ -117,7 +116,6 @@ namespace butterBror.Services.External
         /// <exception cref="WeatherApiException">Thrown when the API request fails after multiple attempts</exception>
         public async Task<List<LocationResult>> SearchLocationsAsync(string locationName)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             string cacheKey = $"locations_{locationName.ToLowerInvariant()}";
 
             if (_cache.TryGetValue(cacheKey, out List<LocationResult> cachedLocations))

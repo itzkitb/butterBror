@@ -23,7 +23,7 @@ namespace butterBror.Events
         
         public static void OnConnected(object sender, OnConnectedArgs e)
         {
-            Engine.Statistics.FunctionsUsed.Add();
+            Write("Twitch - Connected!", "info");
         }
 
         /// <summary>
@@ -34,7 +34,6 @@ namespace butterBror.Events
         
         public static void OnMessageSend(object s, OnMessageSentArgs e)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             Write($"Twitch - Message sent to #{e.SentMessage.Channel}: \"{e.SentMessage.Message}\"", "info");
         }
 
@@ -46,7 +45,6 @@ namespace butterBror.Events
         
         public static void OnMessageThrottled(object s, OnMessageThrottledEventArgs e)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             Write($"Twitch - Message not sent! \"{e.Message}\" ", "err");
         }
 
@@ -69,7 +67,6 @@ namespace butterBror.Events
         
         public static void OnUserBanned(object s, OnUserBannedArgs e)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             Write($"Twitch - #{e.UserBan.Channel} User {e.UserBan.Username} has been permanently banned!", "info");
         }
 
@@ -81,7 +78,6 @@ namespace butterBror.Events
         
         public static void OnSuspended(object s, OnSuspendedArgs e)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             Chat.TwitchSend(Engine.Bot.BotName, $"What #{e.Channel} suspended", "", "", "en-US", true);
             Write($"Twitch - #{e.Channel} suspended", "err");
         }
@@ -94,7 +90,6 @@ namespace butterBror.Events
         
         public static void OnUserTimedout(object s, OnUserTimedoutArgs e)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             Write($"Twitch - #{e.UserTimeout.Channel} User {e.UserTimeout.Username} has been blocked for {e.UserTimeout.TimeoutDuration} seconds", "info");
         }
 
@@ -106,7 +101,6 @@ namespace butterBror.Events
         
         public static void OnReSubscriber(object s, OnReSubscriberArgs e)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             Write($"Twitch - #{e.Channel} {e.ReSubscriber.DisplayName} has renewed his subscription! He has been subscribing for {e.ReSubscriber.MsgParamCumulativeMonths} ​​month(s) \"{e.ReSubscriber.ResubMessage}\"", "info");
         }
 
@@ -118,7 +112,6 @@ namespace butterBror.Events
         
         public static void OnGiftedSubscription(object s, OnGiftedSubscriptionArgs e)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             Write($"Twitch - #{e.Channel} {e.GiftedSubscription.DisplayName} has given a subscription to {e.GiftedSubscription.MsgParamRecipientDisplayName} for {e.GiftedSubscription.MsgParamMonths} ​​month(s)!", "info");
         }
 
@@ -130,7 +123,6 @@ namespace butterBror.Events
         
         public static void OnRaidNotification(object s, OnRaidNotificationArgs e)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             Write($"Twitch - #{e.Channel} PagMan RAID from @{e.RaidNotification.DisplayName} with {e.RaidNotification.MsgParamViewerCount} raider(s)", "info");
         }
 
@@ -142,7 +134,6 @@ namespace butterBror.Events
         
         public static void OnNewSubscriber(object s, OnNewSubscriberArgs e)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             Write($"Twitch - #{e.Channel} {e.Subscriber.DisplayName} subscribed! \"{e.Subscriber.ResubMessage}\"", "info");
         }
 
@@ -154,7 +145,6 @@ namespace butterBror.Events
         
         public static void OnMessageCleared(object s, OnMessageClearedArgs e)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             Write($"Twitch - #{e.Channel} The message \"{e.Message}\" has been deleted!", "info");
             Engine.Bot.Restart(); // wtf bro
         }
@@ -167,7 +157,6 @@ namespace butterBror.Events
         
         public static void OnIncorrectLogin(object s, OnIncorrectLoginArgs e)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             Write("Twitch - Incorrect login!", "info", LogLevel.Error);
             Engine.Bot.Restart();
         }
@@ -180,7 +169,6 @@ namespace butterBror.Events
         
         public static void OnChatCleared(object s, OnChatClearedArgs e)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             Write($"Twitch - #{e.Channel} The chat was cleared!", "info");
         }
 
@@ -192,7 +180,6 @@ namespace butterBror.Events
         
         public static void OnError(object s, OnErrorEventArgs e)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             Chat.TwitchSend(Engine.Bot.BotName, $"DeadAss TwitchLib error: {e.Exception.Message}", "", "", "en-US", true);
             Write($"Twitch - Library error! {e.Exception.Message}", "info", LogLevel.Error);
         }
@@ -205,7 +192,6 @@ namespace butterBror.Events
         
         public static void OnLeftChannel(object s, OnLeftChannelArgs e)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             Write($"Twitch - Succeful leaved from #{e.Channel}", "info");
         }
 
@@ -217,7 +203,6 @@ namespace butterBror.Events
         
         public static void OnReconnected(object s, OnReconnectedEventArgs e)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             Write("Twitch - Reconnected!", "info");
             Chat.TwitchSend(Engine.Bot.BotName, $"BREAKDANCECAT Reconnected", "", "", "en-US", true);
             Engine.Bot.TwitchReconnected = true;
@@ -231,7 +216,6 @@ namespace butterBror.Events
         
         public static void OnTwitchDisconnected(object s, OnDisconnectedEventArgs e)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             Write("Twitch - Disconnected! Restarting...", "info");
             Engine.Bot.Restart();
         }
@@ -244,7 +228,6 @@ namespace butterBror.Events
         
         public static void OnCommunitySubscription(object s, OnCommunitySubscriptionArgs e)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             Write($"Twitch - #{e.Channel} {e.GiftedSubscription.DisplayName} was gifted {e.GiftedSubscription.MsgParamMassGiftCount} subscription(s) on {e.GiftedSubscription.MsgParamMultiMonthGiftDuration} month(s)", "info");
         }
 
@@ -256,7 +239,6 @@ namespace butterBror.Events
         
         public static void OnAnnounce(object s, OnAnnouncementArgs e)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             Write($"Twitch - #{e.Channel} Announce {e.Announcement.Message}", "info");
         }
 
@@ -268,7 +250,6 @@ namespace butterBror.Events
         
         public static void OnContinuedGiftedSubscription(object s, OnContinuedGiftedSubscriptionArgs e)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             Write($"Twitch - #{e.Channel} User @{e.ContinuedGiftedSubscription.DisplayName} extended gift subscription!", "info");
         }
 
@@ -280,7 +261,6 @@ namespace butterBror.Events
         
         public static async void OnBanned(object s, OnBannedArgs e)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 Write($"Twitch - Bot was banned in channel #{e.Channel}!", "info");
@@ -311,7 +291,6 @@ namespace butterBror.Events
         
         public static void OnConnectionError(object s, OnConnectionErrorArgs e)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             Write($"Twitch - Connection error! \"{e.Error.Message}\"", "info", LogLevel.Error);
             Engine.Bot.Restart();
         }
@@ -324,7 +303,6 @@ namespace butterBror.Events
         
         public static async void OnJoin(object sender, OnJoinedChannelArgs e)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             //Write($"Twitch - Connected to #{e.Channel}", "info");
 
             if (Engine.PreviousVersion != $"{Engine.Version}.{Engine.Patch}" && Engine.PreviousVersion != string.Empty && (Engine.Bot.TwitchNewVersionAnnounce.Contains(Names.GetUserID(e.Channel, PlatformsEnum.Twitch)) || e.Channel.Equals(Engine.Bot.BotName.ToLower())))
@@ -348,8 +326,6 @@ namespace butterBror.Events
         
         public static async void OnMessageReceived(object sender, OnMessageReceivedArgs e)
         {
-            Engine.Statistics.FunctionsUsed.Add();
-
             try
             {
                 ChatMessage message = e.ChatMessage;

@@ -36,7 +36,6 @@ namespace butterBror.Core.Commands.List
 
         public override async Task<CommandReturn> ExecuteAsync(CommandData data)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             CommandReturn commandReturn = new CommandReturn();
 
             try
@@ -51,7 +50,7 @@ namespace butterBror.Core.Commands.List
                 {
                     if (updateAlias.Contains(GetArgument(data.Arguments, 0)))
                     {
-                        if (Engine.Bot.SQL.Roles.GetDeveloper(data.Platform, Format.ToLong(data.User.ID)) is not null || Engine.Bot.SQL.Roles.GetModerator(data.Platform, Format.ToLong(data.User.ID)) is not null || (bool)data.User.IsModerator || (bool)data.User.IsBroadcaster)
+                        if (Engine.Bot.SQL.Roles.IsDeveloper(data.Platform, Format.ToLong(data.User.ID)) || Engine.Bot.SQL.Roles.IsModerator(data.Platform, Format.ToLong(data.User.ID)) || (bool)data.User.IsModerator || (bool)data.User.IsBroadcaster)
                         {
                             await Utils.Emotes.EmoteUpdate(data.Channel, data.ChannelId);
                             commandReturn.SetMessage(LocalizationService.GetString(

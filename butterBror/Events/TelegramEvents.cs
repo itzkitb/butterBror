@@ -33,7 +33,6 @@ namespace butterBror.Events
         
         public static async Task UpdateHandler(ITelegramBotClient client, Update update, CancellationToken cancellation_token)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 if (update.Type is not UpdateType.Message) return;
@@ -142,7 +141,6 @@ namespace butterBror.Events
         
         public static Task ErrorHandler(ITelegramBotClient botClient, Exception error, CancellationToken cancellationToken)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             var ErrorMessage = error switch
             {
                 ApiRequestException apiRequestException

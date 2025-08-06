@@ -1,5 +1,6 @@
 ﻿using butterBror.Models;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SQLite;
@@ -62,6 +63,9 @@ namespace butterBror.Data
     /// </summary>
     public class RolesDatabase : SqlDatabaseBase
     {
+        private readonly ConcurrentDictionary<(string roleType, PlatformsEnum platform, long userId), object> _roleCache = new();
+        private readonly object _cacheLock = new();
+
         /// <summary>
         /// Initializes a new instance of the RolesDatabase class with the specified database file path.
         /// </summary>
@@ -69,7 +73,17 @@ namespace butterBror.Data
         public RolesDatabase(string dbPath = "Roles.db")
             : base(dbPath, true)
         {
+            ConfigureSqlitePerformance();
             InitializeDatabase();
+        }
+
+        private void ConfigureSqlitePerformance()
+        {
+            ExecuteNonQuery("PRAGMA journal_mode = WAL;");
+            ExecuteNonQuery("PRAGMA synchronous = NORMAL;");
+            ExecuteNonQuery("PRAGMA cache_size = -10000;");
+            ExecuteNonQuery("PRAGMA temp_store = MEMORY;");
+            ExecuteNonQuery("PRAGMA foreign_keys = ON;");
         }
 
         /// <summary>
@@ -148,12 +162,16 @@ namespace butterBror.Data
         public long AddBannedUser(PlatformsEnum platform, long userId, DateTime date, string whoBanned, string reason)
         {
             const string sql = @"
-                INSERT INTO Banned (Platform, UserId, Date, WhoBanned, Reason)
-                VALUES (@Platform, @UserId, @Date, @WhoBanned, @Reason);
+                INSERT OR REPLACE INTO Banned (ID, Platform, UserId, Date, WhoBanned, Reason)
+                VALUES (
+                    COALESCE((SELECT ID FROM Banned WHERE Platform = @Platform AND UserId = @UserId), NULL),
+                    @Platform, @UserId, @Date, @WhoBanned, @Reason
+                );
                 SELECT last_insert_rowid();";
+
             return ExecuteScalar<long>(sql, new[]
             {
-                new SQLiteParameter("@Platform", Enum.GetName(platform).ToUpper() ?? string.Empty),
+                new SQLiteParameter("@Platform", platform.ToString().ToUpper()),
                 new SQLiteParameter("@UserId", userId),
                 new SQLiteParameter("@Date", date.ToString("o")),
                 new SQLiteParameter("@WhoBanned", whoBanned ?? string.Empty),
@@ -191,12 +209,24 @@ namespace butterBror.Data
         /// <returns>The banned user record if found; otherwise, <c>null</c></returns>
         public BannedUser GetBannedUser(PlatformsEnum platform, long userId)
         {
+            var cacheKey = ("Banned", platform, userId);
+
+            if (_roleCache.TryGetValue(cacheKey, out var cached))
+                return (BannedUser)cached;
+
             const string sql = "SELECT * FROM Banned WHERE Platform = @Platform AND UserId = @UserId";
-            return QueryFirstOrDefault<BannedUser>(sql, new[]
+            var result = QueryFirstOrDefault<BannedUser>(sql, new[]
             {
                 new SQLiteParameter("@Platform", platform.ToString().ToUpper() ?? string.Empty),
                 new SQLiteParameter("@UserId", userId)
             });
+
+            if (result != null)
+            {
+                _roleCache[cacheKey] = result;
+            }
+
+            return result;
         }
 
         /// <summary>
@@ -220,6 +250,28 @@ namespace butterBror.Data
             return Query<BannedUser>(sql);
         }
 
+        public bool IsBanned(PlatformsEnum platform, long userId)
+        {
+            var cacheKey = ("Banned", platform, userId);
+
+            if (_roleCache.TryGetValue(cacheKey, out _))
+                return true;
+
+            const string sql = "SELECT 1 FROM Banned WHERE Platform = @Platform AND UserId = @UserId LIMIT 1";
+            bool isBanned = ExecuteScalar<object>(sql, new[]
+            {
+                new SQLiteParameter("@Platform", platform.ToString().ToUpper()),
+                new SQLiteParameter("@UserId", userId)
+            }) != null;
+
+            if (isBanned)
+            {
+                _roleCache[cacheKey] = new object();
+            }
+
+            return isBanned;
+        }
+
         #endregion
 
         #region Methods for developers management
@@ -233,12 +285,16 @@ namespace butterBror.Data
         public long AddDeveloper(PlatformsEnum platform, long userId)
         {
             const string sql = @"
-                INSERT INTO Developers (Platform, UserId)
-                VALUES (@Platform, @UserId);
+                INSERT OR REPLACE INTO Developers (ID, Platform, UserId)
+                VALUES (
+                    COALESCE((SELECT ID FROM Developers WHERE Platform = @Platform AND UserId = @UserId), NULL),
+                    @Platform, @UserId
+                );
                 SELECT last_insert_rowid();";
+
             return ExecuteScalar<long>(sql, new[]
             {
-                new SQLiteParameter("@Platform", platform.ToString().ToUpper() ?? string.Empty),
+                new SQLiteParameter("@Platform", platform.ToString().ToUpper()),
                 new SQLiteParameter("@UserId", userId)
             });
         }
@@ -262,12 +318,24 @@ namespace butterBror.Data
         /// <returns>The developer record if found; otherwise, <c>null</c></returns>
         public Developer GetDeveloper(PlatformsEnum platform, long userId)
         {
+            var cacheKey = ("Developer", platform, userId);
+
+            if (_roleCache.TryGetValue(cacheKey, out var cached))
+                return (Developer)cached;
+
             const string sql = "SELECT * FROM Developers WHERE Platform = @Platform AND UserId = @UserId";
-            return QueryFirstOrDefault<Developer>(sql, new[]
+            var result = QueryFirstOrDefault<Developer>(sql, new[]
             {
                 new SQLiteParameter("@Platform", platform.ToString().ToUpper() ?? string.Empty),
                 new SQLiteParameter("@UserId", userId)
             });
+
+            if (result != null)
+            {
+                _roleCache[cacheKey] = result;
+            }
+
+            return result;
         }
 
         /// <summary>
@@ -291,6 +359,28 @@ namespace butterBror.Data
             return Query<Developer>(sql);
         }
 
+        public bool IsDeveloper(PlatformsEnum platform, long userId)
+        {
+            var cacheKey = ("Developer", platform, userId);
+
+            if (_roleCache.TryGetValue(cacheKey, out _))
+                return true;
+
+            const string sql = "SELECT 1 FROM Developers WHERE Platform = @Platform AND UserId = @UserId LIMIT 1";
+            bool isDeveloper = ExecuteScalar<object>(sql, new[]
+            {
+                new SQLiteParameter("@Platform", platform.ToString().ToUpper()),
+                new SQLiteParameter("@UserId", userId)
+            }) != null;
+
+            if (isDeveloper)
+            {
+                _roleCache[cacheKey] = new object();
+            }
+
+            return isDeveloper;
+        }
+
         #endregion
 
         #region Methods for ignored users management
@@ -305,9 +395,13 @@ namespace butterBror.Data
         public long AddIgnoredUser(PlatformsEnum platform, long userId, DateTime date)
         {
             const string sql = @"
-                INSERT INTO Ignored (Platform, UserId, Date)
-                VALUES (@Platform, @UserId, @Date);
+                INSERT OR REPLACE INTO Ignored (ID, Platform, UserId, Date)
+                VALUES (
+                    COALESCE((SELECT ID FROM Ignored WHERE Platform = @Platform AND UserId = @UserId), NULL),
+                    @Platform, @UserId, @Date
+                );
                 SELECT last_insert_rowid();";
+
             return ExecuteScalar<long>(sql, new[]
             {
                 new SQLiteParameter("@Platform", platform.ToString().ToUpper() ?? string.Empty),
@@ -335,12 +429,24 @@ namespace butterBror.Data
         /// <returns>The ignored user record if found; otherwise, <c>null</c></returns>
         public IgnoredUser GetIgnoredUser(PlatformsEnum platform, long userId)
         {
+            var cacheKey = ("Ignored", platform, userId);
+
+            if (_roleCache.TryGetValue(cacheKey, out var cached))
+                return (IgnoredUser)cached;
+
             const string sql = "SELECT * FROM Ignored WHERE Platform = @Platform AND UserId = @UserId";
-            return QueryFirstOrDefault<IgnoredUser>(sql, new[]
+            var result = QueryFirstOrDefault<IgnoredUser>(sql, new[]
             {
                 new SQLiteParameter("@Platform", platform.ToString().ToUpper() ?? string.Empty),
                 new SQLiteParameter("@UserId", userId)
             });
+
+            if (result != null)
+            {
+                _roleCache[cacheKey] = result;
+            }
+
+            return result;
         }
 
         /// <summary>
@@ -364,6 +470,28 @@ namespace butterBror.Data
             return Query<IgnoredUser>(sql);
         }
 
+        public bool IsIgnored(PlatformsEnum platform, long userId)
+        {
+            var cacheKey = ("Ignored", platform, userId);
+
+            if (_roleCache.TryGetValue(cacheKey, out _))
+                return true;
+
+            const string sql = "SELECT 1 FROM Ignored WHERE Platform = @Platform AND UserId = @UserId LIMIT 1";
+            bool isIgnored = ExecuteScalar<object>(sql, new[]
+            {
+                new SQLiteParameter("@Platform", platform.ToString().ToUpper()),
+                new SQLiteParameter("@UserId", userId)
+            }) != null;
+
+            if (isIgnored)
+            {
+                _roleCache[cacheKey] = new object();
+            }
+
+            return isIgnored;
+        }
+
         #endregion
 
         #region Methods for moderators management
@@ -379,9 +507,13 @@ namespace butterBror.Data
         public long AddModerator(PlatformsEnum platform, long userId, DateTime date, string whoAdded)
         {
             const string sql = @"
-                INSERT INTO Moderators (Platform, UserId, Date, WhoAdded)
-                VALUES (@Platform, @UserId, @Date, @WhoAdded);
+                INSERT OR REPLACE INTO Moderators (ID, Platform, UserId, Date, WhoAdded)
+                VALUES (
+                    COALESCE((SELECT ID FROM Moderators WHERE Platform = @Platform AND UserId = @UserId), NULL),
+                    @Platform, @UserId, @Date, @WhoAdded
+                );
                 SELECT last_insert_rowid();";
+
             return ExecuteScalar<long>(sql, new[]
             {
                 new SQLiteParameter("@Platform", platform.ToString().ToUpper() ?? string.Empty),
@@ -410,12 +542,24 @@ namespace butterBror.Data
         /// <returns>The moderator record if found; otherwise, <c>null</c></returns>
         public Moderator GetModerator(PlatformsEnum platform, long userId)
         {
+            var cacheKey = ("Moderator", platform, userId);
+
+            if (_roleCache.TryGetValue(cacheKey, out var cached))
+                return (Moderator)cached;
+
             const string sql = "SELECT * FROM Moderators WHERE Platform = @Platform AND UserId = @UserId";
-            return QueryFirstOrDefault<Moderator>(sql, new[]
+            var result = QueryFirstOrDefault<Moderator>(sql, new[]
             {
                 new SQLiteParameter("@Platform", platform.ToString().ToUpper() ?? string.Empty),
                 new SQLiteParameter("@UserId", userId)
             });
+
+            if (result != null)
+            {
+                _roleCache[cacheKey] = result;
+            }
+
+            return result;
         }
 
         /// <summary>
@@ -439,6 +583,34 @@ namespace butterBror.Data
             return Query<Moderator>(sql);
         }
 
+        public bool IsModerator(PlatformsEnum platform, long userId)
+        {
+            var cacheKey = ("Moderator", platform, userId);
+
+            if (_roleCache.TryGetValue(cacheKey, out _))
+                return true;
+
+            const string sql = "SELECT 1 FROM Moderators WHERE Platform = @Platform AND UserId = @UserId LIMIT 1";
+            bool isModerator = ExecuteScalar<object>(sql, new[]
+            {
+                new SQLiteParameter("@Platform", platform.ToString().ToUpper()),
+                new SQLiteParameter("@UserId", userId)
+            }) != null;
+
+            if (isModerator)
+            {
+                _roleCache[cacheKey] = new object();
+            }
+
+            return isModerator;
+        }
+
         #endregion
+
+        private void InvalidateRoleCache(string roleType, PlatformsEnum platform, long userId)
+        {
+            var cacheKey = (roleType, platform, userId);
+            _roleCache.TryRemove(cacheKey, out _);
+        }
     }
 }

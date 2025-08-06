@@ -39,7 +39,6 @@ namespace butterBror.Core.Bot
         
         public static async Task<TokenData> GetTokenAsync()
         {
-            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 var token = LoadTokenData();
@@ -65,7 +64,6 @@ namespace butterBror.Core.Bot
         
         private static async Task<TokenData> PerformAuthorizationFlow()
         {
-            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 using var listener = new HttpListener();
@@ -115,7 +113,6 @@ namespace butterBror.Core.Bot
         
         public static async Task<TokenData> RefreshAccessToken(TokenData token)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 if (token == null || string.IsNullOrEmpty(token.RefreshToken))
@@ -160,7 +157,6 @@ namespace butterBror.Core.Bot
         
         private static async Task<string> GetAuthorizationCodeAsync(HttpListener listener)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 Write("Twitch oauth - Getting auth data...", "info");
@@ -194,7 +190,6 @@ namespace butterBror.Core.Bot
         
         private static async Task<TokenData> ExchangeCodeForTokenAsync(string code)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 Write("Twitch oauth - Getting exchange code...", "info");
@@ -234,7 +229,6 @@ namespace butterBror.Core.Bot
         
         private static string GetCodeFromResponse(string query)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             var queryParams = HttpUtility.ParseQueryString(query);
             return queryParams["code"];
         }
@@ -246,7 +240,6 @@ namespace butterBror.Core.Bot
         
         private static TokenData LoadTokenData()
         {
-            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 if (FileUtil.FileExists(_databasePath))
@@ -272,7 +265,6 @@ namespace butterBror.Core.Bot
         
         private static void SaveTokenData(TokenData tokenData)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 FileUtil.SaveFileContent(_databasePath, JsonConvert.SerializeObject(tokenData));

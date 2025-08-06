@@ -42,7 +42,6 @@ namespace butterBror.Core.Commands.List
 
         public override CommandReturn Execute(CommandData data)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 string action = "";
@@ -84,7 +83,6 @@ namespace butterBror.Core.Commands.List
         }
         public static CommandReturn GoToAfk(CommandData data, string afkType)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             CommandReturn commandReturn = new CommandReturn();
 
             try

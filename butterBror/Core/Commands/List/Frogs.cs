@@ -32,14 +32,13 @@ namespace butterBror.Core.Commands.List
 
         public override CommandReturn Execute(CommandData data)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             CommandReturn commandReturn = new CommandReturn();
 
             try
             {
-                long balance = (long)Engine.Bot.SQL.Games.GetData("Frogs", data.Platform, Format.ToLong(data.User.ID), "Frogs");
-                long gifted = (long)Engine.Bot.SQL.Games.GetData("Frogs", data.Platform, Format.ToLong(data.User.ID), "Gifted");
-                long received = (long)Engine.Bot.SQL.Games.GetData("Frogs", data.Platform, Format.ToLong(data.User.ID), "Received");
+                long balance = Convert.ToInt64(Engine.Bot.SQL.Games.GetData("Frogs", data.Platform, Format.ToLong(data.User.ID), "Frogs"));
+                long gifted = Convert.ToInt64(Engine.Bot.SQL.Games.GetData("Frogs", data.Platform, Format.ToLong(data.User.ID), "Gifted"));
+                long received = Convert.ToInt64(Engine.Bot.SQL.Games.GetData("Frogs", data.Platform, Format.ToLong(data.User.ID), "Received"));
                 string[] info_aliases = ["info", "i"];
                 string[] statistic_aliases = ["statistic", "stat", "s"];
                 string[] caught_aliases = ["caught", "c"];
@@ -150,8 +149,8 @@ namespace butterBror.Core.Commands.List
                                     frogs.ToString(),
                                     Names.DontPing(username)));
 
-                                long giftUserFrogsBalance = (long)Engine.Bot.SQL.Games.GetData("Frogs", data.Platform, Format.ToLong(user_id), "Gifted");
-                                long giftUserReceived = (long)Engine.Bot.SQL.Games.GetData("Frogs", data.Platform, Format.ToLong(user_id), "Received");
+                                long giftUserFrogsBalance = Convert.ToInt64(Engine.Bot.SQL.Games.GetData("Frogs", data.Platform, Format.ToLong(user_id), "Gifted"));
+                                long giftUserReceived = Convert.ToInt64(Engine.Bot.SQL.Games.GetData("Frogs", data.Platform, Format.ToLong(user_id), "Received"));
 
 
                                 Engine.Bot.SQL.Games.SetData("Frogs", data.Platform, Format.ToLong(user_id), "Frogs", giftUserFrogsBalance + frogs);

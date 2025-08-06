@@ -65,8 +65,6 @@ namespace butterBror.Services.External
         
         public static async Task<string[]> Request(string request, string umodel, PlatformsEnum platform, string username, string userID, string lang, double repetitionPenalty, bool chatHistory = true)
         {
-            Engine.Statistics.FunctionsUsed.Add();
-
             DateTime requestTime = DateTime.UtcNow;
             var api_key = Manager.Get<string>(Engine.Bot.Pathes.Settings, "openrouter_token");
             var uri = new Uri("https://openrouter.ai/api/v1/chat/completions");

@@ -18,7 +18,6 @@ namespace butterBror.Services.External
         
         public static async Task<byte[]> DownloadAsync(string imageUrl)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             using HttpClient client = new HttpClient();
             return await client.GetByteArrayAsync(imageUrl);
         }
@@ -38,7 +37,6 @@ namespace butterBror.Services.External
         
         public static async Task<string> UploadAsync(byte[] imageBytes, string description, string title, string ImgurClientId, string ImgurUploadUrl)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 using HttpClient client = new HttpClient();
@@ -79,7 +77,6 @@ namespace butterBror.Services.External
         
         public static string GetLinkFromResponse(string response)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 JObject jsonResponse = JObject.Parse(response);

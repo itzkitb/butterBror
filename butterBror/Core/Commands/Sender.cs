@@ -26,7 +26,6 @@ namespace butterBror.Core.Commands
         
         public static async void SendCommandReply(TwitchMessageSendData data, bool isReply = true)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 string message = data.Message;
@@ -96,7 +95,6 @@ namespace butterBror.Core.Commands
         
         public static async void SendCommandReply(TelegramMessageSendData data, bool isReply = true)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 string messageToSend = data.Message;
@@ -169,7 +167,6 @@ namespace butterBror.Core.Commands
         
         public static async void SendCommandReply(DiscordCommandSendData data)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 Write($"Discord - A message response was sent to the {data.Server}: {data.Message}", "info");

@@ -30,7 +30,6 @@ namespace butterBror.Core.Commands
             };
             public CommandReturn Index(CommandData data)
             {
-                Engine.Statistics.FunctionsUsed.Add();
                 CommandReturn commandReturn = new CommandReturn();
 
                 try

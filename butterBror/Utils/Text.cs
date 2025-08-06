@@ -23,7 +23,6 @@ namespace butterBror.Utils
         
         public static string FilterCommand(string input)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             return Regex.Replace(input, @"[^qwertyuiopasdfghjklzxcvbnmйцукенгшщзхъфывапролджэячсмитьбюёQWERTYUIOPASDFGHJKLZXCVBNMЙЦУКЕНГШЩЗХЪФЫВАПРОЛДЖЭЯЧСМИТЬБЮЁ1234567890%]", ""); ;
         }
 
@@ -39,7 +38,6 @@ namespace butterBror.Utils
         
         public static string ChangeLayout(string text)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 var en = "qwertyuiop[]asdfghjkl;'zxcvbnm,.";
@@ -71,7 +69,6 @@ namespace butterBror.Utils
         
         public static string CleanAscii(string input)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             if (string.IsNullOrEmpty(input)) return input;
 
             return new string(input
@@ -91,7 +88,6 @@ namespace butterBror.Utils
         
         public static string CleanAsciiWithoutSpaces(string input)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             return CleanAscii(input).Replace(" ", "");
         }
 
@@ -106,7 +102,6 @@ namespace butterBror.Utils
         
         public static string RemoveDuplicates(string text)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             return text.Aggregate(new StringBuilder(), (sb, c) =>
                 sb.Length == 0 || c != sb[^1] ? sb.Append(c) : sb).ToString();
         }
@@ -123,7 +118,6 @@ namespace butterBror.Utils
         
         public static string UsernameFilter(string input)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             return Regex.Replace(input, @"[^A-Za-z0-9_-]", "");
         }
 
@@ -139,7 +133,6 @@ namespace butterBror.Utils
         
         public static string ShortenCoordinate(string coordinate)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             if (double.TryParse(coordinate[..^1], NumberStyles.Float, CultureInfo.InvariantCulture, out double number))
                 return $"{Math.Round(number, 1).ToString(CultureInfo.InvariantCulture)}{coordinate[^1]}";
             else
@@ -165,7 +158,6 @@ namespace butterBror.Utils
         
         public static string TimeTo(DateTime startTime, DateTime endTime, string type, string lang, string argsText, string channelID, PlatformsEnum platform)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 var selectedUser = Names.GetUsernameFromText(argsText);
@@ -251,7 +243,6 @@ namespace butterBror.Utils
         
         public static string FormatTimeSpan(TimeSpan timeSpan, string lang)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             int days = Math.Abs(timeSpan.Days);
             int hours = Math.Abs(timeSpan.Hours);
             int minutes = Math.Abs(timeSpan.Minutes);

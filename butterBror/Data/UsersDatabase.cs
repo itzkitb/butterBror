@@ -2,6 +2,7 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SQLite;
@@ -16,6 +17,8 @@ namespace butterBror.Data
     /// </summary>
     public class UsersDatabase : SqlDatabaseBase
     {
+        private readonly ConcurrentDictionary<(PlatformsEnum platform, string username), long> _usernameCache = new();
+
         /// <summary>
         /// Initializes a new instance of the UsersDatabase class with the specified database file path.
         /// </summary>
@@ -23,7 +26,124 @@ namespace butterBror.Data
         public UsersDatabase(string dbPath = "Users.db")
             : base(dbPath, true)
         {
+            ConfigureSqlitePerformance();
             InitializeDatabase();
+            MigrateOldDataIfNeeded();
+        }
+
+        private void ConfigureSqlitePerformance()
+        {
+            ExecuteNonQuery("PRAGMA journal_mode = WAL;");
+            ExecuteNonQuery("PRAGMA synchronous = NORMAL;");
+            ExecuteNonQuery("PRAGMA cache_size = -500000;");
+            ExecuteNonQuery("PRAGMA temp_store = MEMORY;");
+            ExecuteNonQuery("PRAGMA foreign_keys = ON;");
+        }
+
+        private void MigrateOldDataIfNeeded()
+        {
+            bool needsMigration = false;
+            foreach (PlatformsEnum platform in Enum.GetValues(typeof(PlatformsEnum)))
+            {
+                string tableName = GetTableName(platform);
+                string checkColumnSql = $@"
+            SELECT COUNT(*) 
+            FROM sqlite_master 
+            WHERE type='table' AND name='{tableName}' AND sql LIKE '%ChannelMessagesCount%'";
+
+                if (ExecuteScalar<int>(checkColumnSql) > 0)
+                {
+                    needsMigration = true;
+                    break;
+                }
+            }
+
+            if (!needsMigration) return;
+
+            BeginTransaction();
+            try
+            {
+                foreach (PlatformsEnum platform in Enum.GetValues(typeof(PlatformsEnum)))
+                {
+                    MigratePlatformData(platform);
+                }
+                CommitTransaction();
+            }
+            catch
+            {
+                RollbackTransaction();
+                throw;
+            }
+        }
+
+        private void MigratePlatformData(PlatformsEnum platform)
+        {
+            string tableName = GetTableName(platform);
+            string channelCountsTable = $"{tableName}_ChannelCounts";
+
+            string checkColumnSql = $@"
+                SELECT COUNT(*) 
+                FROM PRAGMA_TABLE_INFO('{tableName}')
+                WHERE name = 'ChannelMessagesCount'";
+
+            if (ExecuteScalar<int>(checkColumnSql) == 0)
+                return;
+
+            string selectSql = $@"
+                SELECT ID, ChannelMessagesCount 
+                FROM [{tableName}]
+                WHERE ChannelMessagesCount IS NOT NULL AND ChannelMessagesCount != '[]' AND ChannelMessagesCount != '{{}}'";
+
+            using var cmd = CreateCommand(selectSql, null);
+            using var reader = cmd.ExecuteReader();
+
+            while (reader.Read())
+            {
+                long userId = reader.GetInt64(0);
+                string channelMessagesJson = reader.GetString(1);
+
+                try
+                {
+                    JObject channelMessages = JObject.Parse(channelMessagesJson);
+
+                    foreach (var channel in channelMessages)
+                    {
+                        string channelId = channel.Key;
+                        int count = channel.Value.ToObject<int>();
+
+                        string insertSql = $@"
+                            INSERT OR REPLACE INTO [{channelCountsTable}] (UserID, ChannelID, MessageCount)
+                            VALUES (@UserId, @ChannelId, @Count)";
+
+                        ExecuteNonQuery(insertSql, new[]
+                        {
+                            new SQLiteParameter("@UserId", userId),
+                            new SQLiteParameter("@ChannelId", channelId),
+                            new SQLiteParameter("@Count", count)
+                        });
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Core.Bot.Console.Write(ex);
+                }
+            }
+
+            string tempTable = $"{tableName}_temp";
+            string recreateTableSql = $@"
+        CREATE TABLE [{tempTable}] AS SELECT 
+            ID, FirstMessage, FirstSeen, FirstChannel, LastMessage, LastSeen, LastChannel,
+            Balance, AfterDotBalance, Rating, IsAFK, AFKText, AFKType, AFKStart,
+            Reminders, LastCookie, GiftedCookies, EatedCookies, BuyedCookies, Location,
+            Longitude, Latitude, Language, AFKResume, AFKResumeTimes, LastUse,
+            GPTHistory, WeatherResultLocations, TotalMessages, TotalMessagesLength
+        FROM [{tableName}];
+        
+        DROP TABLE [{tableName}];
+        
+        ALTER TABLE [{tempTable}] RENAME TO [{tableName}];";
+
+            ExecuteNonQuery(recreateTableSql);
         }
 
         /// <summary>
@@ -40,53 +160,66 @@ namespace butterBror.Data
                     {
                         string tableName = GetTableName(platform);
                         string createTableSql = $@"
-                            CREATE TABLE IF NOT EXISTS [{tableName}] (
-                                ID INTEGER PRIMARY KEY,
-                                FirstMessage TEXT,
-                                FirstSeen TEXT,
-                                FirstChannel TEXT,
-                                LastMessage TEXT,
-                                LastSeen TEXT,
-                                LastChannel TEXT,
-                                Balance INTEGER DEFAULT 0,
-                                AfterDotBalance INTEGER DEFAULT 0,
-                                Rating INTEGER DEFAULT 500,
-                                IsAFK INTEGER DEFAULT 0,
-                                AFKText TEXT DEFAULT '',
-                                AFKType TEXT DEFAULT '',
-                                AFKStart TEXT DEFAULT '',
-                                Reminders TEXT DEFAULT '[]',
-                                LastCookie TEXT DEFAULT '',
-                                GiftedCookies INTEGER DEFAULT 0,
-                                EatedCookies INTEGER DEFAULT 0,
-                                BuyedCookies INTEGER DEFAULT 0,
-                                Location TEXT DEFAULT '',
-                                Longitude TEXT DEFAULT '',
-                                Latitude TEXT DEFAULT '',
-                                Language TEXT DEFAULT 'en-US',
-                                AFKResume TEXT DEFAULT '',
-                                AFKResumeTimes INTEGER DEFAULT 0,
-                                LastUse TEXT DEFAULT '[]',
-                                GPTHistory TEXT DEFAULT '[]',
-                                WeatherResultLocations TEXT DEFAULT '[]',
-                                TotalMessages INTEGER DEFAULT 1,
-                                TotalMessagesLength INTEGER DEFAULT 0,
-                                ChannelMessagesCount TEXT DEFAULT '[]'
-                            );
-                            CREATE INDEX IF NOT EXISTS idx_{tableName}_id ON [{tableName}](ID);";
+                    CREATE TABLE IF NOT EXISTS [{tableName}] (
+                        ID INTEGER PRIMARY KEY,
+                        FirstMessage TEXT,
+                        FirstSeen TEXT,
+                        FirstChannel TEXT,
+                        LastMessage TEXT,
+                        LastSeen TEXT,
+                        LastChannel TEXT,
+                        Balance INTEGER DEFAULT 0,
+                        AfterDotBalance INTEGER DEFAULT 0,
+                        Rating INTEGER DEFAULT 500,
+                        IsAFK INTEGER DEFAULT 0,
+                        AFKText TEXT DEFAULT '',
+                        AFKType TEXT DEFAULT '',
+                        AFKStart TEXT DEFAULT '',
+                        Reminders TEXT DEFAULT '[]',
+                        LastCookie TEXT DEFAULT '',
+                        GiftedCookies INTEGER DEFAULT 0,
+                        EatedCookies INTEGER DEFAULT 0,
+                        BuyedCookies INTEGER DEFAULT 0,
+                        Location TEXT DEFAULT '',
+                        Longitude TEXT DEFAULT '',
+                        Latitude TEXT DEFAULT '',
+                        Language TEXT DEFAULT 'en-US',
+                        AFKResume TEXT DEFAULT '',
+                        AFKResumeTimes INTEGER DEFAULT 0,
+                        LastUse TEXT DEFAULT '[]',
+                        GPTHistory TEXT DEFAULT '[]',
+                        WeatherResultLocations TEXT DEFAULT '[]',
+                        TotalMessages INTEGER DEFAULT 1,
+                        TotalMessagesLength INTEGER DEFAULT 0
+                    );
+                    CREATE INDEX IF NOT EXISTS idx_{tableName}_id ON [{tableName}](ID);";
+
+                        // Новая таблица для счетчиков сообщений по каналам
+                        string channelCountsTable = $"{tableName}_ChannelCounts";
+                        string createChannelCountsTable = $@"
+                    CREATE TABLE IF NOT EXISTS [{channelCountsTable}] (
+                        UserID INTEGER NOT NULL,
+                        ChannelID TEXT NOT NULL,
+                        MessageCount INTEGER DEFAULT 0,
+                        PRIMARY KEY (UserID, ChannelID)
+                    );
+                    CREATE INDEX IF NOT EXISTS idx_{channelCountsTable}_userid ON [{channelCountsTable}](UserID);";
+
                         ExecuteNonQuery(createTableSql);
+                        ExecuteNonQuery(createChannelCountsTable);
                     }
 
                     string createMappingTableSql = @"
-                        CREATE TABLE IF NOT EXISTS UsernameMapping (
-                            Platform TEXT NOT NULL,
-                            UserID INTEGER NOT NULL,
-                            Username TEXT NOT NULL,
-                            PRIMARY KEY (Platform, UserID)
-                        );
-                        CREATE INDEX IF NOT EXISTS idx_username_mapping_platform ON UsernameMapping(Platform);
-                        CREATE INDEX IF NOT EXISTS idx_username_mapping_userid ON UsernameMapping(UserID);
-                        CREATE INDEX IF NOT EXISTS idx_username_mapping_username ON UsernameMapping(Username);";
+                CREATE TABLE IF NOT EXISTS UsernameMapping (
+                    Platform TEXT NOT NULL,
+                    UserID INTEGER NOT NULL,
+                    Username TEXT NOT NULL,
+                    PRIMARY KEY (Platform, UserID)
+                );
+                CREATE INDEX IF NOT EXISTS idx_username_mapping_platform ON UsernameMapping(Platform);
+                CREATE INDEX IF NOT EXISTS idx_username_mapping_userid ON UsernameMapping(UserID);
+                CREATE INDEX IF NOT EXISTS idx_username_mapping_username ON UsernameMapping(Username);";
+
                     ExecuteNonQuery(createMappingTableSql);
                     transaction.Commit();
                 }
@@ -179,7 +312,13 @@ namespace butterBror.Data
         {
             if (string.IsNullOrWhiteSpace(username))
                 return false;
+
+            var cacheKey = (platform, username);
+
+            _usernameCache[cacheKey] = userId;
+
             RemoveUsernameMapping(platform, userId);
+
             string sql = @"
                 INSERT INTO UsernameMapping (Platform, UserID, Username)
                 VALUES (@Platform, @UserID, @Username)";
@@ -189,6 +328,7 @@ namespace butterBror.Data
                 new SQLiteParameter("@UserID", userId),
                 new SQLiteParameter("@Username", username)
             });
+
             return true;
         }
 
@@ -202,6 +342,12 @@ namespace butterBror.Data
         {
             if (string.IsNullOrWhiteSpace(username))
                 return null;
+
+            var cacheKey = (platform, username);
+
+            if (_usernameCache.TryGetValue(cacheKey, out long cachedUserId))
+                return cachedUserId;
+
             string sql = @"
                 SELECT UserID 
                 FROM UsernameMapping 
@@ -211,12 +357,17 @@ namespace butterBror.Data
                 new SQLiteParameter("@Platform", platform.ToString().ToUpper()),
                 new SQLiteParameter("@Username", username)
             });
+
             if (result != null && result != DBNull.Value)
             {
-                return Convert.ToInt64(result);
+                long userId = Convert.ToInt64(result);
+                _usernameCache[cacheKey] = userId;
+                return userId;
             }
+
             return null;
         }
+
 
         /// <summary>
         /// Retrieves the username associated with a user ID on the specified platform.
@@ -349,26 +500,21 @@ namespace butterBror.Data
         /// <returns>The number of messages sent by the user in the specified channel</returns>
         public int GetMessageCountInChannel(PlatformsEnum platform, long userId, string channelId)
         {
-            if (!CheckUserExists(platform, userId))
+            string tableName = GetTableName(platform);
+            string channelCountsTable = $"{tableName}_ChannelCounts";
+
+            string sql = $@"
+                SELECT MessageCount 
+                FROM [{channelCountsTable}] 
+                WHERE UserID = @UserId AND ChannelID = @ChannelId";
+
+            var result = ExecuteScalar<int>(sql, new[]
             {
-                return 0;
-            }
-            string channelMessagesJson = (string)GetParameter(platform, userId, "ChannelMessagesCount");
-            if (string.IsNullOrEmpty(channelMessagesJson))
-                return 0;
-            try
-            {
-                JObject channelMessages = JObject.Parse(channelMessagesJson);
-                JToken countToken;
-                if (channelMessages.TryGetValue(channelId.ToString(), out countToken))
-                {
-                    return countToken.ToObject<int>();
-                }
-            }
-            catch
-            {
-            }
-            return 0;
+                new SQLiteParameter("@UserId", userId),
+                new SQLiteParameter("@ChannelId", channelId)
+            });
+
+            return result;
         }
 
         /// <summary>
@@ -380,29 +526,23 @@ namespace butterBror.Data
         /// <param name="count">The new message count value</param>
         public void SetMessageCountInChannel(PlatformsEnum platform, long userId, string channelId, int count)
         {
-            if (!CheckUserExists(platform, userId))
+            string tableName = GetTableName(platform);
+            string channelCountsTable = $"{tableName}_ChannelCounts";
+
+            string upsertSql = $@"
+                INSERT OR REPLACE INTO [{channelCountsTable}] (UserID, ChannelID, MessageCount)
+                VALUES (
+                    @UserId, 
+                    @ChannelId, 
+                    COALESCE((SELECT MessageCount FROM [{channelCountsTable}] WHERE UserID = @UserId AND ChannelID = @ChannelId), 0) + @Increment
+                );";
+
+            ExecuteNonQuery(upsertSql, new[]
             {
-                return;
-            }
-            string channelMessagesJson = (string)GetParameter(platform, userId, "ChannelMessagesCount");
-            JObject channelMessages;
-            if (string.IsNullOrEmpty(channelMessagesJson))
-            {
-                channelMessages = new JObject();
-            }
-            else
-            {
-                try
-                {
-                    channelMessages = JObject.Parse(channelMessagesJson);
-                }
-                catch
-                {
-                    channelMessages = new JObject();
-                }
-            }
-            channelMessages[channelId.ToString()] = count;
-            SetParameter(platform, userId, "ChannelMessagesCount", channelMessages.ToString(Formatting.None));
+                new SQLiteParameter("@UserId", userId),
+                new SQLiteParameter("@ChannelId", channelId),
+                new SQLiteParameter("@Increment", count)
+            });
         }
 
         /// <summary>
@@ -415,10 +555,23 @@ namespace butterBror.Data
         /// <returns>The new message count value for the channel</returns>
         public int IncrementMessageCountInChannel(PlatformsEnum platform, long userId, string channelId, int increment = 1)
         {
-            int currentCount = GetMessageCountInChannel(platform, userId, channelId);
-            int newCount = currentCount + increment;
-            SetMessageCountInChannel(platform, userId, channelId, newCount);
-            return newCount;
+            string tableName = GetTableName(platform);
+            string channelCountsTable = $"{tableName}_ChannelCounts";
+
+            string updateSql = $@"
+                INSERT INTO [{channelCountsTable}] (UserID, ChannelID, MessageCount)
+                VALUES (@UserId, @ChannelId, @Increment)
+                ON CONFLICT(UserID, ChannelID) DO UPDATE SET
+                MessageCount = MessageCount + @Increment;";
+
+            ExecuteNonQuery(updateSql, new[]
+            {
+                new SQLiteParameter("@UserId", userId),
+                new SQLiteParameter("@ChannelId", channelId),
+                new SQLiteParameter("@Increment", increment)
+            });
+
+            return GetMessageCountInChannel(platform, userId, channelId);
         }
 
         /// <summary>

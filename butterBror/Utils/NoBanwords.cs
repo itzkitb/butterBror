@@ -32,7 +32,6 @@ namespace butterBror.Utils
         
         public bool Check(string message, string channelID, PlatformsEnum platform)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 bool failed = false;
@@ -155,7 +154,6 @@ namespace butterBror.Utils
         private bool CheckBanWords(string message, string channelID, string checkUUID,
     List<string> bannedWords, List<string> singleBanwords)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 if (bannedWords.Any(word => message.Contains(word, StringComparison.OrdinalIgnoreCase)))
@@ -199,7 +197,6 @@ namespace butterBror.Utils
         private bool CheckReplacements(string message, string channelID, string checkUUID,
     List<string> bannedWords, List<string> singleBanwords, Dictionary<string, string> replacements)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 string maskedWord = _replacementRegex.Replace(message, match =>

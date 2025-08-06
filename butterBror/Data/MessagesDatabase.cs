@@ -1,7 +1,9 @@
-﻿using butterBror.Models;
+﻿using butterBror.Core.Bot.SQLColumnNames;
+using butterBror.Models;
 using butterBror.Models.DataBase;
 using System.Data;
 using System.Data.SQLite;
+using System.Text;
 
 namespace butterBror.Data
 {
@@ -28,14 +30,23 @@ namespace butterBror.Data
             int messagesToDeleteAtOnce = DEFAULT_MESSAGES_TO_DELETE_AT_ONCE)
             : base(dbPath, true)
         {
+            ConfigureSqlitePerformance();
             _maxMessagesPerChannel = maxMessagesPerChannel;
             _messagesToDeleteAtOnce = messagesToDeleteAtOnce;
+        }
+
+        private void ConfigureSqlitePerformance()
+        {
+            ExecuteNonQuery("PRAGMA journal_mode = WAL;");
+            ExecuteNonQuery("PRAGMA synchronous = NORMAL;");
+            ExecuteNonQuery("PRAGMA cache_size = -200000;");
+            ExecuteNonQuery("PRAGMA temp_store = MEMORY;");
         }
 
         /// <summary>
         /// Retrieves a user's message from the specified channel by index from the most recent message.
         /// </summary>
-        /// <param name="platform">The streaming platform (Twitch, YouTube, etc.)</param>
+        /// <param name="platform">The streaming platform (Twitch, Discord, etc.)</param>
         /// <param name="channelId">The unique identifier of the channel</param>
         /// <param name="userId">The unique identifier of the user</param>
         /// <param name="indexFromLast">The index of the message counting backward from the most recent (0 = most recent message)</param>
@@ -58,53 +69,139 @@ namespace butterBror.Data
         /// <summary>
         /// Saves a user's message to the channel's message history and manages database size by automatically removing the oldest messages when retention limits are exceeded.
         /// </summary>
-        /// <param name="platform">The streaming platform (Twitch, YouTube, etc.)</param>
+        /// <param name="platform">The streaming platform (Twitch, Discord, etc.)</param>
         /// <param name="channelId">The unique identifier of the channel</param>
         /// <param name="userId">The unique identifier of the user</param>
         /// <param name="message">The message object to store in the database</param>
-        public void SaveMessage(PlatformsEnum platform, string channelId, long userId, Message message)
+        public void SaveMessages(List<(PlatformsEnum platform, string channelId, long userId, Message message)> messages)
         {
-            string tableName = GetTableName(platform, channelId);
-            EnsureTableExists(tableName);
-            string sql = $@"
-                INSERT INTO [{tableName}] (
-                    UserID, MessageDate, MessageText,
-                    IsMe, IsModerator, IsSubscriber, IsPartner, IsStaff, IsTurbo, IsVip
-                ) VALUES (
-                    @UserID, @MessageDate, @MessageText,
-                    @IsMe, @IsModerator, @IsSubscriber, @IsPartner, @IsStaff, @IsTurbo, @IsVip
-                );";
-            ExecuteNonQuery(sql, new[]
-            {
-                new SQLiteParameter("@UserID", userId),
-                new SQLiteParameter("@MessageDate", message.messageDate.ToString("o")),
-                new SQLiteParameter("@MessageText", message.messageText ?? string.Empty),
-                new SQLiteParameter("@IsMe", message.isMe ? 1 : 0),
-                new SQLiteParameter("@IsModerator", message.isModerator ? 1 : 0),
-                new SQLiteParameter("@IsSubscriber", message.isSubscriber ? 1 : 0),
-                new SQLiteParameter("@IsPartner", message.isPartner ? 1 : 0),
-                new SQLiteParameter("@IsStaff", message.isStaff ? 1 : 0),
-                new SQLiteParameter("@IsTurbo", message.isTurbo ? 1 : 0),
-                new SQLiteParameter("@IsVip", message.isVip ? 1 : 0)
-            });
+            if (messages.Count == 0) return;
 
-            int totalCount = GetTotalMessageCount(platform, channelId);
-            if (totalCount > _maxMessagesPerChannel)
+            var messagesByChannel = messages
+                .GroupBy(m => (m.platform, m.channelId))
+                .ToList();
+
+            BeginTransaction();
+            try
             {
-                int messagesToDelete = Math.Min(totalCount - _maxMessagesPerChannel + 1, _messagesToDeleteAtOnce);
-                string deleteSql = $@"
+                foreach (var channelGroup in messagesByChannel)
+                {
+                    var (platform, channelId) = channelGroup.Key;
+                    string tableName = GetTableName(platform, channelId);
+                    EnsureTableExists(tableName);
+
+                    if (channelGroup.Count() > 500)
+                    {
+                        BatchInsertMessages(tableName, channelGroup);
+                    }
+                    else
+                    {
+                        PreparedInsertMessages(tableName, channelGroup);
+                    }
+
+                    int totalCount = GetTotalMessageCount(platform, channelId);
+                    if (totalCount > _maxMessagesPerChannel)
+                    {
+                        int messagesToDelete = Math.Min(totalCount - _maxMessagesPerChannel + 1,
+                                                      _messagesToDeleteAtOnce);
+                        string deleteSql = $@"
                     DELETE FROM [{tableName}] 
-                    WHERE ID IN (
-                        SELECT ID FROM [{tableName}] ORDER BY ID ASC LIMIT {messagesToDelete}
-                    );";
-                ExecuteNonQuery(deleteSql);
+                    ORDER BY ID ASC 
+                    LIMIT {messagesToDelete};";
+                        ExecuteNonQuery(deleteSql);
+                    }
+                }
+
+                CommitTransaction();
             }
+            catch
+            {
+                RollbackTransaction();
+                throw;
+            }
+        }
+
+        private void PreparedInsertMessages(string tableName, IEnumerable<(PlatformsEnum platform, string channelId, long userId, Message message)> messages)
+        {
+            string sql = $@"
+        INSERT INTO [{tableName}] (
+            UserID, MessageDate, MessageText,
+            IsMe, IsModerator, IsSubscriber, IsPartner, IsStaff, IsTurbo, IsVip
+        ) VALUES (
+            @UserID, @MessageDate, @MessageText,
+            @IsMe, @IsModerator, @IsSubscriber, @IsPartner, @IsStaff, @IsTurbo, @IsVip
+        );";
+
+            using var cmd = CreateCommand(sql, null);
+
+            var userIdParam = cmd.Parameters.Add("@UserID", DbType.Int64);
+            var messageDateParam = cmd.Parameters.Add("@MessageDate", DbType.String);
+            var messageTextParam = cmd.Parameters.Add("@MessageText", DbType.String);
+            var isMeParam = cmd.Parameters.Add("@IsMe", DbType.Int32);
+            var isModeratorParam = cmd.Parameters.Add("@IsModerator", DbType.Int32);
+            var isSubscriberParam = cmd.Parameters.Add("@IsSubscriber", DbType.Int32);
+            var isPartnerParam = cmd.Parameters.Add("@IsPartner", DbType.Int32);
+            var isStaffParam = cmd.Parameters.Add("@IsStaff", DbType.Int32);
+            var isTurboParam = cmd.Parameters.Add("@IsTurbo", DbType.Int32);
+            var isVipParam = cmd.Parameters.Add("@IsVip", DbType.Int32);
+
+            foreach (var (_, _, userId, message) in messages)
+            {
+                userIdParam.Value = userId;
+                messageDateParam.Value = message.messageDate.ToString("o");
+                messageTextParam.Value = message.messageText ?? string.Empty;
+                isMeParam.Value = message.isMe ? 1 : 0;
+                isModeratorParam.Value = message.isModerator ? 1 : 0;
+                isSubscriberParam.Value = message.isSubscriber ? 1 : 0;
+                isPartnerParam.Value = message.isPartner ? 1 : 0;
+                isStaffParam.Value = message.isStaff ? 1 : 0;
+                isTurboParam.Value = message.isTurbo ? 1 : 0;
+                isVipParam.Value = message.isVip ? 1 : 0;
+
+                cmd.ExecuteNonQuery();
+            }
+        }
+
+        private void BatchInsertMessages(string tableName, IEnumerable<(PlatformsEnum platform, string channelId, long userId, Message message)> messages)
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine($"INSERT INTO [{tableName}] (UserID, MessageDate, MessageText, IsMe, IsModerator, IsSubscriber, IsPartner, IsStaff, IsTurbo, IsVip) VALUES ");
+
+            var valuesList = new List<string>();
+            var allParams = new List<SQLiteParameter>();
+
+            int i = 0;
+            foreach (var (_, _, userId, message) in messages)
+            {
+                string paramPrefix = $"p{i}_";
+
+                valuesList.Add($"(@{paramPrefix}UserID, @{paramPrefix}MessageDate, @{paramPrefix}MessageText, " +
+                              $"@{paramPrefix}IsMe, @{paramPrefix}IsModerator, @{paramPrefix}IsSubscriber, " +
+                              $"@{paramPrefix}IsPartner, @{paramPrefix}IsStaff, @{paramPrefix}IsTurbo, @{paramPrefix}IsVip)");
+
+                allParams.Add(new SQLiteParameter($"@{paramPrefix}UserID", userId));
+                allParams.Add(new SQLiteParameter($"@{paramPrefix}MessageDate", message.messageDate.ToString("o")));
+                allParams.Add(new SQLiteParameter($"@{paramPrefix}MessageText", message.messageText ?? string.Empty));
+                allParams.Add(new SQLiteParameter($"@{paramPrefix}IsMe", message.isMe ? 1 : 0));
+                allParams.Add(new SQLiteParameter($"@{paramPrefix}IsModerator", message.isModerator ? 1 : 0));
+                allParams.Add(new SQLiteParameter($"@{paramPrefix}IsSubscriber", message.isSubscriber ? 1 : 0));
+                allParams.Add(new SQLiteParameter($"@{paramPrefix}IsPartner", message.isPartner ? 1 : 0));
+                allParams.Add(new SQLiteParameter($"@{paramPrefix}IsStaff", message.isStaff ? 1 : 0));
+                allParams.Add(new SQLiteParameter($"@{paramPrefix}IsTurbo", message.isTurbo ? 1 : 0));
+                allParams.Add(new SQLiteParameter($"@{paramPrefix}IsVip", message.isVip ? 1 : 0));
+
+                i++;
+            }
+
+            sb.AppendLine(string.Join(",", valuesList));
+
+            ExecuteNonQuery(sb.ToString(), allParams);
         }
 
         /// <summary>
         /// Retrieves the count of messages sent by a specific user in the specified channel.
         /// </summary>
-        /// <param name="platform">The streaming platform (Twitch, YouTube, etc.)</param>
+        /// <param name="platform">The streaming platform (Twitch, Discord, etc.)</param>
         /// <param name="channelId">The unique identifier of the channel</param>
         /// <param name="userId">The unique identifier of the user</param>
         /// <returns>The total number of messages sent by the user in the channel</returns>
@@ -121,13 +218,15 @@ namespace butterBror.Data
         /// <summary>
         /// Retrieves the total number of messages stored for the specified channel.
         /// </summary>
-        /// <param name="platform">The streaming platform (Twitch, YouTube, etc.)</param>
+        /// <param name="platform">The streaming platform (Twitch, Discord, etc.)</param>
         /// <param name="channelId">The unique identifier of the channel</param>
         /// <returns>The total message count for the channel</returns>
         public int GetTotalMessageCount(PlatformsEnum platform, string channelId)
         {
             string tableName = GetTableName(platform, channelId);
-            string sql = $@"SELECT COUNT(*) FROM [{tableName}]";
+            string sql = $@"
+                SELECT MAX(ID) - MIN(ID) + 1 
+                FROM [{tableName}]";
             return ExecuteScalar<int>(sql);
         }
 
@@ -159,7 +258,7 @@ namespace butterBror.Data
         /// Generates a database table name for the specified platform and channel combination.
         /// The table name follows the format: PLATFORM_CHANNELID (e.g., TWITCH_123456789).
         /// </summary>
-        /// <param name="platform">The streaming platform (Twitch, YouTube, etc.)</param>
+        /// <param name="platform">The streaming platform (Twitch, Discord, etc.)</param>
         /// <param name="channelId">The unique identifier of the channel</param>
         /// <returns>The generated table name</returns>
         private string GetTableName(PlatformsEnum platform, string channelId)

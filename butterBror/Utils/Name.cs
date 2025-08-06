@@ -29,7 +29,6 @@ namespace butterBror.Utils
         
         public static string GetUsernameFromText(string text)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 if (!text.Contains('@'))
@@ -61,8 +60,6 @@ namespace butterBror.Utils
         
         public static string GetUserID(string user, PlatformsEnum platform, bool requestAPI = false)
         {
-            Engine.Statistics.FunctionsUsed.Add();
-
             string key = user.ToLowerInvariant();
 
             try
@@ -125,8 +122,6 @@ namespace butterBror.Utils
         
         public static string GetUsername(string ID, PlatformsEnum platform, bool requestAPI = false)
         {
-            Engine.Statistics.FunctionsUsed.Add();
-
             try
             {
                 if (Engine.Bot.SQL.Users.GetUsernameByUserId(platform, Format.ToLong(ID)) is not null)
@@ -189,7 +184,6 @@ namespace butterBror.Utils
         
         public static string DontPing(string username)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             return string.Join("󠀀", username);
         }
     }

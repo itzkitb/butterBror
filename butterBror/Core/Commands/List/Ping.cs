@@ -30,7 +30,6 @@ namespace butterBror.Core.Commands.List
 
         public override CommandReturn Execute(CommandData data)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             CommandReturn commandReturn = new CommandReturn();
 
             try
@@ -87,7 +86,7 @@ namespace butterBror.Core.Commands.List
 
                     commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:ping:isp", data.ChannelId, data.Platform, pingSpeed.ToString()));
                 }
-                else if (argument.Equals("dev"))
+                /*else if (argument.Equals("dev"))
                 {
                     var workTime = DateTime.Now - Engine.StartTime;
                     string host = "";
@@ -122,7 +121,7 @@ namespace butterBror.Core.Commands.List
                         Engine.TickDelay.ToString(),
                         Engine.TicksCounter.ToString(),
                         Engine.SkippedTicks.ToString()));
-                }
+                }*/
             }
             catch (Exception e)
             {

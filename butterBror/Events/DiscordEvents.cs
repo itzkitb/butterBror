@@ -19,7 +19,6 @@ namespace butterBror.Events
         
         public static Task LogAsync(LogMessage log)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 return Task.CompletedTask;
@@ -39,7 +38,6 @@ namespace butterBror.Events
         
         public static async Task ConnectToGuilt(SocketGuild g)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             Write($"Discord - Connected to a server: {g.Name}", "info");
             Engine.Bot.DiscordServers++;
         }
@@ -52,7 +50,6 @@ namespace butterBror.Events
         
         public static async Task HandleCommandAsync(SocketMessage arg)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 var message = arg as SocketUserMessage;
@@ -83,7 +80,6 @@ namespace butterBror.Events
         
         public static async Task SlashCommandHandler(SocketSlashCommand command)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             Executor.Discord(command);
         }
 
@@ -95,7 +91,6 @@ namespace butterBror.Events
         
         public static async Task ApplicationCommandCreated(SocketApplicationCommand e)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             Write("Discord - The command has been created: /" + e.Name + " (" + e.Description + ")", "info");
         }
 
@@ -107,7 +102,6 @@ namespace butterBror.Events
         
         public static async Task ApplicationCommandDeleted(SocketApplicationCommand e)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             Write("Discord - Command deleted: /" + e.Name + " (" + e.Description + ")", "info");
         }
 
@@ -119,7 +113,6 @@ namespace butterBror.Events
         
         public static async Task ApplicationCommandUpdated(SocketApplicationCommand e)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             Write($"Discord - Command updated: /{e.Name} ({e.Description})", "info");
         }
 
@@ -131,7 +124,6 @@ namespace butterBror.Events
         
         public static async Task ChannelCreated(SocketChannel e)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             Write("Discord - New channel created: " + e.Id, "info");
         }
 
@@ -143,7 +135,6 @@ namespace butterBror.Events
         
         public static async Task ChannelDeleted(SocketChannel e)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             Write("Discord - The channel has been deleted: " + e.Id, "info");
         }
 
@@ -156,7 +147,6 @@ namespace butterBror.Events
         
         public static async Task ChannelUpdated(SocketChannel e, SocketChannel a)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             Write("Discord - Channel updated: " + e.Id + "/" + a.Id, "info");
         }
 
@@ -167,7 +157,6 @@ namespace butterBror.Events
         
         public static async Task Connected()
         {
-            Engine.Statistics.FunctionsUsed.Add();
             //Write("Discord - Connected!", "info");
         }
 
@@ -179,7 +168,6 @@ namespace butterBror.Events
         
         public static async Task ButtonTouched(SocketMessageComponent e)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             Write($"Discord - A button was pressed. User: {e.User}, Button ID: {e.Id}, Server: {((SocketGuildChannel)e.Channel).Guild.Name}", "info");
         }
     }

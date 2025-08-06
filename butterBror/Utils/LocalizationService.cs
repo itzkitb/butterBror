@@ -27,7 +27,6 @@ namespace butterBror.Utils
 
         public static string GetPluralString(string userLang, string key, string channelId, PlatformsEnum platform, long number, params object[] args)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 if (!_translations.ContainsKey(userLang))
@@ -93,7 +92,6 @@ namespace butterBror.Utils
         
         public static string GetString(string userLang, string key, string channelId, PlatformsEnum platform)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 if (userLang == null || key == null || channelId == null || platform == null)
@@ -146,7 +144,6 @@ namespace butterBror.Utils
         /// </remarks>
         public static string GetString(string userLang, string key, string channelId, PlatformsEnum platform, params object[] args)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 if (!_translations.ContainsKey(userLang))
@@ -198,7 +195,6 @@ namespace butterBror.Utils
         
         public static bool SetCustomTranslation(string key, string value, string channel, string lang, PlatformsEnum platform)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 string path = $"{Engine.Bot.Pathes.TranslateCustom}{PlatformsPathName.strings[(int)platform]}/{channel}/";
@@ -239,7 +235,6 @@ namespace butterBror.Utils
         
         public static bool DeleteCustomTranslation(string key, string channel, string lang, PlatformsEnum platform)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 string path = $"{Engine.Bot.Pathes.TranslateCustom}{PlatformsPathName.strings[(int)platform]}/{channel}/";
@@ -274,7 +269,6 @@ namespace butterBror.Utils
         
         private static Dictionary<string, string> LoadTranslations(string userLang)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             return Manager.Get<Dictionary<string, string>>(
                 $"{Engine.Bot.Pathes.TranslateDefault}{userLang}.json",
                 "translations"
@@ -295,7 +289,6 @@ namespace butterBror.Utils
         
         private static Dictionary<string, string> LoadCustomTranslations(string userLang, string channel, PlatformsEnum platform)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             return Manager.Get<Dictionary<string, string>>(
                 $"{Engine.Bot.Pathes.TranslateCustom}{channel}/{PlatformsPathName.strings[(int)platform]}/{userLang}.json",
                 "translations"
@@ -314,7 +307,6 @@ namespace butterBror.Utils
         
         public static bool TranslateContains(string key)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             if (!_translations.ContainsKey("ru"))
             {
                 _translations["ru"] = LoadTranslations("ru");
@@ -338,7 +330,6 @@ namespace butterBror.Utils
         
         public static bool UpdateTranslation(string userLang, string channel, PlatformsEnum platform)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 if (_translations.ContainsKey(userLang))

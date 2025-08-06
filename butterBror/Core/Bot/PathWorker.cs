@@ -1,6 +1,4 @@
-﻿using static butterBror.Engine.Statistics;
-
-namespace butterBror.Core.Bot
+﻿namespace butterBror.Core.Bot
 {
     /// <summary>
     /// Manages hierarchical file/directory paths for the application with automatic path formatting and update propagation.
@@ -117,8 +115,6 @@ namespace butterBror.Core.Bot
         /// </summary>
         public void UpdatePaths()
         {
-            FunctionsUsed.Add();
-
             ChannelsDatabase = Format(Path.Combine(Main, "Channels.db"));
             GamesDatabase = Format(Path.Combine(Main, "Games.db"));
             UsersDatabase = Format(Path.Combine(Main, "Users.db"));

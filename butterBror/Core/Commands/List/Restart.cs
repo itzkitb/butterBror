@@ -30,12 +30,11 @@ namespace butterBror.Core.Commands.List
 
         public override CommandReturn Execute(CommandData data)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             CommandReturn commandReturn = new CommandReturn();
 
             try
             {
-                if (Engine.Bot.SQL.Roles.GetDeveloper(data.Platform, Format.ToLong(data.User.ID)) is not null || Engine.Bot.SQL.Roles.GetModerator(data.Platform, Format.ToLong(data.User.ID)) is not null)
+                if (Engine.Bot.SQL.Roles.IsDeveloper(data.Platform, Format.ToLong(data.User.ID)) || Engine.Bot.SQL.Roles.IsModerator(data.Platform, Format.ToLong(data.User.ID)))
                 {
                     commandReturn.SetMessage("❄ Перезагрузка...");
                     Engine.Bot.Restart();

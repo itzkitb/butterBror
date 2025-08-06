@@ -24,11 +24,10 @@ namespace butterBror.Core.Commands.List
         public override bool OnlyBotModerator => false;
         public override bool OnlyChannelModerator => false;
         public override PlatformsEnum[] Platforms => [PlatformsEnum.Twitch, PlatformsEnum.Telegram, PlatformsEnum.Discord];
-        public override bool IsAsync => false;
+        public override bool IsAsync => true;
 
-        public override CommandReturn Execute(CommandData data)
+        public override async Task<CommandReturn> ExecuteAsync(CommandData data)
         {
-            Engine.Statistics.FunctionsUsed.Add();
             try
             {
                 var exdata = data;
@@ -42,7 +41,7 @@ namespace butterBror.Core.Commands.List
                     exdata.Arguments.Insert(0, "get");
                 }
                 var command = new butterBror.Core.Commands.List.Weather();
-                return command.Execute(exdata);
+                return await command.ExecuteAsync(exdata);
             }
             catch (Exception e)
             {
