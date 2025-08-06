@@ -266,7 +266,7 @@ namespace butterBror.Utils
                     Balance.Add(userId, 0, add_coins, platform);
                 }
 
-                Engine.Bot.SQL.Users.IncrementGlobalMessageCount(platform, Format.ToLong(userId));
+                Engine.Bot.SQL.Users.IncrementGlobalMessageCountAndLenght(platform, Format.ToLong(userId), message.Length);
                 Engine.Bot.SQL.Users.IncrementMessageCountInChannel(platform, Format.ToLong(userId), platform == PlatformsEnum.Discord ? serverId : channelId);
 
                 // Mentions handling
