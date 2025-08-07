@@ -131,7 +131,7 @@
             Cache = Format(Path.Combine(Main, "LOC.cache"));
             Currency = Format(Path.Combine(Main, "CURR.json"));
             SevenTVCache = Format(Path.Combine(Main, "7TV.json"));
-            Reserve = Format(Path.Combine(General, "butterbror_reserves/", $"{DateTime.UtcNow.ToString("dd_MM_yyyy")}/"));
+            Reserve = Format(Path.Combine(General, "bbReserves/"));
         }
 
         /// <summary>

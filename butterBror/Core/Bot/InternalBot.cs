@@ -429,7 +429,7 @@ namespace butterBror.Core.Bot
                 Chat.TwitchSend(BotName.ToLower(), $"/me glorp 📡 | " +
                     $"🕒 {Text.FormatTimeSpan(DateTime.Now - Engine.StartTime, "en-US")} | " +
                     $"{memory}Mbyte | " +
-                    $"🔋 {Battery.GetBatteryCharge()}% {(Battery.IsCharging() ? "(Chaging) " : "")}| " +
+                    $"🔋 {Battery.GetBatteryCharge()}% {(Battery.IsCharging() ? "(Charging) " : "")}| " +
                     $"CPU: {cpuPercent:0.00}% | " +
                     $"DankDB: {cacheItemsBefore} → {Worker.cache.count} | " +
                     $"Emotes: {EmotesCache.Count} | " +
@@ -477,7 +477,7 @@ namespace butterBror.Core.Bot
                 Chat.TwitchSend(BotName.ToLower(), "🗃️ Backup started...", "", "", "", true, false);
                 Write("Backup started...", "backup");
 
-                string reservePath = Path.Combine(Pathes.General, "Reserve");
+                string reservePath = Pathes.Reserve;
                 Directory.CreateDirectory(reservePath);
 
                 string archiveName = $"backup_{DateTime.UtcNow:yyyyMMdd}.zip";
@@ -488,9 +488,46 @@ namespace butterBror.Core.Bot
 
                 SaveEmoteCache();
 
+                string tempBackupDir = Path.Combine(reservePath, $"temp_backup_{DateTime.UtcNow:yyyyMMddHHmmss}");
+                Directory.CreateDirectory(tempBackupDir);
+
                 Stopwatch stopwatch = Stopwatch.StartNew();
 
-                await Task.Run(() => ZipFile.CreateFromDirectory(Pathes.Main, archivePath));
+                try
+                {
+                    string[] allFiles = Directory.GetFiles(Pathes.Main, "*", SearchOption.AllDirectories);
+                    foreach (string file in allFiles)
+                    {
+                        if (!file.EndsWith(".db", StringComparison.OrdinalIgnoreCase))
+                        {
+                            string relativePath = Path.GetRelativePath(Pathes.Main, file);
+                            string destFile = Path.Combine(tempBackupDir, relativePath);
+
+                            Directory.CreateDirectory(Path.GetDirectoryName(destFile));
+                            File.Copy(file, destFile, true);
+                        }
+                    }
+
+                    var databaseManagers = GetYourDatabaseManagers();
+
+                    foreach (var dbManager in databaseManagers)
+                    {
+                        string dbFileName = Path.GetFileName(dbManager.DbPath);
+                        string backupDbPath = Path.Combine(tempBackupDir, dbFileName);
+
+                        dbManager.CreateBackup(backupDbPath);
+                    }
+
+                    await Task.Run(() => ZipFile.CreateFromDirectory(tempBackupDir, archivePath));
+                }
+                finally
+                {
+                    if (Directory.Exists(tempBackupDir))
+                    {
+                        try { Directory.Delete(tempBackupDir, true); }
+                        catch { }
+                    }
+                }
 
                 stopwatch.Stop();
 
@@ -498,12 +535,21 @@ namespace butterBror.Core.Bot
                 double archiveSizeMB = archiveSize / (1024.0 * 1024.0);
 
                 Write($"Backup completed in {stopwatch.Elapsed.TotalSeconds:0} seconds (Archive size: {archiveSizeMB:0.00} MB)!", "backup");
-                Chat.TwitchSend(BotName.ToLower(), $"🗃️ Backup completed in {stopwatch.Elapsed.TotalSeconds:0} seconds (Archive size: {archiveSizeMB:0.00} MB)!", "", "", "", true, false);
+                Chat.TwitchSend(BotName.ToLower(), $"🗃️ Backup completed in {stopwatch.Elapsed.TotalSeconds:0} seconds (Archive size: {archiveSizeMB:0.00} MB)", "", "", "", true, false);
             }
             catch (Exception ex)
             {
                 Write(ex);
             }
+        }
+
+        private IEnumerable<SqlDatabaseBase> GetYourDatabaseManagers()
+        {
+            yield return SQL.Games;
+            yield return SQL.Channels;
+            yield return SQL.Messages;
+            yield return SQL.Roles;
+            yield return SQL.Users;
         }
 
         /// <summary>

@@ -15,7 +15,7 @@ namespace butterBror.Data
     /// </summary>
     public abstract class SqlDatabaseBase : IDisposable
     {
-        private readonly string _dbPath;
+        public readonly string DbPath;
         private readonly bool _sharedCache;
         private readonly string _connectionString;
         private bool _disposed;
@@ -32,7 +32,7 @@ namespace butterBror.Data
         /// <param name="sharedCache">Whether to use shared cache mode for the database connection (default: true)</param>
         protected SqlDatabaseBase(string dbPath, bool sharedCache = true)
         {
-            _dbPath = dbPath;
+            DbPath = dbPath;
             _sharedCache = sharedCache;
 
             string directory = Path.GetDirectoryName(Path.GetFullPath(dbPath)) ?? Directory.GetCurrentDirectory();
@@ -58,6 +58,15 @@ namespace butterBror.Data
 
             Connection = new SQLiteConnection(_connectionString);
             Connection.Open();
+        }
+
+        public void CreateBackup(string backupFilePath)
+        {
+            using (var backupConnection = new SQLiteConnection($"Data Source={backupFilePath};Version=3;"))
+            {
+                backupConnection.Open();
+                Connection.BackupDatabase(backupConnection, "main", "main", -1, null, 0);
+            }
         }
 
         #region Database operation helper methods
