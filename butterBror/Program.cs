@@ -48,7 +48,7 @@ namespace butterBror
         /// <summary>
         /// Gets the current patch version.
         /// </summary>
-        public static string Patch = "4";
+        public static string Patch = "5";
 
         /// <summary>
         /// Gets or sets the previous version string.
@@ -106,7 +106,6 @@ namespace butterBror
         /// - Configures performance counters
         /// - Starts periodic tick timer
         /// </remarks>
-        
         public static void Main(string[] args)
         {
             System.Console.Title = "Loading libraries...";
@@ -130,7 +129,6 @@ namespace butterBror
         /// - Sends telemetry data every 10 minutes
         /// - Handles bot restart operations
         /// </remarks>
-        
         private static async Task StartRepeater()
         {
             await Task.Delay(1000 - DateTime.UtcNow.Millisecond);
@@ -243,20 +241,16 @@ namespace butterBror
         /// Responds to ping requests with status confirmation.
         /// </summary>
         /// <returns>"Pong!" status response</returns>
-        
         public static string Ping()
         {
-            
             return "Pong!";
         }
 
         /// <summary>
         /// Closes the application with a specific code.
         /// </summary>
-        
         public static void Exit(int exitCode)
         {
-            
             Environment.Exit(exitCode);
         }
 
@@ -270,7 +264,6 @@ namespace butterBror
         /// information in a stylized console output along with bot version, framework, and host details.
         /// If any information cannot be retrieved due to exceptions, appropriate error messages are logged.
         /// </remarks>
-        
         private static void ButterBrorFetch()
         {
             
@@ -363,7 +356,6 @@ namespace butterBror
         /// (TPS) to ensure it falls within acceptable limits (1 to 1000 ticks per second). If critical parameters like 
         /// core name or version are missing, or if tick speed validation fails, the method logs errors and halts execution.
         /// </remarks>
-        
         private static void Initialize(string[] args)
         {
             System.Console.Title = $"butterBror | v.{Version}.{Patch}";
@@ -404,7 +396,6 @@ namespace butterBror
         /// This method initializes the main bot instance, sets up file paths for data storage, and starts the tick loop.
         /// Finally, it records the application start time and triggers the bot's startup process, logging progress to the console.
         /// </remarks>
-        
         private static void StartEngine()
         {
             Write($"The engine is currently starting...", "kernel");
