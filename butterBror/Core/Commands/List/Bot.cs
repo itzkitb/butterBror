@@ -1,10 +1,8 @@
 ﻿using butterBror.Core.Bot;
 using butterBror.Core.Bot.SQLColumnNames;
-using butterBror.Data;
 using butterBror.Models;
 using butterBror.Utils;
 using DankDB;
-using Microsoft.CodeAnalysis;
 using TwitchLib.Client.Enums;
 using TwitchLib.Client.Models;
 using static butterBror.Core.Bot.Console;
@@ -17,7 +15,7 @@ namespace butterBror.Core.Commands.List
         public override string Author => "ItzKITb";
         public override string AuthorsGithub => "https://github.com/itzkitb";
         public override string GithubSource => $"{URLs.githubSource}blob/master/butterBror/Core/Commands/List/Bot.cs";
-        public override Version Version => new("1.0.0");
+        public override Version Version => new("1.0.1");
         public override Dictionary<string, string> Description => new(){
             { "ru-RU", "Главная команда бота." },
             { "en-US", "The main command of the bot." }
@@ -34,7 +32,7 @@ namespace butterBror.Core.Commands.List
         public override PlatformsEnum[] Platforms => [PlatformsEnum.Twitch, PlatformsEnum.Telegram, PlatformsEnum.Discord];
         public override bool IsAsync => false;
 
-        
+
         public override CommandReturn Execute(CommandData data)
         {
             CommandReturn commandReturn = new CommandReturn();
@@ -44,7 +42,7 @@ namespace butterBror.Core.Commands.List
                 List<string> arguments = (data.Arguments is null ? [] : data.Arguments);
 
                 bool is_moderator = (bool)data.User.IsBotModerator;
-                string user_id = data.UserID;
+                string user_id = data.User.ID;
                 string? channel_id = data.ChannelId;
                 string? channel = data.Channel;
                 string? message_id = data.MessageID;
@@ -99,13 +97,13 @@ namespace butterBror.Core.Commands.List
                                     }
                                     else
                                     {
-                                        Engine.Bot.SQL.Users.SetParameter(data.Platform, Format.ToLong(data.User.ID), Users.Language, result);
+                                        butterBror.Bot.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.Language, result);
                                         commandReturn.SetMessage(LocalizationService.GetString(result, "command:bot:language:set", channel_id, data.Platform));
                                     }
                                 }
                                 else
                                 {
-                                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:not_enough_arguments", channel_id, data.Platform, $"{Engine.Bot.Executor}bot lang set en/ru"));
+                                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:not_enough_arguments", channel_id, data.Platform, $"{butterBror.Bot.DefaultExecutor}bot lang set en/ru"));
                                     commandReturn.SetColor(ChatColorPresets.Red);
                                 }
                             }
@@ -119,7 +117,7 @@ namespace butterBror.Core.Commands.List
                         }
                         else
                         {
-                            commandReturn.SetMessage(LocalizationService.GetString(language, "error:not_enough_arguments", channel_id, data.Platform, $"{Engine.Bot.Executor}bot lang (set en/ru)/get"));
+                            commandReturn.SetMessage(LocalizationService.GetString(language, "error:not_enough_arguments", channel_id, data.Platform, $"{butterBror.Bot.DefaultExecutor}bot lang (set en/ru)/get"));
                             commandReturn.SetColor(ChatColorPresets.Red);
                         }
                     }
@@ -130,21 +128,21 @@ namespace butterBror.Core.Commands.List
                             {
                                 { "language", data.User.Language },
                                 { "username", data.User.Name },
-                                { "user_indentificator", data.UserID },
+                                { "user_indentificator", data.User.ID },
                                 { "date", DateTime.UtcNow }
                             };
-                        Directory.CreateDirectory(Engine.Bot.Pathes.General + "INVITE/");
-                        Manager.Save(Engine.Bot.Pathes.General + $"INVITE/{data.User.Name}.txt", $"rq{DateTime.UtcNow}", userData);
+                        Directory.CreateDirectory(butterBror.Bot.Paths.General + "INVITE/");
+                        Manager.Save(butterBror.Bot.Paths.General + $"INVITE/{data.User.Name}.txt", $"rq{DateTime.UtcNow}", userData);
                         commandReturn.SetMessage(LocalizationService.GetString(language, "command:bot:user_verify", channel_id, data.Platform));
                     }
                     else if (currency_alias.Contains(argument_one))
                     {
                         if (arguments.Count > 2 && add_currency_alias.Contains(arguments.ElementAt(1).ToLower()) && is_developer)
                         {
-                            int converted = Utils.Format.ToInt(arguments.ElementAt(2).ToLower());
-                            Engine.BankDollars += converted;
+                            int converted = Utils.DataConversion.ToInt(arguments.ElementAt(2).ToLower());
+                            butterBror.Bot.BankDollars += converted;
 
-                            commandReturn.SetMessage(LocalizationService.GetString(language, "command:bot:currency:add", channel_id, data.Platform, converted.ToString(), Engine.BankDollars.ToString()));
+                            commandReturn.SetMessage(LocalizationService.GetString(language, "command:bot:currency:add", channel_id, data.Platform, converted.ToString(), butterBror.Bot.BankDollars.ToString()));
                         }
                         else
                         {
@@ -152,24 +150,24 @@ namespace butterBror.Core.Commands.List
 
                             var date = DateTime.UtcNow.AddDays(-1);
 
-                            float oldCurrencyAmount = Manager.Get<float>(Engine.Bot.Pathes.Currency, $"[{date.Day}.{date.Month}.{date.Year}] amount");
-                            float oldCurrencyCost = Manager.Get<float>(Engine.Bot.Pathes.Currency, $"[{date.Day}.{date.Month}.{date.Year}] cost");
-                            int oldCurrencyUsers = Manager.Get<int>(Engine.Bot.Pathes.Currency, $"[{date.Day}.{date.Month}.{date.Year}] users");
-                            int oldDollarsInBank = Manager.Get<int>(Engine.Bot.Pathes.Currency, $"[{date.Day}.{date.Month}.{date.Year}] dollars");
+                            float oldCurrencyAmount = Manager.Get<float>(butterBror.Bot.Paths.Currency, $"[{date.Day}.{date.Month}.{date.Year}] amount");
+                            float oldCurrencyCost = Manager.Get<float>(butterBror.Bot.Paths.Currency, $"[{date.Day}.{date.Month}.{date.Year}] cost");
+                            int oldCurrencyUsers = Manager.Get<int>(butterBror.Bot.Paths.Currency, $"[{date.Day}.{date.Month}.{date.Year}] users");
+                            int oldDollarsInBank = Manager.Get<int>(butterBror.Bot.Paths.Currency, $"[{date.Day}.{date.Month}.{date.Year}] dollars");
                             float oldMiddle = oldCurrencyUsers != 0 ? float.Parse((oldCurrencyAmount / oldCurrencyUsers).ToString("0.00")) : 0;
 
-                            float currencyCost = float.Parse((Engine.BankDollars / Engine.Coins).ToString("0.00"));
-                            float middleUsersBalance = float.Parse((Engine.Coins / Engine.Users).ToString("0.00"));
+                            float currencyCost = float.Parse((butterBror.Bot.BankDollars / butterBror.Bot.Coins).ToString("0.00"));
+                            float middleUsersBalance = float.Parse((butterBror.Bot.Coins / butterBror.Bot.Users).ToString("0.00"));
 
                             float plusOrMinusCost = currencyCost - oldCurrencyCost;
-                            float plusOrMinusAmount = Engine.Coins - oldCurrencyAmount;
-                            int plusOrMinusUsers = Engine.Users - oldCurrencyUsers;
-                            int plusOrMinusDollars = Engine.BankDollars - oldDollarsInBank;
+                            float plusOrMinusAmount = butterBror.Bot.Coins - oldCurrencyAmount;
+                            int plusOrMinusUsers = butterBror.Bot.Users - oldCurrencyUsers;
+                            int plusOrMinusDollars = butterBror.Bot.BankDollars - oldDollarsInBank;
                             float plusOrMinusMiddle = middleUsersBalance - oldMiddle;
 
                             string buttersCostProgress = oldCurrencyCost > currencyCost ? $"🔽 ({plusOrMinusCost:0.00})" : oldCurrencyCost == currencyCost ? "⏺️ (0)" : $"🔼 (+{plusOrMinusCost:0.00})";
-                            string buttersAmountProgress = oldCurrencyAmount > Engine.Coins ? $"🔽 ({plusOrMinusAmount:0.00})" : oldCurrencyAmount == Engine.Coins ? "⏺️ (0)" : $"🔼 (+{plusOrMinusAmount:0.00})";
-                            string buttersDollars = oldDollarsInBank > Engine.BankDollars ? $"🔽 ({plusOrMinusDollars})" : oldDollarsInBank == Engine.BankDollars ? "⏺️ (0)" : $"🔼 (+{plusOrMinusDollars})";
+                            string buttersAmountProgress = oldCurrencyAmount > butterBror.Bot.Coins ? $"🔽 ({plusOrMinusAmount:0.00})" : oldCurrencyAmount == butterBror.Bot.Coins ? "⏺️ (0)" : $"🔼 (+{plusOrMinusAmount:0.00})";
+                            string buttersDollars = oldDollarsInBank > butterBror.Bot.BankDollars ? $"🔽 ({plusOrMinusDollars})" : oldDollarsInBank == butterBror.Bot.BankDollars ? "⏺️ (0)" : $"🔼 (+{plusOrMinusDollars})";
                             string buttersMiddle = oldMiddle > middleUsersBalance ? $"🔽 ({plusOrMinusMiddle:0.00})" : oldMiddle == middleUsersBalance ? "⏺️ (0)" : $"🔼 (+{plusOrMinusMiddle:0.00})";
 
                             commandReturn.SetMessage(LocalizationService.GetString(
@@ -177,11 +175,11 @@ namespace butterBror.Core.Commands.List
                                 "command:bot:currency",
                                 channel_id,
                                 data.Platform,
-                                Engine.Coins.ToString() + " " + buttersAmountProgress,
-                                Engine.Users.ToString(),
-                                (Engine.Coins / Engine.Users).ToString("0.00") + " " + buttersMiddle,
-                                (Engine.BankDollars / Engine.Coins).ToString("0.00") + " " + buttersCostProgress,
-                                Engine.BankDollars + " " + buttersDollars));
+                                butterBror.Bot.Coins.ToString() + " " + buttersAmountProgress,
+                                butterBror.Bot.Users.ToString(),
+                                (butterBror.Bot.Coins / butterBror.Bot.Users).ToString("0.00") + " " + buttersMiddle,
+                                (butterBror.Bot.BankDollars / butterBror.Bot.Coins).ToString("0.00") + " " + buttersCostProgress,
+                                butterBror.Bot.BankDollars + " " + buttersDollars));
                             commandReturn.SetSafe(false);
                         }
                     }
@@ -192,7 +190,7 @@ namespace butterBror.Core.Commands.List
                             if (arguments.Count > 1)
                             {
                                 string arg2 = arguments[1].ToLower().Replace("@", "").Replace(",", "");
-                                string bcid = Names.GetUserID(arg2, data.Platform);
+                                string bcid = UsernameResolver.GetUserID(arg2, data.Platform);
                                 string reason = data.ArgumentsString.Replace(arguments.ElementAt(0), "").Replace(arguments.ElementAt(1), "").Replace("  ", "");
                                 if (bcid.Equals(null))
                                 {
@@ -202,10 +200,10 @@ namespace butterBror.Core.Commands.List
                                 }
                                 else
                                 {
-                                    if (is_developer || (!Engine.Bot.SQL.Roles.IsModerator(data.Platform, Format.ToLong(data.User.ID)) && !Engine.Bot.SQL.Roles.IsDeveloper(data.Platform, Format.ToLong(data.User.ID))))
+                                    if (is_developer || (!butterBror.Bot.SQL.Roles.IsModerator(data.Platform, DataConversion.ToLong(data.User.ID)) && !butterBror.Bot.SQL.Roles.IsDeveloper(data.Platform, DataConversion.ToLong(data.User.ID))))
                                     {
-                                        Chat.TwitchSend(Engine.Bot.BotName, $"widelol #{arg2} banned in bot: {reason}", "", "", "en-US", true);
-                                        Engine.Bot.SQL.Roles.AddBannedUser(data.Platform, Format.ToLong(bcid), DateTime.UtcNow, data.User.ID, reason);
+                                        PlatformMessageSender.TwitchSend(butterBror.Bot.BotName, $"widelol #{arg2} banned in bot: {reason}", "", "", "en-US", true);
+                                        butterBror.Bot.SQL.Roles.AddBannedUser(data.Platform, DataConversion.ToLong(bcid), DateTime.UtcNow, data.User.ID, reason);
                                         commandReturn.SetMessage(LocalizationService.GetString(language, "command:bot:user_ban", channel_id, data.Platform, arg2, reason));
                                     }
                                     else
@@ -217,7 +215,7 @@ namespace butterBror.Core.Commands.List
                             }
                             else
                             {
-                                commandReturn.SetMessage(LocalizationService.GetString(language, "error:not_enough_arguments", channel_id, data.Platform, $"{Engine.Bot.Executor}bot ban (channel) (reason)"));
+                                commandReturn.SetMessage(LocalizationService.GetString(language, "error:not_enough_arguments", channel_id, data.Platform, $"{butterBror.Bot.DefaultExecutor}bot ban (channel) (reason)"));
                                 commandReturn.SetColor(ChatColorPresets.Red);
                             }
                         }
@@ -226,7 +224,7 @@ namespace butterBror.Core.Commands.List
                             if (arguments.Count > 1)
                             {
                                 var arg2 = arguments.ElementAt(1).ToLower().Replace("@", "").Replace(",", "");
-                                var BanChannelID = Names.GetUserID(arg2, data.Platform);
+                                var BanChannelID = UsernameResolver.GetUserID(arg2, data.Platform);
                                 if (BanChannelID.Equals(null))
                                 {
                                     commandReturn.SetMessage(LocalizationService.GetString(language, "error:user_not_found", channel_id, data.Platform, arg2));
@@ -235,10 +233,10 @@ namespace butterBror.Core.Commands.List
                                 }
                                 else
                                 {
-                                    if (is_developer || is_moderator && (!Engine.Bot.SQL.Roles.IsModerator(data.Platform, Format.ToLong(data.User.ID)) && !Engine.Bot.SQL.Roles.IsDeveloper(data.Platform, Format.ToLong(data.User.ID))))
+                                    if (is_developer || is_moderator && (!butterBror.Bot.SQL.Roles.IsModerator(data.Platform, DataConversion.ToLong(data.User.ID)) && !butterBror.Bot.SQL.Roles.IsDeveloper(data.Platform, DataConversion.ToLong(data.User.ID))))
                                     {
-                                        Chat.TwitchSend(Engine.Bot.BotName, $"Pag #{arg2} unbanned in bot", "", "", "en-US", true);
-                                        Engine.Bot.SQL.Roles.RemoveBannedUser(Engine.Bot.SQL.Roles.GetBannedUser(data.Platform, Format.ToLong(BanChannelID)).ID);
+                                        PlatformMessageSender.TwitchSend(butterBror.Bot.BotName, $"Pag #{arg2} unbanned in bot", "", "", "en-US", true);
+                                        butterBror.Bot.SQL.Roles.RemoveBannedUser(butterBror.Bot.SQL.Roles.GetBannedUser(data.Platform, DataConversion.ToLong(BanChannelID)).ID);
                                         commandReturn.SetMessage(LocalizationService.GetString(language, "command:bot:user_unban", channel_id, data.Platform, arg2));
                                     }
                                     else
@@ -249,22 +247,22 @@ namespace butterBror.Core.Commands.List
                                 }
                             }
                             else
-                                commandReturn.SetMessage(LocalizationService.GetString(language, "error:not_enough_arguments", channel_id, data.Platform, $"{Engine.Bot.Executor}bot pardon (channel)"));
+                                commandReturn.SetMessage(LocalizationService.GetString(language, "error:not_enough_arguments", channel_id, data.Platform, $"{butterBror.Bot.DefaultExecutor}bot pardon (channel)"));
                         }
                         else if (rejoin_alias.Contains(argument_one) && data.Platform.Equals(PlatformsEnum.Twitch))
                         {
                             if (arguments.Count > 1)
                             {
                                 string user = arguments[1];
-                                if (Engine.Bot.Clients.Twitch.JoinedChannels.Contains(new JoinedChannel(user)))
-                                    Engine.Bot.Clients.Twitch.LeaveChannel(user);
-                                Engine.Bot.Clients.Twitch.JoinChannel(user);
-                                Chat.TwitchSend(Engine.Bot.BotName, $"ppSpin Reconnected to #{user}", "", "", "en-US", true);
+                                if (butterBror.Bot.Clients.Twitch.JoinedChannels.Contains(new JoinedChannel(user)))
+                                    butterBror.Bot.Clients.Twitch.LeaveChannel(user);
+                                butterBror.Bot.Clients.Twitch.JoinChannel(user);
+                                PlatformMessageSender.TwitchSend(butterBror.Bot.BotName, $"ppSpin Reconnected to #{user}", "", "", "en-US", true);
                                 commandReturn.SetMessage(LocalizationService.GetString(language, "command:bot:rejoin", channel_id, data.Platform));
                             }
                             else
                             {
-                                commandReturn.SetMessage(LocalizationService.GetString(language, "error:not_enough_arguments", channel_id, data.Platform, $"{Engine.Bot.Executor}bot rejoin (channel)"));
+                                commandReturn.SetMessage(LocalizationService.GetString(language, "error:not_enough_arguments", channel_id, data.Platform, $"{butterBror.Bot.DefaultExecutor}bot rejoin (channel)"));
                                 commandReturn.SetColor(ChatColorPresets.Red);
                                 commandReturn.SetSafe(false);
                             }
@@ -273,21 +271,21 @@ namespace butterBror.Core.Commands.List
                         {
                             if (arguments.Count > 1)
                             {
-                                string newid = Names.GetUserID(arguments[1], data.Platform);
+                                string newid = UsernameResolver.GetUserID(arguments[1], data.Platform);
                                 if (newid is not null) // Fix AA2
                                 {
-                                    List<string> channels = Manager.Get<List<string>>(Engine.Bot.Pathes.Settings, "twitch_connect_channels"); // Fix AA2
+                                    List<string> channels = Manager.Get<List<string>>(butterBror.Bot.Paths.Settings, "twitch_connect_channels"); // Fix AA2
                                     channels.Add(newid);
                                     string[] output = [.. channels];
 
-                                    Manager.Save(Engine.Bot.Pathes.Settings, "twitch_connect_channels", output); // Fix AA2
-                                    Engine.Bot.Clients.Twitch.JoinChannel(arguments[1]);
-                                    Chat.TwitchSend(Engine.Bot.BotName, $"Pag Added to #{arguments[1]}", "", "", "en-US", true);
-                                    Chat.TwitchReply(channel, channel_id, LocalizationService.GetString(language, "command:bot:channel:add", channel_id, data.Platform, arguments[1]), message_id, language, true);
-                                    Chat.TwitchSend(arguments[1], LocalizationService.GetString(language, "text:added", channel_id, data.Platform, Engine.Version), channel_id, message_id, language, true);
+                                    Manager.Save(butterBror.Bot.Paths.Settings, "twitch_connect_channels", output); // Fix AA2
+                                    butterBror.Bot.Clients.Twitch.JoinChannel(arguments[1]);
+                                    PlatformMessageSender.TwitchSend(butterBror.Bot.BotName, $"Pag Added to #{arguments[1]}", "", "", "en-US", true);
+                                    PlatformMessageSender.TwitchReply(channel, channel_id, LocalizationService.GetString(language, "command:bot:channel:add", channel_id, data.Platform, arguments[1]), message_id, language, true);
+                                    PlatformMessageSender.TwitchSend(arguments[1], LocalizationService.GetString(language, "text:added", channel_id, data.Platform, butterBror.Bot.Version), channel_id, message_id, language, true);
                                 }
                                 else
-                                    Chat.TwitchReply(channel, channel_id, LocalizationService.GetString(language, "error:user_not_found", channel_id, data.Platform, arguments[1]), message_id, language, true);
+                                    PlatformMessageSender.TwitchReply(channel, channel_id, LocalizationService.GetString(language, "error:user_not_found", channel_id, data.Platform, arguments[1]), message_id, language, true);
                             }
                             else
                             {
@@ -296,7 +294,7 @@ namespace butterBror.Core.Commands.List
                                     "error:not_enough_arguments",
                                     channel_id,
                                     data.Platform,
-                                    $"{Engine.Bot.Executor}bot addchannel (channel)"));
+                                    $"{butterBror.Bot.DefaultExecutor}bot addchannel (channel)"));
                                 commandReturn.SetColor(ChatColorPresets.Red);
                                 commandReturn.SetSafe(false);
                             }
@@ -305,20 +303,20 @@ namespace butterBror.Core.Commands.List
                         {
                             if (arguments.Count > 1)
                             {
-                                var userID = Names.GetUserID(arguments[1], data.Platform);
+                                var userID = UsernameResolver.GetUserID(arguments[1], data.Platform);
                                 if (!userID.Equals(null))
                                 {
-                                    List<string> channels = Manager.Get<List<string>>(Engine.Bot.Pathes.Settings, "channels");
+                                    List<string> channels = Manager.Get<List<string>>(butterBror.Bot.Paths.Settings, "channels");
                                     channels.Remove(userID);
                                     string[] output = [.. channels];
 
-                                    Manager.Save(Engine.Bot.Pathes.Settings, "channels", output);
-                                    Engine.Bot.Clients.Twitch.LeaveChannel(arguments[1]);
-                                    Chat.TwitchSend(Engine.Bot.BotName, $"What Deleted from #{arguments[1]}", "", "", "en-US", true);
-                                    Chat.TwitchReply(channel, channel_id, LocalizationService.GetString(language, "command:bot:channel:delete", channel_id, data.Platform, arguments[1]), message_id, data.User.Language, true);
+                                    Manager.Save(butterBror.Bot.Paths.Settings, "channels", output);
+                                    butterBror.Bot.Clients.Twitch.LeaveChannel(arguments[1]);
+                                    PlatformMessageSender.TwitchSend(butterBror.Bot.BotName, $"What Deleted from #{arguments[1]}", "", "", "en-US", true);
+                                    PlatformMessageSender.TwitchReply(channel, channel_id, LocalizationService.GetString(language, "command:bot:channel:delete", channel_id, data.Platform, arguments[1]), message_id, data.User.Language, true);
                                 }
                                 else
-                                    Chat.TwitchReply(channel, channel_id, LocalizationService.GetString(language, "error:user_not_found", channel_id, data.Platform, arguments[1]), message_id, data.User.Language, true);
+                                    PlatformMessageSender.TwitchReply(channel, channel_id, LocalizationService.GetString(language, "error:user_not_found", channel_id, data.Platform, arguments[1]), message_id, data.User.Language, true);
                             }
                             else
                             {
@@ -327,7 +325,7 @@ namespace butterBror.Core.Commands.List
                                     "error:not_enough_arguments",
                                     channel_id,
                                     data.Platform,
-                                    $"{Engine.Bot.Executor}bot delchannel (channel)"));
+                                    $"{butterBror.Bot.DefaultExecutor}bot delchannel (channel)"));
                                 commandReturn.SetColor(ChatColorPresets.Red);
                                 commandReturn.SetSafe(false);
                             }
@@ -336,13 +334,13 @@ namespace butterBror.Core.Commands.List
                         {
                             if (arguments.Count > 1)
                             {
-                                Chat.TwitchSend(Engine.Bot.BotName, $"Pag Manually joined to #{arguments[1]}", "", "", "en-US", true);
-                                Engine.Bot.Clients.Twitch.JoinChannel(arguments[1]);
+                                PlatformMessageSender.TwitchSend(butterBror.Bot.BotName, $"Pag Manually joined to #{arguments[1]}", "", "", "en-US", true);
+                                butterBror.Bot.Clients.Twitch.JoinChannel(arguments[1]);
                                 commandReturn.SetMessage(LocalizationService.GetString(language, "command:bot:connect", channel_id, data.Platform)); // Fix #AB8
                             }
                             else
                             {
-                                commandReturn.SetMessage(LocalizationService.GetString(language, "error:not_enough_arguments", channel_id, data.Platform, $"{Engine.Bot.Executor}bot joinchannel (channel)"));
+                                commandReturn.SetMessage(LocalizationService.GetString(language, "error:not_enough_arguments", channel_id, data.Platform, $"{butterBror.Bot.DefaultExecutor}bot joinchannel (channel)"));
                                 commandReturn.SetColor(ChatColorPresets.Red);
                                 commandReturn.SetSafe(false);
                             }
@@ -351,13 +349,13 @@ namespace butterBror.Core.Commands.List
                         {
                             if (arguments.Count > 1)
                             {
-                                Chat.TwitchSend(Engine.Bot.BotName, $"What Leaved from #{arguments[1]}", "", "", "en-US", true);
-                                Engine.Bot.Clients.Twitch.LeaveChannel(arguments[1]);
+                                PlatformMessageSender.TwitchSend(butterBror.Bot.BotName, $"What Leaved from #{arguments[1]}", "", "", "en-US", true);
+                                butterBror.Bot.Clients.Twitch.LeaveChannel(arguments[1]);
                                 commandReturn.SetMessage(LocalizationService.GetString(language, "command:bot:leave", channel_id, data.Platform)); // Fix #AB8
                             }
                             else
                             {
-                                commandReturn.SetMessage(LocalizationService.GetString(language, "error:not_enough_arguments", channel_id, data.Platform, $"{Engine.Bot.Executor}bot leavechannel (channel)"));
+                                commandReturn.SetMessage(LocalizationService.GetString(language, "error:not_enough_arguments", channel_id, data.Platform, $"{butterBror.Bot.DefaultExecutor}bot leavechannel (channel)"));
                                 commandReturn.SetColor(ChatColorPresets.Red);
                                 commandReturn.SetSafe(false);
                             }
@@ -368,11 +366,11 @@ namespace butterBror.Core.Commands.List
                             {
                                 if (arguments.Count > 1)
                                 {
-                                    var userID = Names.GetUserID(arguments[1], data.Platform);
+                                    var userID = UsernameResolver.GetUserID(arguments[1], data.Platform);
                                     if (userID != null)
                                     {
-                                        Chat.TwitchSend(Engine.Bot.BotName, $"Pag New moderator @{arguments[1]}", "", "", "en-US", true);
-                                        Engine.Bot.SQL.Roles.AddModerator(data.Platform, Format.ToLong(userID), DateTime.UtcNow, data.User.ID);
+                                        PlatformMessageSender.TwitchSend(butterBror.Bot.BotName, $"Pag New moderator @{arguments[1]}", "", "", "en-US", true);
+                                        butterBror.Bot.SQL.Roles.AddModerator(data.Platform, DataConversion.ToLong(userID), DateTime.UtcNow, data.User.ID);
                                         commandReturn.SetMessage(LocalizationService.GetString(language, "command:bot:moderator:add", channel_id, data.Platform, arguments[1]));
                                     }
                                     else
@@ -383,7 +381,7 @@ namespace butterBror.Core.Commands.List
                                 }
                                 else
                                 {
-                                    commandReturn.SetMessage(LocalizationService.GetString(language, "error:not_enough_arguments", channel_id, data.Platform, $"{Engine.Bot.Executor}bot addchannel (channel)"));
+                                    commandReturn.SetMessage(LocalizationService.GetString(language, "error:not_enough_arguments", channel_id, data.Platform, $"{butterBror.Bot.DefaultExecutor}bot addchannel (channel)"));
                                     commandReturn.SetColor(ChatColorPresets.Red);
                                     commandReturn.SetSafe(false);
                                 }
@@ -392,11 +390,11 @@ namespace butterBror.Core.Commands.List
                             {
                                 if (arguments.Count > 1)
                                 {
-                                    var userID = Names.GetUserID(arguments[1], data.Platform);
+                                    var userID = UsernameResolver.GetUserID(arguments[1], data.Platform);
                                     if (userID != null)
                                     {
-                                        Chat.TwitchSend(Engine.Bot.BotName, $"What @{arguments[1]} is no longer a moderator", "", "", "en-US", true);
-                                        Engine.Bot.SQL.Roles.RemoveModerator(Engine.Bot.SQL.Roles.GetModerator(data.Platform, Format.ToLong(userID)).ID);
+                                        PlatformMessageSender.TwitchSend(butterBror.Bot.BotName, $"What @{arguments[1]} is no longer a moderator", "", "", "en-US", true);
+                                        butterBror.Bot.SQL.Roles.RemoveModerator(butterBror.Bot.SQL.Roles.GetModerator(data.Platform, DataConversion.ToLong(userID)).ID);
                                         commandReturn.SetMessage(LocalizationService.GetString(language, "command:bot:moderator:delete", channel_id, data.Platform, arguments[1]));
                                     }
                                     else
@@ -407,7 +405,7 @@ namespace butterBror.Core.Commands.List
                                 }
                                 else
                                 {
-                                    commandReturn.SetMessage(LocalizationService.GetString(language, "error:not_enough_arguments", channel_id, data.Platform, $"{Engine.Bot.Executor}bot addchannel (channel)"));
+                                    commandReturn.SetMessage(LocalizationService.GetString(language, "error:not_enough_arguments", channel_id, data.Platform, $"{butterBror.Bot.DefaultExecutor}bot addchannel (channel)"));
                                     commandReturn.SetColor(ChatColorPresets.Red);
                                     commandReturn.SetSafe(false);
                                 }

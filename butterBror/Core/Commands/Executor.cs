@@ -9,18 +9,28 @@ namespace butterBror.Core.Commands
     public class Executor
     {
         /// <summary>
-        /// Handles command execution for Twitch platform through chat commands.
+        /// Processes and executes Twitch chat commands from channel messages.
         /// </summary>
-        /// <param name="sender">Source of the event.</param>
-        /// <param name="command">Twitch chat command event arguments.</param>
+        /// <param name="sender">Event source object (typically TwitchClient instance)</param>
+        /// <param name="command">Event arguments containing command details and message context</param>
         /// <remarks>
-        /// - Processes both standard and reply commands
-        /// - Extracts command name and arguments
-        /// - Builds user data with Twitch-specific properties
-        /// - Routes command to execution pipeline
-        /// - Handles empty command cases gracefully
+        /// <list type="bullet">
+        /// <item>Handles both standard commands and reply-based commands through ChatReply property</item>
+        /// <item>Normalizes command structure by extracting command name and arguments</item>
+        /// <item>Builds comprehensive user context with Twitch-specific properties:
+        /// <list type="table">
+        /// <item><term>IsModerator</term><description>Indicates moderator status in channel</description></item>
+        /// <item><term>IsBroadcaster</term><description>Verifies if user is channel owner</description></item>
+        /// </list>
+        /// </item>
+        /// <item>Generates unique command instance ID (GUID) for request tracing</item>
+        /// <item>Processes reply context by appending parent message content to arguments</item>
+        /// <item>Gracefully skips empty command cases without throwing exceptions</item>
+        /// <item>Forwards command data to Runner pipeline for execution</item>
+        /// </list>
+        /// All exceptions are logged through the Console.Write system but don't interrupt bot operation.
         /// </remarks>
-        
+
         public static async void Twitch(object sender, OnChatCommandReceivedArgs command)
         {
             try
@@ -52,7 +62,6 @@ namespace butterBror.Core.Commands
                 CommandData data = new()
                 {
                     Name = CommandName.ToLower(),
-                    UserID = command.Command.ChatMessage.UserId,
                     Arguments = CommandArguments,
                     ArgumentsString = CommandArgumentsAsString,
                     Channel = command.Command.ChatMessage.Channel,
@@ -79,16 +88,32 @@ namespace butterBror.Core.Commands
         }
 
         /// <summary>
-        /// Processes Discord slash commands with structured arguments.
+        /// Processes Discord slash commands with structured parameter handling.
         /// </summary>
-        /// <param name="command">Discord slash command interaction data.</param>
+        /// <param name="command">Interaction object containing slash command data and context</param>
         /// <remarks>
-        /// - Converts slash command options to flat arguments
-        /// - Builds comprehensive command context including server info
-        /// - Uses GUID for request tracing
-        /// - Maintains support for slash command responses
+        /// <list type="bullet">
+        /// <item>Converts Discord's hierarchical command options into flat argument structure</item>
+        /// <item>Creates dual GUID system for request tracking:
+        /// <list type="table">
+        /// <item><term>RequestUuid</term><description>Tracks the original interaction request</description></item>
+        /// <item><term>CommandExecutionUuid</term><description>Identifies specific command execution instance</description></item>
+        /// </list>
+        /// </item>
+        /// <item>Builds complete context including:
+        /// <list type="bullet">
+        /// <item>Channel name and ID</item>
+        /// <item>Guild/server name and ID</item>
+        /// <item>User identification and metadata</item>
+        /// <item>Command-specific options dictionary</item>
+        /// </list>
+        /// </item>
+        /// <item>Maintains reference to original interaction for response handling</item>
+        /// <item>Preserves command structure for proper slash command response patterns</item>
+        /// <item>Handles both guild and direct message contexts transparently</item>
+        /// </list>
+        /// Automatically processes all command options regardless of nesting depth.
         /// </remarks>
-        
         public static async void Discord(SocketSlashCommand command)
         {
             try
@@ -115,7 +140,6 @@ namespace butterBror.Core.Commands
                 CommandData data = new()
                 {
                     Name = command.CommandName.ToLower(),
-                    UserID = command.User.Id.ToString(),
                     DiscordArguments = argsDS,
                     Channel = command.Channel.Name,
                     ChannelId = command.Channel.Id.ToString(),
@@ -137,16 +161,27 @@ namespace butterBror.Core.Commands
         }
 
         /// <summary>
-        /// Handles Discord text-based commands from message content.
+        /// Handles legacy text-based commands in Discord channels and direct messages.
         /// </summary>
-        /// <param name="message">Discord message containing the command.</param>
+        /// <param name="message">Message object containing command text and context</param>
         /// <remarks>
-        /// - Parses message content into command structure
-        /// - Handles both direct messages and guild channels
-        /// - Builds command context with user/permission data
-        /// - Routes processed command to execution pipeline
+        /// <list type="bullet">
+        /// <item>Processes commands prefixed with single character</item>
+        /// <item>Normalizes command structure by removing prefix and splitting arguments</item>
+        /// <item>Distinguishes between guild channels and direct messages:
+        /// <list type="bullet">
+        /// <item>Guild channels: Includes server/guild context</item>
+        /// <item>Direct messages: Server fields remain null</item>
+        /// </list>
+        /// </item>
+        /// <item>Handles edge cases where command name might be empty</item>
+        /// <item>Generates unique command instance ID (GUID) for execution tracking</item>
+        /// <item>Builds minimal user context with essential identification data</item>
+        /// <item>Forwards processed command to execution pipeline for processing</item>
+        /// </list>
+        /// Command format: [prefix][command] [arguments] (e.g., "!help moderation")
+        /// Throws are caught and logged without disrupting message processing flow.
         /// </remarks>
-        
         public static async void Discord(SocketMessage message)
         {
             try
@@ -176,7 +211,6 @@ namespace butterBror.Core.Commands
                 CommandData data = new()
                 {
                     Name = CommandName,
-                    UserID = message.Author.Id.ToString(),
                     Channel = message.Channel.Name,
                     ChannelId = message.Channel.Id.ToString(),
                     Server = ((SocketGuildChannel)message.Channel).Guild.Name,
@@ -196,17 +230,25 @@ namespace butterBror.Core.Commands
         }
 
         /// <summary>
-        /// Processes Telegram commands from text messages including replies.
+        /// Processes Telegram bot commands from text messages and replies.
         /// </summary>
-        /// <param name="message">Telegram message containing the command.</param>
+        /// <param name="message">Incoming message object containing command data</param>
         /// <remarks>
-        /// - Extracts command name and arguments from text
-        /// - Handles reply message context
-        /// - Builds user data with Telegram-specific properties
-        /// - Supports both public and private chat contexts
-        /// - Routes command to execution pipeline
+        /// <list type="bullet">
+        /// <item>Builds comprehensive user context with Telegram-specific properties:
+        /// <list type="table">
+        /// <item><term>IsBroadcaster</term><description>True when user ID matches chat ID (private chat)</description></item>
+        /// <item><term>Name</term><description>Uses username if available, falls back to first name</description></item>
+        /// </list>
+        /// </item>
+        /// <item>Processes reply context by appending replied message content to arguments</item>
+        /// <item>Handles both public group and private chat contexts seamlessly</item>
+        /// <item>Generates unique command instance ID (GUID) for execution tracking</item>
+        /// <item>Maintains reference to original message for response operations</item>
+        /// </list>
+        /// Command structure: First word is command name, remaining words are arguments.
+        /// All exceptions are logged through the Console.Write system but don't interrupt processing.
         /// </remarks>
-        
         public static async void Telegram(Message message)
         {
             try
@@ -224,7 +266,6 @@ namespace butterBror.Core.Commands
                 CommandData data = new()
                 {
                     Name = message.Text.ToLower().Split(' ')[0],
-                    UserID = message.From.Id.ToString(),
                     Arguments = message.Text.Split(' ').Skip(1).ToList(),
                     ArgumentsString = string.Join(" ", message.Text.Split(' ').Skip(1)),
                     Channel = message.Chat.Title ?? message.Chat.Username ?? message.Chat.Id.ToString(),

@@ -1,10 +1,9 @@
-﻿using butterBror.Utils;
-using butterBror.Data;
-using butterBror.Models;
-using butterBror.Core.Bot;
-using TwitchLib.Client.Enums;
+﻿using butterBror.Core.Bot;
 using butterBror.Core.Bot.SQLColumnNames;
+using butterBror.Models;
+using butterBror.Utils;
 using System.Globalization;
+using TwitchLib.Client.Enums;
 
 namespace butterBror.Core.Commands.List
 {
@@ -14,7 +13,7 @@ namespace butterBror.Core.Commands.List
         public override string Author => "ItzKITb";
         public override string AuthorsGithub => "https://github.com/itzkitb";
         public override string GithubSource => $"{URLs.githubSource}blob/master/butterBror/Core/Commands/List/FirstGlobalLine.cs";
-        public override Version Version => new("1.0.0");
+        public override Version Version => new("1.0.1");
         public override Dictionary<string, string> Description => new() {
             {"ru-RU", "Ваше первое сообщение на текущей платформе." },
             {"en-US", "Your first message on the current platform." }
@@ -41,8 +40,8 @@ namespace butterBror.Core.Commands.List
 
                 if (data.Arguments.Count > 0)
                 {
-                    name = Text.UsernameFilter(data.Arguments.ElementAt(0).ToLower());
-                    userID = Names.GetUserID(name, data.Platform);
+                    name = TextSanitizer.UsernameFilter(data.Arguments.ElementAt(0).ToLower());
+                    userID = UsernameResolver.GetUserID(name, data.Platform);
                 }
                 else
                 {
@@ -52,29 +51,29 @@ namespace butterBror.Core.Commands.List
 
                 if (userID == null)
                 {
-                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:user_not_found", data.ChannelId, data.Platform, Names.DontPing(name)));
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:user_not_found", data.ChannelId, data.Platform, UsernameResolver.DontPing(name)));
                     commandReturn.SetColor(ChatColorPresets.Red);
                 }
                 else
                 {
-                    if (name == Engine.Bot.BotName.ToLower())
+                    if (name == butterBror.Bot.BotName.ToLower())
                     {
                         commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:first_global_line:bot", data.ChannelId, data.Platform));
                     }
                     else
                     {
-                        var firstLine = (string)Engine.Bot.SQL.Users.GetParameter(data.Platform, Format.ToLong(userID), Users.FirstMessage);
-                        var firstChannel = (string)Engine.Bot.SQL.Users.GetParameter(data.Platform, Format.ToLong(userID), Users.FirstChannel);
-                        var firstLineDate = DateTime.Parse((string)Engine.Bot.SQL.Users.GetParameter(data.Platform, Format.ToLong(userID), Users.FirstSeen), null, DateTimeStyles.AdjustToUniversal);
+                        var firstLine = (string)butterBror.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(userID), Users.FirstMessage);
+                        var firstChannel = (string)butterBror.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(userID), Users.FirstChannel);
+                        var firstLineDate = DateTime.Parse((string)butterBror.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(userID), Users.FirstSeen), null, DateTimeStyles.AdjustToUniversal);
 
                         commandReturn.SetMessage(LocalizationService.GetString(
                             data.User.Language,
                             "command:first_global_line:user",
                             data.ChannelId,
                             data.Platform,
-                            Names.DontPing(Names.GetUsername(userID, data.Platform)),
+                            UsernameResolver.DontPing(UsernameResolver.GetUsername(userID, data.Platform, true)),
                             firstLine,
-                            Text.FormatTimeSpan(Utils.Format.GetTimeTo(firstLineDate, DateTime.UtcNow, false), data.User.Language),
+                            TextSanitizer.FormatTimeSpan(Utils.DataConversion.GetTimeTo(firstLineDate, DateTime.UtcNow, false), data.User.Language),
                             firstChannel));
                     }
                 }

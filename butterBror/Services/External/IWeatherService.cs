@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-
-namespace butterBror.Services.External
+﻿namespace butterBror.Services.External
 {
     /// <summary>
     /// Interface for working with weather data services.

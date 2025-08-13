@@ -1,10 +1,7 @@
 ﻿using Pastel;
-using System;
 using System.Diagnostics;
-using System.IO;
+using System.Security.Principal;
 using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace hostBror
 {
@@ -13,7 +10,7 @@ namespace hostBror
         private static Process _botProcess;
         private static bool _isRestarting = false;
         private static int _restartCount = 0;
-        private static string _version = "2.0.2";
+        private static string _version = "2.0.3";
         private static readonly string _botExecutablePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Process", "butterBror.exe");
 
         private static Timer _updateTimer;
@@ -22,10 +19,52 @@ namespace hostBror
         private static readonly string _updateZipPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Updater", "HostUpdate.zip");
         private static string _botVersion = GetBotVersion();
 
+        public static bool IsElevated
+        {
+            get
+            {
+                return new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator);
+            }
+        }
+
         public static void Main(string[] args)
         {
             Console.Title = $"hostBror | v.{_version}";
             Console.WriteLine($"{"┌".Pastel("#ff7b42")} Starting hostBror v.{_version}...");
+
+            if (!IsElevated)
+            {
+                Console.WriteLine($"{"│".Pastel("#ff7b42")} {GetTime()} Host requires administrator privileges to run!");
+                Console.WriteLine($"{"│".Pastel("#ff7b42")} {GetTime()} Restarting as administrator in 3 seconds...");
+
+                Thread.Sleep(3000);
+
+                try
+                {
+                    string exePath = Process.GetCurrentProcess().MainModule.FileName;
+
+                    var startInfo = new ProcessStartInfo
+                    {
+                        FileName = exePath,
+                        UseShellExecute = true,
+                        Verb = "runas",
+                        WorkingDirectory = AppDomain.CurrentDomain.BaseDirectory
+                    };
+
+                    Process.Start(startInfo);
+                    Environment.Exit(0);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"{"│".Pastel("#ff4f4f")} {GetTime()} Failed to restart as administrator: {ex.Message}");
+                    Console.WriteLine($"{"│".Pastel("#ff4f4f")} {GetTime()} Please restart the program manually with administrator privileges.");
+
+                    Thread.Sleep(5000);
+                    Environment.Exit(1);
+                }
+
+                return;
+            }
 
             _updateTimer = new Timer(CheckForUpdates, null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(5));
 
@@ -44,7 +83,7 @@ namespace hostBror
             {
                 if (_isRestarting)
                 {
-                    Console.WriteLine($"{"│".Pastel("#ff7b42")} {GetTime()} Bot is restarting...");
+                    Console.WriteLine($"{"│".Pastel("#ff7b42")} {GetTime()} Bot is (re)starting...");
                 }
 
                 StartBotProcess();
@@ -56,6 +95,12 @@ namespace hostBror
                     {
                         _restartCount++;
                         Console.WriteLine($"{"│".Pastel("#ff4f4f")} {GetTime()} Bot process exited with code {_botProcess?.ExitCode ?? -1}. Restarting... (Attempt {_restartCount})");
+                        if (_botProcess?.ExitCode == 5001)
+                        {
+                            _updateRequired = true;
+                            Environment.Exit(0);
+                        }
+                        
                         _isRestarting = true;
                         Thread.Sleep(5000);
                     }

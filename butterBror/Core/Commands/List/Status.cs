@@ -1,5 +1,5 @@
-﻿using butterBror.Models;
-using butterBror.Core.Bot;
+﻿using butterBror.Core.Bot;
+using butterBror.Models;
 using System.Diagnostics;
 
 namespace butterBror.Core.Commands.List
@@ -10,7 +10,7 @@ namespace butterBror.Core.Commands.List
         public override string Author => "ItzKITb";
         public override string AuthorsGithub => "https://github.com/itzkitb";
         public override string GithubSource => $"{URLs.githubSource}blob/master/butterBror/Core/Commands/List/Status.cs";
-        public override Version Version => new("1.0.0");
+        public override Version Version => new("1.0.1");
         public override Dictionary<string, string> Description => new() {
             { "ru-RU", "MrDestructoid БО-Т НЕ РАБ-ОТАЕТ... НЕТ, Я СЕР-ЬЕЗНО!" },
             { "en-US", "MrDestructoid THE BO-T DOES-N'T WORK... NO, I'M SER-IOUS!" }
@@ -40,7 +40,7 @@ namespace butterBror.Core.Commands.List
                 DriveInfo driveInfo = new(driveLetter.Substring(0, 1));
                 long avalibeDiskSpace = driveInfo.AvailableFreeSpace / (1024 * 1024 * 1024); // GB
                 long diskSpace = driveInfo.TotalSize / (1024 * 1024 * 1024);
-                int percentDiskUsed = (int)(float)(100.0 / Utils.Format.ToInt(diskSpace.ToString()) * Utils.Format.ToInt(avalibeDiskSpace.ToString()));
+                int percentDiskUsed = (int)(float)(100.0 / Utils.DataConversion.ToInt(diskSpace.ToString()) * Utils.DataConversion.ToInt(avalibeDiskSpace.ToString()));
 
                 if (percentDiskUsed > 80)
                 {
@@ -132,7 +132,7 @@ namespace butterBror.Core.Commands.List
                     }
                 }
 
-                DirectoryInfo directory_info = new DirectoryInfo(Engine.Bot.Pathes.Main);
+                DirectoryInfo directory_info = new DirectoryInfo(butterBror.Bot.Paths.Main);
                 long folder_size = directory_info.EnumerateFiles("*.*", SearchOption.AllDirectories).Sum(fi => fi.Length);
                 long folder_size_MB = folder_size / (1024 * 1024);
                 long folder_size_GB = folder_size / (1024 * 1024 * 1024);
@@ -140,11 +140,11 @@ namespace butterBror.Core.Commands.List
 
                 if (data.Platform == PlatformsEnum.Twitch)
                 {
-                    commandReturn.SetMessage($"glorp 📡 Pshhh... I'm ButterBror v.{Engine.Version} 💻 Status: {statusName} 💾 Free disk space ( {diskName.Replace("\\", "")} ): {avalibeDiskSpace} GB/{diskSpace} GB ({percentDiskUsed}% free) 🫙 Used working memory by bot: {workingAppSet} MB ⚖️ Bot database weight: {folder_size_MB} MB/{diskSpace} GB ({percent_folder_disk_used}% free)");
+                    commandReturn.SetMessage($"glorp 📡 Pshhh... I'm ButterBror v.{butterBror.Bot.Version} 💻 Status: {statusName} 💾 Free disk space ( {diskName.Replace("\\", "")} ): {avalibeDiskSpace} GB/{diskSpace} GB ({percentDiskUsed}% free) 🫙 Used working memory by bot: {workingAppSet} MB ⚖️ Bot database weight: {folder_size_MB} MB/{diskSpace} GB ({percent_folder_disk_used}% free)");
                 }
                 else if (data.Platform == PlatformsEnum.Discord)
                 {
-                    commandReturn.SetMessage($"<:OFFLINECHAT:1248250625754398730> 📡 Pshhh... I'm ButterBror v.{Engine.Version} 💻 Status: {statusName} 💾 Free disk space ( {diskName.Replace("\\", "")} ): {avalibeDiskSpace} GB/{diskSpace} GB ({percentDiskUsed}% free) 🫙 Used working memory by bot: {workingAppSet} MB ⚖️ Bot database weight: {folder_size_MB} MB/{diskSpace} GB ({percent_folder_disk_used}% free)");
+                    commandReturn.SetMessage($"<:OFFLINECHAT:1248250625754398730> 📡 Pshhh... I'm ButterBror v.{butterBror.Bot.Version} 💻 Status: {statusName} 💾 Free disk space ( {diskName.Replace("\\", "")} ): {avalibeDiskSpace} GB/{diskSpace} GB ({percentDiskUsed}% free) 🫙 Used working memory by bot: {workingAppSet} MB ⚖️ Bot database weight: {folder_size_MB} MB/{diskSpace} GB ({percent_folder_disk_used}% free)");
                 }
             }
             catch (Exception e)

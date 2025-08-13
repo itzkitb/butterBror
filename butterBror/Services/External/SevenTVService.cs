@@ -1,12 +1,12 @@
-﻿using System.Net.Http.Headers;
-using System.Text;
-using System.Text.Json;
-using Microsoft.Extensions.Caching.Memory;
-using static butterBror.Core.Bot.Console;
-using butterBror.Core.Bot;
-using butterBror.Utils;
+﻿using butterBror.Core.Bot;
 using butterBror.Models;
 using butterBror.Models.SevenTVLib;
+using butterBror.Utils;
+using Microsoft.Extensions.Caching.Memory;
+using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
+using static butterBror.Core.Bot.Console;
 
 namespace butterBror.Services.External
 {
@@ -47,7 +47,7 @@ namespace butterBror.Services.External
         /// - Performs fresh search if cache is empty or expired
         /// - Stores successful results in cache for future requests
         /// </remarks>
-        
+
         public async Task<string> SearchUser(string nickname, string bearer_token)
         {
             if (_cache.TryGetValue<string>($"user_{nickname}", out var cached) && _cache is not null)
@@ -60,7 +60,7 @@ namespace butterBror.Services.External
 
             if (!string.IsNullOrEmpty(result))
                 _cache.Set($"user_{nickname}", result, _cacheOptions);
-            Write($"SevenTV - Loaded data for @{nickname} ({result is null}): {Text.CheckNull(result)}", "info");
+            Write($"SevenTV - Loaded data for @{nickname} ({result is null}): {TextSanitizer.CheckNull(result)}", "info");
             return result;
         }
 
@@ -75,7 +75,7 @@ namespace butterBror.Services.External
         /// - Performs fresh search if cache is empty or expired
         /// - Stores successful results in cache for future requests
         /// </remarks>
-        
+
         public async Task<string> SearchEmote(string emoteName, string bearer_token)
         {
             if (_cache.TryGetValue<string>($"emote_{emoteName}", out var cached))
@@ -104,7 +104,7 @@ namespace butterBror.Services.External
         /// Uses GraphQL mutation to modify emote sets.
         /// Requires valid bearer token with edit permissions.
         /// </remarks>
-        
+
         public async Task<bool> Add(string set_id, string emote_name, string emote_id, string bearer_token)
         {
             var request = new
@@ -147,7 +147,7 @@ namespace butterBror.Services.External
         /// Uses GraphQL mutation to modify emote sets.
         /// Requires valid bearer token with edit permissions.
         /// </remarks>
-        
+
         public async Task<bool> Remove(string set_id, string emote_id, string bearer_token)
         {
             var request = new
@@ -190,7 +190,7 @@ namespace butterBror.Services.External
         /// Uses GraphQL mutation to update emote alias.
         /// Requires valid bearer token with edit permissions.
         /// </remarks>
-        
+
         public async Task<bool> Rename(string set_id, string new_name, string emote_id, string bearer_token)
         {
             var request = new
@@ -232,7 +232,7 @@ namespace butterBror.Services.External
         /// Handles HTTP POST requests with Bearer authentication.
         /// Returns false for non-success status codes.
         /// </remarks>
-        
+
         private async Task<bool> SendRequestAsync(object requestData, string bearerToken)
         {
             var jsonOptions = new JsonSerializerOptions
@@ -272,10 +272,10 @@ namespace butterBror.Services.External
         /// - Uses 7TV's user search GraphQL endpoint
         /// - Returns first matching user ID from results
         /// </remarks>
-        
+
         public async Task<string> PerformSearchUser(string nickname)
         {
-            var userId = Names.GetUserID(nickname, PlatformsEnum.Twitch);
+            var userId = UsernameResolver.GetUserID(nickname, PlatformsEnum.Twitch);
             var requestUrl = "https://7tv.io/v3/gql";
 
             var requestBody = new
@@ -301,7 +301,7 @@ namespace butterBror.Services.External
                 var userResponse = JsonSerializer.Deserialize<List<UserResponse>>(responseContent);
                 var firstUser = userResponse?.FirstOrDefault()?.Data?.Users.FirstOrDefault();
 
-                Write($"SevenTV - PerformSearchUser> USER ID ({userId}): {Text.CheckNull(firstUser?.Id)}", "info");
+                Write($"SevenTV - PerformSearchUser> USER ID ({userId}): {TextSanitizer.CheckNull(firstUser?.Id)}", "info");
                 return firstUser?.Id;
             }
             catch (Exception ex)
@@ -322,7 +322,7 @@ namespace butterBror.Services.External
         /// - Returns first matching emote ID from results
         /// - Supports various search filters through GraphQL parameters
         /// </remarks>
-        
+
         public async Task<string> PerformSearchEmote(string emoteName)
         {
             var request = new

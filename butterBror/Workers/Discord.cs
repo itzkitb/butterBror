@@ -1,11 +1,10 @@
-﻿using Discord.WebSocket;
-using Discord;
-using System.Reflection;
-using TwitchLib.Client.Events;
-using static butterBror.Core.Bot.Console;
-using butterBror.Core.Commands;
+﻿using butterBror.Core.Commands;
 using butterBror.Models;
 using butterBror.Utils;
+using Discord;
+using Discord.WebSocket;
+using System.Reflection;
+using static butterBror.Core.Bot.Console;
 
 namespace butterBror.Workers
 {
@@ -23,13 +22,13 @@ namespace butterBror.Workers
         /// - Updates server count statistics
         /// - Handles connection errors internally
         /// </remarks>
-        
+
         public static async Task ReadyAsync()
         {
             try
             {
-                Write($"Discord - Connected as {Engine.Bot.Clients.Discord.CurrentUser}!", "info");
-                Engine.Bot.DiscordServers = (ulong)Engine.Bot.Clients.Discord.Guilds.Count;
+                Write($"Discord - Connected as {Bot.Clients.Discord.CurrentUser}!", "info");
+                Bot.DiscordServers = (ulong)Bot.Clients.Discord.Guilds.Count;
             }
             catch (Exception ex)
             {
@@ -48,14 +47,14 @@ namespace butterBror.Workers
         /// - Handles prefix-based command detection
         /// - Integrates with chat processing and AFK systems
         /// </remarks>
-        
+
         public static async Task MessageReceivedAsync(SocketMessage message)
         {
             try
             {
                 if (!(message is SocketUserMessage msg) || message.Author.IsBot) return;
-                
-                await Command.ProcessMessageAsync(
+
+                await MessageProcessor.ProcessMessageAsync(
                     message.Author.Id.ToString(),
                     message.Channel.Id.ToString(),
                     message.Author.Username.ToLower(),
@@ -68,7 +67,7 @@ namespace butterBror.Workers
                     ((SocketGuildChannel)message.Channel).Guild.Name,
                     ((SocketGuildChannel)message.Channel).Guild.Id.ToString());
 
-                if (message.Content.StartsWith(Engine.Bot.Executor))
+                if (message.Content.StartsWith(Bot.DefaultExecutor))
                 {
                     Executor.Discord(message);
                 }
@@ -89,14 +88,14 @@ namespace butterBror.Workers
         /// - Loads command modules from assembly
         /// - Handles command registration errors
         /// </remarks>
-        
+
         public static async Task RegisterCommandsAsync()
         {
             try
             {
-                Engine.Bot.Clients.Discord.Ready += RegisterSlashCommands;
-                Engine.Bot.Clients.Discord.MessageReceived += Events.DiscordEvents.HandleCommandAsync;
-                await Engine.Bot.DiscordCommandService.AddModulesAsync(assembly: Assembly.GetEntryAssembly(), services: Engine.Bot.DiscordServiceProvider);
+                Bot.Clients.Discord.Ready += RegisterSlashCommands;
+                Bot.Clients.Discord.MessageReceived += Events.DiscordEvents.HandleCommandAsync;
+                await Bot.DiscordCommandService.AddModulesAsync(assembly: Assembly.GetEntryAssembly(), services: Bot.DiscordServiceProvider);
             }
             catch (Exception ex)
             {
@@ -116,27 +115,20 @@ namespace butterBror.Workers
         ///   - weather: Weather lookup with location options
         /// - Logs command registration progress
         /// </remarks>
-        
+
         private static async Task RegisterSlashCommands()
         {
             Write("Discord - Updating commands...", "info");
 
-            await Engine.Bot.Clients.Discord.Rest.DeleteAllGlobalCommandsAsync();
+            await Bot.Clients.Discord.Rest.DeleteAllGlobalCommandsAsync();
 
-            await Engine.Bot.Clients.Discord.Rest.CreateGlobalCommand(new SlashCommandBuilder()
+            await Bot.Clients.Discord.Rest.CreateGlobalCommand(new SlashCommandBuilder()
                 .WithName("ping")
                 .WithDescription("Check bot status")
                 .Build());
-            await Engine.Bot.Clients.Discord.Rest.CreateGlobalCommand(new SlashCommandBuilder()
+            await Bot.Clients.Discord.Rest.CreateGlobalCommand(new SlashCommandBuilder()
                 .WithName("status")
                 .WithDescription("View the bot's status. (Bot administrators only)")
-                .Build());
-            await Engine.Bot.Clients.Discord.Rest.CreateGlobalCommand(new SlashCommandBuilder()
-                .WithName("weather")
-                .WithDescription("Check the weather")
-                .AddOption("location", ApplicationCommandOptionType.String, "weather check location", isRequired: false)
-                .AddOption("showpage", ApplicationCommandOptionType.Integer, "show weather on page", isRequired: false)
-                .AddOption("page", ApplicationCommandOptionType.Integer, "show the result page of the received weather", isRequired: false)
                 .Build());
 
             Write("Discord - Commands updated!", "info");

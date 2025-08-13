@@ -1,5 +1,5 @@
-﻿using butterBror.Models;
-using butterBror.Core.Bot;
+﻿using butterBror.Core.Bot;
+using butterBror.Models;
 
 namespace butterBror.Core.Commands.List
 {

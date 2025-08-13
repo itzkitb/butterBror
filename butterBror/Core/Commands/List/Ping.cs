@@ -1,6 +1,6 @@
-﻿using butterBror.Utils;
-using butterBror.Core.Bot;
+﻿using butterBror.Core.Bot;
 using butterBror.Models;
+using butterBror.Utils;
 using System.Net.NetworkInformation;
 
 namespace butterBror.Core.Commands.List
@@ -11,7 +11,7 @@ namespace butterBror.Core.Commands.List
         public override string Author => "ItzKITb";
         public override string AuthorsGithub => "https://github.com/itzkitb";
         public override string GithubSource => $"{URLs.githubSource}blob/master/butterBror/Core/Commands/List/Pinger.cs";
-        public override Version Version => new("1.0.0");
+        public override Version Version => new("1.0.1");
         public override Dictionary<string, string> Description => new() {
             { "ru-RU", "Узнать пинг бота." },
             { "en-US", "Find out the bot's ping." }
@@ -40,12 +40,12 @@ namespace butterBror.Core.Commands.List
 
                 if (data.Arguments.Count == 0)
                 {
-                    var workTime = DateTime.Now - Engine.StartTime;
+                    var workTime = DateTime.Now - butterBror.Bot.StartTime;
                     string host = "";
                     long pingSpeed = 0;
                     if (data.Platform == PlatformsEnum.Telegram)
                     {
-                        pingSpeed = Services.External.TelegramService.Ping().Result;
+                        pingSpeed = butterBror.Services.External.TelegramService.Ping().Result;
                     }
                     else
                     {
@@ -57,24 +57,24 @@ namespace butterBror.Core.Commands.List
                         pingSpeed = reply.Status == IPStatus.Success ? reply.RoundtripTime : -1;
                     }
 
-                    long joinedTabs = data.Platform == PlatformsEnum.Twitch ? Engine.Bot.Clients.Twitch.JoinedChannels.Count : (data.Platform == PlatformsEnum.Discord ? Engine.Bot.Clients.Discord.Guilds.Count : (Engine.Bot.Clients.Twitch.JoinedChannels.Count + Engine.Bot.Clients.Discord.Guilds.Count));
+                    long joinedTabs = data.Platform == PlatformsEnum.Twitch ? butterBror.Bot.Clients.Twitch.JoinedChannels.Count : (data.Platform == PlatformsEnum.Discord ? butterBror.Bot.Clients.Discord.Guilds.Count : (butterBror.Bot.Clients.Twitch.JoinedChannels.Count + butterBror.Bot.Clients.Discord.Guilds.Count));
 
                     commandReturn.SetMessage(LocalizationService.GetString(
                         data.User.Language,
                         "command:ping",
                         data.ChannelId,
                         data.Platform,
-                        Engine.Version,
-                        Engine.Patch,
-                        Text.FormatTimeSpan(workTime, data.User.Language),
+                        butterBror.Bot.Version,
+                        butterBror.Bot.Patch,
+                        TextSanitizer.FormatTimeSpan(workTime, data.User.Language),
                         LocalizationService.GetPluralString(data.User.Language, "text:tab", data.ChannelId, data.Platform, joinedTabs, joinedTabs),
                         LocalizationService.GetPluralString(data.User.Language, "text:commands", data.ChannelId, data.Platform, Runner.commandInstances.Count, Runner.commandInstances.Count),
-                        Engine.CompletedCommands,
+                        butterBror.Bot.CompletedCommands,
                         pingSpeed.ToString()));
                 }
                 else if (argument.Equals("isp"))
                 {
-                    var workTime = DateTime.Now - Engine.StartTime;
+                    var workTime = DateTime.Now - butterBror.Bot.StartTime;
                     PingReply reply = new Ping().Send("192.168.1.1", 1000);
                     long pingSpeed = -1;
                     if (reply.Status == IPStatus.Success) pingSpeed = reply.RoundtripTime;

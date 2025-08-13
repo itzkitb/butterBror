@@ -11,7 +11,6 @@ namespace butterBror.Models
         public OnChatCommandReceivedArgs? TwitchArguments { get; set; }
         public Dictionary<string, dynamic>? DiscordArguments { get; set; }
         public string MessageID { get; set; }
-        public required string UserID { get; set; }
         public string? Channel { get; set; }
         public string? ChannelId { get; set; }
         public required string ArgumentsString { get; set; }

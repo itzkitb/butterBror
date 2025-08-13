@@ -1,6 +1,6 @@
-﻿using butterBror.Models;
+﻿using butterBror.Core.Bot;
+using butterBror.Models;
 using butterBror.Utils;
-using butterBror.Core.Bot;
 using TwitchLib.Client.Enums;
 
 namespace butterBror.Core.Commands.List
@@ -41,11 +41,11 @@ namespace butterBror.Core.Commands.List
                         "command:balance",
                         data.ChannelId,
                         data.Platform,
-                        Utils.Balance.GetBalance(data.UserID, data.Platform) + "." + Utils.Balance.GetSubbalance(data.UserID, data.Platform)));
+                        Utils.CurrencyManager.GetBalance(data.User.ID, data.Platform) + "." + Utils.CurrencyManager.GetSubbalance(data.User.ID, data.Platform)));
                 }
                 else
                 {
-                    var userID = Names.GetUserID(data.Arguments[0].Replace("@", "").Replace(",", ""), data.Platform);
+                    var userID = UsernameResolver.GetUserID(data.Arguments[0].Replace("@", "").Replace(",", ""), data.Platform);
                     if (userID != null)
                     {
                         commandReturn.SetMessage(LocalizationService.GetString(
@@ -53,8 +53,8 @@ namespace butterBror.Core.Commands.List
                             "command:balance:user",
                             data.ChannelId,
                             data.Platform,
-                            Names.DontPing(Text.UsernameFilter(data.ArgumentsString)),
-                            Utils.Balance.GetBalance(userID, data.Platform) + "." + Utils.Balance.GetSubbalance(userID, data.Platform)));
+                            UsernameResolver.DontPing(TextSanitizer.UsernameFilter(data.ArgumentsString)),
+                            Utils.CurrencyManager.GetBalance(userID, data.Platform) + "." + Utils.CurrencyManager.GetSubbalance(userID, data.Platform)));
                     }
                     else
                     {
@@ -63,7 +63,7 @@ namespace butterBror.Core.Commands.List
                             "error:user_not_found",
                             data.ChannelId,
                             data.Platform,
-                            Names.DontPing(Text.UsernameFilter(data.ArgumentsString))));
+                            UsernameResolver.DontPing(TextSanitizer.UsernameFilter(data.ArgumentsString))));
                         commandReturn.SetColor(ChatColorPresets.Red);
                     }
                 }

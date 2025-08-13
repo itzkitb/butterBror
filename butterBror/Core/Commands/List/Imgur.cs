@@ -1,9 +1,4 @@
-﻿using butterBror.Utils;
-using static butterBror.Core.Bot.Console;
-using butterBror.Services.External;
-using butterBror.Models;
-
-/*
+﻿/*
 Fuck you, Imgur <3
 
 namespace butterBror.Core.Commands

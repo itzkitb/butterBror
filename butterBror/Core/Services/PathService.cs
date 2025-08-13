@@ -1,9 +1,9 @@
-﻿namespace butterBror.Core.Bot
+﻿namespace butterBror.Core.Services
 {
     /// <summary>
     /// Manages hierarchical file/directory paths for the application with automatic path formatting and update propagation.
     /// </summary>
-    public class PathWorker
+    public class PathService
     {
         /// <summary>
         /// Gets or sets the general root directory path used for shared resources.
@@ -115,23 +115,24 @@
         /// </summary>
         public void UpdatePaths()
         {
-            ChannelsDatabase = Format(Path.Combine(Main, "Channels.db"));
-            GamesDatabase = Format(Path.Combine(Main, "Games.db"));
-            UsersDatabase = Format(Path.Combine(Main, "Users.db"));
-            MessagesDatabase = Format(Path.Combine(Main, "Messages.db"));
-            RolesDatabase = Format(Path.Combine(Main, "Roles.db"));
-            Settings = Format(Path.Combine(Main, "SETTINGS.json"));
-            Translations = Format(Path.Combine(Main, "TRNSLT/"));
-            TranslateDefault = Format(Path.Combine(Translations, "DEFAULT/"));
-            TranslateCustom = Format(Path.Combine(Translations, "CUSTOM/"));
-            BlacklistWords = Format(Path.Combine(Main, "BNWORDS.txt"));
-            BlacklistReplacements = Format(Path.Combine(Main, "BNWORDSREP.txt"));
-            APIUses = Format(Path.Combine(Main, "API.json"));
-            Logs = Format(Path.Combine(Main, "LOGS", $"{DateTime.UtcNow.ToString("dd_MM_yyyy HH.mm.ss")}.log"));
-            Cache = Format(Path.Combine(Main, "LOC.cache"));
-            Currency = Format(Path.Combine(Main, "CURR.json"));
-            SevenTVCache = Format(Path.Combine(Main, "7TV.json"));
-            Reserve = Format(Path.Combine(General, "bbReserves/"));
+            string timestamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
+            ChannelsDatabase = Path.Combine(Main, "Channels.db");
+            GamesDatabase = Path.Combine(Main, "Games.db");
+            UsersDatabase = Path.Combine(Main, "Users.db");
+            MessagesDatabase = Path.Combine(Main, "Messages.db");
+            RolesDatabase = Path.Combine(Main, "Roles.db");
+            Settings = Path.Combine(Main, "SETTINGS.json");
+            Translations = Path.Combine(Main, "TRNSLT/");
+            TranslateDefault = Path.Combine(Translations, "DEFAULT");
+            TranslateCustom = Path.Combine(Translations, "CUSTOM");
+            BlacklistWords = Path.Combine(Main, "BNWORDS.txt");
+            BlacklistReplacements = Path.Combine(Main, "BNWORDSREP.txt");
+            APIUses = Path.Combine(Main, "API.json");
+            Logs = Path.Combine(Main, "LOGS", $"{timestamp}.log");
+            Cache = Path.Combine(Main, "LOC.cache");
+            Currency = Path.Combine(Main, "CURR.json");
+            SevenTVCache = Path.Combine(Main, "7TV.json");
+            Reserve = Path.Combine(General, "bbReserves/");
         }
 
         /// <summary>
@@ -141,7 +142,9 @@
         /// <returns>A path with normalized Windows-style slashes.</returns>
         public string Format(string input)
         {
-            return input.Replace("/", "\\");
+            return Path.GetFullPath(input)
+                .Replace("/", Path.DirectorySeparatorChar.ToString())
+                .Replace("\\", Path.DirectorySeparatorChar.ToString());
         }
     }
 }

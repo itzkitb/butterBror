@@ -1,7 +1,6 @@
-﻿using butterBror.Utils;
-using butterBror.Data;
+﻿using butterBror.Core.Bot;
 using butterBror.Models;
-using butterBror.Core.Bot;
+using butterBror.Utils;
 using TwitchLib.Client.Enums;
 
 namespace butterBror.Core.Commands.List
@@ -12,7 +11,7 @@ namespace butterBror.Core.Commands.List
         public override string Author => "ItzKITb";
         public override string AuthorsGithub => "https://github.com/itzkitb";
         public override string GithubSource => $"{URLs.githubSource}blob/master/butterBror/Core/Commands/List/LastLine.cs";
-        public override Version Version => new("1.0.0");
+        public override Version Version => new("1.0.1");
         public override Dictionary<string, string> Description => new() {
             { "ru-RU", "Последнее сообщение определенного пользователя в текущем чате." },
             { "en-US", "The last message of the selected user in the current chat." }
@@ -37,11 +36,11 @@ namespace butterBror.Core.Commands.List
             {
                 if (data.Arguments.Count != 0)
                 {
-                    var name = Text.UsernameFilter(data.Arguments.ElementAt(0).ToLower());
-                    var userId = Names.GetUserID(name, PlatformsEnum.Twitch, true);
-                    var message = userId is null ? null : Engine.Bot.SQL.Messages.GetMessage(data.Platform, data.ChannelId, Format.ToLong(userId), 0);
+                    var name = TextSanitizer.UsernameFilter(data.Arguments.ElementAt(0).ToLower());
+                    var userId = UsernameResolver.GetUserID(name, PlatformsEnum.Twitch, true);
+                    var message = userId is null ? null : butterBror.Bot.SQL.Messages.GetMessage(data.Platform, data.ChannelId, DataConversion.ToLong(userId), 0);
 
-                    if (message != null && userId != null && name != Engine.Bot.BotName.ToLower())
+                    if (message != null && userId != null && name != butterBror.Bot.BotName.ToLower())
                     {
                         if (name == data.User.Name.ToLower())
                         {
@@ -65,25 +64,25 @@ namespace butterBror.Core.Commands.List
                             {
                                 if (flag) message_badges += LocalizationService.GetString(data.User.Language, symbol, data.ChannelId, data.Platform);
                             }
-                            
+
                             commandReturn.SetMessage(LocalizationService.GetString(
                                 data.User.Language,
                                 "command:last_message",
                                 data.ChannelId,
                                 data.Platform,
                                 message_badges,
-                                Names.DontPing(Names.GetUsername(userId, data.Platform)),
+                                UsernameResolver.DontPing(UsernameResolver.GetUsername(userId, data.Platform, true)),
                                 message.messageText,
-                                Text.FormatTimeSpan(Utils.Format.GetTimeTo(message.messageDate, DateTime.Now, false), data.User.Language)));
+                                TextSanitizer.FormatTimeSpan(Utils.DataConversion.GetTimeTo(message.messageDate, DateTime.Now, false), data.User.Language)));
                         }
                     }
-                    else if (name != Engine.Bot.BotName.ToLower())
+                    else if (name != butterBror.Bot.BotName.ToLower())
                     {
                         commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:last_line:bot", data.ChannelId, data.Platform));
                     }
                     else
                     {
-                        commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:user_not_found", data.ChannelId, data.Platform, Names.DontPing(name))); // Fix AB1
+                        commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:user_not_found", data.ChannelId, data.Platform, UsernameResolver.DontPing(name))); // Fix AB1
                         commandReturn.SetColor(ChatColorPresets.Red); // Fix AB1
                     }
                 }

@@ -1,5 +1,4 @@
 ﻿using butterBror.Core.Bot.SQLColumnNames;
-using butterBror.Data;
 using butterBror.Models;
 using butterBror.Models.AI;
 using butterBror.Utils;
@@ -62,16 +61,16 @@ namespace butterBror.Services.External
         /// <param name="chatHistory">Indicates whether to include chat history (default: true).</param>
         /// <returns>An array containing the model name and response, or error information.</returns>
         /// <exception cref="Exception">Any exceptions during API communication are caught and logged.</exception>
-        
+
         public static async Task<string[]> Request(string request, string umodel, PlatformsEnum platform, string username, string userID, string lang, double repetitionPenalty, bool chatHistory = true)
         {
             DateTime requestTime = DateTime.UtcNow;
-            var api_key = Manager.Get<string>(Engine.Bot.Pathes.Settings, "openrouter_token");
+            var api_key = Manager.Get<string>(Bot.Paths.Settings, "openrouter_token");
             var uri = new Uri("https://openrouter.ai/api/v1/chat/completions");
 
             string model = "qwen";
             string selected_model = availableModels[model];
-            
+
             if (umodel is not null)
             {
                 model = umodel.ToLower();
@@ -89,7 +88,7 @@ namespace butterBror.Services.External
             var system_message = new Message
             {
                 role = "system",
-                content = $@"You are bot on platform: {PlatformsPathName.strings[(int)platform]}. Your name is {Engine.Bot.BotName}. DO NOT POST CONFIDENTIAL INFORMATION, DO NOT USE PROFANITY! WRITE LESS THAN 50 WORDS! SHORTEN YOUR TEXT!"
+                content = $@"You are bot on platform: {PlatformsPathName.strings[(int)platform]}. Your name is {Bot.BotName}. DO NOT POST CONFIDENTIAL INFORMATION, DO NOT USE PROFANITY! WRITE LESS THAN 50 WORDS! SHORTEN YOUR TEXT!"
             };
 
             var user_info_message = new Message
@@ -108,7 +107,7 @@ namespace butterBror.Services.External
 
             if (chatHistory)
             {
-                List<string> history = Format.ParseStringList((string)Engine.Bot.SQL.Users.GetParameter(platform, Format.ToLong(userID), Users.GPTHistory));
+                List<string> history = DataConversion.ParseStringList((string)Bot.UsersBuffer.GetParameter(platform, DataConversion.ToLong(userID), Users.GPTHistory));
                 if (history is not null) // Fix #AC0
                 {
                     messages.Insert(0, new Message
@@ -146,7 +145,7 @@ namespace butterBror.Services.External
 
                     if (chatHistory)
                     {
-                        List<string> loadedHistory = Format.ParseStringList((string)Engine.Bot.SQL.Users.GetParameter(platform, Format.ToLong(userID), Users.GPTHistory));
+                        List<string> loadedHistory = DataConversion.ParseStringList((string)Bot.UsersBuffer.GetParameter(platform, DataConversion.ToLong(userID), Users.GPTHistory));
                         List<string> history = loadedHistory ?? new List<string>(); // Fix #AC1
 
                         history.Add($"{requestTime.ToString("dd-MM-yyyy HH:mm")} [user]: {request}");
@@ -157,7 +156,7 @@ namespace butterBror.Services.External
                             history.RemoveRange(0, history.Count - 6);
                         }
 
-                        Engine.Bot.SQL.Users.SetParameter(platform, Format.ToLong(userID), Users.GPTHistory, Format.SerializeStringList(history));
+                        Bot.UsersBuffer.SetParameter(platform, DataConversion.ToLong(userID), Users.GPTHistory, DataConversion.SerializeStringList(history));
                     }
 
                     return new[] { model, result.choices[0].message.content };

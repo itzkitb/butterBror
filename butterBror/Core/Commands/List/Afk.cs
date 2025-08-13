@@ -1,9 +1,7 @@
 ﻿using butterBror.Core.Bot;
 using butterBror.Core.Bot.SQLColumnNames;
-using butterBror.Data;
 using butterBror.Models;
 using butterBror.Utils;
-using Microsoft.CodeAnalysis;
 
 namespace butterBror.Core.Commands.List
 {
@@ -13,7 +11,7 @@ namespace butterBror.Core.Commands.List
         public override string Author => "ItzKITb";
         public override string AuthorsGithub => "https://github.com/itzkitb";
         public override string GithubSource => $"{URLs.githubSource}blob/master/butterBror/Core/Commands/List/Afk.cs";
-        public override Version Version => new Version("1.0.0");
+        public override Version Version => new Version("1.0.1");
         public override Dictionary<string, string> Description => new() {
             { "ru-RU", "Эта команда поможет вам уйти из чата в афк." },
             { "en-US", "This command will help you leave the chat and go afk." }
@@ -90,14 +88,14 @@ namespace butterBror.Core.Commands.List
                 string result = LocalizationService.GetString(data.User.Language, $"command:afk:{afkType}:start", data.ChannelId, data.Platform, data.User.Name);
                 string text = data.ArgumentsString;
 
-                Engine.Bot.SQL.Users.SetParameter(data.Platform, Format.ToLong(data.UserID), Users.IsAFK, 1);
-                Engine.Bot.SQL.Users.SetParameter(data.Platform, Format.ToLong(data.UserID), Users.AFKText, text);
-                Engine.Bot.SQL.Users.SetParameter(data.Platform, Format.ToLong(data.UserID), Users.AFKType, afkType);
-                Engine.Bot.SQL.Users.SetParameter(data.Platform, Format.ToLong(data.UserID), Users.AFKStart, DateTime.UtcNow.ToString("o"));
-                Engine.Bot.SQL.Users.SetParameter(data.Platform, Format.ToLong(data.UserID), Users.AFKResume, DateTime.UtcNow.ToString("o"));
-                Engine.Bot.SQL.Users.SetParameter(data.Platform, Format.ToLong(data.UserID), Users.AFKResumeTimes, 0);
+                butterBror.Bot.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.IsAFK, 1);
+                butterBror.Bot.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.AFKText, text);
+                butterBror.Bot.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.AFKType, afkType);
+                butterBror.Bot.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.AFKStart, DateTime.UtcNow.ToString("o"));
+                butterBror.Bot.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.AFKResume, DateTime.UtcNow.ToString("o"));
+                butterBror.Bot.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.AFKResumeTimes, 0);
 
-                if (Text.CleanAsciiWithoutSpaces(text) == "")
+                if (TextSanitizer.CleanAsciiWithoutSpaces(text) == "")
                     commandReturn.SetMessage(result);
                 else
                     commandReturn.SetMessage(result + ": " + text);

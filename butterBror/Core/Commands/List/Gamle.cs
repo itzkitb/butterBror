@@ -1,9 +1,4 @@
-﻿using butterBror.Models;
-using butterBror.Utils;
-using butterBror.Core.Bot;
-using TwitchLib.Client.Enums;
-
-namespace butterBror.Core.Commands.List
+﻿namespace butterBror.Core.Commands.List
 {
     /*
     public class Gamble : CommandBase

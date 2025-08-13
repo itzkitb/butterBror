@@ -1,6 +1,6 @@
-﻿using butterBror.Models;
+﻿using butterBror.Core.Bot;
+using butterBror.Models;
 using butterBror.Utils;
-using butterBror.Core.Bot;
 
 namespace butterBror.Core.Commands.List
 {
@@ -10,7 +10,7 @@ namespace butterBror.Core.Commands.List
         public override string Author => "ItzKITb";
         public override string AuthorsGithub => "https://github.com/itzkitb";
         public override string GithubSource => $"{URLs.githubSource}blob/master/butterBror/Core/Commands/List/Help.cs";
-        public override Version Version => new("1.0.0");
+        public override Version Version => new("1.0.1");
         public override Dictionary<string, string> Description => new() {
             { "ru-RU", "Вы только что получили информацию об этой команде, используя эту же команду." },
             { "en-US", "You just got information about this command using this same command." }
@@ -52,9 +52,9 @@ namespace butterBror.Core.Commands.List
                             {
                                 num++;
                                 if (num < numWithoutComma)
-                                    aliasesList += $"{Engine.Bot.Executor}{alias}, ";
+                                    aliasesList += $"{butterBror.Bot.DefaultExecutor}{alias}, ";
                                 else if (num == numWithoutComma)
-                                    aliasesList += $"{Engine.Bot.Executor}{alias}";
+                                    aliasesList += $"{butterBror.Bot.DefaultExecutor}{alias}";
                             }
                             commandReturn.SetMessage(LocalizationService.GetString(
                                 data.User.Language,

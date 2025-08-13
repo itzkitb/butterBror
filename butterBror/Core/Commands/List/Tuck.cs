@@ -1,7 +1,6 @@
-﻿using butterBror.Utils;
-using butterBror.Data;
+﻿using butterBror.Core.Bot;
 using butterBror.Models;
-using butterBror.Core.Bot;
+using butterBror.Utils;
 using TwitchLib.Client.Enums;
 using static butterBror.Core.Bot.Console;
 
@@ -13,7 +12,7 @@ namespace butterBror.Core.Commands.List
         public override string Author => "ItzKITb";
         public override string AuthorsGithub => "https://github.com/itzkitb";
         public override string GithubSource => $"{URLs.githubSource}blob/master/butterBror/Core/Commands/List/Tuck.cs";
-        public override Version Version => new("1.0.0");
+        public override Version Version => new("1.0.1");
         public override Dictionary<string, string> Description => new()
         {
             { "ru-RU", "Спокойной ночи... 👁" },
@@ -31,7 +30,7 @@ namespace butterBror.Core.Commands.List
         public override PlatformsEnum[] Platforms => [PlatformsEnum.Twitch, PlatformsEnum.Telegram, PlatformsEnum.Discord];
         public override bool IsAsync => false;
 
-        
+
         public override CommandReturn Execute(CommandData data)
         {
             CommandReturn commandReturn = new CommandReturn();
@@ -41,16 +40,16 @@ namespace butterBror.Core.Commands.List
                 commandReturn.SetColor(ChatColorPresets.HotPink);
                 if (data.Arguments.Count >= 1)
                 {
-                    var username = Text.UsernameFilter(Text.CleanAsciiWithoutSpaces(data.Arguments[0]));
+                    var username = TextSanitizer.UsernameFilter(TextSanitizer.CleanAsciiWithoutSpaces(data.Arguments[0]));
                     var isSelectedUserIsNotIgnored = true;
-                    var userID = Names.GetUserID(username.ToLower(), PlatformsEnum.Twitch);
+                    var userID = UsernameResolver.GetUserID(username.ToLower(), PlatformsEnum.Twitch);
                     try
                     {
                         if (userID != null)
-                            isSelectedUserIsNotIgnored = !(Engine.Bot.SQL.Roles.GetIgnoredUser(data.Platform, Format.ToLong(data.User.ID)) is not null);
+                            isSelectedUserIsNotIgnored = !(butterBror.Bot.SQL.Roles.GetIgnoredUser(data.Platform, DataConversion.ToLong(data.User.ID)) is not null);
                     }
                     catch (Exception) { }
-                    if (username.ToLower() == Engine.Bot.BotName.ToLower())
+                    if (username.ToLower() == butterBror.Bot.BotName.ToLower())
                     {
                         commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:tuck:bot", data.ChannelId, data.Platform));
                         commandReturn.SetColor(ChatColorPresets.CadetBlue);
@@ -61,11 +60,11 @@ namespace butterBror.Core.Commands.List
                         {
                             List<string> list = data.Arguments;
                             list.RemoveAt(0);
-                            commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:tuck:text", data.ChannelId, data.Platform, Names.DontPing(username), string.Join(" ", list)));
+                            commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:tuck:text", data.ChannelId, data.Platform, UsernameResolver.DontPing(username), string.Join(" ", list)));
                         }
                         else
                         {
-                            commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:tuck", data.ChannelId, data.Platform, Names.DontPing(username)));
+                            commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:tuck", data.ChannelId, data.Platform, UsernameResolver.DontPing(username)));
                         }
                     }
                     else

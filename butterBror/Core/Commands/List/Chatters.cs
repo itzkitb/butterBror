@@ -1,10 +1,7 @@
 ﻿using butterBror.Core.Bot;
 using butterBror.Models;
+using butterBror.Services.External;
 using butterBror.Utils;
-using TwitchLib.Api;
-using TwitchLib.Client;
-using TwitchLib.Client.Models;
-using V8.Net;
 
 namespace butterBror.Core.Commands.List
 {
@@ -14,7 +11,7 @@ namespace butterBror.Core.Commands.List
         public override string Author => "ItzKITb";
         public override string AuthorsGithub => "https://github.com/itzkitb";
         public override string GithubSource => $"{URLs.githubSource}blob/master/butterBror/Core/Commands/List/Chatters.cs";
-        public override Version Version => new Version("1.0.0");
+        public override Version Version => new Version("1.0.1");
         public override Dictionary<string, string> Description => new() {
             { "ru-RU", "Выводит список чатеров." },
             { "en-US", "Displays a list of chatters." }
@@ -49,9 +46,9 @@ namespace butterBror.Core.Commands.List
                 {
                     do
                     {
-                        var response = await Engine.Bot.Clients.TwitchAPI.Helix.Chat.GetChattersAsync(
-                            broadcasterId: Names.GetUserID(targetChannel, PlatformsEnum.Twitch, true),
-                            moderatorId: Names.GetUserID(Engine.Bot.BotName, PlatformsEnum.Twitch, true),
+                        var response = await butterBror.Bot.Clients.TwitchAPI.Helix.Chat.GetChattersAsync(
+                            broadcasterId: UsernameResolver.GetUserID(targetChannel, PlatformsEnum.Twitch, true),
+                            moderatorId: UsernameResolver.GetUserID(butterBror.Bot.BotName, PlatformsEnum.Twitch, true),
                             first: 100,
                             after: cursor
                         );
@@ -71,7 +68,7 @@ namespace butterBror.Core.Commands.List
                 var chattersText = $"Chatters ({allChatters.Count}):\n" +
                        string.Join("\n", allChatters.Select(c => c.UserLogin));
 
-                var pasteUrl = await NoPaste.Upload(chattersText, 86400);
+                var pasteUrl = await NoPasteService.Upload(chattersText, 86400);
 
                 if (!string.IsNullOrEmpty(pasteUrl))
                 {

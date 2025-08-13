@@ -1,6 +1,6 @@
-﻿using butterBror.Models;
+﻿using butterBror.Core.Bot;
+using butterBror.Models;
 using butterBror.Utils;
-using butterBror.Core.Bot;
 using TwitchLib.Client.Enums;
 
 namespace butterBror.Core.Commands.List
@@ -11,7 +11,7 @@ namespace butterBror.Core.Commands.List
         public override string Author => "ItzKITb";
         public override string AuthorsGithub => "https://github.com/itzkitb";
         public override string GithubSource => $"{URLs.githubSource}blob/master/butterBror/Core/Commands/List/Dev.cs";
-        public override Version Version => new("1.0.0");
+        public override Version Version => new("1.0.1");
         public override Dictionary<string, string> Description => new()
         {
             { "ru-RU", "Эта команда не для тебя PauseChamp" },
@@ -39,14 +39,26 @@ namespace butterBror.Core.Commands.List
 
                 try
                 {
-                    string result = Command.ExecuteCode(data.ArgumentsString);
+                    string result = CodeExecutor.Run(data.ArgumentsString);
                     DateTime EndTime = DateTime.Now;
-                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:csharp:result", data.ChannelId, data.Platform, result, (int)(EndTime - StartTime).TotalMilliseconds));
+                    string message = LocalizationService.GetString(data.User.Language, "command:csharp:result", data.ChannelId, data.Platform, result, (int)(EndTime - StartTime).TotalMilliseconds);
+                    if (message == "command:csharp:result")
+                    {
+                        message = $"TE:{result} ({(int)(EndTime - StartTime).TotalMilliseconds}ms)";
+                    }
+                    commandReturn.SetMessage(message);
+
                 }
                 catch (Exception ex)
                 {
                     DateTime EndTime = DateTime.Now;
-                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:csharp:error", data.ChannelId, data.Platform, ex.Message, (int)(EndTime - StartTime).TotalMilliseconds));
+                    string message = LocalizationService.GetString(data.User.Language, "command:csharp:error", data.ChannelId, data.Platform, ex.Message, (int)(EndTime - StartTime).TotalMilliseconds);
+                    if (message == "command:csharp:error")
+                    {
+                        message = $"TE:{ex.Message} ({(int)(EndTime - StartTime).TotalMilliseconds}ms)";
+                    }
+                    commandReturn.SetMessage(message);
+
                     commandReturn.SetColor(ChatColorPresets.Red);
                 }
             }

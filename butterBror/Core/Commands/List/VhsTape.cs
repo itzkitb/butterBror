@@ -1,8 +1,8 @@
-﻿using butterBror.Services.External;
+﻿using butterBror.Core.Bot;
 using butterBror.Models;
-using butterBror.Core.Bot;
-using static butterBror.Core.Bot.Console;
+using butterBror.Services.External;
 using butterBror.Utils;
+using static butterBror.Core.Bot.Console;
 
 namespace butterBror.Core.Commands.List
 {
@@ -30,21 +30,21 @@ namespace butterBror.Core.Commands.List
         public override PlatformsEnum[] Platforms => [PlatformsEnum.Twitch, PlatformsEnum.Telegram, PlatformsEnum.Discord];
         public override bool IsAsync => true;
 
-        
+
         public override async Task<CommandReturn> ExecuteAsync(CommandData data)
         {
             CommandReturn commandReturn = new CommandReturn();
 
             try
             {
-                if (Command.CheckCooldown(3600, 1, "VhsReset", data.UserID, data.ChannelId, data.Platform, false, true))
+                if (MessageProcessor.CheckCooldown(3600, 1, "VhsReset", data.User.ID, data.ChannelId, data.Platform, false, true))
                 {
                     var platform = data.Platform;
                     var channelId = data.ChannelId;
                     var channel = data.Channel;
                     var serverId = data.ServerID;
                     var server = data.Server;
-                    var userId = data.UserID;
+                    var userId = data.User.ID;
                     var language = data.User.Language;
                     var username = data.User.Name;
                     var messageId = data.MessageID;
@@ -66,7 +66,7 @@ namespace butterBror.Core.Commands.List
                             int index = rand.Next(videos.Length);
                             string randomUrl = videos[index];
 
-                            Chat.SendReply(platform, channel, channelId, LocalizationService.GetString(language, "command:vhs", channelId, platform, randomUrl),
+                            PlatformMessageSender.SendReply(platform, channel, channelId, LocalizationService.GetString(language, "command:vhs", channelId, platform, randomUrl),
                                 language, username, userId, server, serverId, messageId, telegramMessage, true);
                         }
                         catch (Exception ex)

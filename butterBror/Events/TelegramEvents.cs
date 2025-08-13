@@ -1,7 +1,6 @@
 ﻿using butterBror.Core.Bot;
 using butterBror.Core.Bot.SQLColumnNames;
 using butterBror.Core.Commands;
-using butterBror.Data;
 using butterBror.Models;
 using butterBror.Utils;
 using System.Net.NetworkInformation;
@@ -9,7 +8,6 @@ using Telegram.Bot;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
-using TwitchLib.Client.Events;
 using static butterBror.Core.Bot.Console;
 
 namespace butterBror.Events
@@ -30,7 +28,7 @@ namespace butterBror.Events
         /// Processes commands like /start, /ping, /help, and routes them to appropriate handlers.
         /// Interacts with translation system and command processing components.
         /// </remarks>
-        
+
         public static async Task UpdateHandler(ITelegramBotClient client, Update update, CancellationToken cancellation_token)
         {
             try
@@ -40,10 +38,10 @@ namespace butterBror.Events
                 Message message = update.Message;
                 Telegram.Bot.Types.Chat chat = message.Chat;
                 User user = message.From;
-                User botData = Engine.Bot.Clients.Telegram.GetMe().Result;
+                User botData = Bot.Clients.Telegram.GetMe().Result;
                 string text = message.Text;
 
-                await Command.ProcessMessageAsync(
+                await MessageProcessor.ProcessMessageAsync(
                     user.Id.ToString(),
                     chat.Id.ToString(),
                     user.Username.ToLower(),
@@ -56,35 +54,35 @@ namespace butterBror.Events
                     null,
                     null);
 
-                string lang = (string)Engine.Bot.SQL.Users.GetParameter(PlatformsEnum.Telegram, user.Id, Users.Language) ?? "en-US";
+                string lang = (string)Bot.UsersBuffer.GetParameter(PlatformsEnum.Telegram, user.Id, Users.Language) ?? "en-US";
 
-                if (Command.IsEqualsSlashCommand("start", text, botData.Username))
+                if (MessageProcessor.IsEqualsSlashCommand("start", text, botData.Username))
                 {
                     await client.SendMessage(chat.Id, LocalizationService.GetString(
                         lang,
                         "telegram:welcome",
                         chat.Id.ToString(),
                         PlatformsEnum.Telegram,
-                        Engine.Version,
+                        Bot.Version,
                         user.Id,
-                        Text.FormatTimeSpan(DateTime.Now - Engine.StartTime, lang),
+                        TextSanitizer.FormatTimeSpan(DateTime.Now - Bot.StartTime, lang),
                         new Ping().Send(URLs.telegram, 1000).RoundtripTime), replyParameters: message.MessageId, cancellationToken: cancellation_token);
                 }
-                else if (Command.IsEqualsSlashCommand("ping", text, botData.Username))
+                else if (MessageProcessor.IsEqualsSlashCommand("ping", text, botData.Username))
                 {
-                    var workTime = DateTime.Now - Engine.StartTime;
+                    var workTime = DateTime.Now - Bot.StartTime;
                     PingReply reply = new Ping().Send(URLs.telegram, 1000);
                     string returnMessage = LocalizationService.GetString(
                         lang,
                         "command:ping",
                         chat.Id.ToString(),
                         PlatformsEnum.Telegram,
-                        Engine.Version,
-                        Engine.Patch,
-                        Text.FormatTimeSpan(workTime, lang),
-                        Engine.Bot.Clients.Twitch.JoinedChannels.Count + Engine.Bot.Clients.Discord.Guilds.Count + " (Twitch, Discord)",
+                        Bot.Version,
+                        Bot.Patch,
+                        TextSanitizer.FormatTimeSpan(workTime, lang),
+                        Bot.Clients.Twitch.JoinedChannels.Count + Bot.Clients.Discord.Guilds.Count + " (Twitch, Discord)",
                         Runner.commandInstances.Count.ToString(),
-                        Engine.CompletedCommands.ToString(),
+                        Bot.CompletedCommands.ToString(),
                         reply.RoundtripTime.ToString());
 
                     await client.SendMessage(
@@ -94,7 +92,7 @@ namespace butterBror.Events
                         cancellationToken: cancellation_token
                     );
                 }
-                else if (Command.IsEqualsSlashCommand("help", text, botData.Username))
+                else if (MessageProcessor.IsEqualsSlashCommand("help", text, botData.Username))
                 {
                     string returnMessage = LocalizationService.GetString(lang, "text:bot_info", chat.Id.ToString(), PlatformsEnum.Telegram);
                     await client.SendMessage(
@@ -104,7 +102,7 @@ namespace butterBror.Events
                         cancellationToken: cancellation_token
                     );
                 }
-                else if (Command.IsEqualsSlashCommand("commands", text, botData.Username))
+                else if (MessageProcessor.IsEqualsSlashCommand("commands", text, botData.Username))
                 {
                     string returnMessage = LocalizationService.GetString(lang, "command:help", chat.Id.ToString(), PlatformsEnum.Telegram);
                     await client.SendMessage(
@@ -114,7 +112,7 @@ namespace butterBror.Events
                         cancellationToken: cancellation_token
                     );
                 }
-                else if (text.StartsWith(Engine.Bot.Executor))
+                else if (text.StartsWith(Bot.DefaultExecutor))
                 {
                     text = text[1..];
                     Executor.Telegram(message);
@@ -138,7 +136,7 @@ namespace butterBror.Events
         /// <remarks>
         /// Formats and logs Telegram API errors, including HTTP status codes and API-specific exceptions.
         /// </remarks>
-        
+
         public static Task ErrorHandler(ITelegramBotClient botClient, Exception error, CancellationToken cancellationToken)
         {
             var ErrorMessage = error switch

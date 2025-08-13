@@ -1,18 +1,28 @@
 ﻿using butterBror.Core.Bot.SQLColumnNames;
-using butterBror.Data;
 using butterBror.Models;
 using butterBror.Utils;
 using Microsoft.CodeAnalysis;
 using System.Collections.Concurrent;
 using System.Diagnostics;
-using System.Linq;
 using System.Reflection;
-using System.Threading.Tasks;
 using TwitchLib.Client.Enums;
 using static butterBror.Core.Bot.Console;
 
 namespace butterBror.Core.Commands
 {
+    /// <summary>
+    /// Manages command execution lifecycle including initialization, permission checks, and result processing.
+    /// </summary>
+    /// <remarks>
+    /// <list type="bullet">
+    /// <item>Implements thread-safe command execution using user-specific semaphores</item>
+    /// <item>Handles command discovery through assembly scanning</item>
+    /// <item>Enforces permission levels and cooldown mechanisms</item>
+    /// <item>Processes command results with proper error handling</item>
+    /// </list>
+    /// Uses a lazy initialization pattern for command discovery to optimize startup performance.
+    /// Implements parallel processing for command matching while maintaining user-level execution serialization.
+    /// </remarks>
     public class Runner
     {
         private static readonly ConcurrentDictionary<string, SemaphoreSlim> _userLocks =
@@ -24,6 +34,20 @@ namespace butterBror.Core.Commands
         private static bool _commandsInitialized;
         private static readonly object _initLock = new object();
 
+        /// <summary>
+        /// Initializes command instances through assembly scanning.
+        /// </summary>
+        /// <remarks>
+        /// <list type="bullet">
+        /// <item>Uses double-checked locking pattern for thread safety</item>
+        /// <item>Discovers all ICommand implementations in current assembly</item>
+        /// <item>Creates instances of concrete command types via reflection</item>
+        /// <item>Skips abstract classes and interfaces</item>
+        /// <item>Processes command types in parallel for performance</item>
+        /// </list>
+        /// Initialization occurs only once during first command execution (lazy initialization).
+        /// Uses Assembly.GetExecutingAssembly() to find commands in current module.
+        /// </remarks>
         private static void InitializeCommands()
         {
             if (_commandsInitialized) return;
@@ -51,7 +75,41 @@ namespace butterBror.Core.Commands
             }
         }
 
-        
+        /// <summary>
+        /// Executes a command with full permission validation and result processing.
+        /// </summary>
+        /// <param name="data">Command execution context containing:
+        /// <list type="table">
+        /// <item><term>Platform</term><description>Target platform (Twitch/Discord/Telegram)</description></item>
+        /// <item><term>User</term><description>Executing user information</description></item>
+        /// <item><term>Channel</term><description>Target channel details</description></item>
+        /// <item><term>Name</term><description>Command name/alias</description></item>
+        /// <item><term>TwitchArguments</term><description>Twitch-specific message context</description></item>
+        /// </list>
+        /// </param>
+        /// <param name="isATest">Indicates if execution is for testing purposes (skips cooldown tracking and some validation)</param>
+        /// <returns>Asynchronous task representing command execution</returns>
+        /// <remarks>
+        /// <list type="bullet">
+        /// <item>Performs comprehensive permission checks:
+        /// <list type="bullet">
+        /// <item>Ban/ignore status verification</item>
+        /// <item>Bot developer/moderator authorization</item>
+        /// <item>Channel moderator verification (Twitch-specific)</item>
+        /// <item>Command cooldown enforcement</item>
+        /// </list>
+        /// </item>
+        /// <item>Executes commands with user-level serialization via semaphores</item>
+        /// <item>Handles both synchronous and asynchronous command implementations</item>
+        /// <item>Processes command results with automatic reply generation</item>
+        /// <item>Provides detailed error logging and user-facing error messages</item>
+        /// <item>Measures and logs command execution time</item>
+        /// </list>
+        /// For technical work commands (TechWorks=true), returns predefined maintenance message.
+        /// Automatically converts 'ё' to 'е' in command names for linguistic normalization.
+        /// Command execution is canceled if user fails permission checks or cooldowns apply.
+        /// </remarks>
+        /// <exception cref="Exception">Thrown when command execution fails with detailed error context</exception>
         public static async Task Run(CommandData data, bool isATest = false)
         {
             await Task.Run(async () =>
@@ -62,31 +120,31 @@ namespace butterBror.Core.Commands
                 try
                 {
                     // User data initialization
-                    data.User.IsBanned = Engine.Bot.SQL.Roles.IsBanned(data.Platform, Format.ToLong(data.User.ID));
-                    data.User.Ignored = Engine.Bot.SQL.Roles.IsIgnored(data.Platform, Format.ToLong(data.User.ID));
+                    data.User.IsBanned = butterBror.Bot.SQL.Roles.IsBanned(data.Platform, DataConversion.ToLong(data.User.ID));
+                    data.User.Ignored = butterBror.Bot.SQL.Roles.IsIgnored(data.Platform, DataConversion.ToLong(data.User.ID));
 
                     if ((bool)data.User.IsBanned || (bool)data.User.Ignored ||
                         (data.Platform is PlatformsEnum.Twitch && data.TwitchArguments.Command.ChatMessage.IsMe))
                         return;
 
-                    string language = (string)Engine.Bot.SQL.Users.GetParameter(data.Platform, Format.ToLong(data.User.ID), Users.Language);
+                    string language = (string)butterBror.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.Language);
                     data.User.Language = language;
-                    data.User.IsBotModerator = Engine.Bot.SQL.Roles.IsModerator(data.Platform, Format.ToLong(data.User.ID));
-                    data.User.IsBotDeveloper = Engine.Bot.SQL.Roles.IsDeveloper(data.Platform, Format.ToLong(data.User.ID));
+                    data.User.IsBotModerator = butterBror.Bot.SQL.Roles.IsModerator(data.Platform, DataConversion.ToLong(data.User.ID));
+                    data.User.IsBotDeveloper = butterBror.Bot.SQL.Roles.IsDeveloper(data.Platform, DataConversion.ToLong(data.User.ID));
 
-                    string command = Text.FilterCommand(data.Name).Replace("ё", "е");
+                    string commandName = data.Name.Replace("ё", "е");
                     bool commandFounded = false;
                     CommandReturn? result = null;
 
                     await Parallel.ForEachAsync(commandInstances, async (cmd, ct) =>
                     {
-                        if (!cmd.Aliases.Contains(command, StringComparer.OrdinalIgnoreCase))
+                        if (!cmd.Aliases.Contains(commandName, StringComparer.OrdinalIgnoreCase))
                             return;
 
                         commandFounded = true;
 
                         // Get user-specific lock
-                        var userLock = _userLocks.GetOrAdd(data.UserID,
+                        var userLock = _userLocks.GetOrAdd(data.User.ID,
                             _ => new SemaphoreSlim(1, 1));
 
                         await userLock.WaitAsync(ct);
@@ -95,16 +153,25 @@ namespace butterBror.Core.Commands
                             bool isOnlyBotDeveloper = cmd.OnlyBotDeveloper && !(bool)data.User.IsBotDeveloper;
                             bool isOnlyBotModerator = cmd.OnlyBotModerator && !((bool)data.User.IsBotModerator || (bool)data.User.IsBotDeveloper);
                             bool isOnlyChannelModerator = data.Platform == PlatformsEnum.Twitch && cmd.OnlyChannelModerator && !((bool)data.User.IsModerator || (bool)data.User.IsBotModerator || (bool)data.User.IsBotDeveloper);
-                            bool cooldown = !Command.CheckCooldown(cmd.CooldownPerUser, cmd.CooldownPerChannel, cmd.Name, data.User.ID, data.ChannelId, data.Platform, true);
+                            bool cooldown = !MessageProcessor.CheckCooldown(cmd.CooldownPerUser, cmd.CooldownPerChannel, cmd.Name, data.User.ID, data.ChannelId, data.Platform, true);
 
                             // Permission and cooldown checks
                             if (isOnlyBotDeveloper || isOnlyBotModerator || isOnlyChannelModerator || cooldown)
                             {
+                                if (!cooldown)
+                                {
+                                    PlatformMessageSender.SendReply(data.Platform, data.Channel, data.ChannelId,
+                                        LocalizationService.GetString(data.User.Language, "error:not_enough_rights", data.ChannelId, data.Platform),
+                                        data.User.Language, data.User.Name, data.User.ID, data.Server,
+                                        data.ServerID, data.MessageID, data.TelegramMessage,
+                                        true, ChatColorPresets.Red);
+                                }
+
                                 Write($"Command failed: isOnlyBotDeveloper: {isOnlyBotDeveloper}; isOnlyBotModerator: {isOnlyBotModerator}; isOnlyChannelModerator: {isOnlyChannelModerator}; cooldown: {cooldown};", "info", LogLevel.Warning);
                                 return;
                             }
 
-                            if (!isATest) Command.ExecutedCommand(data);
+                            if (!isATest) MessageProcessor.ExecutedCommand(data);
 
                             // Execute command asynchronously
                             if (cmd.TechWorks)
@@ -133,9 +200,9 @@ namespace butterBror.Core.Commands
 
                                 if (!isATest)
                                 {
-                                    Chat.SendReply(data.Platform, data.Channel, data.ChannelId,
+                                    PlatformMessageSender.SendReply(data.Platform, data.Channel, data.ChannelId,
                                         result.Message, data.User.Language,
-                                        data.User.Name, data.UserID, data.Server,
+                                        data.User.Name, data.User.ID, data.Server,
                                         data.ServerID, data.MessageID, data.TelegramMessage,
                                         result.IsSafe, result.BotNameColor);
                                 }
@@ -153,7 +220,7 @@ namespace butterBror.Core.Commands
 
                     if (!commandFounded)
                     {
-                        Write($"@{data.Name} tried unknown command: {command}", "info", LogLevel.Warning);
+                        Write($"@{data.Name} tried unknown command: {commandName}", "info", LogLevel.Warning);
                     }
                 }
                 catch (Exception ex)
@@ -161,9 +228,9 @@ namespace butterBror.Core.Commands
                     Write(ex);
                     if (!isATest)
                     {
-                        Chat.SendReply(data.Platform, data.Channel, data.ChannelId,
+                        PlatformMessageSender.SendReply(data.Platform, data.Channel, data.ChannelId,
                             LocalizationService.GetString("en-US", "error:unknown", data.ChannelId, data.Platform),
-                            data.User.Language, data.User.Name, data.UserID, data.Server,
+                            data.User.Language, data.User.Name, data.User.ID, data.Server,
                             data.ServerID, data.MessageID, data.TelegramMessage,
                             true, ChatColorPresets.Red);
                     }
