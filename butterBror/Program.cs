@@ -13,7 +13,6 @@ using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.TeamFoundation.Common;
 using Pastel;
 using System.Collections.Concurrent;
 using System.Diagnostics;
@@ -174,7 +173,7 @@ namespace butterBror
                                     { "middleBalance", Coins / Users }
                             };
 
-                            if (!Paths.Currency.IsNullOrEmpty())
+                            if (Paths.Currency is not null)
                             {
                                 Manager.Save(Paths.Currency, "totalAmount", Coins);
                                 Manager.Save(Paths.Currency, "totalUsers", Users);
