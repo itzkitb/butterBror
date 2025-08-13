@@ -1,6 +1,6 @@
-﻿using butterBror.Models;
+﻿using butterBror.Core.Bot;
+using butterBror.Models;
 using butterBror.Utils;
-using butterBror.Core.Bot;
 using TwitchLib.Client.Enums;
 
 namespace butterBror.Core.Commands.List
@@ -37,10 +37,10 @@ namespace butterBror.Core.Commands.List
             {
                 if (data.Arguments.Count > 0)
                 {
-                    string name = Names.GetUsername(data.Arguments[0], PlatformsEnum.Twitch, true);
-                    if (name == data.UserID)
+                    string name = UsernameResolver.GetUsername(data.Arguments[0], PlatformsEnum.Twitch, true);
+                    if (name == data.User.ID)
                     {
-                        commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:name", data.ChannelId, data.Platform, data.UserID)); // Fix AB3
+                        commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:name", data.ChannelId, data.Platform, data.User.ID)); // Fix AB3
                     }
                     else if (name == null)
                     {
@@ -54,7 +54,7 @@ namespace butterBror.Core.Commands.List
                 }
                 else
                 {
-                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:name", data.ChannelId, data.Platform, data.UserID)); // Fix AB3
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:name", data.ChannelId, data.Platform, data.User.ID)); // Fix AB3
                 }
             }
             catch (Exception e)

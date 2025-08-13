@@ -20,7 +20,7 @@ namespace butterBror.Services.System
         /// Returns -1 if no battery is detected or if there's an access error.
         /// Works only on Windows systems with WMI support.
         /// </remarks>
-        
+
         public static float GetBatteryCharge()
         {
             float charge = -1;
@@ -55,7 +55,7 @@ namespace butterBror.Services.System
         /// Returns false if no battery is detected or if there's an access error.
         /// BatteryStatus value 2 indicates charging according to WMI specification.
         /// </remarks>
-        
+
         public static bool IsCharging()
         {
             bool isCharging = false;

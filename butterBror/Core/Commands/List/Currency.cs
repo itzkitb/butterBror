@@ -1,8 +1,8 @@
-﻿using butterBror.Models;
+﻿using butterBror.Core.Bot;
+using butterBror.Models;
 using butterBror.Utils;
-using butterBror.Core.Bot;
-using Newtonsoft.Json;
 using Microsoft.TeamFoundation.Common;
+using Newtonsoft.Json;
 
 namespace butterBror.Core.Commands.List
 {
@@ -12,7 +12,7 @@ namespace butterBror.Core.Commands.List
         public override string Author => "voxelll";
         public override string AuthorsGithub => "https://github.com/itzkitb";
         public override string GithubSource => $"{URLs.githubSource}blob/master/butterBror/Core/Commands/List/Currency.cs";
-        public override Version Version => new("1.0.0");
+        public override Version Version => new("1.0.1");
         public override Dictionary<string, string> Description => new() {
             { "ru-RU", "Конвертер валют." },
             { "en-US", "Currency converter." }
@@ -73,11 +73,11 @@ namespace butterBror.Core.Commands.List
                             .Where(arg => currencySet.Contains(arg.ToUpper().Replace("TO:", "").Replace("FROM:", "")))
                             .ToList();
 
-                        wantedCurrency = hasTo ? Command.GetArgument(data.Arguments, "to") : currencyArgs.Count >= 1 ? currencyArgs[0] : null;
+                        wantedCurrency = hasTo ? MessageProcessor.GetArgument(data.Arguments, "to") : currencyArgs.Count >= 1 ? currencyArgs[0] : null;
 
                         if (!wantedCurrency.IsNullOrEmpty())
                         {
-                            initialCurrency = hasFrom ? Command.GetArgument(data.Arguments, "from") : currencyArgs.Count >= 2 ? currencyArgs[1] : null;
+                            initialCurrency = hasFrom ? MessageProcessor.GetArgument(data.Arguments, "from") : currencyArgs.Count >= 2 ? currencyArgs[1] : null;
                         }
                     }
                     else
@@ -97,7 +97,7 @@ namespace butterBror.Core.Commands.List
 
                         try
                         {
-                            currencyQuantity = Format.ToUlong(data.Arguments[0]);
+                            currencyQuantity = DataConversion.ToUlong(data.Arguments[0]);
                         }
                         catch
                         {
@@ -137,7 +137,7 @@ namespace butterBror.Core.Commands.List
                 }
                 else
                 {
-                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:not_enough_arguments", data.ChannelId, data.Platform, $"{Engine.Bot.Executor}currency 1 USD to RUB"));
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:not_enough_arguments", data.ChannelId, data.Platform, $"{butterBror.Bot.DefaultExecutor}currency 1 USD to RUB"));
                 }
             }
             catch (Exception e)

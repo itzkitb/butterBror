@@ -1,7 +1,6 @@
-﻿using butterBror.Data;
+﻿using butterBror.Core.Bot;
 using butterBror.Models;
 using butterBror.Utils;
-using butterBror.Core.Bot;
 using TwitchLib.Client.Enums;
 
 namespace butterBror.Core.Commands.List
@@ -12,7 +11,7 @@ namespace butterBror.Core.Commands.List
         public override string Author => "ItzKITb";
         public override string AuthorsGithub => "https://github.com/itzkitb";
         public override string GithubSource => $"{URLs.githubSource}blob/master/butterBror/Core/Commands/List/FirstLine.cs";
-        public override Version Version => new("1.0.0");
+        public override Version Version => new("1.0.1");
         public override Dictionary<string, string> Description => new() {
             { "ru-RU", "Первое сообщение в текущем чате." },
             { "en-US", "First message in the current chat." }
@@ -39,23 +38,23 @@ namespace butterBror.Core.Commands.List
 
                 if (data.Arguments != null && data.Arguments.Count != 0)
                 {
-                    name = Text.UsernameFilter(data.Arguments.ElementAt(0).ToLower());
-                    userId = Names.GetUserID(name, data.Platform);
+                    name = TextSanitizer.UsernameFilter(data.Arguments.ElementAt(0).ToLower());
+                    userId = UsernameResolver.GetUserID(name, data.Platform);
                 }
                 else
                 {
-                    userId = data.UserID;
+                    userId = data.User.ID;
                     name = data.User.Name;
                 }
 
                 if (userId is null)
                 {
-                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:user_not_found", data.ChannelId, data.Platform, Names.DontPing(name)));
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:user_not_found", data.ChannelId, data.Platform, UsernameResolver.DontPing(name)));
                     commandReturn.SetColor(ChatColorPresets.Red);
                 }
                 else
                 {
-                    var message = Engine.Bot.SQL.Channels.GetFirstMessage(data.Platform, data.ChannelId, Format.ToLong(userId));
+                    var message = butterBror.Bot.SQL.Channels.GetFirstMessage(data.Platform, data.ChannelId, DataConversion.ToLong(userId));
                     var message_badges = string.Empty;
                     if (message != null)
                     {
@@ -75,7 +74,7 @@ namespace butterBror.Core.Commands.List
                             if (flag) message_badges += LocalizationService.GetString(data.User.Language, symbol, data.ChannelId, data.Platform);
                         }
 
-                        if (!name.Equals(Engine.Bot.BotName, StringComparison.CurrentCultureIgnoreCase))
+                        if (!name.Equals(butterBror.Bot.BotName, StringComparison.CurrentCultureIgnoreCase))
                         {
                             commandReturn.SetMessage(LocalizationService.GetString(
                                 data.User.Language,
@@ -83,9 +82,9 @@ namespace butterBror.Core.Commands.List
                                 data.ChannelId,
                                 data.Platform,
                                 message_badges,
-                                name ?? Names.DontPing(Names.GetUsername(userId, data.Platform)),
+                                name ?? UsernameResolver.DontPing(UsernameResolver.GetUsername(userId, data.Platform, true)),
                                 message.messageText,
-                                Text.FormatTimeSpan(Utils.Format.GetTimeTo(message.messageDate, DateTime.UtcNow, false), data.User.Language))); // Fix AA8
+                                TextSanitizer.FormatTimeSpan(Utils.DataConversion.GetTimeTo(message.messageDate, DateTime.UtcNow, false), data.User.Language))); // Fix AA8
                         }
                         else
                         {
@@ -94,7 +93,7 @@ namespace butterBror.Core.Commands.List
                     }
                     else
                     {
-                        commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:user_not_found", data.ChannelId, data.Platform, Names.DontPing(name)));
+                        commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:user_not_found", data.ChannelId, data.Platform, UsernameResolver.DontPing(name)));
                         commandReturn.SetColor(ChatColorPresets.Red);
                     }
                 }

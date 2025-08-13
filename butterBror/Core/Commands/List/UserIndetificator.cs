@@ -1,6 +1,6 @@
-﻿using butterBror.Utils;
+﻿using butterBror.Core.Bot;
 using butterBror.Models;
-using butterBror.Core.Bot;
+using butterBror.Utils;
 using TwitchLib.Client.Enums;
 
 namespace butterBror.Core.Commands.List
@@ -37,11 +37,11 @@ namespace butterBror.Core.Commands.List
             {
                 if (data.Arguments.Count > 0)
                 {
-                    string username = Text.UsernameFilter(data.Arguments[0].ToLower());
-                    string ID = Names.GetUserID(username, data.Platform, true);
-                    if (ID == data.UserID)
+                    string username = TextSanitizer.UsernameFilter(data.Arguments[0].ToLower());
+                    string ID = UsernameResolver.GetUserID(username, data.Platform, true);
+                    if (ID == data.User.ID)
                     {
-                        commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:id", data.ChannelId, data.Platform, data.UserID));
+                        commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:id", data.ChannelId, data.Platform, data.User.ID));
                     }
                     else if (ID == null)
                     {
@@ -50,12 +50,12 @@ namespace butterBror.Core.Commands.List
                     }
                     else
                     {
-                        commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:id:user", data.ChannelId, data.Platform, Names.DontPing(username), ID));
+                        commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:id:user", data.ChannelId, data.Platform, UsernameResolver.DontPing(username), ID));
                     }
                 }
                 else
                 {
-                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:id", data.ChannelId, data.Platform, data.UserID));
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:id", data.ChannelId, data.Platform, data.User.ID));
                 }
             }
             catch (Exception e)

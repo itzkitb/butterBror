@@ -1,6 +1,6 @@
-﻿using butterBror.Models;
+﻿using butterBror.Core.Bot;
+using butterBror.Models;
 using butterBror.Utils;
-using butterBror.Core.Bot;
 
 namespace butterBror.Core.Commands.List
 {
@@ -34,10 +34,10 @@ namespace butterBror.Core.Commands.List
 
             try
             {
-                if (Text.CleanAsciiWithoutSpaces(data.ArgumentsString) != "")
+                if (TextSanitizer.CleanAsciiWithoutSpaces(data.ArgumentsString) != "")
                 {
                     string[] blockedEntries = ["/", "$", "#", "+", "-", ">", "<", "*", "\\", ";"];
-                    string meMessage = Text.CleanAscii(data.ArgumentsString);
+                    string meMessage = TextSanitizer.CleanAscii(data.ArgumentsString);
                     while (true)
                     {
                         while (meMessage.StartsWith(' '))

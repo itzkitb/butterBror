@@ -1,6 +1,5 @@
-﻿using butterBror.Data;
+﻿using butterBror.Core.Bot;
 using butterBror.Models;
-using butterBror.Core.Bot;
 using butterBror.Utils;
 
 namespace butterBror.Core.Commands.List
@@ -11,7 +10,7 @@ namespace butterBror.Core.Commands.List
         public override string Author => "ItzKITb";
         public override string AuthorsGithub => "https://github.com/itzkitb";
         public override string GithubSource => $"{URLs.githubSource}blob/master/butterBror/Core/Commands/List/Restart.cs";
-        public override Version Version => new("1.0.0");
+        public override Version Version => new("1.0.1");
         public override Dictionary<string, string> Description => new() {
             { "ru-RU", "Этот маленький манёвр будет стоить нам 51 год." },
             { "en-US", "This Little Maneuver's Gonna Cost Us 51 Years." }
@@ -19,7 +18,7 @@ namespace butterBror.Core.Commands.List
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=restart";
         public override int CooldownPerUser => 1;
         public override int CooldownPerChannel => 1;
-        public override string[] Aliases => ["restart", "reload", "перезагрузить", "рестарт"];
+        public override string[] Aliases => ["shutdown", "выключить"];
         public override string HelpArguments => string.Empty;
         public override DateTime CreationDate => DateTime.Parse("07/04/2024");
         public override bool OnlyBotModerator => true;
@@ -34,15 +33,16 @@ namespace butterBror.Core.Commands.List
 
             try
             {
-                if (Engine.Bot.SQL.Roles.IsDeveloper(data.Platform, Format.ToLong(data.User.ID)) || Engine.Bot.SQL.Roles.IsModerator(data.Platform, Format.ToLong(data.User.ID)))
+                if (data.Arguments.Contains("--force"))
                 {
-                    commandReturn.SetMessage("❄ Перезагрузка...");
-                    Engine.Bot.Restart();
+                    commandReturn.SetMessage("❄ Turning off...");
                 }
                 else
                 {
-                    commandReturn.SetMessage("PauseChamp");
+                    commandReturn.SetMessage("❄ Restarting...");
                 }
+
+                _ = butterBror.Bot.Shutdown(data.Arguments.Contains("--force"));
             }
             catch (Exception e)
             {

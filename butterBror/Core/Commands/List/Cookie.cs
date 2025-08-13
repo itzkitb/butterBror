@@ -1,10 +1,8 @@
 ﻿using butterBror.Core.Bot;
 using butterBror.Core.Bot.SQLColumnNames;
-using butterBror.Data;
 using butterBror.Models;
 using butterBror.Services.External;
 using butterBror.Utils;
-using DankDB;
 using System.Globalization;
 using TwitchLib.Client.Enums;
 
@@ -16,7 +14,7 @@ namespace butterBror.Core.Commands.List
         public override string Author => "ItzKITb";
         public override string AuthorsGithub => "https://github.com/itzkitb";
         public override string GithubSource => $"{URLs.githubSource}blob/master/butterBror/Core/Commands/List/Cookie.cs";
-        public override Version Version => new("1.0.0");
+        public override Version Version => new("1.0.1");
         public override Dictionary<string, string> Description => new()
         {
             { "ru-RU", "Получи абсурдное предсказание на день." },
@@ -56,16 +54,16 @@ namespace butterBror.Core.Commands.List
                         string targetUser = data.User.Name;
                         if (data.Arguments.Count > 1) targetUser = data.Arguments[1];
 
-                        string targetUserId = Names.GetUserID(targetUser, data.Platform);
+                        string targetUserId = UsernameResolver.GetUserID(targetUser, data.Platform);
                         if (targetUserId == null)
                         {
                             commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:user_not_found", data.ChannelId, data.Platform, targetUser));
                             return commandReturn;
                         }
 
-                        long eaten = Convert.ToInt64(Engine.Bot.SQL.Users.GetParameter(data.Platform, Format.ToLong(data.User.ID), Users.EatedCookies));
-                        long gifted = Convert.ToInt64(Engine.Bot.SQL.Users.GetParameter(data.Platform, Format.ToLong(data.User.ID), Users.GiftedCookies));
-                        long received = Convert.ToInt64(Engine.Bot.SQL.Users.GetParameter(data.Platform, Format.ToLong(data.User.ID), Users.ReceivedCookies));
+                        long eaten = Convert.ToInt64(butterBror.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.EatedCookies));
+                        long gifted = Convert.ToInt64(butterBror.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.GiftedCookies));
+                        long received = Convert.ToInt64(butterBror.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.ReceivedCookies));
 
                         string statsMessage = LocalizationService.GetString(
                             data.User.Language,
@@ -85,11 +83,11 @@ namespace butterBror.Core.Commands.List
                     {
                         if (data.Arguments.Count < 2 || data.Arguments.IndexOf("gift") >= data.Arguments.Count - 1)
                         {
-                            commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:not_enough_arguments", data.ChannelId, data.Platform, $"{Engine.Bot.Executor}cookie gift username"));
+                            commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:not_enough_arguments", data.ChannelId, data.Platform, $"{butterBror.Bot.DefaultExecutor}cookie gift username"));
                             return commandReturn;
                         }
 
-                        DateTime gifterLastUse = DateTime.Parse((string)Engine.Bot.SQL.Users.GetParameter(data.Platform, Format.ToLong(data.User.ID), Users.LastCookie), null, DateTimeStyles.AdjustToUniversal);
+                        DateTime gifterLastUse = DateTime.Parse((string)butterBror.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.LastCookie), null, DateTimeStyles.AdjustToUniversal);
                         if (gifterLastUse.Date == DateTime.UtcNow.Date)
                         {
                             commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:cookie_gift_cooldown", data.ChannelId, data.Platform));
@@ -97,7 +95,7 @@ namespace butterBror.Core.Commands.List
                         }
 
                         string targetUser = data.Arguments[1];
-                        string targetUserId = Names.GetUserID(targetUser, data.Platform);
+                        string targetUserId = UsernameResolver.GetUserID(targetUser, data.Platform);
 
                         if (targetUserId == null)
                         {
@@ -105,21 +103,21 @@ namespace butterBror.Core.Commands.List
                                 data.User.Language,
                                 "error:user_not_found",
                                 data.ChannelId,
-                                data.Platform, 
+                                data.Platform,
                                 targetUser));
                             return commandReturn;
                         }
 
-                        DateTime recipientLastUse = DateTime.Parse((string)Engine.Bot.SQL.Users.GetParameter(data.Platform, Format.ToLong(targetUserId), Users.LastCookie), null, DateTimeStyles.AdjustToUniversal);
+                        DateTime recipientLastUse = DateTime.Parse((string)butterBror.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(targetUserId), Users.LastCookie), null, DateTimeStyles.AdjustToUniversal);
                         if (recipientLastUse.Date != DateTime.UtcNow.Date)
                         {
                             commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:cookie_already_has", data.ChannelId, data.Platform, targetUser));
                             return commandReturn;
                         }
 
-                        Engine.Bot.SQL.Users.SetParameter(data.Platform, Format.ToLong(data.User.ID), Users.GiftedCookies, (int)Engine.Bot.SQL.Users.GetParameter(data.Platform, Format.ToLong(data.User.ID), Users.GiftedCookies) + 1);
-                        Engine.Bot.SQL.Users.SetParameter(data.Platform, Format.ToLong(targetUserId), Users.ReceivedCookies, (int)Engine.Bot.SQL.Users.GetParameter(data.Platform, Format.ToLong(targetUserId), Users.ReceivedCookies) + 1);
-                        Engine.Bot.SQL.Users.SetParameter(data.Platform, Format.ToLong(targetUserId), Users.LastCookie, DateTime.UtcNow.AddDays(-1).ToString("o"));
+                        butterBror.Bot.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.GiftedCookies, (int)butterBror.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.GiftedCookies) + 1);
+                        butterBror.Bot.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(targetUserId), Users.ReceivedCookies, (int)butterBror.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(targetUserId), Users.ReceivedCookies) + 1);
+                        butterBror.Bot.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(targetUserId), Users.LastCookie, DateTime.UtcNow.AddDays(-1).ToString("o"));
 
                         commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:cookie:gift", data.ChannelId, data.Platform));
                         return commandReturn;
@@ -135,7 +133,7 @@ namespace butterBror.Core.Commands.List
                                 topType = "Recipients";
                         }
 
-                        var leaderboard = Engine.Bot.SQL.Games.GetLeaderboard("Cookies", data.Platform, $"{topType}Count");
+                        var leaderboard = butterBror.Bot.SQL.Games.GetLeaderboard("Cookies", data.Platform, $"{topType}Count");
 
                         var sortedList = leaderboard
                             .OrderByDescending(kvp => kvp.Value)
@@ -151,7 +149,7 @@ namespace butterBror.Core.Commands.List
 
                         for (int i = 0; i < fullSortedList.Count; i++)
                         {
-                            if (fullSortedList[i].UserId == Format.ToLong(data.User.ID))
+                            if (fullSortedList[i].UserId == DataConversion.ToLong(data.User.ID))
                             {
                                 userRank = i + 1;
                                 userPosition = $"{userRank}.";
@@ -165,8 +163,8 @@ namespace butterBror.Core.Commands.List
                             if (i < sortedList.Count)
                             {
                                 var user = sortedList[i];
-                                string username = Names.GetUsername(user.UserId.ToString(), data.Platform);
-                                topLines[i] = $"{i + 1}. {Names.DontPing(username)} - {user.Value}";
+                                string username = UsernameResolver.GetUsername(user.UserId.ToString(), data.Platform, true);
+                                topLines[i] = $"{i + 1}. {UsernameResolver.DontPing(username)} - {user.Value}";
                             }
                             else
                             {
@@ -196,23 +194,23 @@ namespace butterBror.Core.Commands.List
                     }
                     else if (buyAliases.Contains(data.Arguments[0].ToLower()))
                     {
-                        DateTime lastUse = DateTime.Parse((string)Engine.Bot.SQL.Users.GetParameter(data.Platform, Format.ToLong(data.User.ID), Users.LastCookie), null, DateTimeStyles.AdjustToUniversal);
+                        DateTime lastUse = DateTime.Parse((string)butterBror.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.LastCookie), null, DateTimeStyles.AdjustToUniversal);
                         if (lastUse.Date != DateTime.UtcNow.Date)
                         {
                             commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:user_already_has_cookie", data.ChannelId, data.Platform));
                             return commandReturn;
                         }
 
-                        float currency = Engine.BankDollars / Engine.Coins;
+                        float currency = butterBror.Bot.BankDollars / butterBror.Bot.Coins;
                         float cost = 0.2f / currency;
 
                         int coins = -(int)cost;
                         int subcoins = -(int)((cost - coins) * 100);
 
-                        if (Utils.Balance.GetBalance(data.UserID, data.Platform) + Utils.Balance.GetSubbalance(data.UserID, data.Platform) / 100f >= coins + subcoins / 100f)
+                        if (Utils.CurrencyManager.GetBalance(data.User.ID, data.Platform) + Utils.CurrencyManager.GetSubbalance(data.User.ID, data.Platform) / 100f >= coins + subcoins / 100f)
                         {
-                            Utils.Balance.Add(data.UserID, coins, subcoins, data.Platform);
-                            Engine.Bot.SQL.Users.SetParameter(data.Platform, Format.ToLong(data.User.ID), Users.LastCookie, DateTime.UtcNow.AddDays(-1).ToString("o"));
+                            Utils.CurrencyManager.Add(data.User.ID, coins, subcoins, data.Platform);
+                            butterBror.Bot.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.LastCookie, DateTime.UtcNow.AddDays(-1).ToString("o"));
                             commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:cookie:buyed", data.ChannelId, data.Platform));
                         }
                         else
@@ -223,7 +221,7 @@ namespace butterBror.Core.Commands.List
                     }
                 }
 
-                DateTime lastUsed = DateTime.Parse((string)Engine.Bot.SQL.Users.GetParameter(data.Platform, Format.ToLong(data.User.ID), Users.LastCookie), null, DateTimeStyles.AdjustToUniversal);
+                DateTime lastUsed = DateTime.Parse((string)butterBror.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.LastCookie), null, DateTimeStyles.AdjustToUniversal);
                 if (lastUsed.Date == DateTime.UtcNow.Date)
                 {
                     commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:cookie_cooldown", data.ChannelId, data.Platform));
@@ -256,8 +254,8 @@ Generate ONLY 4 sentence variations following these rules. The answer must be in
                     return commandReturn;
                 }
 
-                Engine.Bot.SQL.Users.SetParameter(data.Platform, Format.ToLong(data.User.ID), Users.EatedCookies, (int)Engine.Bot.SQL.Users.GetParameter(data.Platform, Format.ToLong(data.User.ID), Users.EatedCookies) + 1);
-                Engine.Bot.SQL.Users.SetParameter(data.Platform, Format.ToLong(data.User.ID), Users.LastCookie, DateTime.UtcNow.ToString("o"));
+                butterBror.Bot.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.EatedCookies, (int)butterBror.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.EatedCookies) + 1);
+                butterBror.Bot.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.LastCookie, DateTime.UtcNow.ToString("o"));
 
                 string horoscope = "🍪 " + result[1];
                 commandReturn.SetMessage(horoscope);

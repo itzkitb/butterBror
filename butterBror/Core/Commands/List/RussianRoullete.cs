@@ -1,6 +1,6 @@
-﻿using butterBror.Models;
+﻿using butterBror.Core.Bot;
+using butterBror.Models;
 using butterBror.Utils;
-using butterBror.Core.Bot;
 using TwitchLib.Client.Enums;
 
 namespace butterBror.Core.Commands.List
@@ -37,13 +37,13 @@ namespace butterBror.Core.Commands.List
                 int win = new Random().Next(1, 3);
                 int page2 = new Random().Next(1, 5);
                 string translationParam = "command:russian_roullete:";
-                if (Utils.Balance.GetBalance(data.UserID, data.Platform) > 4)
+                if (Utils.CurrencyManager.GetBalance(data.User.ID, data.Platform) > 4)
                 {
                     if (win == 1)
                     {
                         // WIN
                         translationParam += "win:" + page2;
-                        Utils.Balance.Add(data.UserID, 1, 0, data.Platform);
+                        Utils.CurrencyManager.Add(data.User.ID, 1, 0, data.Platform);
                     }
                     else
                     {
@@ -51,11 +51,11 @@ namespace butterBror.Core.Commands.List
                         translationParam += "over:" + page2;
                         if (page2 == 4)
                         {
-                            Utils.Balance.Add(data.UserID, -1, 0, data.Platform);
+                            Utils.CurrencyManager.Add(data.User.ID, -1, 0, data.Platform);
                         }
                         else
                         {
-                            Utils.Balance.Add(data.UserID, -5, 0, data.Platform);
+                            Utils.CurrencyManager.Add(data.User.ID, -5, 0, data.Platform);
                         }
                         commandReturn.SetColor(ChatColorPresets.Red);
                     }
@@ -63,7 +63,7 @@ namespace butterBror.Core.Commands.List
                 }
                 else
                 {
-                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:roulette_not_enough_coins", data.ChannelId, data.Platform, Utils.Balance.GetBalance(data.UserID, data.Platform)));
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:roulette_not_enough_coins", data.ChannelId, data.Platform, Utils.CurrencyManager.GetBalance(data.User.ID, data.Platform)));
                 }
             }
             catch (Exception e)

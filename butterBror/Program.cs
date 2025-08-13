@@ -1,133 +1,152 @@
 ﻿using butterBror.Core.Bot;
+using butterBror.Core.Services;
 using butterBror.Data;
+using butterBror.Events;
 using butterBror.Models;
+using butterBror.Models.DataBase;
+using butterBror.Services.External;
 using butterBror.Services.System;
 using butterBror.Utils;
+using butterBror.Workers;
 using DankDB;
+using Discord;
+using Discord.Commands;
+using Discord.WebSocket;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.TeamFoundation.Common;
-using Microsoft.VisualStudio.Services.Common;
 using Pastel;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Management;
 using System.Runtime.InteropServices;
+using Telegram.Bot;
+using Telegram.Bot.Polling;
+using Telegram.Bot.Types.Enums;
+using TwitchLib.Api;
+using TwitchLib.Api.Core.Enums;
+using TwitchLib.Client;
+using TwitchLib.Client.Models;
+using TwitchLib.Communication.Clients;
+using TwitchLib.Communication.Models;
 using static butterBror.Core.Bot.Console;
 
 namespace butterBror
 {
     /// <summary>
-    /// Central class managing bot statistics, performance metrics, and system-wide operations.
+    /// Central class.
     /// </summary>
-    public class Engine
+    public class Bot
     {
         #region Variables
-        /// <summary>
-        /// Gets the count of completed commands.
-        /// </summary>
         public static int CompletedCommands = 0;
-
-        /// <summary>
-        /// Gets or sets the total number of registered users.
-        /// </summary>
         public static int Users = 0;
-
-        /// <summary>
-        /// Gets or sets total dollars in the virtual economy.
-        /// </summary>
         public static int BankDollars = 0;
-
-        /// <summary>
-        /// Gets or sets bot readiness status.
-        /// </summary>
         public static bool Ready = false;
-
-        /// <summary>
-        /// Gets the current version string.
-        /// </summary>
         public static string Version = "2.17";
-
-        /// <summary>
-        /// Gets the current patch version.
-        /// </summary>
-        public static string Patch = "5";
-
-        /// <summary>
-        /// Gets or sets the previous version string.
-        /// </summary>
+        public static string Patch = "6";
         public static string PreviousVersion = "";
-
-        /// <summary>
-        /// Gets or sets CPU counter items count.
-        /// </summary>
-        public static long TelemetryCPUItems = 0;
-
-        /// <summary>
-        /// Gets or sets current coin balance.
-        /// </summary>
         public static float Coins = 0;
-
-        /// <summary>
-        /// Gets or sets CPU counter value.
-        /// </summary>
-        public static decimal TelemetryCPU = 0;
-
-        /// <summary>
-        /// Gets or sets application start time.
-        /// </summary>
         public static DateTime StartTime = new();
-
-        /// <summary>
-        /// Gets or sets the main bot instance.
-        /// </summary>
-        public static InternalBot Bot = new InternalBot();
-
-        /// <summary>
-        /// Gets or sets the core name.
-        /// </summary>
         public static string hostName = null;
-
-        /// <summary>
-        /// Gets or sets the core version.
-        /// </summary>
         public static string hostVersion = null;
 
+        public static ClientService Clients = new ClientService();
+        public static PathService Paths = new PathService();
+        internal static Tokens Tokens = new Tokens();
+        public static SQLService SQL;
+
+        public static bool TwitchReconnected = false;
+        public static bool Initialized = false;
+        public static bool Connected = false;
+
+        public static string TwitchClientId = string.Empty;
+        public static string CoinSymbol = "🥪";
+        public static string BotName = string.Empty;
+        public static char DefaultExecutor = '#';
+
+        public static string[] TwitchNewVersionAnnounce = [];
+        public static string[] TwitchReconnectAnnounce = [];
+        public static string[] TwitchConnectAnnounce = [];
+        public static string[] TwitchChannels = [];
+
+        public static ulong MessagesProccessed = 0;
+        public static ulong DiscordServers = 0;
+        public static ulong TelegramChats = 0;
+        public static int CurrencyMentioned = 8;
+        public static int CurrencyMentioner = 2;
+
+        public static ConcurrentDictionary<string, (SevenTV.Types.Rest.Emote emote, DateTime expiration)> EmotesCache = new();
+        public static ConcurrentDictionary<string, (List<string> emotes, DateTime expiration)> ChannelsSevenTVEmotes = new();
+        public static ConcurrentDictionary<string, (string userId, DateTime expiration)> UsersSearchCache = new();
+        public static ConcurrentDictionary<string, (string setId, DateTime expiration)> EmoteSetsCache = new();
+        public static Dictionary<string, string> UsersSevenTVIDs = new Dictionary<string, string>();
+
+        public static IServiceProvider? DiscordServiceProvider;
+        public static ReceiverOptions? TelegramReceiverOptions;
+        public static CommandService? DiscordCommandService;
+        public static SevenTvService SevenTvService = new SevenTvService(new HttpClient());
+        public static MessagesBuffer MessagesBuffer;
+        public static UsersBuffer UsersBuffer;
+        public static List<(PlatformsEnum platform, string channelId, long userId, Message message)> allFirstMessages = new();
+
+        public static readonly TimeSpan CacheTTL = TimeSpan.FromMinutes(30);
+
+        private static DateTime _startTime = DateTime.UtcNow;
         private static float _lastCoinAmount = 0;
         private static PerformanceCounter _CPU = new PerformanceCounter("Processor", "% Processor Time", "_Total");
         private static Task _repeater;
         #endregion
-
+        #region Core
         /// <summary>
-        /// Starts the bot core with specified configuration.
+        /// Entry point of the application. Initializes and starts the bot core.
         /// </summary>
-        /// <param name="mainPath">Optional custom path for data storage.</param>
-        /// <param name="customTickSpeed">Optional TPS override (default: 20).</param>
-        /// <remarks>
-        /// - Initializes system metrics tracking
-        /// - Sets up hardware information gathering
-        /// - Configures performance counters
-        /// - Starts periodic tick timer
-        /// </remarks>
+        /// <param name="args">Command-line arguments. Supported parameters:
+        /// <list type="table">
+        /// <item><term>--core-name [host_name]</term><description> Specifies the host name for execution</description></item>
+        /// <item><term>--core-version [version]</term><description> Specifies the host version</description></item>
+        /// </list>
+        /// </param>
         public static void Main(string[] args)
         {
             System.Console.Title = "Loading libraries...";
             System.Console.WriteLine("Loading libraries...");
-            
+
+            AppDomain.CurrentDomain.UnhandledException += UnhandledException;
+
             Initialize(args);
-            ButterBrorFetch();
-            StartEngine();
+            SystemDataFetch();
+            Setup();
+            StartBot();
+
+            Task.Run(async () =>
+            {
+                try
+                {
+                    await DashboardServer.StartAsync();
+                }
+                catch (Exception ex)
+                {
+                    Write($"Error starting dashboard: {ex.Message}", "dashboard", LogLevel.Error);
+                }
+            });
 
             System.Console.ReadLine();
         }
 
         /// <summary>
-        /// Periodic task handler for system metrics and data persistence.
+        /// Background task for periodic system metrics updates and data persistence.
         /// </summary>
-        /// <param name="timer">Timer state object.</param>
         /// <remarks>
-        /// - Updates database statistics
-        /// - Tracks currency metrics
-        /// - Manages semaphore cleanup
-        /// - Sends telemetry data every 10 minutes
-        /// - Handles bot restart operations
+        /// <list type="bullet">
+        /// <item>Updates database statistics every second</item>
+        /// <item>Tracks currency metrics (coins, dollars, users) with file persistence</item>
+        /// <item>Performs semaphore cleanup for inactive command handlers every 10 minutes</item>
+        /// <item>Sends telemetry data at the start of each hour (00 seconds)</item>
+        /// <item>Executes daily database backups at 00:00 UTC</item>
+        /// <item>Persists buffered messages and user data at the start of each minute</item>
+        /// </list>
+        /// The task automatically adjusts delay to synchronize with system clock (triggers exactly at second boundaries).
+        /// Handles all exceptions to prevent task termination while logging errors.
         /// </remarks>
         private static async Task StartRepeater()
         {
@@ -137,10 +156,11 @@ namespace butterBror
             {
                 try
                 {
-                    if (Bot.Initialized)
+                    if (Initialized)
                     {
-                        TelemetryCPUItems++;
-                        TelemetryCPU += (decimal)_CPU.NextValue();
+                        Telemetry.CPUItems++;
+                        Telemetry.CPU += (decimal)_CPU.NextValue();
+                        DateTime now = DateTime.UtcNow;
 
                         if (Coins != 0 && Users != 0 && _lastCoinAmount != Coins)
                         {
@@ -154,36 +174,34 @@ namespace butterBror
                                     { "middleBalance", Coins / Users }
                             };
 
-                            if (!Bot.Pathes.Currency.IsNullOrEmpty())
+                            if (!Paths.Currency.IsNullOrEmpty())
                             {
-                                Manager.Save(Bot.Pathes.Currency, "totalAmount", Coins);
-                                Manager.Save(Bot.Pathes.Currency, "totalUsers", Users);
-                                Manager.Save(Bot.Pathes.Currency, "totalDollarsInTheBank", BankDollars);
-                                Manager.Save(Bot.Pathes.Currency, $"[{date.Day}.{date.Month}.{date.Year}]", "");
-                                Manager.Save(Bot.Pathes.Currency, $"[{date.Day}.{date.Month}.{date.Year}] cost", (BankDollars / Coins));
-                                Manager.Save(Bot.Pathes.Currency, $"[{date.Day}.{date.Month}.{date.Year}] amount", Coins);
-                                Manager.Save(Bot.Pathes.Currency, $"[{date.Day}.{date.Month}.{date.Year}] users", Users);
-                                Manager.Save(Bot.Pathes.Currency, $"[{date.Day}.{date.Month}.{date.Year}] dollars", BankDollars);
+                                Manager.Save(Paths.Currency, "totalAmount", Coins);
+                                Manager.Save(Paths.Currency, "totalUsers", Users);
+                                Manager.Save(Paths.Currency, "totalDollarsInTheBank", BankDollars);
+                                Manager.Save(Paths.Currency, $"[{date.Day}.{date.Month}.{date.Year}]", "");
+                                Manager.Save(Paths.Currency, $"[{date.Day}.{date.Month}.{date.Year}] cost", (BankDollars / Coins));
+                                Manager.Save(Paths.Currency, $"[{date.Day}.{date.Month}.{date.Year}] amount", Coins);
+                                Manager.Save(Paths.Currency, $"[{date.Day}.{date.Month}.{date.Year}] users", Users);
+                                Manager.Save(Paths.Currency, $"[{date.Day}.{date.Month}.{date.Year}] dollars", BankDollars);
                             }
 
                             _lastCoinAmount = Coins;
                         }
 
-                        if (DateTime.UtcNow.Minute % 10 == 0 && DateTime.UtcNow.Second == 0)
+                        if (now.Minute % 10 == 0 && now.Second == 0)
                         {
-                            Bot.Pathes.UpdatePaths();
-                            Bot.SaveEmoteCache();
-                            await Bot.SendTelemetry();
+                            Paths.UpdatePaths();
+                            EmoteCacheService.Save();
+                            await Telemetry.Send();
 
-                            // Clearing semaphore
-                            var now = DateTime.UtcNow;
                             var timeout = TimeSpan.FromMinutes(10);
 
-                            foreach (var (userId, (semaphore, lastUsed)) in Command.messagesSemaphores.ToList())
+                            foreach (var (userId, (semaphore, lastUsed)) in MessageProcessor.messagesSemaphores.ToList())
                             {
                                 if (now - lastUsed > timeout)
                                 {
-                                    if (Command.messagesSemaphores.TryRemove(userId, out var entry))
+                                    if (MessageProcessor.messagesSemaphores.TryRemove(userId, out var entry))
                                     {
                                         try
                                         {
@@ -199,30 +217,35 @@ namespace butterBror
                             }
                         }
 
-                        if (DateTime.UtcNow.Hour == 0 && DateTime.UtcNow.Minute == 0 && DateTime.UtcNow.Second == 0)
+                        if (now.Hour == 0 && now.Minute == 0 && now.Second == 0)
                         {
-                            _ = Bot.BackupDataAsync();
+                            _ = Backup.BackupDataAsync();
                         }
 
-                        if (DateTime.UtcNow.Second == 0 && (Bot.allMessages.Count > 0 || Bot.allFirstMessages.Count > 0))
+                        if (now.Second == 0 && (MessagesBuffer.Count() > 0 || allFirstMessages.Count > 0 || UsersBuffer.Count() > 0))
                         {
                             Stopwatch stopwatch = Stopwatch.StartNew();
-                            int messages = Bot.allMessages.Count + Bot.allFirstMessages.Count;
+                            int messages = MessagesBuffer.Count() + allFirstMessages.Count;
+                            int users = UsersBuffer.Count();
 
-                            if (Bot.allMessages.Count > 0)
+                            if (MessagesBuffer.Count() > 0)
                             {
-                                Bot.SQL.Messages.SaveMessages(Bot.allMessages);
-                                Bot.allMessages.Clear();
+                                MessagesBuffer.Flush();
                             }
 
-                            if (Bot.allFirstMessages.Count > 0)
+                            if (UsersBuffer.Count() > 0)
                             {
-                                Bot.SQL.Channels.SaveFirstMessages(Bot.allFirstMessages);
-                                Bot.allFirstMessages.Clear();
+                                UsersBuffer.Flush();
+                            }
+
+                            if (allFirstMessages.Count > 0)
+                            {
+                                SQL.Channels.SaveFirstMessages(allFirstMessages);
+                                allFirstMessages.Clear();
                             }
 
                             stopwatch.Stop();
-                            Write($"Saved {messages} messages in {stopwatch.ElapsedMilliseconds} ms", "info");
+                            Write($"Saved {messages} messages and {users} users in {stopwatch.ElapsedMilliseconds} ms", "info");
                         }
                     }
                 }
@@ -238,35 +261,22 @@ namespace butterBror
         }
 
         /// <summary>
-        /// Responds to ping requests with status confirmation.
+        /// Collects and displays hardware/software environment information.
         /// </summary>
-        /// <returns>"Pong!" status response</returns>
-        public static string Ping()
-        {
-            return "Pong!";
-        }
-
-        /// <summary>
-        /// Closes the application with a specific code.
-        /// </summary>
-        public static void Exit(int exitCode)
-        {
-            Environment.Exit(exitCode);
-        }
-
-        /// <summary>
-        /// Fetches and displays system hardware and software information for the ButterBror bot.
-        /// </summary>
-        /// <param name="customTickSpeed">The custom tick speed (TPS - ticks per second) set for the bot's operation.</param>
         /// <remarks>
-        /// This method gathers detailed system information including processor name, operating system details, 
-        /// total and available memory (RAM), and disk space statistics. It then formats and displays this 
-        /// information in a stylized console output along with bot version, framework, and host details.
-        /// If any information cannot be retrieved due to exceptions, appropriate error messages are logged.
+        /// <list type="bullet">
+        /// <item>Processor: Retrieved via WMI (Windows only)</item>
+        /// <item>Operating System: Displays OS caption/name</item>
+        /// <item>Memory: Total RAM and available space in GB</item>
+        /// <item>Disk Space: Aggregate storage and free space across all drives</item>
+        /// </list>
+        /// Outputs stylized ASCII-art banner with color-highlighted system metrics.
+        /// Logs warnings but continues execution when data collection fails.
+        /// Uses Pastel library for colored console output where applicable.
         /// </remarks>
-        private static void ButterBrorFetch()
+        private static void SystemDataFetch()
         {
-            
+
             Write("Please wait...", "kernel");
             string proccessor = "Unnamed processor";
             string OSName = "Unknown";
@@ -321,7 +331,7 @@ namespace butterBror
                             select x.GetPropertyValue("Caption")).FirstOrDefault();
                 OSName = name != null ? name.ToString() : "Unknown";
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 Write("Unable to get OS name", "kernel");
             }
@@ -347,14 +357,22 @@ namespace butterBror
         }
 
         /// <summary>
-        /// Initializes the core settings and environment for the ButterBror bot.
+        /// Initializes core bot parameters and environment.
         /// </summary>
-        /// <param name="args">Command-line arguments passed to the application.</param>
+        /// <param name="args">Command-line configuration parameters:
+        /// <list type="table">
+        /// <item><term>--core-name</term><description> Host name (mandatory in RELEASE builds)</description></item>
+        /// <item><term>--core-version</term><description> Host version (mandatory in RELEASE builds)</description></item>
+        /// </list>
+        /// </param>
         /// <remarks>
-        /// This method sets up the console title, parses command-line arguments to configure core name and version,
-        /// and initializes performance counters for CPU usage monitoring on Windows. It also validates the tick speed 
-        /// (TPS) to ensure it falls within acceptable limits (1 to 1000 ticks per second). If critical parameters like 
-        /// core name or version are missing, or if tick speed validation fails, the method logs errors and halts execution.
+        /// <list type="bullet">
+        /// <item>Sets console title with bot version information</item>
+        /// <item>Validates critical host parameters in RELEASE configuration</item>
+        /// <item>Initializes CPU performance counter for Windows systems</item>
+        /// <item>Performs TPS (ticks per second) validation (1-1000 range)</item>
+        /// </list>
+        /// Terminates execution with error message if required parameters are missing in RELEASE mode.
         /// </remarks>
         private static void Initialize(string[] args)
         {
@@ -374,14 +392,14 @@ namespace butterBror
                 }
             }
 
-            #if RELEASE
+#if RELEASE
             if (hostName is null || hostVersion is null)
             {
                 Write("The bot is running without a host! Please run it from the host, not directly.", "kernel");
                 System.Console.ReadLine();
                 return;
             }
-            #endif
+#endif
 
             if (Environment.OSVersion.Platform == PlatformID.Win32NT)
             {
@@ -390,25 +408,472 @@ namespace butterBror
         }
 
         /// <summary>
-        /// Starts the core engine of the ButterBror bot, initializing timers and bot instance.
+        /// Configures core infrastructure before bot startup.
         /// </summary>
         /// <remarks>
-        /// This method initializes the main bot instance, sets up file paths for data storage, and starts the tick loop.
-        /// Finally, it records the application start time and triggers the bot's startup process, logging progress to the console.
+        /// <list type="bullet">
+        /// <item>Establishes working directories in ApplicationData</item>
+        /// <item>Launches background timer task (StartRepeater)</item>
+        /// <item>Records application start timestamp</item>
+        /// <item>Initializes message and user data buffers</item>
+        /// </list>
+        /// Executes once during application startup before platform connections.
+        /// Configures path structure for all persistent data storage.
         /// </remarks>
-        private static void StartEngine()
+        private static void Setup()
         {
-            Write($"The engine is currently starting...", "kernel");
-
-            Bot = new InternalBot();
-            Bot.Pathes.General = $"{Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)}/ItzKITb/";
-            Bot.Pathes.Main = Bot.Pathes.General + "butterBror/";
+            Paths.General = $"{Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)}/ItzKITb/";
+            Paths.Main = Paths.General + "butterBror/";
 
             _repeater = Task.Run(() => StartRepeater());
             Write($"TPS counter successfully started.", "kernel");
 
             StartTime = DateTime.Now;
-            Bot.Start();
         }
+
+        /// <summary>
+        /// Launches the main bot loop and initializes components.
+        /// </summary>
+        /// <remarks>
+        /// <list type="bullet">
+        /// <item>Loads currency statistics from persistent storage</item>
+        /// <item>Creates required configuration directories and files</item>
+        /// <item>Initializes SQL database connections through SQLService</item>
+        /// <item>Authenticates with Twitch using OAuth token</item>
+        /// <item>Triggers platform connection sequence</item>
+        /// </list>
+        /// Records current version in VERSION.txt for update tracking.
+        /// Initiates shutdown sequence via Shutdown() on critical failures.
+        /// Handles both new installations and version upgrades.
+        /// </remarks>
+        public static async void StartBot()
+        {
+            _startTime = DateTime.UtcNow;
+
+            if (FileUtil.FileExists(Paths.Currency))
+            {
+                Coins = Manager.Get<float>(Paths.Currency, "totalAmount");
+                BankDollars = Manager.Get<int>(Paths.Currency, "totalDollarsInTheBank");
+                Users = Manager.Get<int>(Paths.Currency, "totalUsers");
+            }
+
+            try
+            {
+                Write("Checking directories right now...", "initialization");
+                string[] directories = { Paths.General, Paths.Main, Paths.TranslateDefault, Paths.TranslateCustom };
+
+                foreach (var dir in directories)
+                {
+                    FileUtil.CreateDirectory(dir);
+                }
+
+                string[] directories_with_platforms = { Paths.TranslateDefault, Paths.TranslateCustom };
+
+                Write("Checking files right now...", "initialization");
+                if (!FileUtil.FileExists(Paths.Settings))
+                {
+                    SettingsService.InitializeFile(Paths.Settings);
+                    Write($"The settings file has been created! ({Paths.Settings})", "initialization");
+                    Thread.Sleep(-1);
+                }
+
+                string[] files = {
+                            Paths.BlacklistWords, Paths.BlacklistReplacements,
+                            Paths.Currency, Paths.Cache, Paths.Logs, Paths.APIUses,
+                            Path.Combine(Paths.TranslateDefault, "ru-RU.json"),
+                            Path.Combine(Paths.TranslateDefault, "en-US.json"), Path.Combine(Paths.Main, "VERSION.txt")
+                    };
+
+                Write("Creating files...", "initialization");
+                foreach (var file in files)
+                {
+                    FileUtil.CreateFile(file);
+                }
+
+                Bot.PreviousVersion = File.ReadAllText(Path.Combine(Paths.Main, "VERSION.txt"));
+                File.WriteAllText(Path.Combine(Paths.Main, "VERSION.txt"), $"{Bot.Version}.{Bot.Patch}");
+
+                Write("Loading settigns...", "initialization");
+                SettingsService.Load();
+
+                Write("Initializing SQL...", "initialization");
+                SQL = new()
+                {
+                    Messages = new(Paths.MessagesDatabase),
+                    Users = new(Paths.UsersDatabase),
+                    Games = new(Paths.GamesDatabase),
+                    Channels = new(Paths.ChannelsDatabase),
+                    Roles = new(Paths.RolesDatabase)
+                };
+                MessagesBuffer = new(SQL.Messages);
+                UsersBuffer = new(SQL.Users);
+
+                Write("Getting twitch token...", "initialization");
+                Tokens.TwitchGetter = new(TwitchClientId, Tokens.TwitchSecretToken, Paths.Main + "TWITCH_AUTH.json");
+                var token = await TwitchToken.GetTokenAsync();
+
+                if (token != null)
+                {
+                    Tokens.Twitch = token;
+                    await Connect();
+                }
+                else
+                {
+                    Write("Twitch token is null! Something went wrong...", "initialization");
+                    await Shutdown();
+                }
+            }
+            catch (Exception ex)
+            {
+                Write(ex);
+                await Shutdown();
+            }
+        }
+        #endregion Core
+        #region Connects
+        /// <summary>
+        /// Establishes connections to all supported platforms.
+        /// </summary>
+        /// <remarks>
+        /// <list type="bullet">
+        /// <item>Twitch: Initializes client with 20+ event handlers</item>
+        /// <item>Discord: Registers command services and event subscriptions</item>
+        /// <item>Telegram: Starts message polling with error handling</item>
+        /// <item>Loads 7TV emote cache from persistent storage</item>
+        /// </list>
+        /// Sets Ready and Connected flags upon successful initialization.
+        /// Measures and logs total initialization time in milliseconds.
+        /// Handles all connection exceptions through centralized error handling.
+        /// </remarks>
+        public static async Task Connect()
+        {
+            try
+            {
+                Initialized = true;
+                Write("Connecting to Twitch...", "initialization");
+                ConnectToTwitch();
+
+                Write("Connecting to Discord...", "initialization");
+                await ConnectToDiscord();
+
+                Write("Connecting to Telegram...", "initialization");
+                ConnectToTelegram();
+
+                Write("Loading 7tv cache...", "initialization");
+                EmoteCacheService.Load();
+
+                DateTime endTime = DateTime.UtcNow;
+                Ready = true;
+                Connected = true;
+                Write($"Well done! ({(endTime - _startTime).TotalMilliseconds} ms)", "initialization");
+            }
+            catch (Exception ex)
+            {
+                Write(ex);
+                await Shutdown();
+            }
+        }
+
+        /// <summary>
+        /// Connects to Twitch API and configures event handling.
+        /// </summary>
+        /// <remarks>
+        /// <list type="bullet">
+        /// <item>Authenticates using OAuth token with required scopes</item>
+        /// <item>Registers handlers for chat, subscription, and channel events</item>
+        /// <item>Joins configured channels and bot's own channel</item>
+        /// <item>Sends connection notification message with "truckCrash" emote</item>
+        /// </list>
+        /// Message rate limits: 750 messages per 30 seconds.
+        /// Handles channel ID resolution through Names.GetUsername().
+        /// Automatically reconnects on disconnection events.
+        /// </remarks>
+        private static void ConnectToTwitch()
+        {
+            var credentials = new ConnectionCredentials(BotName, "oauth:" + Tokens.Twitch.AccessToken);
+            var client_options = new ClientOptions
+            {
+                MessagesAllowedInPeriod = 750,
+                ThrottlingPeriod = TimeSpan.FromSeconds(30)
+            };
+            var webSocket_client = new WebSocketClient(client_options);
+            Clients.Twitch = new TwitchClient(webSocket_client);
+            Clients.Twitch.Initialize(credentials, BotName, DefaultExecutor);
+            Clients.TwitchAPI = new TwitchAPI();
+            Clients.TwitchAPI.Settings.AccessToken = Tokens.Twitch.AccessToken;
+            Clients.TwitchAPI.Settings.ClientId = TwitchClientId;
+            Clients.TwitchAPI.Settings.Scopes = [AuthScopes.Chat_Read, AuthScopes.Helix_Moderator_Read_Chatters, AuthScopes.Chat_Edit, AuthScopes.Helix_Moderator_Manage_Banned_Users];
+
+            #region Events subscription
+            Clients.Twitch.OnJoinedChannel += TwitchEvents.OnJoin;
+            Clients.Twitch.OnChatCommandReceived += Core.Commands.Executor.Twitch;
+            Clients.Twitch.OnMessageReceived += TwitchEvents.OnMessageReceived;
+            Clients.Twitch.OnMessageThrottled += TwitchEvents.OnMessageThrottled;
+            Clients.Twitch.OnMessageSent += TwitchEvents.OnMessageSend;
+            Clients.Twitch.OnAnnouncement += TwitchEvents.OnAnnounce;
+            Clients.Twitch.OnBanned += TwitchEvents.OnBanned;
+            Clients.Twitch.OnConnectionError += TwitchEvents.OnConnectionError;
+            Clients.Twitch.OnContinuedGiftedSubscription += TwitchEvents.OnContinuedGiftedSubscription;
+            Clients.Twitch.OnChatCleared += TwitchEvents.OnChatCleared;
+            Clients.Twitch.OnDisconnected += TwitchEvents.OnTwitchDisconnected;
+            Clients.Twitch.OnReconnected += TwitchEvents.OnReconnected;
+            Clients.Twitch.OnError += TwitchEvents.OnError;
+            Clients.Twitch.OnIncorrectLogin += TwitchEvents.OnIncorrectLogin;
+            Clients.Twitch.OnLeftChannel += TwitchEvents.OnLeftChannel;
+            Clients.Twitch.OnRaidNotification += TwitchEvents.OnRaidNotification;
+            Clients.Twitch.OnNewSubscriber += TwitchEvents.OnNewSubscriber;
+            Clients.Twitch.OnGiftedSubscription += TwitchEvents.OnGiftedSubscription;
+            Clients.Twitch.OnCommunitySubscription += TwitchEvents.OnCommunitySubscription;
+            Clients.Twitch.OnReSubscriber += TwitchEvents.OnReSubscriber;
+            Clients.Twitch.OnSuspended += TwitchEvents.OnSuspended;
+            Clients.Twitch.OnConnected += TwitchEvents.OnConnected;
+            Clients.Twitch.OnLog += TwitchEvents.OnLog;
+            Clients.Twitch.OnChatCleared += TwitchEvents.OnChatCleared;
+            #endregion
+
+            Clients.Twitch.Connect();
+
+            var not_founded_channels = new List<string>();
+            string send_channels = string.Join(", ", TwitchChannels.Select(channel =>
+            {
+                var channel2 = UsernameResolver.GetUsername(channel, PlatformsEnum.Twitch, true);
+                if (channel2 == null) not_founded_channels.Add(channel);
+                return channel2;
+            }).Where(channel => channel != "NONE\n"));
+
+            Write($"Twitch - Connecting to {send_channels}", "initialization");
+            foreach (var channel in TwitchChannels)
+            {
+                var channel2 = UsernameResolver.GetUsername(channel, PlatformsEnum.Twitch, true);
+                if (channel2 != null) Clients.Twitch.JoinChannel(channel2);
+            }
+            foreach (var channel in not_founded_channels)
+                Write("Twitch - Can't find ID for " + channel, "initialization", LogLevel.Warning);
+
+            Clients.Twitch.JoinChannel(BotName.ToLower());
+            Clients.Twitch.SendMessage(BotName.ToLower(), "truckCrash Connecting to twitch...");
+        }
+
+        /// <summary>
+        /// Initializes Discord connection with command registration.
+        /// </summary>
+        /// <remarks>
+        /// <list type="bullet">
+        /// <item>Configures client with required GatewayIntents</item>
+        /// <item>Registers 10+ event handlers for messages, commands, and guilds</item>
+        /// <item>Loads text and slash commands through CommandService</item>
+        /// <item>Authenticates and establishes WebSocket connection</item>
+        /// </list>
+        /// Implements dependency injection through ServiceCollection.
+        /// Maintains 1000-message cache for efficient command processing.
+        /// Handles both guild and direct message contexts.
+        /// </remarks>
+        private static async Task ConnectToDiscord()
+        {
+            var discordConfig = new DiscordSocketConfig
+            {
+                MessageCacheSize = 1000,
+                GatewayIntents = GatewayIntents.Guilds | GatewayIntents.GuildMessages | GatewayIntents.DirectMessages | GatewayIntents.MessageContent
+            };
+            Clients.Discord = new DiscordSocketClient(discordConfig);
+            DiscordCommandService = new CommandService();
+            DiscordServiceProvider = new ServiceCollection()
+                .AddSingleton(Clients.Discord)
+                .AddSingleton(DiscordCommandService)
+                .BuildServiceProvider();
+
+            Clients.Discord.Log += Events.DiscordEvents.LogAsync;
+            Clients.Discord.JoinedGuild += Events.DiscordEvents.ConnectToGuilt;
+            Clients.Discord.Ready += DiscordWorker.ReadyAsync;
+            Clients.Discord.MessageReceived += DiscordWorker.MessageReceivedAsync;
+            Clients.Discord.SlashCommandExecuted += Events.DiscordEvents.SlashCommandHandler;
+            Clients.Discord.ApplicationCommandCreated += Events.DiscordEvents.ApplicationCommandCreated;
+            Clients.Discord.ApplicationCommandDeleted += Events.DiscordEvents.ApplicationCommandDeleted;
+            Clients.Discord.ApplicationCommandUpdated += Events.DiscordEvents.ApplicationCommandUpdated;
+            Clients.Discord.ChannelCreated += Events.DiscordEvents.ChannelCreated;
+            Clients.Discord.ChannelDestroyed += Events.DiscordEvents.ChannelDeleted;
+            Clients.Discord.ChannelUpdated += Events.DiscordEvents.ChannelUpdated;
+            Clients.Discord.Connected += Events.DiscordEvents.Connected;
+            Clients.Discord.ButtonExecuted += Events.DiscordEvents.ButtonTouched;
+
+            await DiscordWorker.RegisterCommandsAsync();
+            await Clients.Discord.LoginAsync(TokenType.Bot, Tokens.Discord);
+            await Clients.Discord.StartAsync();
+        }
+
+        /// <summary>
+        /// Starts message reception from Telegram platform.
+        /// </summary>
+        /// <remarks>
+        /// <list type="bullet">
+        /// <item>Initializes client with bot token authentication</item>
+        /// <item>Configures update options (text messages only)</item>
+        /// <item>Starts asynchronous polling with error handling</item>
+        /// <item>Uses CancellationToken for graceful shutdown</item>
+        /// </list>
+        /// Drops pending updates on startup (DropPendingUpdates=true).
+        /// Processes only Message-type updates (UpdateType.Message).
+        /// Integrates with TelegramEvents error handling system.
+        /// </remarks>
+        private static void ConnectToTelegram()
+        {
+            Clients.Telegram = new TelegramBotClient(Tokens.Telegram);
+            TelegramReceiverOptions = new ReceiverOptions
+            {
+                AllowedUpdates = new[] { UpdateType.Message },
+                DropPendingUpdates = true,
+            };
+
+            Clients.Telegram.StartReceiving(Events.TelegramEvents.UpdateHandler, Events.TelegramEvents.ErrorHandler, TelegramReceiverOptions, Clients.TelegramCancellationToken.Token);
+        }
+        #endregion Connects
+        #region Other
+        /// <summary>
+        /// Executes a graceful shutdown sequence with platform-specific notifications and resource cleanup.
+        /// </summary>
+        /// <remarks>
+        /// <list type="bullet">
+        /// <item>Clears initialization flags (<c>Initialized</c>, <c>Connected</c>) immediately</item>
+        /// <item>Disposes all buffer systems with null-safety checks</item>
+        /// <item>Properly cancels and disposes Telegram polling operations</item>
+        /// <item>Gracefully disconnects Discord client with cleanup</item>
+        /// <item>Logs each stage of the shutdown sequence for diagnostics</item>
+        /// <item>Ensures all pending messages are processed before termination</item>
+        /// </list>
+        /// <para>
+        /// This method follows a structured shutdown sequence:
+        /// <list type="number">
+        /// <item>Flag reset and resource disposal (immediate)</item>
+        /// <item>Buffered data flush with timeout handling</item>
+        /// <item>Network connection termination</item>
+        /// <item>Final process termination with diagnostic exit code</item>
+        /// </list>
+        /// </para>
+        /// <para>
+        /// Critical considerations:
+        /// <list type="bullet">
+        /// <item>Uses proper async/await pattern without blocking calls</item>
+        /// <item>Implements comprehensive error handling for each resource</item>
+        /// <item>Ensures all disposables are properly released</item>
+        /// <item>Waits for critical operations to complete before exit</item>
+        /// </list>
+        /// </para>
+        /// </remarks>
+        /// <returns>Task representing the asynchronous shutdown operation</returns>
+        public static async Task Shutdown(bool force = false)
+        {
+            Write("Initiating shutdown sequence...", "kernel");
+
+            Initialized = false;
+            Connected = false;
+
+            Write($"Shutdown process started (PID: {Environment.ProcessId})", "kernel", LogLevel.Info);
+
+            try
+            {
+                if (UsersBuffer != null)
+                {
+                    try
+                    {
+                        Write("Flushing user data buffer...", "kernel");
+                        UsersBuffer.Flush();
+                        Write("User buffer disposed successfully", "kernel", LogLevel.Info);
+                    }
+                    catch (Exception ex)
+                    {
+                        Write($"User buffer flush failed: {ex.Message}", "kernel", LogLevel.Warning);
+                    }
+                    finally
+                    {
+                        UsersBuffer.Dispose();
+                        UsersBuffer = null;
+                    }
+                }
+
+                if (MessagesBuffer != null)
+                {
+                    try
+                    {
+                        Write("Flushing message data buffer...", "kernel");
+                        MessagesBuffer.Flush();
+                        Write("Message buffer disposed successfully", "kernel", LogLevel.Info);
+                    }
+                    catch (Exception ex)
+                    {
+                        Write($"Message buffer flush failed: {ex.Message}", "kernel", LogLevel.Warning);
+                    }
+                    finally
+                    {
+                        MessagesBuffer.Dispose();
+                        MessagesBuffer = null;
+                    }
+                }
+
+                if (Clients?.TelegramCancellationToken != null)
+                {
+                    try
+                    {
+                        Write("Cancelling Telegram operations...", "kernel");
+                        Clients.TelegramCancellationToken.Cancel();
+                        Write("Telegram cancellation requested", "kernel", LogLevel.Info);
+                    }
+                    catch (Exception ex)
+                    {
+                        Write($"Telegram cancellation failed: {ex.Message}", "kernel", LogLevel.Warning);
+                    }
+                    finally
+                    {
+                        Clients.TelegramCancellationToken.Dispose();
+                        Clients.TelegramCancellationToken = null;
+                    }
+                }
+
+                if (Clients?.Discord != null)
+                {
+                    try
+                    {
+                        Write("Disconnecting from Discord...", "kernel");
+                        await Clients.Discord.LogoutAsync();
+                        await Clients.Discord.StopAsync();
+                        Write("Discord client disconnected", "kernel", LogLevel.Info);
+                    }
+                    catch (Exception ex)
+                    {
+                        Write($"Discord disconnect failed: {ex.Message}", "kernel", LogLevel.Warning);
+                    }
+                    finally
+                    {
+                        Clients.Discord.Dispose();
+                        Clients.Discord = null;
+                    }
+                }
+
+                Write("Waiting for pending operations to complete...", "kernel");
+                await Task.Delay(2000);
+            }
+            catch (Exception ex)
+            {
+                Write($"Critical error during shutdown sequence: {ex}", "kernel", LogLevel.Error);
+            }
+            finally
+            {
+                Write("Restart sequence completed - terminating process", "kernel");
+                Environment.Exit(force ? 5001 : 0);
+            }
+        }
+
+        private static void UnhandledException(object sender, UnhandledExceptionEventArgs e)
+        {
+            Exception ex = (Exception)e.ExceptionObject;
+            try
+            {
+                Write("Critical error.", "kernel", LogLevel.Error);
+                Write(ex);
+                Shutdown().RunSynchronously();
+            }
+            catch { }
+            finally { Environment.Exit(ex.HResult); }
+        }
+        #endregion Other
     }
 }

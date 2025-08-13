@@ -1,5 +1,5 @@
-﻿using butterBror.Models;
-using butterBror.Core.Bot;
+﻿using butterBror.Core.Bot;
+using butterBror.Models;
 
 namespace butterBror.Core.Commands.List
 {
@@ -40,7 +40,7 @@ namespace butterBror.Core.Commands.List
                     exdata.Arguments = new List<string>();
                     exdata.Arguments.Insert(0, "get");
                 }
-                var command = new butterBror.Core.Commands.List.Weather();
+                var command = new Weather();
                 return await command.ExecuteAsync(exdata);
             }
             catch (Exception e)

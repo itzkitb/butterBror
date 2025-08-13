@@ -15,7 +15,7 @@ namespace butterBror.Services.External
         /// <param name="imageUrl">The URL of the image to download.</param>
         /// <returns>A byte array representing the downloaded image.</returns>
         /// <exception cref="HttpRequestException">Thrown when the HTTP request fails.</exception>
-        
+
         public static async Task<byte[]> DownloadAsync(string imageUrl)
         {
             using HttpClient client = new HttpClient();
@@ -34,7 +34,7 @@ namespace butterBror.Services.External
         /// <remarks>
         /// Uses multipart/form-data encoding and requires valid Imgur credentials.
         /// </remarks>
-        
+
         public static async Task<string> UploadAsync(byte[] imageBytes, string description, string title, string ImgurClientId, string ImgurUploadUrl)
         {
             try
@@ -74,7 +74,7 @@ namespace butterBror.Services.External
         /// <remarks>
         /// Validates the "success" flag in the response before extracting the link.
         /// </remarks>
-        
+
         public static string GetLinkFromResponse(string response)
         {
             try

@@ -1,9 +1,9 @@
 ﻿using butterBror.Core.Bot;
 using butterBror.Models;
 using butterBror.Utils;
+using Jint;
 using TwitchLib.Client.Enums;
 using static butterBror.Core.Bot.Console;
-using Jint;
 
 namespace butterBror.Core.Commands.List
 {
@@ -30,14 +30,14 @@ namespace butterBror.Core.Commands.List
         public override PlatformsEnum[] Platforms => [PlatformsEnum.Twitch, PlatformsEnum.Telegram, PlatformsEnum.Discord];
         public override bool IsAsync => false;
 
-        
+
         public override CommandReturn Execute(CommandData data)
         {
             CommandReturn commandReturn = new CommandReturn();
 
             try
             {
-                if (new NoBanwords().Check(data.ArgumentsString, data.ChannelId, data.Platform))
+                if (new BannedWordDetector().Check(data.ArgumentsString, data.ChannelId, data.Platform))
                 {
                     try
                     {

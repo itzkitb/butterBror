@@ -9,8 +9,18 @@ using static butterBror.Core.Bot.Console;
 namespace butterBror.Core.Bot
 {
     /// <summary>
-    /// Manages Twitch OAuth2 token acquisition, refresh, and storage operations.
+    /// Manages Twitch OAuth2 token lifecycle including acquisition, validation, refresh, and persistent storage.
     /// </summary>
+    /// <remarks>
+    /// <list type="bullet">
+    /// <item>Implements Authorization Code flow with PKCE (Proof Key for Code Exchange)</item>
+    /// <item>Automatically handles token expiration and refresh</item>
+    /// <item>Provides local persistence for token data</item>
+    /// <item>Includes built-in HTTP server for authorization callback handling</item>
+    /// </list>
+    /// The class follows Twitch API authentication best practices and handles both initial authorization
+    /// and token refresh operations transparently for the application.
+    /// </remarks>
     public class TwitchToken
     {
         private static string _clientId;
@@ -21,9 +31,13 @@ namespace butterBror.Core.Bot
         /// <summary>
         /// Initializes a new instance of the TwitchToken class with application credentials.
         /// </summary>
-        /// <param name="clientId">Twitch application client ID</param>
-        /// <param name="clientSecret">Twitch application client secret</param>
-        /// <param name="databasePath">Path to store token data persistently</param>
+        /// <param name="clientId">Twitch application client ID obtained from Twitch Developer Console</param>
+        /// <param name="clientSecret">Twitch application client secret (keep confidential)</param>
+        /// <param name="databasePath">File path for persistent token storage (typically JSON format)</param>
+        /// <remarks>
+        /// Configures the authorization flow with localhost redirect for secure token handling.
+        /// The redirect URL is fixed to http://localhost:12121/ and must be registered in Twitch Developer Console.
+        /// </remarks>
         public TwitchToken(string clientId, string clientSecret, string databasePath)
         {
             _clientId = clientId;
@@ -33,10 +47,21 @@ namespace butterBror.Core.Bot
         }
 
         /// <summary>
-        /// Asynchronously retrieves a valid Twitch API token, refreshing if necessary.
+        /// Asynchronously retrieves a valid Twitch API token, handling both initial authorization and refresh operations.
         /// </summary>
-        /// <returns>A valid TokenData object or null on failure</returns>
-        
+        /// <returns>
+        /// A valid <see cref="TokenData"/> object with active access token, or null if authorization fails.
+        /// Returns cached token if valid, initiates refresh flow for expired tokens, or starts full authorization when needed.
+        /// </returns>
+        /// <remarks>
+        /// <list type="bullet">
+        /// <item>First checks for valid cached token</item>
+        /// <item>Attempts refresh using refresh token if available</item>
+        /// <item>Initiates full authorization flow when no valid token exists</item>
+        /// <item>Handles all token lifecycle management transparently</item>
+        /// </list>
+        /// This is the primary entry point for obtaining a valid Twitch API token.
+        /// </remarks>
         public static async Task<TokenData> GetTokenAsync()
         {
             try
@@ -57,11 +82,22 @@ namespace butterBror.Core.Bot
         }
 
         /// <summary>
-        /// Initiates the Twitch OAuth2 authorization flow to obtain a new token.
+        /// Initiates the Twitch OAuth2 authorization flow to obtain a new access token.
         /// </summary>
-        /// <param name="listener">HttpListener instance for handling the redirect</param>
-        /// <returns>A new TokenData object or null on failure</returns>
-        
+        /// <returns>
+        /// A new <see cref="TokenData"/> object containing access token, refresh token, and expiration time,
+        /// or null if authorization fails.
+        /// </returns>
+        /// <remarks>
+        /// <list type="bullet">
+        /// <item>Launches system default browser for user authentication</item>
+        /// <item>Sets up local HTTP listener on port 12121 to capture authorization code</item>
+        /// <item>Exchanges authorization code for access token</item>
+        /// <item>Provides user-friendly completion page after authorization</item>
+        /// </list>
+        /// Requires the following Twitch scopes:
+        /// <c>user:manage:chat_color, chat:edit, chat:read, moderator:read:chatters, user:manage:blocked_users</c>
+        /// </remarks>
         private static async Task<TokenData> PerformAuthorizationFlow()
         {
             try
@@ -106,11 +142,22 @@ namespace butterBror.Core.Bot
         }
 
         /// <summary>
-        /// Refreshes an existing Twitch API token using its refresh token.
+        /// Refreshes an expired access token using its refresh token.
         /// </summary>
-        /// <param name="token">The token to refresh</param>
-        /// <returns>An updated TokenData object or null on failure</returns>
-        
+        /// <param name="token">The existing token data containing a valid refresh token</param>
+        /// <returns>
+        /// An updated <see cref="TokenData"/> object with new access token and expiration time,
+        /// or null if refresh fails.
+        /// </returns>
+        /// <remarks>
+        /// <list type="bullet">
+        /// <item>Uses Twitch's token refresh endpoint (id.twitch.tv/oauth2/token)</item>
+        /// <item>Updates expiration time based on new token's lifetime (typically 60 days)</item>
+        /// <item>Preserves the same refresh token unless Twitch issues a new one</item>
+        /// <item>Automatically falls back to full authorization if refresh fails</item>
+        /// </list>
+        /// This method should be called when API requests return 401 Unauthorized errors.
+        /// </remarks>
         public static async Task<TokenData> RefreshAccessToken(TokenData token)
         {
             try
@@ -150,11 +197,19 @@ namespace butterBror.Core.Bot
         }
 
         /// <summary>
-        /// Gets the authorization code from Twitch's OAuth2 response.
+        /// Retrieves the authorization code from Twitch's OAuth2 response via local HTTP server.
         /// </summary>
-        /// <param name="listener">HttpListener instance to receive the response</param>
-        /// <returns>The authorization code string or null on failure</returns>
-        
+        /// <param name="listener">Configured HttpListener waiting for the authorization callback</param>
+        /// <returns>The authorization code string, or null if extraction fails</returns>
+        /// <remarks>
+        /// <list type="bullet">
+        /// <item>Opens user's default browser to Twitch authorization page</item>
+        /// <item>Waits for the redirect response containing the authorization code</item>
+        /// <item>Parses the query string to extract the 'code' parameter</item>
+        /// <item>Closes the HTTP listener after successful code retrieval</item>
+        /// </list>
+        /// The authorization code is valid for a short period (typically 10 minutes).
+        /// </remarks>
         private static async Task<string> GetAuthorizationCodeAsync(HttpListener listener)
         {
             try
@@ -183,11 +238,21 @@ namespace butterBror.Core.Bot
         }
 
         /// <summary>
-        /// Exchanges an authorization code for a Twitch API token.
+        /// Exchanges an authorization code for a complete access token and refresh token.
         /// </summary>
-        /// <param name="code">The authorization code to exchange</param>
-        /// <returns>A new TokenData object or null on failure</returns>
-        
+        /// <param name="code">The authorization code obtained from GetAuthorizationCodeAsync</param>
+        /// <returns>
+        /// A populated <see cref="TokenData"/> object, or null if exchange fails.
+        /// </returns>
+        /// <remarks>
+        /// <list type="bullet">
+        /// <item>Sends POST request to Twitch token endpoint with authorization code</item>
+        /// <item>Includes client credentials and redirect URI for validation</item>
+        /// <item>Parses JSON response containing access token and refresh token</item>
+        /// <item>Calculates token expiration time based on expires_in value</item>
+        /// </list>
+        /// This is the final step in the OAuth2 authorization flow.
+        /// </remarks>
         private static async Task<TokenData> ExchangeCodeForTokenAsync(string code)
         {
             try
@@ -222,11 +287,14 @@ namespace butterBror.Core.Bot
         }
 
         /// <summary>
-        /// Extracts the authorization code from the HTTP query string.
+        /// Extracts the authorization code from the HTTP query string in the redirect response.
         /// </summary>
-        /// <param name="query">The HTTP query string</param>
-        /// <returns>The authorization code or null if not found</returns>
-        
+        /// <param name="query">The query string portion of the redirect URL (starts with ?)</param>
+        /// <returns>The authorization code value, or null if not present</returns>
+        /// <remarks>
+        /// Parses the query string using HttpUtility.ParseQueryString for proper URL decoding.
+        /// Expected format: ?code=AUTHORIZATION_CODE&amp;scope=REQUESTED_SCOPES
+        /// </remarks>
         private static string GetCodeFromResponse(string query)
         {
             var queryParams = HttpUtility.ParseQueryString(query);
@@ -236,8 +304,19 @@ namespace butterBror.Core.Bot
         /// <summary>
         /// Loads stored token data from persistent storage.
         /// </summary>
-        /// <returns>The loaded TokenData or null if loading failed</returns>
-        
+        /// <returns>
+        /// The deserialized <see cref="TokenData"/> object if valid and not expired,
+        /// or null if loading fails or token is expired.
+        /// </returns>
+        /// <remarks>
+        /// <list type="bullet">
+        /// <item>Checks if token database file exists</item>
+        /// <item>Reads and deserializes JSON content</item>
+        /// <item>Validates token expiration time</item>
+        /// <item>Returns null for expired tokens to trigger refresh flow</item>
+        /// </list>
+        /// This method handles the persistence layer for token data between application restarts.
+        /// </remarks>
         private static TokenData LoadTokenData()
         {
             try
@@ -259,10 +338,18 @@ namespace butterBror.Core.Bot
         }
 
         /// <summary>
-        /// Saves token data to persistent storage.
+        /// Saves token data to persistent storage for future use.
         /// </summary>
-        /// <param name="tokenData">The token data to save</param>
-        
+        /// <param name="tokenData">The token data to persist, including access token, refresh token, and expiration</param>
+        /// <remarks>
+        /// <list type="bullet">
+        /// <item>Serializes token data to JSON format</item>
+        /// <item>Writes to configured database path</item>
+        /// <item>Handles file I/O exceptions gracefully</item>
+        /// <item>Ensures sensitive token data is stored securely</item>
+        /// </list>
+        /// This method is called after successful token acquisition or refresh.
+        /// </remarks>
         private static void SaveTokenData(TokenData tokenData)
         {
             try
@@ -276,8 +363,12 @@ namespace butterBror.Core.Bot
         }
 
         /// <summary>
-        /// Represents the Twitch API token response format.
+        /// Represents the response structure from Twitch's token endpoint.
         /// </summary>
+        /// <remarks>
+        /// Maps directly to Twitch API's JSON response format for token operations.
+        /// Used internally for deserialization of token exchange responses.
+        /// </remarks>
         private class TokenResponse
         {
             public string access_token { get; set; }
@@ -286,7 +377,7 @@ namespace butterBror.Core.Bot
         }
 
         /// <summary>
-        /// Contains Twitch authentication token data with expiration tracking.
+        /// Contains Twitch authentication token data with expiration tracking for application use.
         /// </summary>
         public class TokenData
         {

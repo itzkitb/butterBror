@@ -16,7 +16,7 @@ namespace butterBror.Events
         /// </summary>
         /// <param name="log">The log message from Discord client.</param>
         /// <returns>A completed task representing the asynchronous operation.</returns>
-        
+
         public static Task LogAsync(LogMessage log)
         {
             try
@@ -35,11 +35,11 @@ namespace butterBror.Events
         /// </summary>
         /// <param name="g">The guild (server) that was connected to.</param>
         /// <returns>A task representing the asynchronous operation.</returns>
-        
+
         public static async Task ConnectToGuilt(SocketGuild g)
         {
             Write($"Discord - Connected to a server: {g.Name}", "info");
-            Engine.Bot.DiscordServers++;
+            Bot.DiscordServers++;
         }
 
         /// <summary>
@@ -47,7 +47,7 @@ namespace butterBror.Events
         /// </summary>
         /// <param name="arg">The message that might contain a command.</param>
         /// <returns>A task representing the asynchronous operation.</returns>
-        
+
         public static async Task HandleCommandAsync(SocketMessage arg)
         {
             try
@@ -56,10 +56,10 @@ namespace butterBror.Events
                 if (message == null || message.Author.IsBot) return;
 
                 int argPos = 0;
-                if (message.HasCharPrefix(Engine.Bot.Executor, ref argPos))
+                if (message.HasCharPrefix(Bot.DefaultExecutor, ref argPos))
                 {
-                    var context = new SocketCommandContext(Engine.Bot.Clients.Discord, message);
-                    var result = await Engine.Bot.DiscordCommandService.ExecuteAsync(context, argPos, Engine.Bot.DiscordServiceProvider);
+                    var context = new SocketCommandContext(Bot.Clients.Discord, message);
+                    var result = await Bot.DiscordCommandService.ExecuteAsync(context, argPos, Bot.DiscordServiceProvider);
                     if (!result.IsSuccess)
                     {
                         Write($"Discord - {result.ErrorReason}", "info", LogLevel.Warning);
@@ -77,7 +77,7 @@ namespace butterBror.Events
         /// </summary>
         /// <param name="command">The slash command interaction data.</param>
         /// <returns>A task representing the asynchronous operation.</returns>
-        
+
         public static async Task SlashCommandHandler(SocketSlashCommand command)
         {
             Executor.Discord(command);
@@ -88,7 +88,7 @@ namespace butterBror.Events
         /// </summary>
         /// <param name="e">The created application command data.</param>
         /// <returns>A task representing the asynchronous operation.</returns>
-        
+
         public static async Task ApplicationCommandCreated(SocketApplicationCommand e)
         {
             Write("Discord - The command has been created: /" + e.Name + " (" + e.Description + ")", "info");
@@ -99,7 +99,7 @@ namespace butterBror.Events
         /// </summary>
         /// <param name="e">The deleted application command data.</param>
         /// <returns>A task representing the asynchronous operation.</returns>
-        
+
         public static async Task ApplicationCommandDeleted(SocketApplicationCommand e)
         {
             Write("Discord - Command deleted: /" + e.Name + " (" + e.Description + ")", "info");
@@ -110,7 +110,7 @@ namespace butterBror.Events
         /// </summary>
         /// <param name="e">The updated application command data.</param>
         /// <returns>A task representing the asynchronous operation.</returns>
-        
+
         public static async Task ApplicationCommandUpdated(SocketApplicationCommand e)
         {
             Write($"Discord - Command updated: /{e.Name} ({e.Description})", "info");
@@ -121,7 +121,7 @@ namespace butterBror.Events
         /// </summary>
         /// <param name="e">The created channel data.</param>
         /// <returns>A task representing the asynchronous operation.</returns>
-        
+
         public static async Task ChannelCreated(SocketChannel e)
         {
             Write("Discord - New channel created: " + e.Id, "info");
@@ -132,7 +132,7 @@ namespace butterBror.Events
         /// </summary>
         /// <param name="e">The deleted channel data.</param>
         /// <returns>A task representing the asynchronous operation.</returns>
-        
+
         public static async Task ChannelDeleted(SocketChannel e)
         {
             Write("Discord - The channel has been deleted: " + e.Id, "info");
@@ -144,7 +144,7 @@ namespace butterBror.Events
         /// <param name="e">The original channel data before update.</param>
         /// <param name="a">The updated channel data.</param>
         /// <returns>A task representing the asynchronous operation.</returns>
-        
+
         public static async Task ChannelUpdated(SocketChannel e, SocketChannel a)
         {
             Write("Discord - Channel updated: " + e.Id + "/" + a.Id, "info");
@@ -154,7 +154,7 @@ namespace butterBror.Events
         /// Handles connection established event for the Discord client.
         /// </summary>
         /// <returns>A task representing the asynchronous operation.</returns>
-        
+
         public static async Task Connected()
         {
             //Write("Discord - Connected!", "info");
@@ -165,7 +165,7 @@ namespace butterBror.Events
         /// </summary>
         /// <param name="e">The button interaction data.</param>
         /// <returns>A task representing the asynchronous operation.</returns>
-        
+
         public static async Task ButtonTouched(SocketMessageComponent e)
         {
             Write($"Discord - A button was pressed. User: {e.User}, Button ID: {e.Id}, Server: {((SocketGuildChannel)e.Channel).Guild.Name}", "info");

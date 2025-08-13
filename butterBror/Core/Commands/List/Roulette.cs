@@ -1,6 +1,6 @@
-﻿using butterBror.Models;
+﻿using butterBror.Core.Bot;
+using butterBror.Models;
 using butterBror.Utils;
-using butterBror.Core.Bot;
 using TwitchLib.Client.Enums;
 
 namespace butterBror.Core.Commands.List
@@ -11,7 +11,7 @@ namespace butterBror.Core.Commands.List
         public override string Author => "ItzKITb";
         public override string AuthorsGithub => "https://github.com/itzkitb";
         public override string GithubSource => $"{URLs.githubSource}blob/master/butterBror/Core/Commands/List/Roulette.cs";
-        public override Version Version => new("1.0.0");
+        public override Version Version => new("1.0.1");
         public override Dictionary<string, string> Description => new() {
             { "ru-RU", "Сыграйте в рулетку! Подробности: https://bit.ly/bb_roulette " },
             { "en-US", "Play Roulette! Details: https://bit.ly/bb_roulette " }
@@ -52,20 +52,20 @@ namespace butterBror.Core.Commands.List
                 {
                     if (selections.Contains(data.Arguments[0]))
                     {
-                        int bid = Format.ToInt(data.Arguments[1]);
+                        int bid = DataConversion.ToInt(data.Arguments[1]);
                         commandReturn.SetColor(ChatColorPresets.Red);
 
                         if (bid == 0)
                             commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:roulette_wrong_bid", data.ChannelId, data.Platform));
                         else if (bid < 0)
                             commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:roulette_steal", data.ChannelId, data.Platform));
-                        else if (Utils.Balance.GetBalance(data.UserID, data.Platform) < bid)
+                        else if (Utils.CurrencyManager.GetBalance(data.User.ID, data.Platform) < bid)
                             commandReturn.SetMessage(LocalizationService.GetString(
                                 data.User.Language,
                                 "error:roulette_not_enough_coins",
                                 data.ChannelId,
                                 data.Platform,
-                                Utils.Balance.GetBalance(data.UserID, data.Platform).ToString() + " " + Engine.Bot.CoinSymbol));
+                                Utils.CurrencyManager.GetBalance(data.User.ID, data.Platform).ToString() + " " + butterBror.Bot.CoinSymbol));
                         else
                         {
                             int moves = new Random().Next(38, 380);
@@ -83,7 +83,7 @@ namespace butterBror.Core.Commands.List
                                 commandReturn.SetColor(ChatColorPresets.YellowGreen);
 
                                 int win = (int)(bid * multipliers[result_symbol]);
-                                Utils.Balance.Add(data.UserID, win, 0, data.Platform);
+                                Utils.CurrencyManager.Add(data.User.ID, win, 0, data.Platform);
                                 commandReturn.SetMessage(LocalizationService.GetString(
                                     data.User.Language,
                                     "command:roulette:result:win",
@@ -91,12 +91,12 @@ namespace butterBror.Core.Commands.List
                                     data.Platform,
                                     result_symbol,
                                     result.ToString(),
-                                    win.ToString() + " " + Engine.Bot.CoinSymbol,
+                                    win.ToString() + " " + butterBror.Bot.CoinSymbol,
                                     multipliers[result_symbol].ToString()));
                             }
                             else
                             {
-                                Utils.Balance.Add(data.UserID, -bid, 0, data.Platform);
+                                Utils.CurrencyManager.Add(data.User.ID, -bid, 0, data.Platform);
                                 commandReturn.SetMessage(LocalizationService.GetString(
                                     data.User.Language,
                                     "command:roulette:result:lose",
@@ -104,7 +104,7 @@ namespace butterBror.Core.Commands.List
                                     data.Platform,
                                     result_symbol,
                                     result.ToString(),
-                                    bid.ToString() + " " + Engine.Bot.CoinSymbol));
+                                    bid.ToString() + " " + butterBror.Bot.CoinSymbol));
                             }
                         }
                     }
@@ -117,7 +117,7 @@ namespace butterBror.Core.Commands.List
                         "error:not_enough_arguments",
                         data.ChannelId,
                         data.Platform,
-                        $"{Engine.Bot.Executor}roulette [🟩/🟥/⬛] [{LocalizationService.GetString(data.User.Language, "text:bid", data.ChannelId, data.Platform)}]"));
+                        $"{butterBror.Bot.DefaultExecutor}roulette [🟩/🟥/⬛] [{LocalizationService.GetString(data.User.Language, "text:bid", data.ChannelId, data.Platform)}]"));
             }
             catch (Exception e)
             {

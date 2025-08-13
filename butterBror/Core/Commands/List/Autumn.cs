@@ -1,6 +1,6 @@
-﻿using butterBror.Models;
+﻿using butterBror.Core.Bot;
+using butterBror.Models;
 using butterBror.Utils;
-using butterBror.Core.Bot;
 
 namespace butterBror.Core.Commands.List
 {
@@ -33,7 +33,7 @@ namespace butterBror.Core.Commands.List
 
             try
             {
-                commandReturn.SetMessage(Text.TimeTo(
+                commandReturn.SetMessage(TextSanitizer.TimeTo(
                     new(2000, 9, 1),
                     new(2000, 12, 1),
                     "autumn",

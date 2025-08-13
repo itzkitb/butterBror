@@ -1,16 +1,11 @@
 ﻿using butterBror.Core.Bot;
 using butterBror.Core.Bot.SQLColumnNames;
-using butterBror.Data;
 using butterBror.Models;
 using butterBror.Services.External;
 using butterBror.Utils;
 using Microsoft.Extensions.Caching.Memory;
-using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using TwitchLib.Client.Enums;
 using static butterBror.Core.Bot.Console;
 
@@ -30,7 +25,7 @@ namespace butterBror.Core.Commands.List
         public override string Author => "ItzKITb";
         public override string AuthorsGithub => "https://github.com/itzkitb";
         public override string GithubSource => $"{URLs.githubSource}blob/master/butterBror/Core/Commands/List/Weather.cs";
-        public override Version Version => new("2.0.0");
+        public override Version Version => new("2.0.1");
         public override Dictionary<string, string> Description => new()
         {
             { "ru-RU", "Узнать погоду в городе с использованием современного API" },
@@ -48,7 +43,7 @@ namespace butterBror.Core.Commands.List
         public override PlatformsEnum[] Platforms => [PlatformsEnum.Twitch, PlatformsEnum.Telegram, PlatformsEnum.Discord];
         public override bool IsAsync => true;
 
-        
+
         public override async Task<CommandReturn> ExecuteAsync(CommandData data)
         {
             CommandReturn commandReturn = new CommandReturn();
@@ -132,7 +127,7 @@ namespace butterBror.Core.Commands.List
                 else if (IsSetAction(actionType))
                 {
                     action.Type = WeatherActionType.SetLocation;
-                    action.Location = Text.CleanAscii(parameter);
+                    action.Location = TextSanitizer.CleanAscii(parameter);
                 }
             }
             else if (data.Arguments.Count == 1)
@@ -144,7 +139,7 @@ namespace butterBror.Core.Commands.List
                 else
                 {
                     action.Type = WeatherActionType.GetWeather;
-                    action.Location = Text.CleanAscii(data.ArgumentsString);
+                    action.Location = TextSanitizer.CleanAscii(data.ArgumentsString);
                 }
             }
             else
@@ -225,9 +220,9 @@ namespace butterBror.Core.Commands.List
             }
 
             var firstLocation = locations[0];
-            Engine.Bot.SQL.Users.SetParameter(data.Platform, Format.ToLong(data.User.ID), Users.Location, firstLocation.Name);
-            Engine.Bot.SQL.Users.SetParameter(data.Platform, Format.ToLong(data.User.ID), Users.Latitude, firstLocation.Latitude.ToString(System.Globalization.CultureInfo.InvariantCulture));
-            Engine.Bot.SQL.Users.SetParameter(data.Platform, Format.ToLong(data.User.ID), Users.Longitude, firstLocation.Longitude.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            butterBror.Bot.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.Location, firstLocation.Name);
+            butterBror.Bot.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.Latitude, firstLocation.Latitude.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            butterBror.Bot.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.Longitude, firstLocation.Longitude.ToString(System.Globalization.CultureInfo.InvariantCulture));
 
             CommandReturn commandReturn = new CommandReturn();
             commandReturn.SetMessage(LocalizationService.GetString(
@@ -243,7 +238,7 @@ namespace butterBror.Core.Commands.List
 
         private async Task<CommandReturn> HandleGetLocationActionAsync(CommandData data)
         {
-            var userPlace = (string)Engine.Bot.SQL.Users.GetParameter(data.Platform, Format.ToLong(data.UserID), Users.Location);
+            var userPlace = (string)butterBror.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.Location);
 
             if (string.IsNullOrEmpty(userPlace))
             {
@@ -265,9 +260,9 @@ namespace butterBror.Core.Commands.List
         {
             if (string.IsNullOrWhiteSpace(action.Location))
             {
-                var userPlace = (string)Engine.Bot.SQL.Users.GetParameter(data.Platform, Format.ToLong(data.UserID), Users.Location);
-                var userLat = (string)Engine.Bot.SQL.Users.GetParameter(data.Platform, Format.ToLong(data.UserID), Users.Latitude);
-                var userLon = (string)Engine.Bot.SQL.Users.GetParameter(data.Platform, Format.ToLong(data.UserID), Users.Longitude);
+                var userPlace = (string)butterBror.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.Location);
+                var userLat = (string)butterBror.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.Latitude);
+                var userLon = (string)butterBror.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.Longitude);
 
                 if (string.IsNullOrEmpty(userPlace) ||
                     string.IsNullOrEmpty(userLat) ||
@@ -332,13 +327,13 @@ namespace butterBror.Core.Commands.List
 
         private async Task<List<LocationResult>> GetSavedLocationsAsync(CommandData data)
         {
-            string weatherResultLocationsUnworkedString = (string)Engine.Bot.SQL.Users.GetParameter(data.Platform, Format.ToLong(data.UserID), Users.WeatherResultLocations);
+            string weatherResultLocationsUnworkedString = (string)butterBror.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.WeatherResultLocations);
             if (weatherResultLocationsUnworkedString == null || weatherResultLocationsUnworkedString.Length == 0)
             {
                 return null;
             }
 
-            var weatherResultLocationsUnworked = Format.ParseStringArray(weatherResultLocationsUnworkedString);
+            var weatherResultLocationsUnworked = DataConversion.ParseStringArray(weatherResultLocationsUnworkedString);
 
             if (weatherResultLocationsUnworked == null || weatherResultLocationsUnworked.Length == 0)
             {
@@ -354,8 +349,8 @@ namespace butterBror.Core.Commands.List
                     locations.Add(new LocationResult
                     {
                         Name = match.Groups[1].Value,
-                        Latitude = Format.ToDouble(match.Groups[2].Value),
-                        Longitude = Format.ToDouble(match.Groups[3].Value)
+                        Latitude = DataConversion.ToDouble(match.Groups[2].Value),
+                        Longitude = DataConversion.ToDouble(match.Groups[3].Value)
                     });
                 }
             }
@@ -368,7 +363,7 @@ namespace butterBror.Core.Commands.List
             List<string> jsons = locations.Select(loc =>
                 $"name: \"{loc.Name}\", lat: \"{loc.Latitude}\", lon: \"{loc.Longitude}\"").ToList();
 
-            Engine.Bot.SQL.Users.SetParameter(data.Platform, Format.ToLong(data.User.ID), Users.WeatherResultLocations, Format.SerializeStringList(jsons));
+            butterBror.Bot.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.WeatherResultLocations, DataConversion.SerializeStringList(jsons));
         }
 
         private string BuildLocationPage(List<LocationResult> locations, long page)
@@ -522,7 +517,7 @@ namespace butterBror.Core.Commands.List
                 latStr.Substring(0, latStr.Length - 1) :
                 latStr.TrimEnd('N', 'n');
 
-            latitude = Format.ToDouble(latValue);
+            latitude = DataConversion.ToDouble(latValue);
 
             if (isSouth)
                 latitude = -latitude;
@@ -534,7 +529,7 @@ namespace butterBror.Core.Commands.List
                 lonStr.Substring(0, lonStr.Length - 1) :
                 lonStr.TrimEnd('E', 'e');
 
-            longitude = Format.ToDouble(lonValue);
+            longitude = DataConversion.ToDouble(lonValue);
 
             if (isWest)
                 longitude = -longitude;

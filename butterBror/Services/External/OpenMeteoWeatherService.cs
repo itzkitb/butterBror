@@ -1,12 +1,7 @@
 ﻿using butterBror.Core.Commands.List;
 using Microsoft.Extensions.Caching.Memory;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 using static butterBror.Core.Bot.Console;
 
 namespace butterBror.Services.External

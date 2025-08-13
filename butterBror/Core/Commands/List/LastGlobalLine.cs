@@ -1,6 +1,5 @@
 ﻿using butterBror.Core.Bot;
 using butterBror.Core.Bot.SQLColumnNames;
-using butterBror.Data;
 using butterBror.Models;
 using butterBror.Utils;
 using System.Globalization;
@@ -14,7 +13,7 @@ namespace butterBror.Core.Commands.List
         public override string Author => "ItzKITb";
         public override string AuthorsGithub => "https://github.com/itzkitb";
         public override string GithubSource => $"{URLs.githubSource}blob/master/butterBror/Core/Commands/List/LastGlobalLine.cs";
-        public override Version Version => new("1.0.0");
+        public override Version Version => new("1.0.1");
         public override Dictionary<string, string> Description => new() {
             { "ru-RU", "Последнее сообщение определенного пользователя." },
             { "en-US", "The last message of the selected user." }
@@ -39,21 +38,21 @@ namespace butterBror.Core.Commands.List
             {
                 if (data.Arguments.Count != 0)
                 {
-                    string name = Text.UsernameFilter(data.Arguments.ElementAt(0).ToLower());
-                    string userID = Names.GetUserID(name, PlatformsEnum.Twitch, true);
+                    string name = TextSanitizer.UsernameFilter(data.Arguments.ElementAt(0).ToLower());
+                    string userID = UsernameResolver.GetUserID(name, PlatformsEnum.Twitch, true);
 
                     if (userID == null)
                     {
-                        commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:user_not_found", data.ChannelId, data.Platform, Names.DontPing(name)));
+                        commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:user_not_found", data.ChannelId, data.Platform, UsernameResolver.DontPing(name)));
                         commandReturn.SetColor(ChatColorPresets.Red);
                     }
                     else
                     {
-                        string lastLine = (string)Engine.Bot.SQL.Users.GetParameter(data.Platform, Format.ToLong(userID), Users.LastMessage);
-                        string lastChannel = (string)Engine.Bot.SQL.Users.GetParameter(data.Platform, Format.ToLong(userID), Users.LastChannel);
-                        DateTime lastLineDate = DateTime.Parse((string)Engine.Bot.SQL.Users.GetParameter(data.Platform, Format.ToLong(userID), Users.LastSeen), null, DateTimeStyles.AdjustToUniversal);
+                        string lastLine = (string)butterBror.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(userID), Users.LastMessage);
+                        string lastChannel = (string)butterBror.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(userID), Users.LastChannel);
+                        DateTime lastLineDate = DateTime.Parse((string)butterBror.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(userID), Users.LastSeen), null, DateTimeStyles.AdjustToUniversal);
 
-                        if (name == Engine.Bot.BotName.ToLower())
+                        if (name == butterBror.Bot.BotName.ToLower())
                         {
                             commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:last_global_line:bot", data.ChannelId, data.Platform));
                         }
@@ -68,9 +67,9 @@ namespace butterBror.Core.Commands.List
                                 "command:last_global_line",
                                 data.ChannelId,
                                 data.Platform,
-                                Names.DontPing(Names.GetUsername(userID, data.Platform)),
+                                UsernameResolver.DontPing(UsernameResolver.GetUsername(userID, data.Platform, true)),
                                 lastLine,
-                                Text.FormatTimeSpan(Utils.Format.GetTimeTo(lastLineDate, DateTime.UtcNow, false), data.User.Language),
+                                TextSanitizer.FormatTimeSpan(Utils.DataConversion.GetTimeTo(lastLineDate, DateTime.UtcNow, false), data.User.Language),
                                 lastChannel));
                         }
                     }

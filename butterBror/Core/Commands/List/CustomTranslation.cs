@@ -1,6 +1,6 @@
-﻿using butterBror.Utils;
+﻿using butterBror.Core.Bot;
 using butterBror.Models;
-using butterBror.Core.Bot;
+using butterBror.Utils;
 using TwitchLib.Client.Enums;
 
 namespace butterBror.Core.Commands.List
@@ -11,7 +11,7 @@ namespace butterBror.Core.Commands.List
         public override string Author => "ItzKITb";
         public override string AuthorsGithub => "https://github.com/itzkitb";
         public override string GithubSource => $"{URLs.githubSource}blob/master/butterBror/Core/Commands/List/CustomTranslation.cs";
-        public override Version Version => new("1.0.0");
+        public override Version Version => new("1.0.1");
         public override Dictionary<string, string> Description => new()
         {
             { "ru-RU", "Заменить стандартные сообщения собственными." },
@@ -101,7 +101,7 @@ namespace butterBror.Core.Commands.List
                                         "error:not_enough_arguments",
                                         string.Empty,
                                         data.Platform,
-                                        $"{Engine.Bot.Executor}ct set [paramName] [en/ru] [text]"));
+                                        $"{butterBror.Bot.DefaultExecutor}ct set [paramName] [en/ru] [text]"));
                                     commandReturn.SetColor(ChatColorPresets.Red);
                                 }
                             }
@@ -163,17 +163,17 @@ namespace butterBror.Core.Commands.List
                         else
                         {
                             commandReturn.SetMessage(LocalizationService.GetString(
-                                data.User.Language, 
-                                "error:translation_lang_is_not_exist", 
-                                string.Empty, 
-                                data.Platform, 
-                                lang, 
+                                data.User.Language,
+                                "error:translation_lang_is_not_exist",
+                                string.Empty,
+                                data.Platform,
+                                lang,
                                 string.Join(", ", langs)));
 
                             commandReturn.SetColor(ChatColorPresets.Red);
                         }
                     }
-                    catch (Exception ex)
+                    catch (Exception)
                     {
                         commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:unknown", data.Channel, data.Platform));
                         commandReturn.SetColor(ChatColorPresets.Red);
@@ -186,7 +186,7 @@ namespace butterBror.Core.Commands.List
                         "error:not_enough_arguments",
                         string.Empty,
                         data.Platform,
-                        $"{Engine.Bot.Executor}ct set [paramName] [en/ru] [text]"));
+                        $"{butterBror.Bot.DefaultExecutor}ct set [paramName] [en/ru] [text]"));
                     commandReturn.SetColor(ChatColorPresets.Red);
                 }
             }

@@ -1,8 +1,6 @@
-﻿using butterBror.Utils;
-using butterBror.Data;
+﻿using butterBror.Core.Bot;
 using butterBror.Models;
-using butterBror.Core.Bot;
-using DankDB;
+using butterBror.Utils;
 using TwitchLib.Client.Enums;
 
 namespace butterBror.Core.Commands.List
@@ -13,7 +11,7 @@ namespace butterBror.Core.Commands.List
         public override string Author => "ItzKITb";
         public override string AuthorsGithub => "https://github.com/itzkitb";
         public override string GithubSource => $"{URLs.githubSource}blob/master/butterBror/Core/Commands/List/FrogGame.cs";
-        public override Version Version => new("1.0.0");
+        public override Version Version => new("1.0.1");
         public override Dictionary<string, string> Description => new() {
             { "ru-RU", "Мини-игра по коллекционированию лягушек." },
             { "en-US", "Minigame about collecting frogs." }
@@ -36,9 +34,9 @@ namespace butterBror.Core.Commands.List
 
             try
             {
-                long balance = Convert.ToInt64(Engine.Bot.SQL.Games.GetData("Frogs", data.Platform, Format.ToLong(data.User.ID), "Frogs"));
-                long gifted = Convert.ToInt64(Engine.Bot.SQL.Games.GetData("Frogs", data.Platform, Format.ToLong(data.User.ID), "Gifted"));
-                long received = Convert.ToInt64(Engine.Bot.SQL.Games.GetData("Frogs", data.Platform, Format.ToLong(data.User.ID), "Received"));
+                long balance = Convert.ToInt64(butterBror.Bot.SQL.Games.GetData("Frogs", data.Platform, DataConversion.ToLong(data.User.ID), "Frogs"));
+                long gifted = Convert.ToInt64(butterBror.Bot.SQL.Games.GetData("Frogs", data.Platform, DataConversion.ToLong(data.User.ID), "Gifted"));
+                long received = Convert.ToInt64(butterBror.Bot.SQL.Games.GetData("Frogs", data.Platform, DataConversion.ToLong(data.User.ID), "Received"));
                 string[] info_aliases = ["info", "i"];
                 string[] statistic_aliases = ["statistic", "stat", "s"];
                 string[] caught_aliases = ["caught", "c"];
@@ -64,7 +62,7 @@ namespace butterBror.Core.Commands.List
                     }
                     else if (caught_aliases.Contains(data.Arguments[0].ToLower()))
                     {
-                        if (Command.CheckCooldown(3600, 0, "FrogsReseter", data.UserID, data.ChannelId, data.Platform, false, true))
+                        if (MessageProcessor.CheckCooldown(3600, 0, "FrogsReseter", data.User.ID, data.ChannelId, data.Platform, false, true))
                         {
                             Random rand = new Random();
                             long frog_caught_type = rand.Next(0, 4);
@@ -97,7 +95,7 @@ namespace butterBror.Core.Commands.List
                                     currentBalance,
                                     frogs_caughted));
 
-                                Engine.Bot.SQL.Games.SetData("Frogs", data.Platform, Format.ToLong(data.User.ID), "Gifted", currentBalance);
+                                butterBror.Bot.SQL.Games.SetData("Frogs", data.Platform, DataConversion.ToLong(data.User.ID), "Gifted", currentBalance);
                             }
                         }
                         else
@@ -107,7 +105,7 @@ namespace butterBror.Core.Commands.List
                                 "command:frog:error:caught",
                                 data.ChannelId,
                                 data.Platform,
-                                Text.FormatTimeSpan(Command.GetCooldownTime(data.UserID, "FrogsReseter", 3600, data.Platform), data.User.Language)));
+                                TextSanitizer.FormatTimeSpan(MessageProcessor.GetCooldownTime(data.User.ID, "FrogsReseter", 3600, data.Platform), data.User.Language)));
                             commandReturn.SetColor(ChatColorPresets.Red);
                         }
                     }
@@ -116,8 +114,8 @@ namespace butterBror.Core.Commands.List
                         if (data.Arguments.Count > 2)
                         {
                             string username = data.Arguments[1].ToLower();
-                            long frogs = Utils.Format.ToLong(data.Arguments[2]);
-                            string user_id = Names.GetUserID(username, data.Platform);
+                            long frogs = Utils.DataConversion.ToLong(data.Arguments[2]);
+                            string user_id = UsernameResolver.GetUserID(username, data.Platform);
 
                             if (user_id == null)
                             {
@@ -126,7 +124,7 @@ namespace butterBror.Core.Commands.List
                                     "error:user_not_found",
                                     data.ChannelId,
                                     data.Platform,
-                                    Names.DontPing(username)));
+                                    UsernameResolver.DontPing(username)));
                                 commandReturn.SetColor(ChatColorPresets.Red);
                             }
                             else if (frogs == 0)
@@ -147,16 +145,16 @@ namespace butterBror.Core.Commands.List
                                     data.ChannelId,
                                     data.Platform,
                                     frogs.ToString(),
-                                    Names.DontPing(username)));
+                                    UsernameResolver.DontPing(username)));
 
-                                long giftUserFrogsBalance = Convert.ToInt64(Engine.Bot.SQL.Games.GetData("Frogs", data.Platform, Format.ToLong(user_id), "Gifted"));
-                                long giftUserReceived = Convert.ToInt64(Engine.Bot.SQL.Games.GetData("Frogs", data.Platform, Format.ToLong(user_id), "Received"));
+                                long giftUserFrogsBalance = Convert.ToInt64(butterBror.Bot.SQL.Games.GetData("Frogs", data.Platform, DataConversion.ToLong(user_id), "Gifted"));
+                                long giftUserReceived = Convert.ToInt64(butterBror.Bot.SQL.Games.GetData("Frogs", data.Platform, DataConversion.ToLong(user_id), "Received"));
 
 
-                                Engine.Bot.SQL.Games.SetData("Frogs", data.Platform, Format.ToLong(user_id), "Frogs", giftUserFrogsBalance + frogs);
-                                Engine.Bot.SQL.Games.SetData("Frogs", data.Platform, Format.ToLong(user_id), "Received", giftUserReceived + frogs);
-                                Engine.Bot.SQL.Games.SetData("Frogs", data.Platform, Format.ToLong(data.User.ID), "Frogs", balance - frogs);
-                                Engine.Bot.SQL.Games.SetData("Frogs", data.Platform, Format.ToLong(data.User.ID), "Gifted", gifted + frogs);
+                                butterBror.Bot.SQL.Games.SetData("Frogs", data.Platform, DataConversion.ToLong(user_id), "Frogs", giftUserFrogsBalance + frogs);
+                                butterBror.Bot.SQL.Games.SetData("Frogs", data.Platform, DataConversion.ToLong(user_id), "Received", giftUserReceived + frogs);
+                                butterBror.Bot.SQL.Games.SetData("Frogs", data.Platform, DataConversion.ToLong(data.User.ID), "Frogs", balance - frogs);
+                                butterBror.Bot.SQL.Games.SetData("Frogs", data.Platform, DataConversion.ToLong(data.User.ID), "Gifted", gifted + frogs);
                             }
                             else
                             {
@@ -171,7 +169,7 @@ namespace butterBror.Core.Commands.List
                                 "error:not_enough_arguments",
                                 data.ChannelId,
                                 data.Platform,
-                                $"{Engine.Bot.Executor}frog gift [user] [frogs]"));
+                                $"{butterBror.Bot.DefaultExecutor}frog gift [user] [frogs]"));
                             commandReturn.SetColor(ChatColorPresets.Red);
                         }
                     }
@@ -183,7 +181,7 @@ namespace butterBror.Core.Commands.List
                 }
                 else
                 {
-                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:not_enough_arguments", data.ChannelId, data.Platform, $"{Engine.Bot.Executor}frog {HelpArguments}"));
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:not_enough_arguments", data.ChannelId, data.Platform, $"{butterBror.Bot.DefaultExecutor}frog {HelpArguments}"));
                     commandReturn.SetColor(ChatColorPresets.Red);
                 }
             }

@@ -8,7 +8,7 @@
     <Nullable>enable</Nullable>
     <ApplicationIcon>logo.ico</ApplicationIcon>
     <Platforms>AnyCPU;x86</Platforms>
-    <Version>2.17.4</Version>
+    <Version>2.17.6</Version>
     <Title>butterbror</Title>
     <Company>ItzKITb</Company>
     <Copyright>https://github.com/itzkitb</Copyright>
