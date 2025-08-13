@@ -5,6 +5,7 @@ using Newtonsoft.Json.Linq;
 using TwitchLib.Client.Events;
 using TwitchLib.Client.Models;
 using TwitchLib.Communication.Events;
+using TwitchLib.Communication.Interfaces;
 using static butterBror.Core.Bot.Console;
 
 namespace butterBror.Events
@@ -214,7 +215,10 @@ namespace butterBror.Events
         public static void OnTwitchDisconnected(object s, OnDisconnectedEventArgs e)
         {
             Write("Twitch - Disconnected! Reconnecting...", "info");
-            Bot.Clients.Twitch.Reconnect();
+            Task.Delay(5000).ContinueWith(_ =>
+            {
+                Bot.Clients.Twitch.Reconnect();
+            });
         }
 
         /// <summary>
@@ -289,7 +293,10 @@ namespace butterBror.Events
         public static void OnConnectionError(object s, OnConnectionErrorArgs e)
         {
             Write($"Twitch - Connection error! \"{e.Error.Message}\"", "info", LogLevel.Error);
-            Bot.Clients.Twitch.Reconnect();
+            Task.Delay(5000).ContinueWith(_ =>
+            {
+                Bot.Clients.Twitch.Reconnect();
+            });
         }
 
         /// <summary>

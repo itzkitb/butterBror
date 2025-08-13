@@ -1,7 +1,6 @@
 ﻿using butterBror.Core.Bot;
 using butterBror.Models;
 using butterBror.Utils;
-using Microsoft.TeamFoundation.Common;
 using Newtonsoft.Json;
 
 namespace butterBror.Core.Commands.List
@@ -75,7 +74,7 @@ namespace butterBror.Core.Commands.List
 
                         wantedCurrency = hasTo ? MessageProcessor.GetArgument(data.Arguments, "to") : currencyArgs.Count >= 1 ? currencyArgs[0] : null;
 
-                        if (!wantedCurrency.IsNullOrEmpty())
+                        if (wantedCurrency is not null)
                         {
                             initialCurrency = hasFrom ? MessageProcessor.GetArgument(data.Arguments, "from") : currencyArgs.Count >= 2 ? currencyArgs[1] : null;
                         }
@@ -90,7 +89,7 @@ namespace butterBror.Core.Commands.List
                         if (currencyArgs.Count >= 2) wantedCurrency = currencyArgs[1];
                     }
 
-                    if (!wantedCurrency.IsNullOrEmpty() && !initialCurrency.IsNullOrEmpty())
+                    if (wantedCurrency is not null && initialCurrency is not null)
                     {
                         wantedCurrency = wantedCurrency.ToUpper();
                         initialCurrency = initialCurrency.ToUpper();
