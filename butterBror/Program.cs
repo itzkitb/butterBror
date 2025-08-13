@@ -43,7 +43,7 @@ namespace butterBror
         public static int BankDollars = 0;
         public static bool Ready = false;
         public static string Version = "2.17";
-        public static string Patch = "6";
+        public static string Patch = "7";
         public static string PreviousVersion = "";
         public static float Coins = 0;
         public static DateTime StartTime = new();

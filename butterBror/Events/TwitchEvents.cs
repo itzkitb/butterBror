@@ -66,7 +66,7 @@ namespace butterBror.Events
 
         public static void OnUserBanned(object s, OnUserBannedArgs e)
         {
-            Write($"Twitch - #{e.UserBan.Channel} User {e.UserBan.Username} has been permanently banned!", "info");
+            //Write($"Twitch - #{e.UserBan.Channel} User {e.UserBan.Username} has been permanently banned!", "info");
         }
 
         /// <summary>
@@ -89,7 +89,7 @@ namespace butterBror.Events
 
         public static void OnUserTimedout(object s, OnUserTimedoutArgs e)
         {
-            Write($"Twitch - #{e.UserTimeout.Channel} User {e.UserTimeout.Username} has been blocked for {e.UserTimeout.TimeoutDuration} seconds", "info");
+            //Write($"Twitch - #{e.UserTimeout.Channel} User {e.UserTimeout.Username} has been blocked for {e.UserTimeout.TimeoutDuration} seconds", "info");
         }
 
         /// <summary>
@@ -100,7 +100,7 @@ namespace butterBror.Events
 
         public static void OnReSubscriber(object s, OnReSubscriberArgs e)
         {
-            Write($"Twitch - #{e.Channel} {e.ReSubscriber.DisplayName} has renewed his subscription! He has been subscribing for {e.ReSubscriber.MsgParamCumulativeMonths} ​​month(s) \"{e.ReSubscriber.ResubMessage}\"", "info");
+            //Write($"Twitch - #{e.Channel} {e.ReSubscriber.DisplayName} has renewed his subscription! He has been subscribing for {e.ReSubscriber.MsgParamCumulativeMonths} ​​month(s) \"{e.ReSubscriber.ResubMessage}\"", "info");
         }
 
         /// <summary>
@@ -111,7 +111,7 @@ namespace butterBror.Events
 
         public static void OnGiftedSubscription(object s, OnGiftedSubscriptionArgs e)
         {
-            Write($"Twitch - #{e.Channel} {e.GiftedSubscription.DisplayName} has given a subscription to {e.GiftedSubscription.MsgParamRecipientDisplayName} for {e.GiftedSubscription.MsgParamMonths} ​​month(s)!", "info");
+            //Write($"Twitch - #{e.Channel} {e.GiftedSubscription.DisplayName} has given a subscription to {e.GiftedSubscription.MsgParamRecipientDisplayName} for {e.GiftedSubscription.MsgParamMonths} ​​month(s)!", "info");
         }
 
         /// <summary>
@@ -122,7 +122,7 @@ namespace butterBror.Events
 
         public static void OnRaidNotification(object s, OnRaidNotificationArgs e)
         {
-            Write($"Twitch - #{e.Channel} PagMan RAID from @{e.RaidNotification.DisplayName} with {e.RaidNotification.MsgParamViewerCount} raider(s)", "info");
+            //Write($"Twitch - #{e.Channel} PagMan RAID from @{e.RaidNotification.DisplayName} with {e.RaidNotification.MsgParamViewerCount} raider(s)", "info");
         }
 
         /// <summary>
@@ -133,7 +133,7 @@ namespace butterBror.Events
 
         public static void OnNewSubscriber(object s, OnNewSubscriberArgs e)
         {
-            Write($"Twitch - #{e.Channel} {e.Subscriber.DisplayName} subscribed! \"{e.Subscriber.ResubMessage}\"", "info");
+            //Write($"Twitch - #{e.Channel} {e.Subscriber.DisplayName} subscribed! \"{e.Subscriber.ResubMessage}\"", "info");
         }
 
         /// <summary>
@@ -144,7 +144,7 @@ namespace butterBror.Events
 
         public static void OnMessageCleared(object s, OnMessageClearedArgs e)
         {
-            Write($"Twitch - #{e.Channel} The message \"{e.Message}\" has been deleted!", "info");
+            //Write($"Twitch - #{e.Channel} The message \"{e.Message}\" has been deleted!", "info");
         }
 
         /// <summary>
@@ -166,7 +166,7 @@ namespace butterBror.Events
 
         public static void OnChatCleared(object s, OnChatClearedArgs e)
         {
-            Write($"Twitch - #{e.Channel} The chat was cleared!", "info");
+            //Write($"Twitch - #{e.Channel} The chat was cleared!", "info");
         }
 
         /// <summary>
@@ -225,7 +225,7 @@ namespace butterBror.Events
 
         public static void OnCommunitySubscription(object s, OnCommunitySubscriptionArgs e)
         {
-            Write($"Twitch - #{e.Channel} {e.GiftedSubscription.DisplayName} was gifted {e.GiftedSubscription.MsgParamMassGiftCount} subscription(s) on {e.GiftedSubscription.MsgParamMultiMonthGiftDuration} month(s)", "info");
+            //Write($"Twitch - #{e.Channel} {e.GiftedSubscription.DisplayName} was gifted {e.GiftedSubscription.MsgParamMassGiftCount} subscription(s) on {e.GiftedSubscription.MsgParamMultiMonthGiftDuration} month(s)", "info");
         }
 
         /// <summary>
@@ -236,7 +236,7 @@ namespace butterBror.Events
 
         public static void OnAnnounce(object s, OnAnnouncementArgs e)
         {
-            Write($"Twitch - #{e.Channel} Announce {e.Announcement.Message}", "info");
+            //Write($"Twitch - #{e.Channel} Announce {e.Announcement.Message}", "info");
         }
 
         /// <summary>
@@ -247,7 +247,7 @@ namespace butterBror.Events
 
         public static void OnContinuedGiftedSubscription(object s, OnContinuedGiftedSubscriptionArgs e)
         {
-            Write($"Twitch - #{e.Channel} User @{e.ContinuedGiftedSubscription.DisplayName} extended gift subscription!", "info");
+            //Write($"Twitch - #{e.Channel} User @{e.ContinuedGiftedSubscription.DisplayName} extended gift subscription!", "info");
         }
 
         /// <summary>

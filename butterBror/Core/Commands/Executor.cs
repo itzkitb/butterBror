@@ -186,7 +186,7 @@ namespace butterBror.Core.Commands
         {
             try
             {
-                string CommandName = message.Content.Split(' ')[0].Remove(0, 1);
+                string CommandName = message.Content.Split(' ')[0].TrimStart(butterBror.Bot.DefaultExecutor);
                 List<string> CommandArguments = message.Content.Split(' ').Skip(1).ToList();
                 string CommandArgumentsAsString = string.Join(' ', CommandArguments);
 
@@ -265,7 +265,7 @@ namespace butterBror.Core.Commands
                 Guid command_execution_uid = Guid.NewGuid();
                 CommandData data = new()
                 {
-                    Name = message.Text.ToLower().Split(' ')[0],
+                    Name = message.Text.ToLower().Split(' ')[0].TrimStart(butterBror.Bot.DefaultExecutor),
                     Arguments = message.Text.Split(' ').Skip(1).ToList(),
                     ArgumentsString = string.Join(" ", message.Text.Split(' ').Skip(1)),
                     Channel = message.Chat.Title ?? message.Chat.Username ?? message.Chat.Id.ToString(),
