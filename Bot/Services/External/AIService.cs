@@ -88,13 +88,13 @@ namespace butterBror.Services.External
             var system_message = new Message
             {
                 role = "system",
-                content = $@"You are bot on platform: {PlatformsPathName.strings[(int)platform]}. Your name is {Bot.BotName}. DO NOT POST CONFIDENTIAL INFORMATION, DO NOT USE PROFANITY! WRITE LESS THAN 50 WORDS! SHORTEN YOUR TEXT!"
+                content = $@"You are bot on platform: {PlatformsPathName.strings[(int)platform]}. Your name is {Bot.BotName}. WRITE LESS THAN 50 WORDS! SHORTEN YOUR TEXT!"
             };
 
             var user_info_message = new Message
             {
                 role = "system",
-                content = $"User info:\n1) Username: {username}\n2) ID: {userID}\n3) Language (YOUR ANSWER MUST BE IN IT unless the user says otherwise!): {lang}\nCurrent date and time: {DateTime.UtcNow.ToString("dd-MM-yyyy HH:mm")} UTC"
+                content = $"User info:\n1) Username: {username}\n2) ID: {userID}\n3) User language: {lang}\nCurrent date and time: {DateTime.UtcNow.ToString("dd-MM-yyyy HH:mm")} UTC"
             };
 
             var user_message = new Message

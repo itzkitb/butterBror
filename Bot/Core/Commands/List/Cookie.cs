@@ -35,6 +35,7 @@ namespace butterBror.Core.Commands.List
         public override async Task<CommandReturn> ExecuteAsync(CommandData data)
         {
             CommandReturn commandReturn = new CommandReturn();
+            commandReturn.SetSafe(true);
 
             try
             {
@@ -58,6 +59,7 @@ namespace butterBror.Core.Commands.List
                         if (targetUserId == null)
                         {
                             commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:user_not_found", data.ChannelId, data.Platform, targetUser));
+                            commandReturn.SetSafe(false);
                             return commandReturn;
                         }
 
@@ -105,6 +107,7 @@ namespace butterBror.Core.Commands.List
                                 data.ChannelId,
                                 data.Platform,
                                 targetUser));
+                            commandReturn.SetSafe(false);
                             return commandReturn;
                         }
 
@@ -112,6 +115,7 @@ namespace butterBror.Core.Commands.List
                         if (recipientLastUse.Date != DateTime.UtcNow.Date)
                         {
                             commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:cookie_already_has", data.ChannelId, data.Platform, targetUser));
+                            commandReturn.SetSafe(false);
                             return commandReturn;
                         }
 
@@ -164,7 +168,7 @@ namespace butterBror.Core.Commands.List
                             {
                                 var user = sortedList[i];
                                 string username = UsernameResolver.GetUsername(user.UserId.ToString(), data.Platform, true);
-                                topLines[i] = $"{i + 1}. {UsernameResolver.DontPing(username)} - {user.Value}";
+                                topLines[i] = $"{i + 1}. {UsernameResolver.Unmention(username)} - {user.Value}";
                             }
                             else
                             {

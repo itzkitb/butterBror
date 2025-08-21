@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.Loader;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -53,6 +54,17 @@ namespace butterBror.Utils
             var fullCode = $@"
         using DankDB;
         using butterBror;
+        using butterBror.Utils;
+        using butterBror.Services.External;
+        using butterBror.Services.System;
+        using butterBror.Models;
+        using butterBror.Data;
+        using butterBror.Events;
+        using butterBror.Workers;
+        using butterBror.Core.Bot;
+        using butterBror.Core.Commands;
+        using butterBror.Core.Commands.List;
+        using butterBror.Core.Services;
         using System;
         using System.Collections.Generic;
         using System.Linq;
@@ -112,11 +124,31 @@ namespace butterBror.Utils
             }
 
             stream.Seek(0, SeekOrigin.Begin);
-            var assemblyLoad = Assembly.Load(stream.ToArray());
-            var type = assemblyLoad.GetType("MyClass");
-            var method = type.GetMethod("Execute");
+            var loadContext = new SandboxLoadContext();
+            Assembly _assembly = null;
+            string result = null;
+            Exception unloadException = null;
 
-            return (string)method.Invoke(null, null);
+            try
+            {
+                _assembly = loadContext.LoadFromStream(stream);
+                var type = _assembly.GetType("MyClass");
+                var method = type.GetMethod("Execute");
+
+                result = (string)method.Invoke(null, null);
+            }
+            finally
+            {
+                loadContext.Unload();
+
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+
+                if (unloadException != null)
+                    throw new CompilationException($"Failed to unload sandbox context: {unloadException.Message}");
+            }
+
+            return result;
         }
 
         /// <summary>
@@ -133,6 +165,17 @@ namespace butterBror.Utils
             /// </summary>
             /// <param name="message">Detailed compiler error message describing the failure</param>
             public CompilationException(string message) : base(message) { }
+        }
+
+        private sealed class SandboxLoadContext : AssemblyLoadContext
+        {
+            public SandboxLoadContext() : base(isCollectible: true) { }
+
+            protected override Assembly Load(AssemblyName assemblyName)
+            {
+                // Делегируем загрузку основным сборкам через стандартный контекст
+                return AssemblyLoadContext.Default.LoadFromAssemblyName(assemblyName);
+            }
         }
     }
 }

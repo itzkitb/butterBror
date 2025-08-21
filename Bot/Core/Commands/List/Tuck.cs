@@ -60,11 +60,11 @@ namespace butterBror.Core.Commands.List
                         {
                             List<string> list = data.Arguments;
                             list.RemoveAt(0);
-                            commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:tuck:text", data.ChannelId, data.Platform, UsernameResolver.DontPing(username), string.Join(" ", list)));
+                            commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:tuck:text", data.ChannelId, data.Platform, UsernameResolver.Unmention(username), string.Join(" ", list)));
                         }
                         else
                         {
-                            commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:tuck", data.ChannelId, data.Platform, UsernameResolver.DontPing(username)));
+                            commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:tuck", data.ChannelId, data.Platform, UsernameResolver.Unmention(username)));
                         }
                     }
                     else

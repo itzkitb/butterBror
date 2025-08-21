@@ -112,6 +112,8 @@ namespace butterBror.Core.Commands
         /// <exception cref="Exception">Thrown when command execution fails with detailed error context</exception>
         public static async Task Run(CommandData data, bool isATest = false)
         {
+            if (!butterBror.Bot.Initialized) return;
+
             await Task.Run(async () =>
             {
                 InitializeCommands();

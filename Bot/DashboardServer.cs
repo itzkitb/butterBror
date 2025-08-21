@@ -256,6 +256,8 @@ namespace butterBror
             {
                 try
                 {
+                    if (!Bot.Initialized) return;
+
                     IPv4InterfaceStatistics ethernetStats = selectedInterface.GetIPv4Statistics();
                     double networkReceived = ethernetStats.BytesReceived / 1024 / 1024;
                     double networkSent = ethernetStats.BytesSent / 1024 / 1024;

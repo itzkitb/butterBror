@@ -43,7 +43,9 @@ namespace butterBror.Core.Commands.List
                     exdata.Arguments.Insert(0, "lang");
                 }
                 var command = new Bot();
-                return command.Execute(exdata);
+                CommandReturn result = command.Execute(exdata);
+                result.SetSafe(true);
+                return result;
             }
             catch (Exception e)
             {

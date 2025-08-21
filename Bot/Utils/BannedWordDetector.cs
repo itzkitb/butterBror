@@ -41,7 +41,7 @@ namespace butterBror.Utils
         /// Performs comprehensive validation of a message against all configured content filters.
         /// </summary>
         /// <param name="message">The raw message text to be validated.</param>
-        /// <param name="channelID">The identifier of the channel/room where the message was sent.</param>
+        /// <param name="channelId">The identifier of the channel/room where the message was sent.</param>
         /// <param name="platform">The streaming platform context (Twitch, Discord, or Telegram).</param>
         /// <returns>
         /// <see langword="true"/> if the message passes all validation checks;
@@ -71,7 +71,7 @@ namespace butterBror.Utils
         /// The method automatically combines global banned words with channel-specific filters for comprehensive coverage.
         /// Returns false immediately upon first detection to optimize performance.
         /// </remarks>
-        public bool Check(string message, string channelID, PlatformsEnum platform)
+        public bool Check(string message, string channelId, PlatformsEnum platform)
         {
             try
             {
@@ -92,12 +92,12 @@ namespace butterBror.Utils
                 List<string> single_banwords = Manager.Get<List<string>>(banned_words_path, "single_word");
                 Dictionary<string, string> replacements = Manager.Get<Dictionary<string, string>>(replacement_path, "list") ?? new Dictionary<string, string>();
                 List<string> banned_words = Manager.Get<List<string>>(banned_words_path, "list");
-                banned_words.AddRange(Bot.SQL.Channels.GetBanWords(platform, channelID));
+                banned_words.AddRange(Bot.SQL.Channels.GetBanWords(platform, channelId));
 
                 _replacementPattern = string.Join("|", replacements.Keys.Select(Regex.Escape));
                 _replacementRegex = new Regex(_replacementPattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
-                (bool, string) check_result = RunCheck(channelID,
+                (bool, string) check_result = RunCheck(channelId,
                     check_UUID,
                     banned_words,
                     single_banwords,
@@ -125,7 +125,7 @@ namespace butterBror.Utils
         /// <summary>
         /// Executes the eight-stage validation sequence against transformed message versions.
         /// </summary>
-        /// <param name="channelID">The channel/room identifier.</param>
+        /// <param name="channelId">The channel/room identifier.</param>
         /// <param name="checkUUID">Unique operation identifier for tracking and diagnostics.</param>
         /// <param name="bannedWords">Combined list of global and channel-specific banned words.</param>
         /// <param name="singleBanwords">List of words requiring exact match (no partial matches).</param>
@@ -167,7 +167,7 @@ namespace butterBror.Utils
         /// This staged approach balances thoroughness with performance in high-volume chat environments.
         /// </remarks>
         private (bool, string) RunCheck(
-    string channelID, string checkUUID, List<string> bannedWords,
+    string channelId, string checkUUID, List<string> bannedWords,
     List<string> singleBanwords, Dictionary<string, string> replacements,
     string clearedMessageWithoutRepeats, string clearedMessageWithoutRepeatsChangedLayout,
     string clearedMessage, string clearedMessageChangedLayout)
@@ -187,8 +187,8 @@ namespace butterBror.Utils
             foreach (var (message, useReplacement, label) in checks)
             {
                 bool result = useReplacement
-                    ? CheckReplacements(message, channelID, checkUUID, bannedWords, singleBanwords, replacements)
-                    : CheckBanWords(message, channelID, checkUUID, bannedWords, singleBanwords);
+                    ? CheckReplacements(message, channelId, checkUUID, bannedWords, singleBanwords, replacements)
+                    : CheckBanWords(message, channelId, checkUUID, bannedWords, singleBanwords);
 
                 if (!result) return (false, label);
             }
@@ -200,7 +200,7 @@ namespace butterBror.Utils
         /// Validates a normalized message against banned word lists using direct string comparison.
         /// </summary>
         /// <param name="message">The normalized message text to validate.</param>
-        /// <param name="channelID">The channel/room identifier.</param>
+        /// <param name="channelId">The channel/room identifier.</param>
         /// <param name="checkUUID">Unique operation identifier for tracking.</param>
         /// <param name="bannedWords">Combined list of global and channel-specific banned words.</param>
         /// <param name="singleBanwords">List of words requiring exact match (no partial matches).</param>
@@ -227,7 +227,7 @@ namespace butterBror.Utils
         /// This method serves as the foundation for both direct and replacement-based validation strategies.
         /// Handles the core matching logic without additional transformation overhead.
         /// </remarks>
-        private bool CheckBanWords(string message, string channelID, string checkUUID,
+        private bool CheckBanWords(string message, string channelId, string checkUUID,
     List<string> bannedWords, List<string> singleBanwords)
         {
             try
@@ -258,7 +258,7 @@ namespace butterBror.Utils
         /// Applies character replacement rules to detect obfuscated banned words, then validates the transformed message.
         /// </summary>
         /// <param name="message">The normalized message text to transform and validate.</param>
-        /// <param name="channelID">The channel/room identifier.</param>
+        /// <param name="channelId">The channel/room identifier.</param>
         /// <param name="checkUUID">Unique operation identifier for tracking.</param>
         /// <param name="bannedWords">Combined list of global and channel-specific banned words.</param>
         /// <param name="singleBanwords">List of words requiring exact match (no partial matches).</param>
@@ -293,7 +293,7 @@ namespace butterBror.Utils
         /// <item>Keyboard-shifted characters</item>
         /// </list>
         /// </remarks>
-        private bool CheckReplacements(string message, string channelID, string checkUUID,
+        private bool CheckReplacements(string message, string channelId, string checkUUID,
     List<string> bannedWords, List<string> singleBanwords, Dictionary<string, string> replacements)
         {
             try
@@ -301,7 +301,7 @@ namespace butterBror.Utils
                 string maskedWord = _replacementRegex.Replace(message, match =>
                     replacements[match.Value.ToLower()]);
 
-                return CheckBanWords(maskedWord, channelID, checkUUID, bannedWords, singleBanwords);
+                return CheckBanWords(maskedWord, channelId, checkUUID, bannedWords, singleBanwords);
             }
             catch (Exception ex)
             {

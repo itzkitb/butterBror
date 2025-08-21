@@ -455,6 +455,8 @@ namespace butterBror.Utils
             string serverId = ""
         )
         {
+            if (!Bot.Initialized) return;
+
             var now = DateTime.UtcNow;
             var semaphore = messagesSemaphores.GetOrAdd(userId, id => (new SemaphoreSlim(1, 1), now));
             try

@@ -298,9 +298,9 @@ namespace butterBror.Utils
         /// This method is safe to use in all chat contexts and has negligible performance impact.
         /// The modification is purely visual - the underlying username remains unchanged for system use.
         /// </remarks>
-        public static string DontPing(string username)
+        public static string Unmention(string username)
         {
-            return string.Join("󠀀", username);
+            return string.Join("\u2063", username.ToCharArray()); // Fixed
         }
     }
 }

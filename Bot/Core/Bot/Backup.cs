@@ -65,7 +65,13 @@ namespace butterBror.Core.Bot
 
                 try
                 {
-                    string[] allFiles = Directory.GetFiles(butterBror.Bot.Paths.Main, "*", SearchOption.AllDirectories);
+                    // Use EnumerateFiles instead of GetFiles for line-by-line reading
+                    var allFiles = Directory.EnumerateFiles(
+                        butterBror.Bot.Paths.Main,
+                        "*",
+                        SearchOption.AllDirectories
+                    );
+
                     foreach (string file in allFiles)
                     {
                         if (!file.EndsWith(".db", StringComparison.OrdinalIgnoreCase))
@@ -88,7 +94,19 @@ namespace butterBror.Core.Bot
                         dbManager.CreateBackup(backupDbPath);
                     }
 
-                    await Task.Run(() => ZipFile.CreateFromDirectory(tempBackupDir, archivePath));
+                    // We use the stream compression method
+                    await Task.Run(() =>
+                    {
+                        using (FileStream zipToOpen = new FileStream(archivePath, FileMode.Create))
+                        using (ZipArchive archive = new ZipArchive(zipToOpen, ZipArchiveMode.Create))
+                        {
+                            foreach (string file in Directory.EnumerateFiles(tempBackupDir, "*", SearchOption.AllDirectories))
+                            {
+                                string relativePathInArchive = Path.GetRelativePath(tempBackupDir, file);
+                                archive.CreateEntryFromFile(file, relativePathInArchive, CompressionLevel.Optimal);
+                            }
+                        }
+                    });
                 }
                 finally
                 {
@@ -105,11 +123,19 @@ namespace butterBror.Core.Bot
                 double archiveSizeMB = archiveSize / (1024.0 * 1024.0);
 
                 Write($"Backup completed in {stopwatch.Elapsed.TotalSeconds:0} seconds (Archive size: {archiveSizeMB:0.00} MB)!", "backup");
-                PlatformMessageSender.TwitchSend(butterBror.Bot.BotName.ToLower(), $"🗃️ Backup completed in {stopwatch.Elapsed.TotalSeconds:0} seconds (Archive size: {archiveSizeMB:0.00} MB)", "", "", "", true, false);
+                PlatformMessageSender.TwitchSend(butterBror.Bot.BotName.ToLower(),
+                    $"🗃️ Backup completed in {stopwatch.Elapsed.TotalSeconds:0} seconds (Archive size: {archiveSizeMB:0.00} MB)",
+                    "", "", "", true, false);
             }
             catch (Exception ex)
             {
                 Write(ex);
+            }
+            finally
+            {
+                // ДОБАВЛЕНО: Явная очистка памяти после операции
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
             }
         }
 

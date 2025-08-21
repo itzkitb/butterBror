@@ -115,11 +115,8 @@ namespace butterBror.Services.External
                             emoteSet(id: $setId) {
                                 addEmote(id: $emote) {
                                     id
-                                    __typename
                                 }
-                                __typename
                             }
-                            __typename
                         }
                     }",
                 variables = new
@@ -158,11 +155,8 @@ namespace butterBror.Services.External
                             emoteSet(id: $setId) {
                                 removeEmote(id: $emote) {
                                     id
-                                    __typename
                                 }
-                                __typename
                             }
-                            __typename
                         }
                     }",
                 variables = new
@@ -201,11 +195,8 @@ namespace butterBror.Services.External
                             emoteSet(id: $setId) {
                                 updateEmoteAlias(id: $emote, alias: $alias) {
                                     id
-                                    __typename
                                 }
-                                __typename
                             }
-                            __typename
                         }
                     }",
                 variables = new
@@ -282,7 +273,12 @@ namespace butterBror.Services.External
             {
                 operationName = "SearchUsers",
                 variables = new { query = userId },
-                query = "query SearchUsers($query: String!) {\n  users(query: $query) {\n    id\n    username\n    display_name\n    roles\n    style {\n      color\n      __typename\n    }\n    avatar_url\n    __typename\n  }\n}"
+                query = @"query SearchUsers($query: String!) {
+  users(query: $query, limit: 1) {
+    id
+    username
+  }
+}"
             };
 
             using var httpRequest = new HttpRequestMessage(HttpMethod.Post, requestUrl)
@@ -296,7 +292,6 @@ namespace butterBror.Services.External
                 response.EnsureSuccessStatusCode();
 
                 var responseContent = await response.Content.ReadAsStringAsync();
-                //File.WriteAllText("C:/Users/siste/Desktop/lol.txt", responseContent); Test thing 0_0
 
                 var userResponse = JsonSerializer.Deserialize<List<UserResponse>>(responseContent);
                 var firstUser = userResponse?.FirstOrDefault()?.Data?.Users.FirstOrDefault();
@@ -331,8 +326,6 @@ namespace butterBror.Services.External
                 variables = new
                 {
                     query = emoteName,
-                    limit = 24,
-                    page = 1,
                     sort = new
                     {
                         value = "popularity",
@@ -348,43 +341,14 @@ namespace butterBror.Services.External
                         aspect_ratio = ""
                     }
                 },
-                query = @"query SearchEmotes($query: String!, $page: Int, $sort: Sort, $limit: Int, $filter: EmoteSearchFilter) {
-            emotes(query: $query, page: $page, sort: $sort, limit: $limit, filter: $filter) {
-                count
-                max_page
-                items {
-                    id
-                    name
-                    state
-                    trending
-                    owner {
-                        id
-                        username
-                        display_name
-                        style {
-                            color
-                            paint_id
-                            __typename
-                        }
-                        __typename
-                    }
-                    flags
-                    host {
-                        url
-                        files {
-                            name
-                            format
-                            width
-                            height
-                            __typename
-                        }
-                        __typename
-                    }
-                    __typename
-                }
-                __typename
-            }
-        }"
+                query = @"query SearchEmotes($query: String!, $sort: Sort, $filter: EmoteSearchFilter) {
+	emotes(query: $query, sort: $sort, limit: 1, filter: $filter) {
+		items {
+			id
+			name
+		}
+	}
+}"
             };
 
             try

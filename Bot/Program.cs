@@ -42,7 +42,7 @@ namespace butterBror
         public static int BankDollars = 0;
         public static bool Ready = false;
         public static string Version = "2.17";
-        public static string Patch = "7";
+        public static string Patch = "8";
         public static string PreviousVersion = "";
         public static float Coins = 0;
         public static DateTime StartTime = new();
@@ -91,9 +91,11 @@ namespace butterBror
         public static readonly TimeSpan CacheTTL = TimeSpan.FromMinutes(30);
 
         private static DateTime _startTime = DateTime.UtcNow;
-        private static float _lastCoinAmount = 0;
-        private static PerformanceCounter _CPU = new PerformanceCounter("Processor", "% Processor Time", "_Total");
+        private static CpuUsage _CpuUsage = new CpuUsage();
         private static Task _repeater;
+
+        private static DateTime _lastTelemtry = DateTime.UtcNow.AddMinutes(-1);
+        private static DateTime _lastSave = DateTime.UtcNow.AddMinutes(-1);
         #endregion
         #region Core
         /// <summary>
@@ -157,45 +159,18 @@ namespace butterBror
                 {
                     if (Initialized)
                     {
-                        Telemetry.CPUItems++;
-                        Telemetry.CPU += (decimal)_CPU.NextValue();
                         DateTime now = DateTime.UtcNow;
+                        Telemetry.CPUItems++;
+                        Telemetry.CPU += (decimal)_CpuUsage.GetUsage();
 
-                        if (Coins != 0 && Users != 0 && _lastCoinAmount != Coins)
+                        if (now.Minute % 10 == 0 && (now - _lastTelemtry).Minutes > 0)
                         {
-                            var date = DateTime.UtcNow;
-                            Dictionary<string, dynamic> currencyData = new()
-                            {
-                                    { "amount", Coins },
-                                    { "users", Users },
-                                    { "dollars", BankDollars },
-                                    { "cost", BankDollars / Coins },
-                                    { "middleBalance", Coins / Users }
-                            };
-
-                            if (Paths.Currency is not null)
-                            {
-                                Manager.Save(Paths.Currency, "totalAmount", Coins);
-                                Manager.Save(Paths.Currency, "totalUsers", Users);
-                                Manager.Save(Paths.Currency, "totalDollarsInTheBank", BankDollars);
-                                Manager.Save(Paths.Currency, $"[{date.Day}.{date.Month}.{date.Year}]", "");
-                                Manager.Save(Paths.Currency, $"[{date.Day}.{date.Month}.{date.Year}] cost", (BankDollars / Coins));
-                                Manager.Save(Paths.Currency, $"[{date.Day}.{date.Month}.{date.Year}] amount", Coins);
-                                Manager.Save(Paths.Currency, $"[{date.Day}.{date.Month}.{date.Year}] users", Users);
-                                Manager.Save(Paths.Currency, $"[{date.Day}.{date.Month}.{date.Year}] dollars", BankDollars);
-                            }
-
-                            _lastCoinAmount = Coins;
-                        }
-
-                        if (now.Minute % 10 == 0 && now.Second == 0)
-                        {
+                            _lastTelemtry = now;
                             Paths.UpdatePaths();
                             EmoteCacheService.Save();
-                            await Telemetry.Send();
+                            _ = Telemetry.Send();
 
                             var timeout = TimeSpan.FromMinutes(10);
-
                             foreach (var (userId, (semaphore, lastUsed)) in MessageProcessor.messagesSemaphores.ToList())
                             {
                                 if (now - lastUsed > timeout)
@@ -221,9 +196,12 @@ namespace butterBror
                             _ = Backup.BackupDataAsync();
                         }
 
-                        if (now.Second == 0 && (MessagesBuffer.Count() > 0 || allFirstMessages.Count > 0 || UsersBuffer.Count() > 0))
+                        if (now.Second == 0 && (now - _lastSave).Seconds > 10 && (MessagesBuffer.Count() > 0 || allFirstMessages.Count > 0 || UsersBuffer.Count() > 0))
                         {
+                            _lastSave = now;
                             Stopwatch stopwatch = Stopwatch.StartNew();
+
+                            #region Buffer save 
                             int messages = MessagesBuffer.Count() + allFirstMessages.Count;
                             int users = UsersBuffer.Count();
 
@@ -242,9 +220,26 @@ namespace butterBror
                                 SQL.Channels.SaveFirstMessages(allFirstMessages);
                                 allFirstMessages.Clear();
                             }
+                            #endregion Buffer save 
+                            #region Currency save
+                            Dictionary<string, dynamic> currencyData = new()
+                            {
+                                    { "amount", Coins },
+                                    { "users", Users },
+                                    { "dollars", BankDollars },
+                                    { "cost", BankDollars / Coins },
+                                    { "middleBalance", Coins / Users }
+                            };
+
+                            if (Paths.Currency is not null)
+                            {
+                                Manager.Save(Paths.Currency, "total", currencyData);
+                                Manager.Save(Paths.Currency, $"{now.Day}.{now.Month}.{now.Year}", currencyData);
+                            }
+                            #endregion Currency save
 
                             stopwatch.Stop();
-                            Write($"Saved {messages} messages and {users} users in {stopwatch.ElapsedMilliseconds} ms", "info");
+                            Write($"Saved {messages} messages, {users} users and currency in {stopwatch.ElapsedMilliseconds} ms", "info");
                         }
                     }
                 }
@@ -399,11 +394,6 @@ namespace butterBror
                 return;
             }
 #endif
-
-            if (Environment.OSVersion.Platform == PlatformID.Win32NT)
-            {
-                _CPU.NextValue();
-            }
         }
 
         /// <summary>
@@ -589,13 +579,14 @@ namespace butterBror
         /// </remarks>
         private static void ConnectToTwitch()
         {
-            var credentials = new ConnectionCredentials(BotName, "oauth:" + Tokens.Twitch.AccessToken);
-            var client_options = new ClientOptions
+            ConnectionCredentials credentials = new ConnectionCredentials(BotName, "oauth:" + Tokens.Twitch.AccessToken);
+            ClientOptions client_options = new ClientOptions
             {
                 MessagesAllowedInPeriod = 750,
-                ThrottlingPeriod = TimeSpan.FromSeconds(30)
+                ThrottlingPeriod = TimeSpan.FromSeconds(30),
+                ReconnectionPolicy = new ReconnectionPolicy(10)
             };
-            var webSocket_client = new WebSocketClient(client_options);
+            WebSocketClient webSocket_client = new WebSocketClient(client_options);
             Clients.Twitch = new TwitchClient(webSocket_client);
             Clients.Twitch.Initialize(credentials, BotName, DefaultExecutor);
             Clients.TwitchAPI = new TwitchAPI();
@@ -766,7 +757,7 @@ namespace butterBror
             Initialized = false;
             Connected = false;
 
-            Write($"Shutdown process started (PID: {Environment.ProcessId})", "kernel", LogLevel.Info);
+            Write($"Shutdown process started (PID: {Environment.ProcessId})", "core", LogLevel.Info);
 
             try
             {
@@ -776,11 +767,11 @@ namespace butterBror
                     {
                         Write("Flushing user data buffer...", "kernel");
                         UsersBuffer.Flush();
-                        Write("User buffer disposed successfully", "kernel", LogLevel.Info);
+                        Write("User buffer disposed successfully", "core", LogLevel.Info);
                     }
                     catch (Exception ex)
                     {
-                        Write($"User buffer flush failed: {ex.Message}", "kernel", LogLevel.Warning);
+                        Write($"User buffer flush failed: {ex.Message}", "core", LogLevel.Warning);
                     }
                     finally
                     {
@@ -795,11 +786,11 @@ namespace butterBror
                     {
                         Write("Flushing message data buffer...", "kernel");
                         MessagesBuffer.Flush();
-                        Write("Message buffer disposed successfully", "kernel", LogLevel.Info);
+                        Write("Message buffer disposed successfully", "core", LogLevel.Info);
                     }
                     catch (Exception ex)
                     {
-                        Write($"Message buffer flush failed: {ex.Message}", "kernel", LogLevel.Warning);
+                        Write($"Message buffer flush failed: {ex.Message}", "core", LogLevel.Warning);
                     }
                     finally
                     {
@@ -814,11 +805,11 @@ namespace butterBror
                     {
                         Write("Cancelling Telegram operations...", "kernel");
                         Clients.TelegramCancellationToken.Cancel();
-                        Write("Telegram cancellation requested", "kernel", LogLevel.Info);
+                        Write("Telegram cancellation requested", "core", LogLevel.Info);
                     }
                     catch (Exception ex)
                     {
-                        Write($"Telegram cancellation failed: {ex.Message}", "kernel", LogLevel.Warning);
+                        Write($"Telegram cancellation failed: {ex.Message}", "core", LogLevel.Warning);
                     }
                     finally
                     {
@@ -834,11 +825,11 @@ namespace butterBror
                         Write("Disconnecting from Discord...", "kernel");
                         await Clients.Discord.LogoutAsync();
                         await Clients.Discord.StopAsync();
-                        Write("Discord client disconnected", "kernel", LogLevel.Info);
+                        Write("Discord client disconnected", "core", LogLevel.Info);
                     }
                     catch (Exception ex)
                     {
-                        Write($"Discord disconnect failed: {ex.Message}", "kernel", LogLevel.Warning);
+                        Write($"Discord disconnect failed: {ex.Message}", "core", LogLevel.Warning);
                     }
                     finally
                     {
@@ -847,12 +838,51 @@ namespace butterBror
                     }
                 }
 
+                if (SQL != null)
+                {
+                    Write("Disposing SQL...", "kernel");
+                    try
+                    {
+                        SQL.Channels.Dispose();
+                        SQL.Users.Dispose();
+                        SQL.Games.Dispose();
+                        SQL.Messages.Dispose();
+                        SQL.Roles.Dispose();
+                    }
+                    catch (Exception ex)
+                    {
+                        Write($"SQL dispose failed: {ex.Message}", "core", LogLevel.Warning);
+                    }
+                }
+
+                try
+                {
+                    Dictionary<string, dynamic> currencyData = new()
+                            {
+                                    { "amount", Coins },
+                                    { "users", Users },
+                                    { "dollars", BankDollars },
+                                    { "cost", BankDollars / Coins },
+                                    { "middleBalance", Coins / Users }
+                            };
+
+                    if (Paths.Currency is not null)
+                    {
+                        Manager.Save(Paths.Currency, "total", currencyData);
+                        Manager.Save(Paths.Currency, $"{DateTime.UtcNow.Day}.{DateTime.UtcNow.Month}.{DateTime.UtcNow.Year}", currencyData);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Write($"Currency dispose failed: {ex.Message}", "core", LogLevel.Warning);
+                }
+
                 Write("Waiting for pending operations to complete...", "kernel");
                 await Task.Delay(2000);
             }
             catch (Exception ex)
             {
-                Write($"Critical error during shutdown sequence: {ex}", "kernel", LogLevel.Error);
+                Write($"Critical error during shutdown sequence: {ex}", "core", LogLevel.Error);
             }
             finally
             {
@@ -866,7 +896,7 @@ namespace butterBror
             Exception ex = (Exception)e.ExceptionObject;
             try
             {
-                Write("Critical error.", "kernel", LogLevel.Error);
+                Write("Critical error.", "core", LogLevel.Error);
                 Write(ex);
                 Shutdown().RunSynchronously();
             }

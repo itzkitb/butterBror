@@ -49,7 +49,7 @@ namespace butterBror.Core.Commands.List
 
                 if (userId is null)
                 {
-                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:user_not_found", data.ChannelId, data.Platform, UsernameResolver.DontPing(name)));
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:user_not_found", data.ChannelId, data.Platform, UsernameResolver.Unmention(name)));
                     commandReturn.SetColor(ChatColorPresets.Red);
                 }
                 else
@@ -82,7 +82,7 @@ namespace butterBror.Core.Commands.List
                                 data.ChannelId,
                                 data.Platform,
                                 message_badges,
-                                name ?? UsernameResolver.DontPing(UsernameResolver.GetUsername(userId, data.Platform, true)),
+                                name ?? UsernameResolver.Unmention(UsernameResolver.GetUsername(userId, data.Platform, true)),
                                 message.messageText,
                                 TextSanitizer.FormatTimeSpan(Utils.DataConversion.GetTimeTo(message.messageDate, DateTime.UtcNow, false), data.User.Language))); // Fix AA8
                         }
@@ -93,7 +93,7 @@ namespace butterBror.Core.Commands.List
                     }
                     else
                     {
-                        commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:user_not_found", data.ChannelId, data.Platform, UsernameResolver.DontPing(name)));
+                        commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:user_not_found", data.ChannelId, data.Platform, UsernameResolver.Unmention(name)));
                         commandReturn.SetColor(ChatColorPresets.Red);
                     }
                 }

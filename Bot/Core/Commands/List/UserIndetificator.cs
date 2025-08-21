@@ -50,7 +50,7 @@ namespace butterBror.Core.Commands.List
                     }
                     else
                     {
-                        commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:id:user", data.ChannelId, data.Platform, UsernameResolver.DontPing(username), ID));
+                        commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:id:user", data.ChannelId, data.Platform, UsernameResolver.Unmention(username), ID));
                     }
                 }
                 else

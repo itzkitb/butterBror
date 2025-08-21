@@ -51,7 +51,7 @@ namespace butterBror.Core.Commands.List
 
                 if (userID == null)
                 {
-                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:user_not_found", data.ChannelId, data.Platform, UsernameResolver.DontPing(name)));
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:user_not_found", data.ChannelId, data.Platform, UsernameResolver.Unmention(name)));
                     commandReturn.SetColor(ChatColorPresets.Red);
                 }
                 else
@@ -71,7 +71,7 @@ namespace butterBror.Core.Commands.List
                             "command:first_global_line:user",
                             data.ChannelId,
                             data.Platform,
-                            UsernameResolver.DontPing(UsernameResolver.GetUsername(userID, data.Platform, true)),
+                            UsernameResolver.Unmention(UsernameResolver.GetUsername(userID, data.Platform, true)),
                             firstLine,
                             TextSanitizer.FormatTimeSpan(Utils.DataConversion.GetTimeTo(firstLineDate, DateTime.UtcNow, false), data.User.Language),
                             firstChannel));

@@ -30,6 +30,7 @@ namespace butterBror.Core.Commands.List
         public override CommandReturn Execute(CommandData data)
         {
             CommandReturn commandReturn = new CommandReturn();
+            commandReturn.SetSafe(true);
 
             try
             {

@@ -214,11 +214,7 @@ namespace butterBror.Events
 
         public static void OnTwitchDisconnected(object s, OnDisconnectedEventArgs e)
         {
-            Write("Twitch - Disconnected! Reconnecting...", "info");
-            Task.Delay(5000).ContinueWith(_ =>
-            {
-                Bot.Clients.Twitch.Reconnect();
-            });
+            Write("Twitch - Disconnected!", "info");
         }
 
         /// <summary>
@@ -293,10 +289,6 @@ namespace butterBror.Events
         public static void OnConnectionError(object s, OnConnectionErrorArgs e)
         {
             Write($"Twitch - Connection error! \"{e.Error.Message}\"", "info", LogLevel.Error);
-            Task.Delay(5000).ContinueWith(_ =>
-            {
-                Bot.Clients.Twitch.Reconnect();
-            });
         }
 
         /// <summary>

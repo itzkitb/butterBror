@@ -42,6 +42,7 @@ namespace butterBror.Core.Commands.List
                         data.ChannelId,
                         data.Platform,
                         Utils.CurrencyManager.GetBalance(data.User.ID, data.Platform) + "." + Utils.CurrencyManager.GetSubbalance(data.User.ID, data.Platform)));
+                    commandReturn.SetSafe(true);
                 }
                 else
                 {
@@ -53,8 +54,9 @@ namespace butterBror.Core.Commands.List
                             "command:balance:user",
                             data.ChannelId,
                             data.Platform,
-                            UsernameResolver.DontPing(TextSanitizer.UsernameFilter(data.ArgumentsString)),
+                            UsernameResolver.Unmention(TextSanitizer.UsernameFilter(data.ArgumentsString)),
                             Utils.CurrencyManager.GetBalance(userID, data.Platform) + "." + Utils.CurrencyManager.GetSubbalance(userID, data.Platform)));
+                        commandReturn.SetSafe(true);
                     }
                     else
                     {
@@ -63,7 +65,7 @@ namespace butterBror.Core.Commands.List
                             "error:user_not_found",
                             data.ChannelId,
                             data.Platform,
-                            UsernameResolver.DontPing(TextSanitizer.UsernameFilter(data.ArgumentsString))));
+                            UsernameResolver.Unmention(TextSanitizer.UsernameFilter(data.ArgumentsString))));
                         commandReturn.SetColor(ChatColorPresets.Red);
                     }
                 }

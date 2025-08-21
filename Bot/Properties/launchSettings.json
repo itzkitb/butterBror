@@ -1,6 +1,6 @@
 {
   "profiles": {
-    "butterBrorBot2.0": {
+    "butterBror": {
       "commandName": "Project",
       "commandLineArgs": "-main_disk C:",
       "sqlDebugging": true
