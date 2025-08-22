@@ -39,8 +39,8 @@ namespace butterBror.Core.Commands.List
             {
                 if (MessageProcessor.GetArgument(data.Arguments, "chat") is null)
                 {
-                    float currency = butterBror.Bot.BankDollars / butterBror.Bot.Coins;
-                    float cost = 0.5f / currency;
+                    decimal currency = butterBror.Bot.BankDollars / butterBror.Bot.Coins;
+                    decimal cost = 0.5m / currency;
 
                     int coins = -(int)cost;
                     int subcoins = -(int)((cost - coins) * 100);

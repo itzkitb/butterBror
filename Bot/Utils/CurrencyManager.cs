@@ -78,7 +78,7 @@ namespace butterBror.Utils
             long crumbs = GetSubbalance(userID, platform) + crumbsAdd;
             long butters = GetBalance(userID, platform) + buttersAdd;
 
-            Bot.Coins += buttersAdd + crumbsAdd / 100f;
+            Bot.Coins += buttersAdd + crumbsAdd / 100m;
             while (crumbs > 100)
             {
                 crumbs -= 100;

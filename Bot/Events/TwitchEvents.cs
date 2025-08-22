@@ -204,6 +204,7 @@ namespace butterBror.Events
             Write("Twitch - Reconnected!", "info");
             PlatformMessageSender.TwitchSend(Bot.BotName, $"BREAKDANCECAT Reconnected", "", "", "en-US", true);
             Bot.TwitchReconnected = true;
+            Bot.JoinTwitchChannels();
         }
 
         /// <summary>
@@ -215,6 +216,7 @@ namespace butterBror.Events
         public static void OnTwitchDisconnected(object s, OnDisconnectedEventArgs e)
         {
             Write("Twitch - Disconnected!", "info");
+            Bot.RefreshTwitchTokenAsync().Wait();
         }
 
         /// <summary>

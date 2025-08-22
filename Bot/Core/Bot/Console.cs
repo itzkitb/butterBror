@@ -11,7 +11,7 @@ namespace butterBror.Core.Bot
     /// <list type="bullet">
     /// <item><b>error</b> - Dedicated channel for error messages and exception handling</item>
     /// <item><b>info</b> - General information and operational events channel</item>
-    /// <item><b>kernel</b> - Core system events and initialization messages</item>
+    /// <item><b>core</b> - Core system events and initialization messages</item>
     /// <item><b>chat</b> - Messages from various chat platforms (Twitch, Discord, Telegram)</item>
     /// </list>
     /// Features:
@@ -38,7 +38,7 @@ namespace butterBror.Core.Bot
         /// <list type="table">
         /// <item><term>error</term><description>Exception/error notifications</description></item>
         /// <item><term>info</term><description>General operational messages</description></item>
-        /// <item><term>kernel</term><description>Core system initialization events</description></item>
+        /// <item><term>core</term><description>Core system initialization events</description></item>
         /// <item><term>initialization</term><description>Startup sequence messages</description></item>
         /// <item><term>chat</term><description>Platform message processing</description></item>
         /// </list>

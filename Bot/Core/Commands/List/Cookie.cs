@@ -205,8 +205,8 @@ namespace butterBror.Core.Commands.List
                             return commandReturn;
                         }
 
-                        float currency = butterBror.Bot.BankDollars / butterBror.Bot.Coins;
-                        float cost = 0.2f / currency;
+                        decimal currency = butterBror.Bot.BankDollars / butterBror.Bot.Coins;
+                        decimal cost = 0.2m / currency;
 
                         int coins = -(int)cost;
                         int subcoins = -(int)((cost - coins) * 100);

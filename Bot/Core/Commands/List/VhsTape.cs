@@ -37,7 +37,7 @@ namespace butterBror.Core.Commands.List
 
             try
             {
-                if (MessageProcessor.CheckCooldown(3600, 1, "VhsReset", data.User.ID, data.ChannelId, data.Platform, false, true))
+                if (CooldownManager.CheckCooldown(3600, 1, "VhsReset", data.User.ID, data.ChannelId, data.Platform, false, true))
                 {
                     var platform = data.Platform;
                     var channelId = data.ChannelId;

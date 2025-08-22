@@ -150,21 +150,23 @@ namespace butterBror.Core.Commands.List
                             // 0_0
 
                             var date = DateTime.UtcNow.AddDays(-1);
+                            var currencyData = Manager.Get<Dictionary<string, dynamic>>(butterBror.Bot.Paths.Currency, $"{date.Day}.{date.Month}.{date.Year}");
 
-                            float oldCurrencyAmount = Manager.Get<float>(butterBror.Bot.Paths.Currency, $"[{date.Day}.{date.Month}.{date.Year}] amount");
-                            float oldCurrencyCost = Manager.Get<float>(butterBror.Bot.Paths.Currency, $"[{date.Day}.{date.Month}.{date.Year}] cost");
-                            int oldCurrencyUsers = Manager.Get<int>(butterBror.Bot.Paths.Currency, $"[{date.Day}.{date.Month}.{date.Year}] users");
-                            int oldDollarsInBank = Manager.Get<int>(butterBror.Bot.Paths.Currency, $"[{date.Day}.{date.Month}.{date.Year}] dollars");
-                            float oldMiddle = oldCurrencyUsers != 0 ? float.Parse((oldCurrencyAmount / oldCurrencyUsers).ToString("0.00")) : 0;
+                            decimal oldCurrencyAmount = currencyData.ContainsKey("amount") ? currencyData["amount"].GetDecimal() : 0;
+                            float oldCurrencyCost = currencyData.ContainsKey("cost") ? currencyData["cost"].GetSingle() : 0;
+                            int oldCurrencyUsers = currencyData.ContainsKey("users") ? currencyData["users"].GetInt32() : 0;
+                            int oldDollarsInBank = currencyData.ContainsKey("dollars") ? currencyData["dollars"].GetInt32() : 0;
+
+                            decimal oldMiddle = oldCurrencyUsers != 0 ? decimal.Parse((oldCurrencyAmount / oldCurrencyUsers).ToString("0.00")) : 0;
 
                             float currencyCost = float.Parse((butterBror.Bot.BankDollars / butterBror.Bot.Coins).ToString("0.00"));
-                            float middleUsersBalance = float.Parse((butterBror.Bot.Coins / butterBror.Bot.Users).ToString("0.00"));
+                            decimal middleUsersBalance = decimal.Parse((butterBror.Bot.Coins / butterBror.Bot.Users).ToString("0.00"));
 
                             float plusOrMinusCost = currencyCost - oldCurrencyCost;
-                            float plusOrMinusAmount = butterBror.Bot.Coins - oldCurrencyAmount;
+                            decimal plusOrMinusAmount = butterBror.Bot.Coins - oldCurrencyAmount;
                             int plusOrMinusUsers = butterBror.Bot.Users - oldCurrencyUsers;
                             int plusOrMinusDollars = butterBror.Bot.BankDollars - oldDollarsInBank;
-                            float plusOrMinusMiddle = middleUsersBalance - oldMiddle;
+                            decimal plusOrMinusMiddle = middleUsersBalance - oldMiddle;
 
                             string buttersCostProgress = oldCurrencyCost > currencyCost ? $"🔽 ({plusOrMinusCost:0.00})" : oldCurrencyCost == currencyCost ? "⏺️ (0)" : $"🔼 (+{plusOrMinusCost:0.00})";
                             string buttersAmountProgress = oldCurrencyAmount > butterBror.Bot.Coins ? $"🔽 ({plusOrMinusAmount:0.00})" : oldCurrencyAmount == butterBror.Bot.Coins ? "⏺️ (0)" : $"🔼 (+{plusOrMinusAmount:0.00})";

@@ -155,7 +155,7 @@ namespace butterBror.Core.Commands
                             bool isOnlyBotDeveloper = cmd.OnlyBotDeveloper && !(bool)data.User.IsBotDeveloper;
                             bool isOnlyBotModerator = cmd.OnlyBotModerator && !((bool)data.User.IsBotModerator || (bool)data.User.IsBotDeveloper);
                             bool isOnlyChannelModerator = data.Platform == PlatformsEnum.Twitch && cmd.OnlyChannelModerator && !((bool)data.User.IsModerator || (bool)data.User.IsBotModerator || (bool)data.User.IsBotDeveloper);
-                            bool cooldown = !MessageProcessor.CheckCooldown(cmd.CooldownPerUser, cmd.CooldownPerChannel, cmd.Name, data.User.ID, data.ChannelId, data.Platform, true);
+                            bool cooldown = !CooldownManager.CheckCooldown(cmd.CooldownPerUser, cmd.CooldownPerChannel, cmd.Name, data.User.ID, data.ChannelId, data.Platform, true);
 
                             // Permission and cooldown checks
                             if (isOnlyBotDeveloper || isOnlyBotModerator || isOnlyChannelModerator || cooldown)

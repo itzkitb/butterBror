@@ -31,7 +31,7 @@ namespace butterBror.Core.Commands
         /// For split messages, first part ends with "..." and second part begins with "... " after delay.
         /// If banwords detected, sends localized rejection message while logging violation.
         /// </remarks>
-        public static async void SendCommandReply(TwitchMessageSendData data, bool isReply = true)
+        public static async void SendCommandReply(TwitchMessageSendData data, bool isReply = true, bool addUsername = true)
         {
             try
             {
@@ -63,13 +63,14 @@ namespace butterBror.Core.Commands
 
                 if (data.SafeExecute || new BannedWordDetector().Check(message, data.ChannelID, PlatformsEnum.Twitch))
                 {
+                    Write(isReply.ToString(), "debug");
                     if (isReply)
                     {
                         butterBror.Bot.Clients.Twitch.SendReply(data.Channel, data.MessageID, message);
                     }
                     else
                     {
-                        butterBror.Bot.Clients.Twitch.SendMessage(new JoinedChannel(data.Channel), $"@{data.Username}, " + message);
+                        butterBror.Bot.Clients.Twitch.SendMessage(new JoinedChannel(data.Channel), addUsername ? $"@{data.Username}, " + message : message);
                     }
                 }
                 else
@@ -105,7 +106,7 @@ namespace butterBror.Core.Commands
         /// If banwords detected, sends localized error message instead of original content.
         /// Uses long.Parse for channel ID conversion with exception handling in implementation.
         /// </remarks>
-        public static async void SendCommandReply(TelegramMessageSendData data, bool isReply = true)
+        public static async void SendCommandReply(TelegramMessageSendData data, bool isReply = true, bool addUsername = true)
         {
             try
             {
@@ -136,7 +137,7 @@ namespace butterBror.Core.Commands
                     }
                     else
                     {
-                        await butterBror.Bot.Clients.Telegram.SendMessage(long.Parse(data.ChannelID), data.Message);
+                        await butterBror.Bot.Clients.Telegram.SendMessage(long.Parse(data.ChannelID), addUsername ? $"@{data.Username}, " + data.Message : data.Message);
                     }
                 }
                 else

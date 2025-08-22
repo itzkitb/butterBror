@@ -42,9 +42,9 @@ namespace butterBror
         public static int BankDollars = 0;
         public static bool Ready = false;
         public static string Version = "2.17";
-        public static string Patch = "8";
+        public static string Patch = "9";
         public static string PreviousVersion = "";
-        public static float Coins = 0;
+        public static decimal Coins = 0;
         public static DateTime StartTime = new();
         public static string hostName = null;
         public static string hostVersion = null;
@@ -151,7 +151,7 @@ namespace butterBror
         /// </remarks>
         private static async Task StartRepeater()
         {
-            await Task.Delay(1000 - DateTime.UtcNow.Millisecond);
+            await Task.Delay(1010 - DateTime.UtcNow.Millisecond);
 
             while (true)
             {
@@ -194,9 +194,14 @@ namespace butterBror
                         if (now.Hour == 0 && now.Minute == 0 && now.Second == 0)
                         {
                             _ = Backup.BackupDataAsync();
+
+                            Write("Reinitializing currency counters...", "core");
+                            Users = SQL.Users.GetTotalUsers();
+                            Coins = SQL.Users.GetTotalBalance();
                         }
 
-                        if (now.Second == 0 && (now - _lastSave).Seconds > 10 && (MessagesBuffer.Count() > 0 || allFirstMessages.Count > 0 || UsersBuffer.Count() > 0))
+                        //Write($"({now.Second == 0} && {(now - _lastSave).TotalSeconds > 2}); ({now.Second}; {(now - _lastSave).TotalSeconds}; {now}; {_lastSave})", "debug");
+                        if (now.Second == 0 && (now - _lastSave).TotalSeconds > 2)
                         {
                             _lastSave = now;
                             Stopwatch stopwatch = Stopwatch.StartNew();
@@ -249,7 +254,7 @@ namespace butterBror
                 }
                 finally
                 {
-                    await Task.Delay(1000 - DateTime.UtcNow.Millisecond);
+                    await Task.Delay(1010 - DateTime.UtcNow.Millisecond);
                 }
             }
         }
@@ -271,7 +276,7 @@ namespace butterBror
         private static void SystemDataFetch()
         {
 
-            Write("Please wait...", "kernel");
+            Write("Please wait...", "core");
             string proccessor = "Unnamed processor";
             string OSName = "Unknown";
             double memory = 0;
@@ -291,7 +296,7 @@ namespace butterBror
             }
             catch (Exception)
             {
-                Write("Unable to get operating system name", "kernel");
+                Write("Unable to get operating system name", "core");
             }
 
             try
@@ -300,7 +305,7 @@ namespace butterBror
             }
             catch (Exception)
             {
-                Write("Unable to get RAM size", "kernel");
+                Write("Unable to get RAM size", "core");
             }
 
             try
@@ -316,7 +321,7 @@ namespace butterBror
             }
             catch (Exception)
             {
-                Write("Unable to get disks sizes", "kernel");
+                Write("Unable to get disks sizes", "core");
             }
 
             try
@@ -327,7 +332,7 @@ namespace butterBror
             }
             catch (Exception)
             {
-                Write("Unable to get OS name", "kernel");
+                Write("Unable to get OS name", "core");
             }
 
             Write($@"ButterBror
@@ -347,7 +352,7 @@ namespace butterBror
         :X00:((:::::]000x;:            
             :x0000000n:                
               :::::::
-", "kernel");
+", "core");
         }
 
         /// <summary>
@@ -389,7 +394,7 @@ namespace butterBror
 #if RELEASE
             if (hostName is null || hostVersion is null)
             {
-                Write("The bot is running without a host! Please run it from the host, not directly.", "kernel");
+                Write("The bot is running without a host! Please run it from the host, not directly.", "core");
                 System.Console.ReadLine();
                 return;
             }
@@ -415,7 +420,7 @@ namespace butterBror
             Paths.Main = Paths.General + "butterBror/";
 
             _repeater = Task.Run(() => StartRepeater());
-            Write($"TPS counter successfully started.", "kernel");
+            Write($"TPS counter successfully started.", "core");
 
             StartTime = DateTime.Now;
         }
@@ -441,9 +446,8 @@ namespace butterBror
 
             if (FileUtil.FileExists(Paths.Currency))
             {
-                Coins = Manager.Get<float>(Paths.Currency, "totalAmount");
-                BankDollars = Manager.Get<int>(Paths.Currency, "totalDollarsInTheBank");
-                Users = Manager.Get<int>(Paths.Currency, "totalUsers");
+                var data = Manager.Get<Dictionary<string, dynamic>>(Paths.Currency, "total");
+                BankDollars = data.ContainsKey("dollars") ? data["dollars"].GetInt32() : 0;
             }
 
             try
@@ -496,6 +500,10 @@ namespace butterBror
                 };
                 MessagesBuffer = new(SQL.Messages);
                 UsersBuffer = new(SQL.Users);
+
+                Write("Initializing currency counters...", "initialization");
+                Users = SQL.Users.GetTotalUsers();
+                Coins = SQL.Users.GetTotalBalance();
 
                 Write("Getting twitch token...", "initialization");
                 Tokens.TwitchGetter = new(TwitchClientId, Tokens.TwitchSecretToken, Paths.Main + "TWITCH_AUTH.json");
@@ -623,25 +631,44 @@ namespace butterBror
 
             Clients.Twitch.Connect();
 
-            var not_founded_channels = new List<string>();
-            string send_channels = string.Join(", ", TwitchChannels.Select(channel =>
-            {
-                var channel2 = UsernameResolver.GetUsername(channel, PlatformsEnum.Twitch, true);
-                if (channel2 == null) not_founded_channels.Add(channel);
-                return channel2;
-            }).Where(channel => channel != "NONE\n"));
-
-            Write($"Twitch - Connecting to {send_channels}", "initialization");
-            foreach (var channel in TwitchChannels)
-            {
-                var channel2 = UsernameResolver.GetUsername(channel, PlatformsEnum.Twitch, true);
-                if (channel2 != null) Clients.Twitch.JoinChannel(channel2);
-            }
-            foreach (var channel in not_founded_channels)
-                Write("Twitch - Can't find ID for " + channel, "initialization", LogLevel.Warning);
+            JoinTwitchChannels();
 
             Clients.Twitch.JoinChannel(BotName.ToLower());
             Clients.Twitch.SendMessage(BotName.ToLower(), "truckCrash Connecting to twitch...");
+        }
+
+        /// <summary>
+        /// Connects to Twitch channels specified in the configuration.
+        /// Resolves channel usernames to valid channel names and joins each channel.
+        /// Logs connection attempts and reports any channels that couldn't be found.
+        /// </summary>
+        /// <remarks>
+        /// The method first attempts to resolve all channel names using UsernameResolver.
+        /// It then connects to each valid channel and logs warnings for any channels that couldn't be resolved.
+        /// This is typically called during application initialization to establish connections to all configured Twitch channels.
+        /// </remarks>
+        public static void JoinTwitchChannels()
+        {
+            var notFoundedChannels = new List<string>();
+            string sendChannels = string.Join(", ", TwitchChannels.Select(channel =>
+            {
+                var tempChannel = UsernameResolver.GetUsername(channel, PlatformsEnum.Twitch, true);
+                if (tempChannel == null) notFoundedChannels.Add(channel);
+                return tempChannel;
+            }).Where(channel => channel != null));
+
+            Write($"Twitch - Connecting to {sendChannels}", "core");
+
+            foreach (var channel in TwitchChannels)
+            {
+                var tempChannel = UsernameResolver.GetUsername(channel, PlatformsEnum.Twitch, true);
+                if (tempChannel != null) Clients.Twitch.JoinChannel(tempChannel);
+            }
+
+            if (notFoundedChannels.Count > 0)
+            {
+                Write("Twitch - Can't find ID for " + string.Join(',', notFoundedChannels), "core", LogLevel.Warning);
+            }
         }
 
         /// <summary>
@@ -719,6 +746,50 @@ namespace butterBror
         #endregion Connects
         #region Other
         /// <summary>
+        /// Refreshes the Twitch authentication token and reestablishes connection to the Twitch platform.
+        /// This method handles the complete process of disconnecting, updating credentials, and reconnecting.
+        /// </summary>
+        /// <remarks>
+        /// The method first disconnects from Twitch if currently connected, then sets new connection credentials
+        /// using the updated access token. It then attempts to reconnect and join all configured channels.
+        /// Upon successful refresh, it sends notification messages to indicate the token was updated.
+        /// If any errors occur during the process, they are logged but not rethrown to prevent application crashes.
+        /// This is essential for maintaining uninterrupted connection to Twitch when access tokens expire.
+        /// </remarks>
+        public static async Task RefreshTwitchTokenAsync()
+        {
+            try
+            {
+                if (Clients.Twitch.IsConnected)
+                {
+                    Clients.Twitch.Disconnect();
+                    await Task.Delay(500);
+                }
+
+                Clients.Twitch.SetConnectionCredentials(
+                    new ConnectionCredentials(BotName, Tokens.Twitch.AccessToken)
+                );
+
+                try
+                {
+                    Clients.Twitch.Connect();
+                    JoinTwitchChannels();
+                    Write("The token has been updated and the connection has been restored", "core");
+                    PlatformMessageSender.TwitchSend(Bot.BotName, $"sillyCatThinks Token refreshed", "", "", "en-US", true);
+                }
+                catch (Exception ex)
+                {
+                    Write("Twitch connection error!", "core");
+                    Write(ex);
+                }
+            }
+            catch (Exception ex)
+            {
+                Write(ex);
+            }
+        }
+
+        /// <summary>
         /// Executes a graceful shutdown sequence with platform-specific notifications and resource cleanup.
         /// </summary>
         /// <remarks>
@@ -752,7 +823,7 @@ namespace butterBror
         /// <returns>Task representing the asynchronous shutdown operation</returns>
         public static async Task Shutdown(bool force = false)
         {
-            Write("Initiating shutdown sequence...", "kernel");
+            Write("Initiating shutdown sequence...", "core");
 
             Initialized = false;
             Connected = false;
@@ -765,7 +836,7 @@ namespace butterBror
                 {
                     try
                     {
-                        Write("Flushing user data buffer...", "kernel");
+                        Write("Flushing user data buffer...", "core");
                         UsersBuffer.Flush();
                         Write("User buffer disposed successfully", "core", LogLevel.Info);
                     }
@@ -784,7 +855,7 @@ namespace butterBror
                 {
                     try
                     {
-                        Write("Flushing message data buffer...", "kernel");
+                        Write("Flushing message data buffer...", "core");
                         MessagesBuffer.Flush();
                         Write("Message buffer disposed successfully", "core", LogLevel.Info);
                     }
@@ -803,7 +874,7 @@ namespace butterBror
                 {
                     try
                     {
-                        Write("Cancelling Telegram operations...", "kernel");
+                        Write("Cancelling Telegram operations...", "core");
                         Clients.TelegramCancellationToken.Cancel();
                         Write("Telegram cancellation requested", "core", LogLevel.Info);
                     }
@@ -822,7 +893,7 @@ namespace butterBror
                 {
                     try
                     {
-                        Write("Disconnecting from Discord...", "kernel");
+                        Write("Disconnecting from Discord...", "core");
                         await Clients.Discord.LogoutAsync();
                         await Clients.Discord.StopAsync();
                         Write("Discord client disconnected", "core", LogLevel.Info);
@@ -840,7 +911,7 @@ namespace butterBror
 
                 if (SQL != null)
                 {
-                    Write("Disposing SQL...", "kernel");
+                    Write("Disposing SQL...", "core");
                     try
                     {
                         SQL.Channels.Dispose();
@@ -877,7 +948,7 @@ namespace butterBror
                     Write($"Currency dispose failed: {ex.Message}", "core", LogLevel.Warning);
                 }
 
-                Write("Waiting for pending operations to complete...", "kernel");
+                Write("Waiting for pending operations to complete...", "core");
                 await Task.Delay(2000);
             }
             catch (Exception ex)
@@ -886,7 +957,7 @@ namespace butterBror
             }
             finally
             {
-                Write("Restart sequence completed - terminating process", "kernel");
+                Write("Restart sequence completed - terminating process", "core");
                 Environment.Exit(force ? 5001 : 0);
             }
         }

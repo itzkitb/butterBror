@@ -72,7 +72,7 @@ namespace butterBror.Core.Commands.List
                     }
                     else if (caughtAliases.Contains(data.Arguments[0].ToLower()))
                     {
-                        if (MessageProcessor.CheckCooldown(3600, 0, "FrogsReseter", data.User.ID, data.ChannelId, data.Platform, false, true))
+                        if (CooldownManager.CheckCooldown(3600, 0, "FrogsReseter", data.User.ID, data.ChannelId, data.Platform, false, true))
                         {
                             Random rand = new Random();
                             long frog_caught_type = rand.Next(0, 4);
@@ -115,7 +115,7 @@ namespace butterBror.Core.Commands.List
                                 "command:frog:error:caught",
                                 data.ChannelId,
                                 data.Platform,
-                                TextSanitizer.FormatTimeSpan(MessageProcessor.GetCooldownTime(data.User.ID, "FrogsReseter", 3600, data.Platform), data.User.Language)));
+                                TextSanitizer.FormatTimeSpan(CooldownManager.GetCooldownTime(data.User.ID, "FrogsReseter", 3600, data.Platform), data.User.Language)));
                             commandReturn.SetColor(ChatColorPresets.Red);
                         }
                     }

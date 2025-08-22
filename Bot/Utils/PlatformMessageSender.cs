@@ -245,7 +245,7 @@ namespace butterBror.Utils
         /// </para>
         /// This method serves as the primary interface for command responses and user interactions across all platforms.
         /// </remarks>
-        public static void SendReply(PlatformsEnum platform, string channel, string channelID, string message, string language, string username, string userID, string server, string serverID, string messageID, Telegram.Bot.Types.Message messageReply, bool isSafe = false, ChatColorPresets usernameColor = ChatColorPresets.YellowGreen, bool isReply = true)
+        public static void SendReply(PlatformsEnum platform, string channel, string channelID, string message, string language, string username, string userID, string server, string serverID, string messageID, Telegram.Bot.Types.Message messageReply, bool isSafe = false, ChatColorPresets usernameColor = ChatColorPresets.YellowGreen, bool isReply = true, bool addUsername = true)
         {
             switch (platform)
             {
@@ -260,7 +260,7 @@ namespace butterBror.Utils
                         Username = username,
                         SafeExecute = isSafe,
                         UsernameColor = usernameColor
-                    }, isReply);
+                    }, isReply, addUsername);
                     break;
                 case PlatformsEnum.Discord:
                     Sender.SendCommandReply(new DiscordCommandSendData
@@ -294,7 +294,7 @@ namespace butterBror.Utils
                         ChannelID = channelID,
                         MessageID = messageID,
                         Username = username
-                    }, isReply);
+                    }, isReply, addUsername);
                     break;
             }
         }

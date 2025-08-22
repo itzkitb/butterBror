@@ -60,6 +60,20 @@ namespace butterBror.Core.Bot
         {
             try
             {
+                if (butterBror.Bot.Clients == null || !butterBror.Bot.Clients.Twitch.IsConnected)
+                {
+                    if (butterBror.Bot.Clients == null)
+                    {
+                        Write("Clients are not initialized yet", "telemetry", LogLevel.Warning);
+                    }
+                    else if (!butterBror.Bot.Clients.Twitch.IsConnected)
+                    {
+                        Write("Twitch is not connected", "telemetry", LogLevel.Warning);
+                    }
+
+                    return;
+                }
+
                 Write("Twitch - Telemetry started!", "telemetry");
                 Stopwatch Start = Stopwatch.StartNew();
 
@@ -115,7 +129,7 @@ namespace butterBror.Core.Bot
                 #endregion
 
                 decimal cpuPercent = CPUItems == 0 ? 0 : CPU / CPUItems;
-                float coinCurrency = butterBror.Bot.Coins == 0 ? 0 : butterBror.Bot.BankDollars / butterBror.Bot.Coins;
+                decimal coinCurrency = butterBror.Bot.Coins == 0 ? 0 : butterBror.Bot.BankDollars / butterBror.Bot.Coins;
 
                 CPU = 0;
                 CPUItems = 0;
@@ -149,7 +163,10 @@ namespace butterBror.Core.Bot
                 try
                 {
                     var newToken = await TwitchToken.RefreshAccessToken(butterBror.Bot.Tokens.Twitch);
-                    if (newToken != null) butterBror.Bot.Tokens.Twitch = newToken;
+                    if (newToken != null)
+                    {
+                        butterBror.Bot.Tokens.Twitch = newToken;
+                    }
                 }
                 catch (Exception ex)
                 {

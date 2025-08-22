@@ -88,7 +88,6 @@ namespace butterBror.Services.System
 
             public float GetUsage()
             {
-                Thread.Sleep(_interval);
                 return _cpuCounter.NextValue();
             }
 

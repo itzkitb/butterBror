@@ -1024,6 +1024,79 @@ namespace butterBror.Data
         }
 
         /// <summary>
+        /// Retrieves the total number of users across all platforms with non-empty FirstSeen value.
+        /// </summary>
+        /// <returns>The total count of users with FirstSeen value set</returns>
+        /// <remarks>
+        /// <para>
+        /// This method:
+        /// <list type="bullet">
+        /// <item>Counts users with non-NULL FirstSeen across all platform tables</item>
+        /// <item>Aggregates results from Discord, Telegram, Twitch platforms</item>
+        /// <item>Uses efficient SQL counting operations</item>
+        /// </list>
+        /// </para>
+        /// The count includes all users who have sent at least one message.
+        /// </remarks>
+        public int GetTotalUsers()
+        {
+            int totalCount = 0;
+
+            foreach (PlatformsEnum platform in Enum.GetValues(typeof(PlatformsEnum)))
+            {
+                string tableName = GetTableName(platform);
+                string sql = $"SELECT COUNT(*) FROM [{tableName}] WHERE FirstSeen IS NOT NULL AND FirstSeen != ''";
+                totalCount += ExecuteScalar<int>(sql);
+            }
+
+            return totalCount;
+        }
+
+        /// <summary>
+        /// Retrieves the total balance across all users and platforms, properly combining Balance and AfterDotBalance.
+        /// </summary>
+        /// <returns>A decimal value representing the total balance with decimal precision</returns>
+        /// <remarks>
+        /// <para>
+        /// This method:
+        /// <list type="bullet">
+        /// <item>Calculates the sum of Balance across all platform tables</item>
+        /// <item>Calculates the sum of AfterDotBalance across all platform tables</item>
+        /// <item>Converts AfterDotBalance to decimal part (divided by 100)</item>
+        /// <item>Combines both values to form a proper decimal representation</item>
+        /// </list>
+        /// </para>
+        /// <para>
+        /// Example:
+        /// <list type="bullet">
+        /// <item>If Balance = 100 and AfterDotBalance = 1020, result will be 110.2</item>
+        /// <item>Balance contributes to the integer part (100)</item>
+        /// <item>AfterDotBalance / 100 contributes to the decimal part (10.2)</item>
+        /// <item>Total = 100 + 10.2 = 110.2</item>
+        /// </list>
+        /// </para>
+        /// The calculation handles large values and maintains precision.
+        /// </remarks>
+        public decimal GetTotalBalance()
+        {
+            long totalBalance = 0;
+            long totalAfterDotBalance = 0;
+
+            foreach (PlatformsEnum platform in Enum.GetValues(typeof(PlatformsEnum)))
+            {
+                string tableName = GetTableName(platform);
+                string balanceSql = $"SELECT COALESCE(SUM(Balance), 0) FROM [{tableName}]";
+                totalBalance += ExecuteScalar<long>(balanceSql);
+
+                string afterDotSql = $"SELECT COALESCE(SUM(AfterDotBalance), 0) FROM [{tableName}]";
+                totalAfterDotBalance += ExecuteScalar<long>(afterDotSql);
+            }
+
+            decimal decimalPart = totalAfterDotBalance / 100.0m;
+            return totalBalance + decimalPart;
+        }
+
+        /// <summary>
         /// Generates the database table name for the specified platform.
         /// </summary>
         /// <param name="platform">The streaming platform</param>
