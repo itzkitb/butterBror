@@ -46,7 +46,7 @@ namespace butterBror.Core.Commands.List
                     try
                     {
                         if (userID != null)
-                            isSelectedUserIsNotIgnored = !(butterBror.Bot.SQL.Roles.GetIgnoredUser(data.Platform, DataConversion.ToLong(data.User.ID)) is not null);
+                            isSelectedUserIsNotIgnored = !(butterBror.Bot.DataBase.Roles.GetIgnoredUser(data.Platform, DataConversion.ToLong(data.User.ID)) is not null);
                     }
                     catch (Exception) { }
                     if (username.ToLower() == butterBror.Bot.BotName.ToLower())

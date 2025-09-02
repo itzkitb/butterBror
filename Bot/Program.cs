@@ -37,24 +37,24 @@ namespace butterBror
     public class Bot
     {
         #region Variables
-        public static int CompletedCommands = 0;
-        public static int Users = 0;
-        public static int BankDollars = 0;
         public static bool Ready = false;
-        public static string Version = "2.17";
-        public static string Patch = "9";
-        public static string PreviousVersion = "";
-        public static decimal Coins = 0;
+        public static Version Version = new Version("2.18.0.1");
         public static DateTime StartTime = new();
-        public static string hostName = null;
-        public static string hostVersion = null;
+        public static string PreviousVersion = "";
+
+        public static int Users = 0;
+        public static int InBankDollars = 0;
+        public static int CompletedCommands = 0;
+        public static decimal Coins = 0;
+        
+        public static string HostName = null;
+        public static string HostVersion = null;
 
         public static ClientService Clients = new ClientService();
         public static PathService Paths = new PathService();
         internal static Tokens Tokens = new Tokens();
-        public static SQLService SQL;
+        public static SQLService DataBase;
 
-        public static bool TwitchReconnected = false;
         public static bool Initialized = false;
         public static bool Connected = false;
 
@@ -196,8 +196,8 @@ namespace butterBror
                             _ = Backup.BackupDataAsync();
 
                             Write("Reinitializing currency counters...", "core");
-                            Users = SQL.Users.GetTotalUsers();
-                            Coins = SQL.Users.GetTotalBalance();
+                            Users = DataBase.Users.GetTotalUsers();
+                            Coins = DataBase.Users.GetTotalBalance();
                         }
 
                         //Write($"({now.Second == 0} && {(now - _lastSave).TotalSeconds > 2}); ({now.Second}; {(now - _lastSave).TotalSeconds}; {now}; {_lastSave})", "debug");
@@ -222,7 +222,7 @@ namespace butterBror
 
                             if (allFirstMessages.Count > 0)
                             {
-                                SQL.Channels.SaveFirstMessages(allFirstMessages);
+                                DataBase.Channels.SaveFirstMessages(allFirstMessages);
                                 allFirstMessages.Clear();
                             }
                             #endregion Buffer save 
@@ -231,8 +231,8 @@ namespace butterBror
                             {
                                     { "amount", Coins },
                                     { "users", Users },
-                                    { "dollars", BankDollars },
-                                    { "cost", BankDollars / Coins },
+                                    { "dollars", InBankDollars },
+                                    { "cost", InBankDollars / Coins },
                                     { "middleBalance", Coins / Users }
                             };
 
@@ -341,9 +341,9 @@ namespace butterBror
         :::::::::::::::::              
       ::i:::::::::::::::::::           
   :::::::::::::::::::::::::::::        ButterBror
- ::::::::::::::::::::::::::::::::      Host: {hostName} v.{hostVersion}
+ ::::::::::::::::::::::::::::::::      Host: {HostName} v.{HostVersion}
  {{~:::::::::::::::::::::::::::::::     Framework: {RuntimeInformation.FrameworkDescription.Pastel("#ff7b42")}
- 0000XI::::::::::::::::::::::tC00:     v.{Version.ToString().Pastel("#ff7b42")}.{Patch}
+ 0000XI::::::::::::::::::::::tC00:     v.{Version.ToString().Pastel("#ff7b42")}
  ::c0000nI::::::::::::::::(v1::<l      {OSName.Pastel("#ff7b42")}
  ((((:n0000f-::::::::}}x00(::n000(:     {proccessor.Pastel("#ff7b42")}
  n0((::::c0000f(:::>}}X(l!00QQ0((::     RAM: {memory.ToString().Pastel("#ff7b42")} GB
@@ -375,24 +375,24 @@ namespace butterBror
         /// </remarks>
         private static void Initialize(string[] args)
         {
-            System.Console.Title = $"butterBror | v.{Version}.{Patch}";
+            System.Console.Title = $"butterBror | v.{Version}";
             System.Console.Clear();
 
             for (int i = 0; i < args.Length; i++)
             {
                 if (args[i] == "--core-version" && i + 1 < args.Length)
                 {
-                    hostVersion = args[i + 1];
+                    HostVersion = args[i + 1];
                 }
 
                 if (args[i] == "--core-name" && i + 1 < args.Length)
                 {
-                    hostName = args[i + 1];
+                    HostName = args[i + 1];
                 }
             }
 
 #if RELEASE
-            if (hostName is null || hostVersion is null)
+            if (HostName is null || HostVersion is null)
             {
                 Write("The bot is running without a host! Please run it from the host, not directly.", "core");
                 System.Console.ReadLine();
@@ -447,7 +447,7 @@ namespace butterBror
             if (FileUtil.FileExists(Paths.Currency))
             {
                 var data = Manager.Get<Dictionary<string, dynamic>>(Paths.Currency, "total");
-                BankDollars = data.ContainsKey("dollars") ? data["dollars"].GetInt32() : 0;
+                InBankDollars = data.ContainsKey("dollars") ? data["dollars"].GetInt32() : 0;
             }
 
             try
@@ -484,13 +484,13 @@ namespace butterBror
                 }
 
                 Bot.PreviousVersion = File.ReadAllText(Path.Combine(Paths.Main, "VERSION.txt"));
-                File.WriteAllText(Path.Combine(Paths.Main, "VERSION.txt"), $"{Bot.Version}.{Bot.Patch}");
+                File.WriteAllText(Path.Combine(Paths.Main, "VERSION.txt"), $"{Bot.Version}");
 
                 Write("Loading settigns...", "initialization");
                 SettingsService.Load();
 
                 Write("Initializing SQL...", "initialization");
-                SQL = new()
+                DataBase = new()
                 {
                     Messages = new(Paths.MessagesDatabase),
                     Users = new(Paths.UsersDatabase),
@@ -498,12 +498,12 @@ namespace butterBror
                     Channels = new(Paths.ChannelsDatabase),
                     Roles = new(Paths.RolesDatabase)
                 };
-                MessagesBuffer = new(SQL.Messages);
-                UsersBuffer = new(SQL.Users);
+                MessagesBuffer = new(DataBase.Messages);
+                UsersBuffer = new(DataBase.Users);
 
                 Write("Initializing currency counters...", "initialization");
-                Users = SQL.Users.GetTotalUsers();
-                Coins = SQL.Users.GetTotalBalance();
+                Users = DataBase.Users.GetTotalUsers();
+                Coins = DataBase.Users.GetTotalBalance();
 
                 Write("Getting twitch token...", "initialization");
                 Tokens.TwitchGetter = new(TwitchClientId, Tokens.TwitchSecretToken, Paths.Main + "TWITCH_AUTH.json");
@@ -562,6 +562,21 @@ namespace butterBror
                 DateTime endTime = DateTime.UtcNow;
                 Ready = true;
                 Connected = true;
+                await Task.Delay(1000);
+
+                if (PreviousVersion != Version.ToString() && PreviousVersion != string.Empty)
+                {
+                    foreach (string channel in TwitchNewVersionAnnounce)
+                    {
+                        PlatformMessageSender.TwitchSend(UsernameResolver.GetUsername(channel, PlatformsEnum.Twitch, true), $"{Bot.BotName} v.{Bot.PreviousVersion} > v.{Bot.Version}", channel, "", "en-US", true);
+                    }
+                }
+
+                foreach (string channel in Bot.TwitchConnectAnnounce)
+                {
+                    PlatformMessageSender.TwitchSend(UsernameResolver.GetUsername(channel, PlatformsEnum.Twitch, true), $"{Bot.BotName} Connected in {(endTime - _startTime).TotalMilliseconds} ms!", channel, "", "en-US", true);
+                }
+
                 Write($"Well done! ({(endTime - _startTime).TotalMilliseconds} ms)", "initialization");
             }
             catch (Exception ex)
@@ -633,7 +648,6 @@ namespace butterBror
 
             JoinTwitchChannels();
 
-            Clients.Twitch.JoinChannel(BotName.ToLower());
             Clients.Twitch.SendMessage(BotName.ToLower(), "truckCrash Connecting to twitch...");
         }
 
@@ -909,16 +923,16 @@ namespace butterBror
                     }
                 }
 
-                if (SQL != null)
+                if (DataBase != null)
                 {
                     Write("Disposing SQL...", "core");
                     try
                     {
-                        SQL.Channels.Dispose();
-                        SQL.Users.Dispose();
-                        SQL.Games.Dispose();
-                        SQL.Messages.Dispose();
-                        SQL.Roles.Dispose();
+                        DataBase.Channels.Dispose();
+                        DataBase.Users.Dispose();
+                        DataBase.Games.Dispose();
+                        DataBase.Messages.Dispose();
+                        DataBase.Roles.Dispose();
                     }
                     catch (Exception ex)
                     {
@@ -932,8 +946,8 @@ namespace butterBror
                             {
                                     { "amount", Coins },
                                     { "users", Users },
-                                    { "dollars", BankDollars },
-                                    { "cost", BankDollars / Coins },
+                                    { "dollars", InBankDollars },
+                                    { "cost", InBankDollars / Coins },
                                     { "middleBalance", Coins / Users }
                             };
 

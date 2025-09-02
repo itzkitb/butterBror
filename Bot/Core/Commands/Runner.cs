@@ -122,8 +122,8 @@ namespace butterBror.Core.Commands
                 try
                 {
                     // User data initialization
-                    data.User.IsBanned = butterBror.Bot.SQL.Roles.IsBanned(data.Platform, DataConversion.ToLong(data.User.ID));
-                    data.User.Ignored = butterBror.Bot.SQL.Roles.IsIgnored(data.Platform, DataConversion.ToLong(data.User.ID));
+                    data.User.IsBanned = butterBror.Bot.DataBase.Roles.IsBanned(data.Platform, DataConversion.ToLong(data.User.ID));
+                    data.User.Ignored = butterBror.Bot.DataBase.Roles.IsIgnored(data.Platform, DataConversion.ToLong(data.User.ID));
 
                     if ((bool)data.User.IsBanned || (bool)data.User.Ignored ||
                         (data.Platform is PlatformsEnum.Twitch && data.TwitchArguments.Command.ChatMessage.IsMe))
@@ -131,8 +131,8 @@ namespace butterBror.Core.Commands
 
                     string language = (string)butterBror.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.Language);
                     data.User.Language = language;
-                    data.User.IsBotModerator = butterBror.Bot.SQL.Roles.IsModerator(data.Platform, DataConversion.ToLong(data.User.ID));
-                    data.User.IsBotDeveloper = butterBror.Bot.SQL.Roles.IsDeveloper(data.Platform, DataConversion.ToLong(data.User.ID));
+                    data.User.IsBotModerator = butterBror.Bot.DataBase.Roles.IsModerator(data.Platform, DataConversion.ToLong(data.User.ID));
+                    data.User.IsBotDeveloper = butterBror.Bot.DataBase.Roles.IsDeveloper(data.Platform, DataConversion.ToLong(data.User.ID));
 
                     string commandName = data.Name.Replace("ё", "е");
                     bool commandFounded = false;

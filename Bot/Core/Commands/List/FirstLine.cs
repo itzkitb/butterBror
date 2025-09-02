@@ -54,7 +54,7 @@ namespace butterBror.Core.Commands.List
                 }
                 else
                 {
-                    var message = butterBror.Bot.SQL.Channels.GetFirstMessage(data.Platform, data.ChannelId, DataConversion.ToLong(userId));
+                    var message = butterBror.Bot.DataBase.Channels.GetFirstMessage(data.Platform, data.ChannelId, DataConversion.ToLong(userId));
                     var message_badges = string.Empty;
                     if (message != null)
                     {

@@ -159,11 +159,11 @@ namespace butterBror.Core.Bot
         /// </remarks>
         private static IEnumerable<SqlDatabaseBase> GetDatabaseManagers()
         {
-            yield return butterBror.Bot.SQL.Games;
-            yield return butterBror.Bot.SQL.Channels;
-            yield return butterBror.Bot.SQL.Messages;
-            yield return butterBror.Bot.SQL.Roles;
-            yield return butterBror.Bot.SQL.Users;
+            yield return butterBror.Bot.DataBase.Games;
+            yield return butterBror.Bot.DataBase.Channels;
+            yield return butterBror.Bot.DataBase.Messages;
+            yield return butterBror.Bot.DataBase.Roles;
+            yield return butterBror.Bot.DataBase.Users;
         }
     }
 }

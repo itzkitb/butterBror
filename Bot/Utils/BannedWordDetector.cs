@@ -92,7 +92,7 @@ namespace butterBror.Utils
                 List<string> single_banwords = Manager.Get<List<string>>(banned_words_path, "single_word");
                 Dictionary<string, string> replacements = Manager.Get<Dictionary<string, string>>(replacement_path, "list") ?? new Dictionary<string, string>();
                 List<string> banned_words = Manager.Get<List<string>>(banned_words_path, "list");
-                banned_words.AddRange(Bot.SQL.Channels.GetBanWords(platform, channelId));
+                banned_words.AddRange(Bot.DataBase.Channels.GetBanWords(platform, channelId));
 
                 _replacementPattern = string.Join("|", replacements.Keys.Select(Regex.Escape));
                 _replacementRegex = new Regex(_replacementPattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);

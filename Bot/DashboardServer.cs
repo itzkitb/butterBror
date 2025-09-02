@@ -268,9 +268,8 @@ namespace butterBror
                     {
                         CompletedCommands = Bot.CompletedCommands,
                         Users = Bot.Users,
-                        Version = $"{Bot.Version}.{Bot.Patch}",
+                        Version = $"{Bot.Version}",
                         Coins = Bot.Coins,
-                        IsTwitchReconnected = Bot.TwitchReconnected,
                         IsInitialized = Bot.Initialized,
                         IsConnected = Bot.Connected,
                         Name = Bot.BotName,
@@ -283,7 +282,7 @@ namespace butterBror
                         SevenTV = Bot.ChannelsSevenTVEmotes.Count,
                         EmoteSets = Bot.EmoteSetsCache.Count,
                         SevenTVUSC = Bot.UsersSearchCache.Count,
-                        Currency = Bot.Coins == 0 ? 0 : Bot.BankDollars / Bot.Coins,
+                        Currency = Bot.Coins == 0 ? 0 : Bot.InBankDollars / Bot.Coins,
                         NetworkReceived = networkReceived,
                         NetworkSend = networkSent,
                         DiskRead = diskRead,
@@ -292,14 +291,14 @@ namespace butterBror
                         UsersBufferCount = Bot.UsersBuffer?.Count() ?? 0,
                         FirstMessagesCount = Bot.allFirstMessages?.Count ?? 0,
                         IsReady = Bot.Ready,
-                        Host = $"{Bot.hostName} v.{Bot.hostVersion}",
+                        Host = $"{Bot.HostName} v.{Bot.HostVersion}",
                         DiscordGuilds = Bot.Clients.Discord.Guilds.Count,
                         TwitchChannels = Bot.Clients.Twitch.JoinedChannels.Count,
-                        SQLChannelsOPS = Bot.SQL.Channels.GetAndResetSqlOperationCount(),
-                        SQLGamesOPS = Bot.SQL.Games.GetAndResetSqlOperationCount(),
-                        SQLMessagesOPS = Bot.SQL.Messages.GetAndResetSqlOperationCount(),
-                        SQLUsersOPS = Bot.SQL.Users.GetAndResetSqlOperationCount(),
-                        SQLRolesOPS = Bot.SQL.Roles.GetAndResetSqlOperationCount(),
+                        SQLChannelsOPS = Bot.DataBase.Channels.GetAndResetSqlOperationCount(),
+                        SQLGamesOPS = Bot.DataBase.Games.GetAndResetSqlOperationCount(),
+                        SQLMessagesOPS = Bot.DataBase.Messages.GetAndResetSqlOperationCount(),
+                        SQLUsersOPS = Bot.DataBase.Users.GetAndResetSqlOperationCount(),
+                        SQLRolesOPS = Bot.DataBase.Roles.GetAndResetSqlOperationCount(),
                         IsTwitchConnected = Bot.Clients.Twitch.IsConnected,
                         IsDiscordConnected = Bot.Clients.Discord.ConnectionState == Discord.ConnectionState.Connected
                     };
@@ -634,7 +633,7 @@ namespace butterBror
 </head>
 <body>
     <header>
-        <h1>Bot Dashboard - {Bot.BotName} v.{Bot.Version}.{Bot.Patch}</h1>
+        <h1>Bot Dashboard - {Bot.BotName} v.{Bot.Version}</h1>
         <div id=""connection-status"" class=""status-connecting"">Connecting...</div>
     </header>
     <main>

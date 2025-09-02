@@ -49,7 +49,7 @@ namespace butterBror.Core.Commands.List
                 {
                     if (updateAlias.Contains(GetArgument(data.Arguments, 0)))
                     {
-                        if (butterBror.Bot.SQL.Roles.IsDeveloper(data.Platform, DataConversion.ToLong(data.User.ID)) || butterBror.Bot.SQL.Roles.IsModerator(data.Platform, DataConversion.ToLong(data.User.ID)) || (bool)data.User.IsModerator || (bool)data.User.IsBroadcaster)
+                        if (butterBror.Bot.DataBase.Roles.IsDeveloper(data.Platform, DataConversion.ToLong(data.User.ID)) || butterBror.Bot.DataBase.Roles.IsModerator(data.Platform, DataConversion.ToLong(data.User.ID)) || (bool)data.User.IsModerator || (bool)data.User.IsBroadcaster)
                         {
                             await Utils.SevenTvEmoteCache.EmoteUpdate(data.Channel, data.ChannelId);
                             commandReturn.SetMessage(LocalizationService.GetString(

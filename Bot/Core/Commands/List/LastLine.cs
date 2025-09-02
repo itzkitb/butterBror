@@ -38,7 +38,7 @@ namespace butterBror.Core.Commands.List
                 {
                     var name = TextSanitizer.UsernameFilter(data.Arguments.ElementAt(0).ToLower());
                     var userId = UsernameResolver.GetUserID(name, PlatformsEnum.Twitch, true);
-                    var message = userId is null ? null : butterBror.Bot.SQL.Messages.GetMessage(data.Platform, data.ChannelId, DataConversion.ToLong(userId), 0);
+                    var message = userId is null ? null : butterBror.Bot.DataBase.Messages.GetMessage(data.Platform, data.ChannelId, DataConversion.ToLong(userId), 0);
 
                     if (message != null && userId != null && name != butterBror.Bot.BotName.ToLower())
                     {

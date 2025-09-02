@@ -69,8 +69,8 @@ namespace butterBror.Utils
             try
             {
                 // VIP or dev/mod bypass
-                bool isVipOrStaff = Bot.SQL.Roles.IsModerator(platform, DataConversion.ToLong(userID))
-                                    || Bot.SQL.Roles.IsDeveloper(platform, DataConversion.ToLong(userID));
+                bool isVipOrStaff = Bot.DataBase.Roles.IsModerator(platform, DataConversion.ToLong(userID))
+                                    || Bot.DataBase.Roles.IsDeveloper(platform, DataConversion.ToLong(userID));
 
                 if (isVipOrStaff && ignoreUserVIP)
                 {
@@ -112,7 +112,7 @@ namespace butterBror.Utils
                     }
 
                     // Global cooldown check
-                    bool isOnGlobalCooldown = !Bot.SQL.Channels.IsCommandCooldown(platform, roomID, cooldownName, globalCooldown);
+                    bool isOnGlobalCooldown = !Bot.DataBase.Channels.IsCommandCooldown(platform, roomID, cooldownName, globalCooldown);
                     if (!isOnGlobalCooldown)
                     {
                         Write($"#{userID} tried to use the command, but it is on global cooldown!", "info", LogLevel.Warning);

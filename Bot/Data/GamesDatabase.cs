@@ -318,7 +318,7 @@ namespace butterBror.Data
 
             string updateSql = $@"
                 UPDATE {tableName} 
-                SET {columnName} = {columnName} + @Value 
+                SET {columnName} = @Value
                 WHERE Platform = @Platform AND UserID = @UserId";
 
             ExecuteNonQuery(updateSql, new[]

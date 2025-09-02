@@ -65,7 +65,6 @@ namespace butterBror.Core.Commands.List
                         data.ChannelId,
                         data.Platform,
                         butterBror.Bot.Version,
-                        butterBror.Bot.Patch,
                         TextSanitizer.FormatTimeSpan(workTime, data.User.Language),
                         LocalizationService.GetPluralString(data.User.Language, "text:tab", data.ChannelId, data.Platform, joinedTabs, joinedTabs),
                         LocalizationService.GetPluralString(data.User.Language, "text:commands", data.ChannelId, data.Platform, Runner.commandInstances.Count, Runner.commandInstances.Count),

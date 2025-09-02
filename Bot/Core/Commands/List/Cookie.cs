@@ -137,7 +137,7 @@ namespace butterBror.Core.Commands.List
                                 topType = "Recipients";
                         }
 
-                        var leaderboard = butterBror.Bot.SQL.Games.GetLeaderboard("Cookies", data.Platform, $"{topType}Count");
+                        var leaderboard = butterBror.Bot.DataBase.Games.GetLeaderboard("Cookies", data.Platform, $"{topType}Count");
 
                         var sortedList = leaderboard
                             .OrderByDescending(kvp => kvp.Value)
@@ -205,7 +205,7 @@ namespace butterBror.Core.Commands.List
                             return commandReturn;
                         }
 
-                        decimal currency = butterBror.Bot.BankDollars / butterBror.Bot.Coins;
+                        decimal currency = butterBror.Bot.InBankDollars / butterBror.Bot.Coins;
                         decimal cost = 0.2m / currency;
 
                         int coins = -(int)cost;

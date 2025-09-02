@@ -132,8 +132,8 @@ namespace butterBror.Utils
 
             try
             {
-                if (Bot.SQL.Users.GetUserIdByUsername(platform, key) is not null)
-                    return Bot.SQL.Users.GetUserIdByUsername(platform, key).ToString();
+                if (Bot.DataBase.Users.GetUserIdByUsername(platform, key) is not null)
+                    return Bot.DataBase.Users.GetUserIdByUsername(platform, key).ToString();
 
                 // Twitch API
                 if (platform is PlatformsEnum.Twitch && requestAPI)
@@ -159,7 +159,7 @@ namespace butterBror.Utils
                         string id = data[0]["id"]?.ToString();
                         if (!string.IsNullOrEmpty(id))
                         {
-                            Bot.SQL.Users.AddUsernameMapping(platform, DataConversion.ToLong(id), key);
+                            Bot.DataBase.Users.AddUsernameMapping(platform, DataConversion.ToLong(id), key);
                             return id;
                         }
                     }
@@ -219,8 +219,8 @@ namespace butterBror.Utils
         {
             try
             {
-                if (Bot.SQL.Users.GetUsernameByUserId(platform, DataConversion.ToLong(ID)) is not null)
-                    return Bot.SQL.Users.GetUsernameByUserId(platform, DataConversion.ToLong(ID));
+                if (Bot.DataBase.Users.GetUsernameByUserId(platform, DataConversion.ToLong(ID)) is not null)
+                    return Bot.DataBase.Users.GetUsernameByUserId(platform, DataConversion.ToLong(ID));
 
                 // API
                 if (platform is PlatformsEnum.Twitch && requestAPI)
@@ -249,7 +249,7 @@ namespace butterBror.Utils
                         string login = data[0]["login"]?.ToString();
                         if (!string.IsNullOrEmpty(login))
                         {
-                            Bot.SQL.Users.AddUsernameMapping(platform, DataConversion.ToLong(ID), login);
+                            Bot.DataBase.Users.AddUsernameMapping(platform, DataConversion.ToLong(ID), login);
                             return login;
                         }
                     }
@@ -300,7 +300,10 @@ namespace butterBror.Utils
         /// </remarks>
         public static string Unmention(string username)
         {
-            return string.Join("\u2063", username.ToCharArray()); // Fixed
+            if (string.IsNullOrEmpty(username) || username.Length <= 1)
+                return username;
+
+            return username[0] + "\u034E" + username.Substring(1); // Fixed x2 (I hope)
         }
     }
 }

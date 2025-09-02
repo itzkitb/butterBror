@@ -284,17 +284,17 @@ namespace butterBror.Utils
                 messagesSemaphores.TryUpdate(userId, (semaphore.Semaphore, now), semaphore);
 
                 // Skip banned or ignored users
-                if (Bot.SQL.Roles.IsBanned(platform, DataConversion.ToLong(userId)) ||
-                    Bot.SQL.Roles.IsIgnored(platform, DataConversion.ToLong(userId)))
+                if (Bot.DataBase.Roles.IsBanned(platform, DataConversion.ToLong(userId)) ||
+                    Bot.DataBase.Roles.IsIgnored(platform, DataConversion.ToLong(userId)))
                     return;
 
                 DateTime now_utc = DateTime.UtcNow;
                 Bot.MessagesProccessed++;
 
-                if (!Bot.SQL.Users.CheckUserExists(platform, DataConversion.ToLong(userId)))
+                if (!Bot.DataBase.Users.CheckUserExists(platform, DataConversion.ToLong(userId)))
                 {
-                    Bot.SQL.Users.RegisterNewUser(platform, DataConversion.ToLong(userId), LanguageDetector.DetectLanguage(message), message, channel);
-                    Bot.SQL.Users.AddUsernameMapping(platform, DataConversion.ToLong(userId), username.ToLower());
+                    Bot.DataBase.Users.RegisterNewUser(platform, DataConversion.ToLong(userId), LanguageDetector.DetectLanguage(message), message, channel);
+                    Bot.DataBase.Users.AddUsernameMapping(platform, DataConversion.ToLong(userId), username.ToLower());
                     Bot.Users++;
                 }
                 else
@@ -355,7 +355,7 @@ namespace butterBror.Utils
                     isSubscriber = platform == PlatformsEnum.Twitch && twitchMessageContext.IsSubscriber,
                 };
 
-                if (Bot.SQL.Channels.GetFirstMessage(platform, channelId, DataConversion.ToLong(userId)) is null && !Bot.allFirstMessages.Contains((platform, channelId, DataConversion.ToLong(userId), msg)))
+                if (Bot.DataBase.Channels.GetFirstMessage(platform, channelId, DataConversion.ToLong(userId)) is null && !Bot.allFirstMessages.Contains((platform, channelId, DataConversion.ToLong(userId), msg)))
                 {
                     Bot.allFirstMessages.Add((platform, channelId, DataConversion.ToLong(userId), msg));
                 }

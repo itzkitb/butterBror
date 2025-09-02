@@ -39,7 +39,7 @@ namespace butterBror.Core.Commands.List
             {
                 if (MessageProcessor.GetArgument(data.Arguments, "chat") is null)
                 {
-                    decimal currency = butterBror.Bot.BankDollars / butterBror.Bot.Coins;
+                    decimal currency = butterBror.Bot.InBankDollars / butterBror.Bot.Coins;
                     decimal cost = 0.5m / currency;
 
                     int coins = -(int)cost;

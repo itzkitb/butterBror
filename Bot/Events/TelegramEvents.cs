@@ -78,7 +78,6 @@ namespace butterBror.Events
                         chat.Id.ToString(),
                         PlatformsEnum.Telegram,
                         Bot.Version,
-                        Bot.Patch,
                         TextSanitizer.FormatTimeSpan(workTime, lang),
                         Bot.Clients.Twitch.JoinedChannels.Count + Bot.Clients.Discord.Guilds.Count + " (Twitch, Discord)",
                         Runner.commandInstances.Count.ToString(),

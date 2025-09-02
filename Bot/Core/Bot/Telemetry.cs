@@ -129,7 +129,7 @@ namespace butterBror.Core.Bot
                 #endregion
 
                 decimal cpuPercent = CPUItems == 0 ? 0 : CPU / CPUItems;
-                decimal coinCurrency = butterBror.Bot.Coins == 0 ? 0 : butterBror.Bot.BankDollars / butterBror.Bot.Coins;
+                decimal coinCurrency = butterBror.Bot.Coins == 0 ? 0 : butterBror.Bot.InBankDollars / butterBror.Bot.Coins;
 
                 CPU = 0;
                 CPUItems = 0;
