@@ -1,11 +1,11 @@
-﻿using butterBror.Core.Bot;
-using butterBror.Core.Bot.SQLColumnNames;
-using butterBror.Models;
-using butterBror.Utils;
+﻿using bb.Core.Bot;
+using bb.Core.Bot.SQLColumnNames;
+using bb.Models;
+using bb.Utils;
 using System.Globalization;
 using TwitchLib.Client.Enums;
 
-namespace butterBror.Core.Commands.List
+namespace bb.Core.Commands.List
 {
     public class ResumeAfk : CommandBase
     {
@@ -36,16 +36,16 @@ namespace butterBror.Core.Commands.List
 
             try
             {
-                long AFKResumeTimes = Convert.ToInt64(butterBror.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.AFKResumeTimes));
-                DateTime AFKResume = DateTime.Parse((string)butterBror.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.AFKResume), null, DateTimeStyles.AdjustToUniversal);
+                long AFKResumeTimes = Convert.ToInt64(bb.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.AFKResumeTimes));
+                DateTime AFKResume = DateTime.Parse((string)bb.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.AFKResume), null, DateTimeStyles.AdjustToUniversal);
 
                 if (AFKResumeTimes <= 5)
                 {
                     TimeSpan cache = DateTime.UtcNow - AFKResume;
                     if (cache.TotalMinutes <= 5)
                     {
-                        butterBror.Bot.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.IsAFK, 1);
-                        butterBror.Bot.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.AFKResumeTimes, AFKResumeTimes + 1);
+                        bb.Bot.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.IsAFK, 1);
+                        bb.Bot.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.AFKResumeTimes, AFKResumeTimes + 1);
                         commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:rafk", data.ChannelId, data.Platform));
                         commandReturn.SetColor(ChatColorPresets.YellowGreen);
                     }

@@ -1,4 +1,4 @@
-﻿namespace butterBror.Core.Bot.SQLColumnNames
+﻿namespace bb.Core.Bot.SQLColumnNames
 {
     public class Users
     {

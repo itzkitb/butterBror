@@ -1,11 +1,11 @@
-﻿using butterBror.Core.Bot;
-using butterBror.Core.Bot.SQLColumnNames;
-using butterBror.Models;
-using butterBror.Utils;
+﻿using bb.Core.Bot;
+using bb.Core.Bot.SQLColumnNames;
+using bb.Models;
+using bb.Utils;
 using System.Globalization;
 using TwitchLib.Client.Enums;
 
-namespace butterBror.Core.Commands.List
+namespace bb.Core.Commands.List
 {
     public class LastGlobalLine : CommandBase
     {
@@ -48,11 +48,11 @@ namespace butterBror.Core.Commands.List
                     }
                     else
                     {
-                        string lastLine = (string)butterBror.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(userID), Users.LastMessage);
-                        string lastChannel = (string)butterBror.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(userID), Users.LastChannel);
-                        DateTime lastLineDate = DateTime.Parse((string)butterBror.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(userID), Users.LastSeen), null, DateTimeStyles.AdjustToUniversal);
+                        string lastLine = (string)bb.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(userID), Users.LastMessage);
+                        string lastChannel = (string)bb.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(userID), Users.LastChannel);
+                        DateTime lastLineDate = DateTime.Parse((string)bb.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(userID), Users.LastSeen), null, DateTimeStyles.AdjustToUniversal);
 
-                        if (name == butterBror.Bot.BotName.ToLower())
+                        if (name == bb.Bot.BotName.ToLower())
                         {
                             commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:last_global_line:bot", data.ChannelId, data.Platform));
                         }

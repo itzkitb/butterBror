@@ -1,8 +1,8 @@
-﻿using butterBror.Core.Bot;
-using butterBror.Models;
-using butterBror.Utils;
+﻿using bb.Core.Bot;
+using bb.Models;
+using bb.Utils;
 
-namespace butterBror.Core.Commands.List
+namespace bb.Core.Commands.List
 {
     public class Help : CommandBase
     {
@@ -52,9 +52,9 @@ namespace butterBror.Core.Commands.List
                             {
                                 num++;
                                 if (num < numWithoutComma)
-                                    aliasesList += $"{butterBror.Bot.DefaultExecutor}{alias}, ";
+                                    aliasesList += $"{bb.Bot.DefaultExecutor}{alias}, ";
                                 else if (num == numWithoutComma)
-                                    aliasesList += $"{butterBror.Bot.DefaultExecutor}{alias}";
+                                    aliasesList += $"{bb.Bot.DefaultExecutor}{alias}";
                             }
                             commandReturn.SetMessage(LocalizationService.GetString(
                                 data.User.Language,

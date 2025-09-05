@@ -1,11 +1,11 @@
-﻿using butterBror.Core.Bot;
-using butterBror.Core.Bot.SQLColumnNames;
-using butterBror.Models;
-using butterBror.Utils;
+﻿using bb.Core.Bot;
+using bb.Core.Bot.SQLColumnNames;
+using bb.Models;
+using bb.Utils;
 using System.Globalization;
 using TwitchLib.Client.Enums;
 
-namespace butterBror.Core.Commands.List
+namespace bb.Core.Commands.List
 {
     public class FirstGlobalLine : CommandBase
     {
@@ -56,15 +56,15 @@ namespace butterBror.Core.Commands.List
                 }
                 else
                 {
-                    if (name == butterBror.Bot.BotName.ToLower())
+                    if (name == bb.Bot.BotName.ToLower())
                     {
                         commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:first_global_line:bot", data.ChannelId, data.Platform));
                     }
                     else
                     {
-                        var firstLine = (string)butterBror.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(userID), Users.FirstMessage);
-                        var firstChannel = (string)butterBror.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(userID), Users.FirstChannel);
-                        var firstLineDate = DateTime.Parse((string)butterBror.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(userID), Users.FirstSeen), null, DateTimeStyles.AdjustToUniversal);
+                        var firstLine = (string)bb.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(userID), Users.FirstMessage);
+                        var firstChannel = (string)bb.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(userID), Users.FirstChannel);
+                        var firstLineDate = DateTime.Parse((string)bb.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(userID), Users.FirstSeen), null, DateTimeStyles.AdjustToUniversal);
 
                         commandReturn.SetMessage(LocalizationService.GetString(
                             data.User.Language,

@@ -1,5 +1,5 @@
 ﻿
-namespace butterBror.Core.Bot
+namespace bb.Core.Bot
 {
     /// <summary>
     /// Provides centralized storage for base URLs of various platform services used in the application.

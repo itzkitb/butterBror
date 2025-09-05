@@ -1,10 +1,10 @@
-﻿using butterBror.Core.Bot;
-using butterBror.Models;
-using butterBror.Services.External;
-using butterBror.Utils;
-using static butterBror.Core.Bot.Console;
+﻿using bb.Core.Bot;
+using bb.Models;
+using bb.Services.External;
+using bb.Utils;
+using static bb.Core.Bot.Console;
 
-namespace butterBror.Core.Commands.List
+namespace bb.Core.Commands.List
 {
     public class Vhs : CommandBase
     {

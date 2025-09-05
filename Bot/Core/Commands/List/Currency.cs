@@ -1,9 +1,9 @@
-﻿using butterBror.Core.Bot;
-using butterBror.Models;
-using butterBror.Utils;
+﻿using bb.Core.Bot;
+using bb.Models;
+using bb.Utils;
 using Newtonsoft.Json;
 
-namespace butterBror.Core.Commands.List
+namespace bb.Core.Commands.List
 {
     public class Currency : CommandBase
     {
@@ -136,7 +136,7 @@ namespace butterBror.Core.Commands.List
                 }
                 else
                 {
-                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:not_enough_arguments", data.ChannelId, data.Platform, $"{butterBror.Bot.DefaultExecutor}currency 1 USD to RUB"));
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:not_enough_arguments", data.ChannelId, data.Platform, $"{bb.Bot.DefaultExecutor}currency 1 USD to RUB"));
                 }
             }
             catch (Exception e)

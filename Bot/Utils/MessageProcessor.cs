@@ -1,5 +1,5 @@
-﻿using butterBror.Core.Bot.SQLColumnNames;
-using butterBror.Models;
+﻿using bb.Core.Bot.SQLColumnNames;
+using bb.Models;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using System.Collections.Concurrent;
@@ -8,9 +8,9 @@ using System.Reflection;
 using System.Text.RegularExpressions;
 using Telegram.Bot.Types;
 using TwitchLib.Client.Models;
-using static butterBror.Core.Bot.Console;
+using static bb.Core.Bot.Console;
 
-namespace butterBror.Utils
+namespace bb.Utils
 {
     /// <summary>
     /// Provides comprehensive command processing functionality for chatbot operations across multiple platforms.
@@ -41,6 +41,7 @@ namespace butterBror.Utils
     /// </remarks>
     public class MessageProcessor
     {
+        public static ulong Proccessed = 0;
         public static readonly ConcurrentDictionary<string, (SemaphoreSlim Semaphore, DateTime LastUsed)> messagesSemaphores = new(StringComparer.Ordinal);
         private static readonly RegexOptions regexOptions = RegexOptions.Compiled;
         private static readonly Regex MentionRegex = new(@"@(\w+)", regexOptions);
@@ -289,7 +290,7 @@ namespace butterBror.Utils
                     return;
 
                 DateTime now_utc = DateTime.UtcNow;
-                Bot.MessagesProccessed++;
+                Proccessed++;
 
                 if (!Bot.DataBase.Users.CheckUserExists(platform, DataConversion.ToLong(userId)))
                 {

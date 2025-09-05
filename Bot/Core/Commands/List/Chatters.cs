@@ -1,9 +1,9 @@
-﻿using butterBror.Core.Bot;
-using butterBror.Models;
-using butterBror.Services.External;
-using butterBror.Utils;
+﻿using bb.Core.Bot;
+using bb.Models;
+using bb.Services.External;
+using bb.Utils;
 
-namespace butterBror.Core.Commands.List
+namespace bb.Core.Commands.List
 {
     public class Chattes : CommandBase
     {
@@ -46,9 +46,9 @@ namespace butterBror.Core.Commands.List
                 {
                     do
                     {
-                        var response = await butterBror.Bot.Clients.TwitchAPI.Helix.Chat.GetChattersAsync(
+                        var response = await bb.Bot.Clients.TwitchAPI.Helix.Chat.GetChattersAsync(
                             broadcasterId: UsernameResolver.GetUserID(targetChannel, PlatformsEnum.Twitch, true),
-                            moderatorId: UsernameResolver.GetUserID(butterBror.Bot.BotName, PlatformsEnum.Twitch, true),
+                            moderatorId: UsernameResolver.GetUserID(bb.Bot.BotName, PlatformsEnum.Twitch, true),
                             first: 100,
                             after: cursor
                         );

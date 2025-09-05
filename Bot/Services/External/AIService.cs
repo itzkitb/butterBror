@@ -1,14 +1,14 @@
-﻿using butterBror.Core.Bot.SQLColumnNames;
-using butterBror.Models;
-using butterBror.Models.AI;
-using butterBror.Utils;
+﻿using bb.Core.Bot.SQLColumnNames;
+using bb.Models;
+using bb.Models.AI;
+using bb.Utils;
 using DankDB;
 using Newtonsoft.Json;
 using System.Net.Http.Headers;
 using System.Text;
-using static butterBror.Core.Bot.Console;
+using static bb.Core.Bot.Console;
 
-namespace butterBror.Services.External
+namespace bb.Services.External
 {
     /// <summary>
     /// Provides artificial intelligence capabilities with multiple model support and chat history management.

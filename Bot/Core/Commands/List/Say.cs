@@ -1,7 +1,7 @@
-﻿using butterBror.Core.Bot;
-using butterBror.Models;
+﻿using bb.Core.Bot;
+using bb.Models;
 
-namespace butterBror.Core.Commands.List
+namespace bb.Core.Commands.List
 {
     public class Say : CommandBase
     {

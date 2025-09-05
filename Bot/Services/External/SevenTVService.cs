@@ -1,14 +1,14 @@
-﻿using butterBror.Core.Bot;
-using butterBror.Models;
-using butterBror.Models.SevenTVLib;
-using butterBror.Utils;
+﻿using bb.Core.Bot;
+using bb.Models;
+using bb.Models.SevenTVLib;
+using bb.Utils;
 using Microsoft.Extensions.Caching.Memory;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
-using static butterBror.Core.Bot.Console;
+using static bb.Core.Bot.Console;
 
-namespace butterBror.Services.External
+namespace bb.Services.External
 {
     /// <summary>
     /// Provides interaction with 7TV API for user and emote operations with caching capabilities.

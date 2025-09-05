@@ -1,5 +1,5 @@
 ﻿
-namespace butterBror.Models.AI
+namespace bb.Models.AI
 {
     /// <summary>
     /// Represents the complete response body from the AI API.

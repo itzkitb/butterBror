@@ -1,13 +1,13 @@
-﻿using butterBror.Core.Bot.SQLColumnNames;
-using butterBror.Core.Commands;
-using butterBror.Models;
+﻿using bb.Core.Bot.SQLColumnNames;
+using bb.Core.Commands;
+using bb.Models;
 using System.Globalization;
 using Telegram.Bot;
 using TwitchLib.Client.Enums;
 using TwitchLib.Client.Models;
-using static butterBror.Core.Bot.Console;
+using static bb.Core.Bot.Console;
 
-namespace butterBror.Utils
+namespace bb.Utils
 {
     /// <summary>
     /// Centralized utility class for handling chat operations across multiple streaming platforms.

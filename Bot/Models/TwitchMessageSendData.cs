@@ -1,6 +1,6 @@
 ﻿using TwitchLib.Client.Enums;
 
-namespace butterBror.Models
+namespace bb.Models
 {
     public class TwitchMessageSendData
     {

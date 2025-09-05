@@ -2,7 +2,7 @@
 using Telegram.Bot.Types;
 using TwitchLib.Client.Events;
 
-namespace butterBror.Models
+namespace bb.Models
 {
     public class CommandData
     {

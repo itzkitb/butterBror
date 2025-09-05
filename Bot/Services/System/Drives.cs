@@ -1,5 +1,5 @@
 ﻿
-namespace butterBror.Services.System
+namespace bb.Services.System
 {
     /// <summary>
     /// Provides functionality to retrieve information about logical drives on the computer.

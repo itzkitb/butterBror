@@ -1,14 +1,14 @@
-﻿using butterBror.Core.Bot.SQLColumnNames;
-using butterBror.Models;
-using butterBror.Utils;
+﻿using bb.Core.Bot.SQLColumnNames;
+using bb.Models;
+using bb.Utils;
 using Microsoft.CodeAnalysis;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Reflection;
 using TwitchLib.Client.Enums;
-using static butterBror.Core.Bot.Console;
+using static bb.Core.Bot.Console;
 
-namespace butterBror.Core.Commands
+namespace bb.Core.Commands
 {
     /// <summary>
     /// Manages command execution lifecycle including initialization, permission checks, and result processing.
@@ -112,7 +112,7 @@ namespace butterBror.Core.Commands
         /// <exception cref="Exception">Thrown when command execution fails with detailed error context</exception>
         public static async Task Run(CommandData data, bool isATest = false)
         {
-            if (!butterBror.Bot.Initialized) return;
+            if (!bb.Bot.Initialized) return;
 
             await Task.Run(async () =>
             {
@@ -122,17 +122,17 @@ namespace butterBror.Core.Commands
                 try
                 {
                     // User data initialization
-                    data.User.IsBanned = butterBror.Bot.DataBase.Roles.IsBanned(data.Platform, DataConversion.ToLong(data.User.ID));
-                    data.User.Ignored = butterBror.Bot.DataBase.Roles.IsIgnored(data.Platform, DataConversion.ToLong(data.User.ID));
+                    data.User.IsBanned = bb.Bot.DataBase.Roles.IsBanned(data.Platform, DataConversion.ToLong(data.User.ID));
+                    data.User.Ignored = bb.Bot.DataBase.Roles.IsIgnored(data.Platform, DataConversion.ToLong(data.User.ID));
 
                     if ((bool)data.User.IsBanned || (bool)data.User.Ignored ||
                         (data.Platform is PlatformsEnum.Twitch && data.TwitchArguments.Command.ChatMessage.IsMe))
                         return;
 
-                    string language = (string)butterBror.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.Language);
+                    string language = (string)bb.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.Language);
                     data.User.Language = language;
-                    data.User.IsBotModerator = butterBror.Bot.DataBase.Roles.IsModerator(data.Platform, DataConversion.ToLong(data.User.ID));
-                    data.User.IsBotDeveloper = butterBror.Bot.DataBase.Roles.IsDeveloper(data.Platform, DataConversion.ToLong(data.User.ID));
+                    data.User.IsBotModerator = bb.Bot.DataBase.Roles.IsModerator(data.Platform, DataConversion.ToLong(data.User.ID));
+                    data.User.IsBotDeveloper = bb.Bot.DataBase.Roles.IsDeveloper(data.Platform, DataConversion.ToLong(data.User.ID));
 
                     string commandName = data.Name.Replace("ё", "е");
                     bool commandFounded = false;
@@ -169,7 +169,7 @@ namespace butterBror.Core.Commands
                                         true, ChatColorPresets.Red);
                                 }
 
-                                Write($"Command failed: isOnlyBotDeveloper: {isOnlyBotDeveloper}; isOnlyBotModerator: {isOnlyBotModerator}; isOnlyChannelModerator: {isOnlyChannelModerator}; cooldown: {cooldown};", "info", LogLevel.Warning);
+                                Write($"Command failed: OBD check: {isOnlyBotDeveloper}; OBM check: {isOnlyBotModerator}; OCM check: {isOnlyChannelModerator}; Cooldown check: {cooldown};", "info", LogLevel.Warning);
                                 return;
                             }
 
@@ -222,7 +222,7 @@ namespace butterBror.Core.Commands
 
                     if (!commandFounded)
                     {
-                        Write($"@{data.Name} tried unknown command: {commandName}", "info", LogLevel.Warning);
+                        Write($"@{data.User.Name} (id: {data.User.ID}; message: {data.MessageID}; channel: {data.Channel} (id {data.ChannelId}); server: {TextSanitizer.CheckNull(data.Server)} (id {TextSanitizer.CheckNull(data.ServerID)})) tried unknown command: {commandName}", "info", LogLevel.Warning);
                     }
                 }
                 catch (Exception ex)

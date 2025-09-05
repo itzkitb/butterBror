@@ -1,7 +1,7 @@
-﻿using butterBror.Core.Bot.SQLColumnNames;
-using butterBror.Models;
+﻿using bb.Core.Bot.SQLColumnNames;
+using bb.Models;
 
-namespace butterBror.Utils
+namespace bb.Utils
 {
     /// <summary>
     /// Provides currency management functionality for the dual-unit butters and crumbs economic system.

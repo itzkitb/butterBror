@@ -1,10 +1,10 @@
-﻿using butterBror.Data;
-using butterBror.Models;
+﻿using bb.Data;
+using bb.Models;
 using DankDB;
 using Newtonsoft.Json;
-using static butterBror.Core.Bot.Console;
+using static bb.Core.Bot.Console;
 
-namespace butterBror.Utils
+namespace bb.Utils
 {
     /// <summary>
     /// Manages multilingual translation resources with hierarchical fallback and customization capabilities.

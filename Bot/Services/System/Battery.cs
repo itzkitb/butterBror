@@ -1,7 +1,7 @@
 ﻿using System.Management;
-using static butterBror.Core.Bot.Console;
+using static bb.Core.Bot.Console;
 
-namespace butterBror.Services.System
+namespace bb.Services.System
 {
     /// <summary>
     /// Provides functionality to retrieve battery information on Windows systems using WMI.

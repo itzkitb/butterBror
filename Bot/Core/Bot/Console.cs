@@ -2,7 +2,7 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
-namespace butterBror.Core.Bot
+namespace bb.Core.Bot
 {
     /// <summary>
     /// Centralized logging system with multi-channel support and real-time event broadcasting.
@@ -66,6 +66,12 @@ namespace butterBror.Core.Bot
             [CallerLineNumber] int lineNumber = 0,
             [CallerMemberName] string memberName = "")
         {
+            #if RELEASE
+            if (channel == "debug") {
+                return;
+            }
+            #endif
+
             string logEntry = FormatLogEntry(filePath, lineNumber, memberName, type, message);
 
             try
@@ -203,7 +209,7 @@ namespace butterBror.Core.Bot
         /// </remarks>
         private static void EnsureDirectoryExists()
         {
-            string logDirectory = Path.GetDirectoryName(butterBror.Bot.Paths.Logs);
+            string logDirectory = Path.GetDirectoryName(bb.Bot.Paths.Logs);
 
             if (!_directoryChecked && !Directory.Exists(logDirectory))
             {
@@ -230,7 +236,7 @@ namespace butterBror.Core.Bot
         {
             lock (_fileLock) // Thread-safe writing
             {
-                using var writer = new StreamWriter(butterBror.Bot.Paths.Logs, true);
+                using var writer = new StreamWriter(bb.Bot.Paths.Logs, true);
                 writer.WriteLine(logEntry);
             }
         }

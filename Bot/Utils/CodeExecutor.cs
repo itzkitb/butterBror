@@ -8,7 +8,7 @@ using System.Runtime.Loader;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace butterBror.Utils
+namespace bb.Utils
 {
     public class CodeExecutor
     {

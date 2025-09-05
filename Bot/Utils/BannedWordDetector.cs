@@ -1,10 +1,10 @@
-﻿using butterBror.Models;
+﻿using bb.Models;
 using DankDB;
 using System.Collections.Concurrent;
 using System.Text.RegularExpressions;
-using static butterBror.Core.Bot.Console;
+using static bb.Core.Bot.Console;
 
-namespace butterBror.Utils
+namespace bb.Utils
 {
     /// <summary>
     /// Advanced filtering system for detecting banned words in user messages across multiple streaming platforms.

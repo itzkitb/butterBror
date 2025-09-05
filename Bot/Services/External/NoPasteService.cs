@@ -1,4 +1,4 @@
-﻿namespace butterBror.Services.External
+﻿namespace bb.Services.External
 {
     /// <summary>
     /// Utility class for integrating with nopaste.net temporary clipboard service.

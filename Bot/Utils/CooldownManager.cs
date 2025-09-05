@@ -1,14 +1,14 @@
-﻿using butterBror.Core.Bot.SQLColumnNames;
-using butterBror.Models;
+﻿using bb.Core.Bot.SQLColumnNames;
+using bb.Models;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static butterBror.Core.Bot.Console;
+using static bb.Core.Bot.Console;
 
-namespace butterBror.Utils
+namespace bb.Utils
 {
     public class CooldownManager
     {

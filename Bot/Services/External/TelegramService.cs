@@ -1,7 +1,7 @@
 ﻿using System.Diagnostics;
 using Telegram.Bot;
 
-namespace butterBror.Services.External
+namespace bb.Services.External
 {
     public class TelegramService
     {

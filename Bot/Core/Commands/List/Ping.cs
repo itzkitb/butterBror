@@ -1,9 +1,9 @@
-﻿using butterBror.Core.Bot;
-using butterBror.Models;
-using butterBror.Utils;
+﻿using bb.Core.Bot;
+using bb.Models;
+using bb.Utils;
 using System.Net.NetworkInformation;
 
-namespace butterBror.Core.Commands.List
+namespace bb.Core.Commands.List
 {
     public class Pinger : CommandBase
     {
@@ -40,12 +40,12 @@ namespace butterBror.Core.Commands.List
 
                 if (data.Arguments.Count == 0)
                 {
-                    var workTime = DateTime.Now - butterBror.Bot.StartTime;
+                    var workTime = DateTime.Now - bb.Bot.StartTime;
                     string host = "";
                     long pingSpeed = 0;
                     if (data.Platform == PlatformsEnum.Telegram)
                     {
-                        pingSpeed = butterBror.Services.External.TelegramService.Ping().Result;
+                        pingSpeed = bb.Services.External.TelegramService.Ping().Result;
                     }
                     else
                     {
@@ -57,23 +57,23 @@ namespace butterBror.Core.Commands.List
                         pingSpeed = reply.Status == IPStatus.Success ? reply.RoundtripTime : -1;
                     }
 
-                    long joinedTabs = data.Platform == PlatformsEnum.Twitch ? butterBror.Bot.Clients.Twitch.JoinedChannels.Count : (data.Platform == PlatformsEnum.Discord ? butterBror.Bot.Clients.Discord.Guilds.Count : (butterBror.Bot.Clients.Twitch.JoinedChannels.Count + butterBror.Bot.Clients.Discord.Guilds.Count));
+                    long joinedTabs = data.Platform == PlatformsEnum.Twitch ? bb.Bot.Clients.Twitch.JoinedChannels.Count : (data.Platform == PlatformsEnum.Discord ? bb.Bot.Clients.Discord.Guilds.Count : (bb.Bot.Clients.Twitch.JoinedChannels.Count + bb.Bot.Clients.Discord.Guilds.Count));
 
                     commandReturn.SetMessage(LocalizationService.GetString(
                         data.User.Language,
                         "command:ping",
                         data.ChannelId,
                         data.Platform,
-                        butterBror.Bot.Version,
+                        bb.Bot.Version,
                         TextSanitizer.FormatTimeSpan(workTime, data.User.Language),
                         LocalizationService.GetPluralString(data.User.Language, "text:tab", data.ChannelId, data.Platform, joinedTabs, joinedTabs),
                         LocalizationService.GetPluralString(data.User.Language, "text:commands", data.ChannelId, data.Platform, Runner.commandInstances.Count, Runner.commandInstances.Count),
-                        butterBror.Bot.CompletedCommands,
+                        bb.Bot.CompletedCommands,
                         pingSpeed.ToString()));
                 }
                 else if (argument.Equals("isp"))
                 {
-                    var workTime = DateTime.Now - butterBror.Bot.StartTime;
+                    var workTime = DateTime.Now - bb.Bot.StartTime;
                     PingReply reply = new Ping().Send("192.168.1.1", 1000);
                     long pingSpeed = -1;
                     if (reply.Status == IPStatus.Success) pingSpeed = reply.RoundtripTime;

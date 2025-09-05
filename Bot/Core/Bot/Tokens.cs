@@ -1,6 +1,6 @@
-﻿using static butterBror.Core.Bot.TwitchToken;
+﻿using static bb.Core.Bot.TwitchToken;
 
-namespace butterBror.Core.Bot
+namespace bb.Core.Bot
 {
     /// <summary>
     /// Internal class storing authentication tokens for various external services used by the application.

@@ -1,5 +1,5 @@
 ﻿
-namespace butterBror.Models.AI
+namespace bb.Models.AI
 {
     /// <summary>
     /// Represents the request body structure for AI API calls.

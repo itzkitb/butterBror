@@ -1,11 +1,11 @@
-﻿using butterBror.Models;
-using butterBror.Utils;
+﻿using bb.Models;
+using bb.Utils;
 using Discord;
 using Telegram.Bot;
 using TwitchLib.Client.Models;
-using static butterBror.Core.Bot.Console;
+using static bb.Core.Bot.Console;
 
-namespace butterBror.Core.Commands
+namespace bb.Core.Commands
 {
     /// <summary>
     /// Provides platform-specific command reply handlers for Twitch, Telegram, and Discord platforms with consistent message formatting and safety checks.
@@ -56,9 +56,9 @@ namespace butterBror.Core.Commands
                     });
                 }
 
-                if (!butterBror.Bot.Clients.Twitch.JoinedChannels.Contains(new JoinedChannel(data.Channel)))
+                if (!bb.Bot.Clients.Twitch.JoinedChannels.Contains(new JoinedChannel(data.Channel)))
                 {
-                    butterBror.Bot.Clients.Twitch.JoinChannel(data.Channel);
+                    bb.Bot.Clients.Twitch.JoinChannel(data.Channel);
                 }
 
                 if (data.SafeExecute || new BannedWordDetector().Check(message, data.ChannelID, PlatformsEnum.Twitch))
@@ -66,16 +66,16 @@ namespace butterBror.Core.Commands
                     Write(isReply.ToString(), "debug");
                     if (isReply)
                     {
-                        butterBror.Bot.Clients.Twitch.SendReply(data.Channel, data.MessageID, message);
+                        bb.Bot.Clients.Twitch.SendReply(data.Channel, data.MessageID, message);
                     }
                     else
                     {
-                        butterBror.Bot.Clients.Twitch.SendMessage(new JoinedChannel(data.Channel), addUsername ? $"@{data.Username}, " + message : message);
+                        bb.Bot.Clients.Twitch.SendMessage(new JoinedChannel(data.Channel), addUsername ? $"@{data.Username}, " + message : message);
                     }
                 }
                 else
                 {
-                    butterBror.Bot.Clients.Twitch.SendReply(
+                    bb.Bot.Clients.Twitch.SendReply(
                         data.Channel,
                         data.MessageID,
                         LocalizationService.GetString(data.Language, "error:message_could_not_be_sent", data.ChannelID, PlatformsEnum.Twitch));
@@ -133,22 +133,22 @@ namespace butterBror.Core.Commands
                 {
                     if (isReply)
                     {
-                        await butterBror.Bot.Clients.Telegram.SendMessage(long.Parse(data.ChannelID), data.Message, replyParameters: int.Parse(data.MessageID));
+                        await bb.Bot.Clients.Telegram.SendMessage(long.Parse(data.ChannelID), data.Message, replyParameters: int.Parse(data.MessageID));
                     }
                     else
                     {
-                        await butterBror.Bot.Clients.Telegram.SendMessage(long.Parse(data.ChannelID), addUsername ? $"@{data.Username}, " + data.Message : data.Message);
+                        await bb.Bot.Clients.Telegram.SendMessage(long.Parse(data.ChannelID), addUsername ? $"@{data.Username}, " + data.Message : data.Message);
                     }
                 }
                 else
                 {
                     if (isReply)
                     {
-                        await butterBror.Bot.Clients.Telegram.SendMessage(long.Parse(data.ChannelID), LocalizationService.GetString(data.Language, "error:message_could_not_be_sent", data.ChannelID, PlatformsEnum.Telegram), replyParameters: int.Parse(data.MessageID));
+                        await bb.Bot.Clients.Telegram.SendMessage(long.Parse(data.ChannelID), LocalizationService.GetString(data.Language, "error:message_could_not_be_sent", data.ChannelID, PlatformsEnum.Telegram), replyParameters: int.Parse(data.MessageID));
                     }
                     else
                     {
-                        await butterBror.Bot.Clients.Telegram.SendMessage(long.Parse(data.ChannelID), LocalizationService.GetString(data.Language, "error:message_could_not_be_sent", data.ChannelID, PlatformsEnum.Telegram));
+                        await bb.Bot.Clients.Telegram.SendMessage(long.Parse(data.ChannelID), LocalizationService.GetString(data.Language, "error:message_could_not_be_sent", data.ChannelID, PlatformsEnum.Telegram));
                     }
                 }
 
@@ -244,7 +244,7 @@ namespace butterBror.Core.Commands
                         messageToSendPart2.Message = part2;
                     }
 
-                    ITextChannel sender = await butterBror.Bot.Clients.Discord.GetChannelAsync(ulong.Parse(data.ChannelID)) as ITextChannel;
+                    ITextChannel sender = await bb.Bot.Clients.Discord.GetChannelAsync(ulong.Parse(data.ChannelID)) as ITextChannel;
 
                     if ((data.SafeExecute | data.IsEphemeral) || new BannedWordDetector().Check(data.Message, data.ServerID, PlatformsEnum.Discord) && new BannedWordDetector().Check(data.Description, data.ServerID, PlatformsEnum.Discord))
                     {

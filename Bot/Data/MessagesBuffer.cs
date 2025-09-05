@@ -1,8 +1,8 @@
-﻿using butterBror.Models;
-using butterBror.Models.DataBase;
-using static butterBror.Core.Bot.Console;
+﻿using bb.Models;
+using bb.Models.DataBase;
+using static bb.Core.Bot.Console;
 
-namespace butterBror.Data
+namespace bb.Data
 {
     /// <summary>
     /// Thread-safe message buffering system for efficient database write operations.

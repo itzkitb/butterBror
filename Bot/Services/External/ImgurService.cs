@@ -1,8 +1,8 @@
 ﻿using Newtonsoft.Json.Linq;
 using System.Net.Http.Headers;
-using static butterBror.Core.Bot.Console;
+using static bb.Core.Bot.Console;
 
-namespace butterBror.Services.External
+namespace bb.Services.External
 {
     /// <summary>
     /// Provides functionality for interacting with the Imgur API to download and upload images.

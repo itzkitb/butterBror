@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace butterBror.Services.System
+namespace bb.Services.System
 {
     /// <summary>
     /// Provides CPU usage monitoring across different platforms (Windows, Linux, macOS)

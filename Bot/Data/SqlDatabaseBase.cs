@@ -2,7 +2,7 @@
 using System.Data.SQLite;
 using System.Reflection;
 
-namespace butterBror.Data
+namespace bb.Data
 {
     /// <summary>
     /// Abstract base class providing foundational database operations for all SQL-based data managers.

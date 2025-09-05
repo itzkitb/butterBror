@@ -1,8 +1,8 @@
-﻿using butterBror.Data;
+﻿using bb.Data;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
-namespace butterBror.Services.System
+namespace bb.Services.System
 {
     /// <summary>
     /// Provides platform-specific methods to retrieve system memory information and conversion utilities.

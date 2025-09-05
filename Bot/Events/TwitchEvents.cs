@@ -1,14 +1,14 @@
-﻿using butterBror.Models;
-using butterBror.Utils;
+﻿using bb.Models;
+using bb.Utils;
 using DankDB;
 using Newtonsoft.Json.Linq;
 using TwitchLib.Client.Events;
 using TwitchLib.Client.Models;
 using TwitchLib.Communication.Events;
 using TwitchLib.Communication.Interfaces;
-using static butterBror.Core.Bot.Console;
+using static bb.Core.Bot.Console;
 
-namespace butterBror.Events
+namespace bb.Events
 {
     /// <summary>
     /// Contains event handlers for Twitch API interactions and bot behavior customization.
@@ -202,13 +202,19 @@ namespace butterBror.Events
         public static void OnReconnected(object s, OnReconnectedEventArgs e)
         {
             Write("Twitch - Reconnected!", "info");
-            PlatformMessageSender.TwitchSend(Bot.BotName, $"BREAKDANCECAT Reconnected", UsernameResolver.GetUserID(Bot.BotName, PlatformsEnum.Twitch, true), "", "en-US", true);
             Bot.JoinTwitchChannels();
 
-            foreach (string channel in Bot.TwitchReconnectAnnounce)
+            _ = Task.Run(async () =>
             {
-                PlatformMessageSender.TwitchSend(UsernameResolver.GetUsername(channel, PlatformsEnum.Twitch, true), $"{Bot.BotName} Reconnected!", channel, "", "en-US", true);
-            }
+                await Task.Delay(1000);
+
+                PlatformMessageSender.TwitchSend(Bot.BotName, $"BREAKDANCECAT Reconnected", UsernameResolver.GetUserID(Bot.BotName, PlatformsEnum.Twitch, true), "", "en-US", true);
+
+                foreach (string channel in Bot.TwitchReconnectAnnounce)
+                {
+                    PlatformMessageSender.TwitchSend(UsernameResolver.GetUsername(channel, PlatformsEnum.Twitch, true), $"{Bot.BotName} Reconnected!", channel, "", "en-US", true);
+                }
+            });
         }
 
         /// <summary>
@@ -306,9 +312,6 @@ namespace butterBror.Events
         public static async void OnJoin(object sender, OnJoinedChannelArgs e)
         {
             //Write($"Twitch - Connected to #{e.Channel}", "info");
-
-            if (!Bot.TwitchChannels.Contains(e.Channel))
-                Bot.TwitchChannels.Append(e.Channel);
         }
 
         /// <summary>

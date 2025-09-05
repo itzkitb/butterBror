@@ -1,6 +1,6 @@
-﻿using butterBror.Core.Commands;
+﻿using bb.Core.Commands;
 
-namespace butterBror.Models
+namespace bb.Models
 {
     public class CommandHandler
     {

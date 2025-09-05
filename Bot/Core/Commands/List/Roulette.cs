@@ -1,9 +1,9 @@
-﻿using butterBror.Core.Bot;
-using butterBror.Models;
-using butterBror.Utils;
+﻿using bb.Core.Bot;
+using bb.Models;
+using bb.Utils;
 using TwitchLib.Client.Enums;
 
-namespace butterBror.Core.Commands.List
+namespace bb.Core.Commands.List
 {
     public class Roulette : CommandBase
     {
@@ -65,7 +65,7 @@ namespace butterBror.Core.Commands.List
                                 "error:roulette_not_enough_coins",
                                 data.ChannelId,
                                 data.Platform,
-                                Utils.CurrencyManager.GetBalance(data.User.ID, data.Platform).ToString() + " " + butterBror.Bot.CoinSymbol));
+                                Utils.CurrencyManager.GetBalance(data.User.ID, data.Platform).ToString() + " " + bb.Bot.CoinSymbol));
                         else
                         {
                             int moves = new Random().Next(38, 380);
@@ -91,7 +91,7 @@ namespace butterBror.Core.Commands.List
                                     data.Platform,
                                     result_symbol,
                                     result.ToString(),
-                                    win.ToString() + " " + butterBror.Bot.CoinSymbol,
+                                    win.ToString() + " " + bb.Bot.CoinSymbol,
                                     multipliers[result_symbol].ToString()));
                             }
                             else
@@ -104,7 +104,7 @@ namespace butterBror.Core.Commands.List
                                     data.Platform,
                                     result_symbol,
                                     result.ToString(),
-                                    bid.ToString() + " " + butterBror.Bot.CoinSymbol));
+                                    bid.ToString() + " " + bb.Bot.CoinSymbol));
                             }
                         }
                     }
@@ -117,7 +117,7 @@ namespace butterBror.Core.Commands.List
                         "error:not_enough_arguments",
                         data.ChannelId,
                         data.Platform,
-                        $"{butterBror.Bot.DefaultExecutor}roulette [🟩/🟥/⬛] [{LocalizationService.GetString(data.User.Language, "text:bid", data.ChannelId, data.Platform)}]"));
+                        $"{bb.Bot.DefaultExecutor}roulette [🟩/🟥/⬛] [{LocalizationService.GetString(data.User.Language, "text:bid", data.ChannelId, data.Platform)}]"));
             }
             catch (Exception e)
             {

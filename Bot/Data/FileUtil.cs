@@ -1,6 +1,6 @@
 ﻿using DankDB;
 
-namespace butterBror.Data
+namespace bb.Data
 {
     /// <summary>
     /// Provides utility methods for file and directory operations with caching and reliability features.

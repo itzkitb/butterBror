@@ -1,10 +1,10 @@
-﻿using butterBror.Models;
+﻿using bb.Models;
 using Newtonsoft.Json.Linq;
 using System.Net.Http.Headers;
 using System.Text.RegularExpressions;
-using static butterBror.Core.Bot.Console;
+using static bb.Core.Bot.Console;
 
-namespace butterBror.Utils
+namespace bb.Utils
 {
     /// <summary>
     /// Provides cross-platform username and user ID resolution services with integrated caching.

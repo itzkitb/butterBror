@@ -1,4 +1,4 @@
-﻿namespace butterBror.Utils
+﻿namespace bb.Utils
 {
     /// <summary>
     /// Utility class for language detection based on Unicode character range analysis.

@@ -1,9 +1,9 @@
-﻿using butterBror.Core.Bot;
-using butterBror.Models;
-using butterBror.Utils;
+﻿using bb.Core.Bot;
+using bb.Models;
+using bb.Utils;
 using TwitchLib.Client.Enums;
 
-namespace butterBror.Core.Commands.List
+namespace bb.Core.Commands.List
 {
     public class FirstLine : CommandBase
     {
@@ -54,7 +54,7 @@ namespace butterBror.Core.Commands.List
                 }
                 else
                 {
-                    var message = butterBror.Bot.DataBase.Channels.GetFirstMessage(data.Platform, data.ChannelId, DataConversion.ToLong(userId));
+                    var message = bb.Bot.DataBase.Channels.GetFirstMessage(data.Platform, data.ChannelId, DataConversion.ToLong(userId));
                     var message_badges = string.Empty;
                     if (message != null)
                     {
@@ -74,7 +74,7 @@ namespace butterBror.Core.Commands.List
                             if (flag) message_badges += LocalizationService.GetString(data.User.Language, symbol, data.ChannelId, data.Platform);
                         }
 
-                        if (!name.Equals(butterBror.Bot.BotName, StringComparison.CurrentCultureIgnoreCase))
+                        if (!name.Equals(bb.Bot.BotName, StringComparison.CurrentCultureIgnoreCase))
                         {
                             commandReturn.SetMessage(LocalizationService.GetString(
                                 data.User.Language,

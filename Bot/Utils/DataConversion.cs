@@ -2,7 +2,7 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
 
-namespace butterBror.Utils
+namespace bb.Utils
 {
     /// <summary>
     /// Provides utility methods for string parsing, data conversion, and date/time calculations.

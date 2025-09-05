@@ -1,6 +1,6 @@
 ﻿using Discord.WebSocket;
 
-namespace butterBror.Models
+namespace bb.Models
 {
     public class DiscordCommandSendData
     {

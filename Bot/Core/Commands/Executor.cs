@@ -1,10 +1,10 @@
-﻿using butterBror.Models;
+﻿using bb.Models;
 using Discord.WebSocket;
 using Telegram.Bot.Types;
 using TwitchLib.Client.Events;
-using static butterBror.Core.Bot.Console;
+using static bb.Core.Bot.Console;
 
-namespace butterBror.Core.Commands
+namespace bb.Core.Commands
 {
     public class Executor
     {
@@ -186,7 +186,7 @@ namespace butterBror.Core.Commands
         {
             try
             {
-                string CommandName = message.Content.Split(' ')[0].TrimStart(butterBror.Bot.DefaultExecutor);
+                string CommandName = message.Content.Split(' ')[0].TrimStart(bb.Bot.DefaultExecutor);
                 List<string> CommandArguments = message.Content.Split(' ').Skip(1).ToList();
                 string CommandArgumentsAsString = string.Join(' ', CommandArguments);
 
@@ -265,7 +265,7 @@ namespace butterBror.Core.Commands
                 Guid command_execution_uid = Guid.NewGuid();
                 CommandData data = new()
                 {
-                    Name = message.Text.ToLower().Split(' ')[0].TrimStart(butterBror.Bot.DefaultExecutor),
+                    Name = message.Text.ToLower().Split(' ')[0].TrimStart(bb.Bot.DefaultExecutor),
                     Arguments = message.Text.Split(' ').Skip(1).ToList(),
                     ArgumentsString = string.Join(" ", message.Text.Split(' ').Skip(1)),
                     Channel = message.Chat.Title ?? message.Chat.Username ?? message.Chat.Id.ToString(),

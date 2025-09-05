@@ -1,4 +1,4 @@
-﻿using butterBror.Services.System;
+﻿using bb.Services.System;
 using DankDB;
 using Jint;
 using Newtonsoft.Json;
@@ -9,58 +9,41 @@ using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Security.Principal;
 using System.Text;
-using static butterBror.Core.Bot.Console;
+using System.Runtime.InteropServices; // Добавлен для кросс-платформенной проверки ОС
+using System.IO; // Для работы с файловой системой
+using static bb.Core.Bot.Console;
+using bb.Utils;
 
-namespace butterBror
+namespace bb
 {
-    // Default dashboard password is "bbAdmin"
-    // Password crypter: https://crypt-online.ru/crypts/sha512/
-
-    /// <summary>
-    /// Provides a real-time monitoring dashboard for the bot system with live statistics and logs.
-    /// </summary>
-    /// <remarks>
-    /// <list type="bullet">
-    /// <item>Hosts a web interface on port 8080 with administrator authentication</item>
-    /// <item>Streams real-time statistics using Server-Sent Events (SSE)</item>
-    /// <item>Displays system metrics including network, disk, and memory usage</item>
-    /// <item>Shows bot operational status and performance counters</item>
-    /// <item>Requires administrator privileges for proper network interface access</item>
-    /// </list>
-    /// The dashboard automatically selects the most appropriate network interface and provides a responsive UI
-    /// that works across different screen sizes. All sensitive data transmission is secured through password authentication.
-    /// </remarks>
     public class DashboardServer
     {
         private static readonly string Host = $"http://*:8080";
         private static readonly HttpListener Listener = new();
         private static readonly List<StreamWriter> Clients = new();
         private static readonly object ClientsLock = new();
-        private static NetworkInterface selectedInterface;
-        private static PerformanceCounter diskReadCounter = new PerformanceCounter("PhysicalDisk", "Disk Read Bytes/sec", "_Total");
-        private static PerformanceCounter diskWriteCounter = new PerformanceCounter("PhysicalDisk", "Disk Write Bytes/sec", "_Total");
-        private static Timer timer;
+        private static NetworkInterface? selectedInterface;
+        private static PerformanceCounter? diskReadCounter;
+        private static PerformanceCounter? diskWriteCounter;
+        private static Timer? timer;
 
         public static bool IsElevated
         {
             get
             {
-                return new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator);
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    return new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator);
+                }
+                else
+                {
+                    return Environment.GetEnvironmentVariable("USER") == "root" ||
+                           Environment.GetEnvironmentVariable("SUDO_USER") != null ||
+                           Environment.GetEnvironmentVariable("USERNAME") == "root";
+                }
             }
         }
 
-        /// <summary>
-        /// Automatically selects the most appropriate active network interface for monitoring.
-        /// </summary>
-        /// <remarks>
-        /// <list type="bullet">
-        /// <item>First attempts to find interfaces with valid gateway addresses</item>
-        /// <item>If none found, tests interfaces for actual internet connectivity</item>
-        /// <item>Falls back to first available non-loopback interface</item>
-        /// </list>
-        /// Logs the selected interface name and description to the console.
-        /// Terminates execution if no suitable interface is found.
-        /// </remarks>
         public static void SelectEthernetAdapter()
         {
             selectedInterface = GetActiveNetworkInterface();
@@ -74,21 +57,6 @@ namespace butterBror
             Write($"Automatically selected network interface: {selectedInterface.Name} ({selectedInterface.Description})", "dashboard");
         }
 
-        /// <summary>
-        /// Finds and returns the most suitable active network interface.
-        /// </summary>
-        /// <returns>
-        /// The selected <see cref="NetworkInterface"/> or <c>null</c> if none found.
-        /// </returns>
-        /// <remarks>
-        /// Implements a two-phase selection algorithm:
-        /// <list type="number">
-        /// <item>First phase: Looks for interfaces with valid gateway addresses</item>
-        /// <item>Second phase: Tests interfaces for actual internet connectivity</item>
-        /// </list>
-        /// Skips loopback and tunnel interfaces in both phases.
-        /// Uses DNS connectivity test (8.8.8.8) to verify working internet connection.
-        /// </remarks>
         private static NetworkInterface GetActiveNetworkInterface()
         {
             foreach (NetworkInterface ni in NetworkInterface.GetAllNetworkInterfaces())
@@ -139,17 +107,6 @@ namespace butterBror
                                       ni.NetworkInterfaceType != NetworkInterfaceType.Tunnel);
         }
 
-        /// <summary>
-        /// Retrieves the local IP address of the selected network interface.
-        /// </summary>
-        /// <returns>
-        /// The local IPv4 address as a string, or "localhost" if unavailable.
-        /// </returns>
-        /// <remarks>
-        /// Prioritizes private IP addresses (RFC 1918) when available.
-        /// Filters out loopback addresses (127.0.0.1).
-        /// Returns the first valid non-loopback IPv4 address found.
-        /// </remarks>
         private static string GetLocalIPAddress()
         {
             if (selectedInterface == null)
@@ -179,23 +136,6 @@ namespace butterBror
             return "localhost";
         }
 
-        /// <summary>
-        /// Determines if an IP address belongs to a private IP range.
-        /// </summary>
-        /// <param name="address">The <see cref="IPAddress"/> to check.</param>
-        /// <returns>
-        /// <c>true</c> if the address is in a private range; otherwise, <c>false</c>.
-        /// </returns>
-        /// <remarks>
-        /// Checks against standard private IP ranges:
-        /// <list type="bullet">
-        /// <item>10.0.0.0/8 (10.0.0.0 - 10.255.255.255)</item>
-        /// <item>172.16.0.0/12 (172.16.0.0 - 172.31.255.255)</item>
-        /// <item>192.168.0.0/16 (192.168.0.0 - 192.168.255.255)</item>
-        /// <item>169.254.0.0/16 (APIPA range)</item>
-        /// </list>
-        /// Used to prioritize private addresses in the dashboard interface.
-        /// </remarks>
         private static bool IsPrivateIPAddress(IPAddress address)
         {
             byte[] bytes = address.GetAddressBytes();
@@ -219,30 +159,246 @@ namespace butterBror
             return false;
         }
 
-        /// <summary>
-        /// Starts the dashboard server asynchronously.
-        /// </summary>
-        /// <returns>A task representing the asynchronous operation.</returns>
-        /// <remarks>
-        /// <list type="bullet">
-        /// <item>Verifies administrator privileges before proceeding</item>
-        /// <item>Selects network interface and determines local IP address</item>
-        /// <item>Starts HTTP listener on port 8080</item>
-        /// <item>Initializes 1-second timer for statistics collection</item>
-        /// <item>Begins processing incoming HTTP requests</item>
-        /// </list>
-        /// Broadcasts two types of events to connected clients:
-        /// <list type="table">
-        /// <item><term>stats</term><description>Periodic system and bot metrics</description></item>
-        /// <item><term>log</term><description>Real-time log messages from the bot</description></item>
-        /// </list>
-        /// </remarks>
+        private static (long ReadBytes, long WriteBytes) GetDiskStats()
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                return (
+                    (long)diskReadCounter.NextValue(),
+                    (long)diskWriteCounter.NextValue()
+                );
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                try
+                {
+                    string[] diskStats = File.ReadAllLines("/proc/diskstats");
+                    foreach (string line in diskStats)
+                    {
+                        string[] parts = line.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                        
+                        if (parts.Length > 13 && (parts[2].StartsWith("sd") || parts[2].StartsWith("hd") || parts[2].StartsWith("nvme")))
+                        {
+                            long sectorSize = 512;
+                            long reads = long.Parse(parts[3]) * sectorSize;
+                            long writes = long.Parse(parts[7]) * sectorSize;
+                            return (reads, writes);
+                        }
+                    }
+                }
+                catch
+                {
+                    
+                }
+                return (0, 0);
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                try
+                {
+                    using (Process process = new Process())
+                    {
+                        process.StartInfo.FileName = "iostat";
+                        process.StartInfo.Arguments = "-d 1 2";
+                        process.StartInfo.RedirectStandardOutput = true;
+                        process.StartInfo.UseShellExecute = false;
+                        process.StartInfo.CreateNoWindow = true;
+                        process.Start();
+
+                        string output = process.StandardOutput.ReadToEnd();
+                        process.WaitForExit();
+
+                        string[] lines = output.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                        if (lines.Length > 2)
+                        {
+                            string[] stats = lines[lines.Length - 1].Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                            if (stats.Length >= 4)
+                            {
+                                long sectorSize = 512;
+                                long reads = long.Parse(stats[1]) * sectorSize;
+                                long writes = long.Parse(stats[3]) * sectorSize;
+                                return (reads, writes);
+                            }
+                        }
+                    }
+                }
+                catch
+                {
+                    
+                }
+                return (0, 0);
+            }
+            return (0, 0);
+        }
+
+        private static (double Received, double Sent) GetNetworkStats()
+        {
+            if (selectedInterface == null)
+                return (0, 0);
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                IPv4InterfaceStatistics stats = selectedInterface.GetIPv4Statistics();
+                return (
+                    stats.BytesReceived / 1024.0 / 1024.0,
+                    stats.BytesSent / 1024.0 / 1024.0
+                );
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                try
+                {
+                    string[] netStats = File.ReadAllLines("/proc/net/dev");
+                    foreach (string line in netStats)
+                    {
+                        if (line.Contains(selectedInterface.Name))
+                        {
+                            string[] parts = line.Split(new[] { ':' }, 2)[1]
+                                .Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                            if (parts.Length >= 16)
+                            {
+                                double received = long.Parse(parts[0]) / 1024.0 / 1024.0;
+                                double sent = long.Parse(parts[8]) / 1024.0 / 1024.0;
+                                return (received, sent);
+                            }
+                        }
+                    }
+                }
+                catch
+                {
+                    
+                }
+                return (0, 0);
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                try
+                {
+                    using (Process process = new Process())
+                    {
+                        process.StartInfo.FileName = "netstat";
+                        process.StartInfo.Arguments = "-ib";
+                        process.StartInfo.RedirectStandardOutput = true;
+                        process.StartInfo.UseShellExecute = false;
+                        process.StartInfo.CreateNoWindow = true;
+                        process.Start();
+
+                        string output = process.StandardOutput.ReadToEnd();
+                        process.WaitForExit();
+
+                        string[] lines = output.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                        foreach (string line in lines)
+                        {
+                            string[] parts = line.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                            if (parts.Length > 8 && parts[0] == selectedInterface.Name)
+                            {
+                                double received = long.Parse(parts[4]) / 1024.0 / 1024.0;
+                                double sent = long.Parse(parts[8]) / 1024.0 / 1024.0;
+                                return (received, sent);
+                            }
+                        }
+                    }
+                }
+                catch
+                {
+                    
+                }
+                return (0, 0);
+            }
+            return (0, 0);
+        }
+
+        private static string GetBatteryInfo()
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                return $"{Battery.GetBatteryCharge()}% ({Battery.IsCharging()})";
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                try
+                {
+                    string[] powerSupplies = Directory.GetDirectories("/sys/class/power_supply/");
+                    foreach (string supply in powerSupplies)
+                    {
+                        string typePath = Path.Combine(supply, "type");
+                        if (File.Exists(typePath) && File.ReadAllText(typePath).Trim() == "Battery")
+                        {
+                            string capacityPath = Path.Combine(supply, "capacity");
+                            string statusPath = Path.Combine(supply, "status");
+
+                            if (File.Exists(capacityPath) && File.Exists(statusPath))
+                            {
+                                int capacity = int.Parse(File.ReadAllText(capacityPath).Trim());
+                                string status = File.ReadAllText(statusPath).Trim();
+                                return $"{capacity}% ({(status == "Charging" ? "Charging" : "Discharging")})";
+                            }
+                        }
+                    }
+                }
+                catch
+                {
+                    
+                }
+                return "N/A (Linux)";
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                try
+                {
+                    using (Process process = new Process())
+                    {
+                        process.StartInfo.FileName = "pmset";
+                        process.StartInfo.Arguments = "-g batt";
+                        process.StartInfo.RedirectStandardOutput = true;
+                        process.StartInfo.UseShellExecute = false;
+                        process.StartInfo.CreateNoWindow = true;
+                        process.Start();
+
+                        string output = process.StandardOutput.ReadToEnd();
+                        process.WaitForExit();
+
+                        if (output.Contains("discharging") || output.Contains("charging"))
+                        {
+                            string[] lines = output.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                            if (lines.Length > 1)
+                            {
+                                string[] parts = lines[1].Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+                                if (parts.Length > 0)
+                                {
+                                    string capacity = parts[0].Trim();
+                                    string status = parts[1].Trim();
+                                    return $"{capacity} ({status})";
+                                }
+                            }
+                        }
+                    }
+                }
+                catch
+                {
+                    
+                }
+                return "N/A (MacOS)";
+            }
+            return "N/A";
+        }
+
         public static async Task StartAsync()
         {
             if (!IsElevated)
             {
-                Write("Dashboard requires administrator privileges to run. Please run as administrator.", "dashboard");
+                string platformMessage = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ?
+                    "Please run as administrator." :
+                    "Please run with sudo (Linux/MacOS).";
+
+                Write($"Dashboard requires elevated privileges to run. {platformMessage}", "dashboard");
                 return;
+            }
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                diskReadCounter = new PerformanceCounter("PhysicalDisk", "Disk Read Bytes/sec", "_Total");
+                diskWriteCounter = new PerformanceCounter("PhysicalDisk", "Disk Write Bytes/sec", "_Total");
             }
 
             SelectEthernetAdapter();
@@ -258,11 +414,11 @@ namespace butterBror
                 {
                     if (!Bot.Initialized) return;
 
-                    IPv4InterfaceStatistics ethernetStats = selectedInterface.GetIPv4Statistics();
-                    double networkReceived = ethernetStats.BytesReceived / 1024 / 1024;
-                    double networkSent = ethernetStats.BytesSent / 1024 / 1024;
-                    int diskRead = (int)(diskReadCounter.NextValue() / 1024);
-                    int diskWrite = (int)(diskWriteCounter.NextValue() / 1024);
+                    (double networkReceived, double networkSent) = GetNetworkStats();
+                    (long diskReadBytes, long diskWriteBytes) = GetDiskStats();
+
+                    int diskRead = (int)(diskReadBytes / 1024);
+                    int diskWrite = (int)(diskWriteBytes / 1024);
 
                     var stats = new
                     {
@@ -273,8 +429,8 @@ namespace butterBror
                         IsInitialized = Bot.Initialized,
                         IsConnected = Bot.Connected,
                         Name = Bot.BotName,
-                        MessagesProcessed = Bot.MessagesProccessed,
-                        Battery = $"{Battery.GetBatteryCharge()}% ({Battery.IsCharging()})",
+                        MessagesProcessed = MessageProcessor.Proccessed,
+                        Battery = GetBatteryInfo(),
                         Memory = $"{Process.GetCurrentProcess().PrivateMemorySize64 / (1024 * 1024)} Mbyte",
                         WorkTime = $"{DateTime.Now - Bot.StartTime:dd\\:hh\\:mm\\.ss}",
                         CacheItems = Worker.cache.count,
@@ -290,7 +446,6 @@ namespace butterBror
                         MessagesBufferCount = Bot.MessagesBuffer?.Count() ?? 0,
                         UsersBufferCount = Bot.UsersBuffer?.Count() ?? 0,
                         FirstMessagesCount = Bot.allFirstMessages?.Count ?? 0,
-                        IsReady = Bot.Ready,
                         Host = $"{Bot.HostName} v.{Bot.HostVersion}",
                         DiscordGuilds = Bot.Clients.Discord.Guilds.Count,
                         TwitchChannels = Bot.Clients.Twitch.JoinedChannels.Count,
@@ -703,7 +858,6 @@ namespace butterBror
                     <div class=""stat-value"">Commands executed: ${{stats.CompletedCommands}}</div>
                     <div class=""stat-value"">Users: ${{stats.Users}}</div>
                     <div class=""stat-value"">Connected: ${{stats.IsConnected ? '✅ Yes' : '❌ No'}}</div>
-                    <div class=""stat-value"">Ready: ${{stats.IsReady ? '✅ Yes' : '❌ No'}}</div>
                     <div class=""stat-value"">Initialized: ${{stats.IsInitialized ? '✅ Yes' : '❌ No'}}</div>
                     <div class=""stat-value"">Twitch: ${{stats.IsTwitchConnected ? '✅ Connected' : '🛑 Disconnected'}}</div>
                     <div class=""stat-value"">Discord: ${{stats.IsDiscordConnected ? '✅ Connected' : '🛑 Disconnected'}}</div>
@@ -792,6 +946,7 @@ namespace butterBror
             {
                 clientsCopy = Clients.ToList();
             }
+            
             foreach (var client in clientsCopy)
             {
                 try
@@ -799,11 +954,12 @@ namespace butterBror
                     await client.WriteAsync(json);
                     await client.FlushAsync();
                 }
-                catch
+                catch (Exception ex) when (ex is IOException || ex is ObjectDisposedException)
                 {
                     disconnectedClients.Add(client);
                 }
             }
+            
             foreach (var client in disconnectedClients)
             {
                 lock (ClientsLock)

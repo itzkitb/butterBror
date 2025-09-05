@@ -1,16 +1,16 @@
-﻿using butterBror.Core.Bot;
-using butterBror.Core.Bot.SQLColumnNames;
-using butterBror.Core.Commands;
-using butterBror.Models;
-using butterBror.Utils;
+﻿using bb.Core.Bot;
+using bb.Core.Bot.SQLColumnNames;
+using bb.Core.Commands;
+using bb.Models;
+using bb.Utils;
 using System.Net.NetworkInformation;
 using Telegram.Bot;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
-using static butterBror.Core.Bot.Console;
+using static bb.Core.Bot.Console;
 
-namespace butterBror.Events
+namespace bb.Events
 {
     /// <summary>
     /// Contains event handlers for Telegram bot interactions and message processing.

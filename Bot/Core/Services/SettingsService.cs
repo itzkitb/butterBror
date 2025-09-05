@@ -1,7 +1,7 @@
-﻿using butterBror.Data;
+﻿using bb.Data;
 using DankDB;
 
-namespace butterBror.Core.Services
+namespace bb.Core.Services
 {
     public class SettingsService
     {
@@ -62,23 +62,22 @@ namespace butterBror.Core.Services
         /// </remarks>
         public static void Load()
         {
-            string settingsPath = butterBror.Bot.Paths.Settings;
-            butterBror.Bot.BotName = Manager.Get<string>(settingsPath, "bot_name");
-            butterBror.Bot.TwitchChannels = Manager.Get<string[]>(settingsPath, "twitch_connect_channels");
-            butterBror.Bot.TwitchReconnectAnnounce = Manager.Get<string[]>(settingsPath, "twitch_reconnect_message_channels");
-            butterBror.Bot.TwitchConnectAnnounce = Manager.Get<string[]>(settingsPath, "twitch_connect_message_channels");
-            butterBror.Bot.Tokens.Discord = Manager.Get<string>(settingsPath, "discord_token");
-            butterBror.Bot.Tokens.Imgur = Manager.Get<string>(settingsPath, "imgur_token");
-            butterBror.Bot.TwitchClientId = Manager.Get<string>(settingsPath, "client_id");
-            butterBror.Bot.Tokens.TwitchSecretToken = Manager.Get<string>(settingsPath, "twitch_secret_token");
-            butterBror.Bot.Tokens.Telegram = Manager.Get<string>(settingsPath, "telegram_token");
-            butterBror.Bot.TwitchNewVersionAnnounce = Manager.Get<string[]>(settingsPath, "twitch_version_message_channels");
-            butterBror.Bot.Tokens.SevenTV = Manager.Get<string>(settingsPath, "7tv_token");
-            butterBror.Bot.UsersSevenTVIDs = Manager.Get<Dictionary<string, string>>(settingsPath, "Ids");
-            butterBror.Bot.CoinSymbol = Manager.Get<string>(settingsPath, "coin_symbol");
-            butterBror.Bot.CurrencyMentioned = Manager.Get<int>(settingsPath, "currency_mentioned_payment");
-            butterBror.Bot.CurrencyMentioner = Manager.Get<int>(settingsPath, "currency_mentioner_payment");
-            butterBror.Bot.DefaultExecutor = Convert.ToChar(Manager.Get<string>(settingsPath, "executor"));
+            string settingsPath = bb.Bot.Paths.Settings;
+            bb.Bot.BotName = Manager.Get<string>(settingsPath, "bot_name");
+            bb.Bot.TwitchReconnectAnnounce = Manager.Get<string[]>(settingsPath, "twitch_reconnect_message_channels");
+            bb.Bot.TwitchConnectAnnounce = Manager.Get<string[]>(settingsPath, "twitch_connect_message_channels");
+            bb.Bot.Tokens.Discord = Manager.Get<string>(settingsPath, "discord_token");
+            bb.Bot.Tokens.Imgur = Manager.Get<string>(settingsPath, "imgur_token");
+            bb.Bot.TwitchClientId = Manager.Get<string>(settingsPath, "client_id");
+            bb.Bot.Tokens.TwitchSecretToken = Manager.Get<string>(settingsPath, "twitch_secret_token");
+            bb.Bot.Tokens.Telegram = Manager.Get<string>(settingsPath, "telegram_token");
+            bb.Bot.TwitchNewVersionAnnounce = Manager.Get<string[]>(settingsPath, "twitch_version_message_channels");
+            bb.Bot.Tokens.SevenTV = Manager.Get<string>(settingsPath, "7tv_token");
+            bb.Bot.UsersSevenTVIDs = Manager.Get<Dictionary<string, string>>(settingsPath, "Ids");
+            bb.Bot.CoinSymbol = Manager.Get<string>(settingsPath, "coin_symbol");
+            bb.Bot.CurrencyMentioned = Manager.Get<int>(settingsPath, "currency_mentioned_payment");
+            bb.Bot.CurrencyMentioner = Manager.Get<int>(settingsPath, "currency_mentioner_payment");
+            bb.Bot.DefaultExecutor = Convert.ToChar(Manager.Get<string>(settingsPath, "executor"));
         }
     }
 }

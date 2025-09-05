@@ -4,7 +4,7 @@ using Telegram.Bot;
 using TwitchLib.Api;
 using TwitchLib.Client;
 
-namespace butterBror.Core.Services
+namespace bb.Core.Services
 {
     /// <summary>
     /// Represents client instances for various platforms used in the application.

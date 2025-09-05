@@ -1,4 +1,4 @@
-﻿namespace butterBror.Services.External
+﻿namespace bb.Services.External
 {
     /// <summary>
     /// Interface for working with weather data services.

@@ -1,5 +1,5 @@
 ﻿
-namespace butterBror.Models
+namespace bb.Models
 {
     public enum PlatformsEnum
     {

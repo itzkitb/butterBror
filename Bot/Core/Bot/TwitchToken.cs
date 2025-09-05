@@ -1,12 +1,12 @@
-﻿using butterBror.Data;
+﻿using bb.Data;
 using Newtonsoft.Json;
 using System.Diagnostics;
 using System.Net;
 using System.Text;
 using System.Web;
-using static butterBror.Core.Bot.Console;
+using static bb.Core.Bot.Console;
 
-namespace butterBror.Core.Bot
+namespace bb.Core.Bot
 {
     /// <summary>
     /// Manages Twitch OAuth2 token lifecycle including acquisition, validation, refresh, and persistent storage.

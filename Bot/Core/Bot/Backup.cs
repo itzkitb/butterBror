@@ -1,11 +1,11 @@
-﻿using butterBror.Core.Services;
-using butterBror.Data;
-using butterBror.Utils;
+﻿using bb.Core.Services;
+using bb.Data;
+using bb.Utils;
 using System.Diagnostics;
 using System.IO.Compression;
-using static butterBror.Core.Bot.Console;
+using static bb.Core.Bot.Console;
 
-namespace butterBror.Core.Bot
+namespace bb.Core.Bot
 {
     /// <summary>
     /// Provides functionality for creating and managing system backups.
@@ -44,10 +44,10 @@ namespace butterBror.Core.Bot
         {
             try
             {
-                PlatformMessageSender.TwitchSend(butterBror.Bot.BotName.ToLower(), "🗃️ Backup started...", "", "", "", true, false);
+                PlatformMessageSender.TwitchSend(bb.Bot.BotName.ToLower(), "🗃️ Backup started...", "", "", "", true, false);
                 Write("Backup started...", "backup");
 
-                string reservePath = butterBror.Bot.Paths.Reserve;
+                string reservePath = bb.Bot.Paths.Reserve;
                 Directory.CreateDirectory(reservePath);
 
                 string archiveName = $"backup_{DateTime.UtcNow:yyyyMMdd}.zip";
@@ -67,7 +67,7 @@ namespace butterBror.Core.Bot
                 {
                     // Use EnumerateFiles instead of GetFiles for line-by-line reading
                     var allFiles = Directory.EnumerateFiles(
-                        butterBror.Bot.Paths.Main,
+                        bb.Bot.Paths.Main,
                         "*",
                         SearchOption.AllDirectories
                     );
@@ -76,7 +76,7 @@ namespace butterBror.Core.Bot
                     {
                         if (!file.EndsWith(".db", StringComparison.OrdinalIgnoreCase))
                         {
-                            string relativePath = Path.GetRelativePath(butterBror.Bot.Paths.Main, file);
+                            string relativePath = Path.GetRelativePath(bb.Bot.Paths.Main, file);
                             string destFile = Path.Combine(tempBackupDir, relativePath);
 
                             Directory.CreateDirectory(Path.GetDirectoryName(destFile));
@@ -123,7 +123,7 @@ namespace butterBror.Core.Bot
                 double archiveSizeMB = archiveSize / (1024.0 * 1024.0);
 
                 Write($"Backup completed in {stopwatch.Elapsed.TotalSeconds:0} seconds (Archive size: {archiveSizeMB:0.00} MB)!", "backup");
-                PlatformMessageSender.TwitchSend(butterBror.Bot.BotName.ToLower(),
+                PlatformMessageSender.TwitchSend(bb.Bot.BotName.ToLower(),
                     $"🗃️ Backup completed in {stopwatch.Elapsed.TotalSeconds:0} seconds (Archive size: {archiveSizeMB:0.00} MB)",
                     "", "", "", true, false);
             }
@@ -159,11 +159,11 @@ namespace butterBror.Core.Bot
         /// </remarks>
         private static IEnumerable<SqlDatabaseBase> GetDatabaseManagers()
         {
-            yield return butterBror.Bot.DataBase.Games;
-            yield return butterBror.Bot.DataBase.Channels;
-            yield return butterBror.Bot.DataBase.Messages;
-            yield return butterBror.Bot.DataBase.Roles;
-            yield return butterBror.Bot.DataBase.Users;
+            yield return bb.Bot.DataBase.Games;
+            yield return bb.Bot.DataBase.Channels;
+            yield return bb.Bot.DataBase.Messages;
+            yield return bb.Bot.DataBase.Roles;
+            yield return bb.Bot.DataBase.Users;
         }
     }
 }

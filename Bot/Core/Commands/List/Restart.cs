@@ -1,8 +1,8 @@
-﻿using butterBror.Core.Bot;
-using butterBror.Models;
-using butterBror.Utils;
+﻿using bb.Core.Bot;
+using bb.Models;
+using bb.Utils;
 
-namespace butterBror.Core.Commands.List
+namespace bb.Core.Commands.List
 {
     public class Restart : CommandBase
     {
@@ -42,7 +42,7 @@ namespace butterBror.Core.Commands.List
                     commandReturn.SetMessage("❄ Restarting...");
                 }
 
-                _ = butterBror.Bot.Shutdown(data.Arguments.Contains("--force"));
+                _ = bb.Bot.Shutdown(data.Arguments.Contains("--force"));
             }
             catch (Exception e)
             {

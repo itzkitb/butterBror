@@ -1,4 +1,4 @@
-﻿namespace butterBror.Core.Services
+﻿namespace bb.Core.Services
 {
     /// <summary>
     /// Manages hierarchical file/directory paths for the application with automatic path formatting and update propagation.

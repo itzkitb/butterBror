@@ -1,11 +1,11 @@
-﻿using butterBror.Models;
-using butterBror.Models.DataBase;
-using butterBror.Utils;
+﻿using bb.Models;
+using bb.Models.DataBase;
+using bb.Utils;
 using Newtonsoft.Json.Linq;
 using System.Data;
 using System.Data.SQLite;
 
-namespace butterBror.Data
+namespace bb.Data
 {
     /// <summary>
     /// Thread-safe database manager for channel-specific data operations across multiple streaming platforms.

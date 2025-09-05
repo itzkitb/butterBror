@@ -1,5 +1,5 @@
 ﻿
-namespace butterBror.Models.AI
+namespace bb.Models.AI
 {
     /// <summary>
     /// Represents a single response choice from the AI model.

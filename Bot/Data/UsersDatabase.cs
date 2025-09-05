@@ -1,5 +1,5 @@
-﻿using butterBror.Models;
-using butterBror.Models.DataBase;
+﻿using bb.Models;
+using bb.Models.DataBase;
 using Newtonsoft.Json.Linq;
 using System.Collections.Concurrent;
 using System.Data;
@@ -7,7 +7,7 @@ using System.Data.SQLite;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace butterBror.Data
+namespace bb.Data
 {
     /// <summary>
     /// Thread-safe database manager for cross-platform user data storage and operations.

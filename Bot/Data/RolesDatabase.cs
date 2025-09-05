@@ -1,8 +1,8 @@
-﻿using butterBror.Models;
+﻿using bb.Models;
 using System.Collections.Concurrent;
 using System.Data.SQLite;
 
-namespace butterBror.Data
+namespace bb.Data
 {
     /// <summary>
     /// Represents a banned user record with comprehensive ban details across streaming platforms.

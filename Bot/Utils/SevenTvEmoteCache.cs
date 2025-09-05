@@ -1,6 +1,6 @@
-﻿using static butterBror.Core.Bot.Console;
+﻿using static bb.Core.Bot.Console;
 
-namespace butterBror.Utils
+namespace bb.Utils
 {
     /// <summary>
     /// Provides thread-safe functionality for retrieving and managing 7TV emotes across Twitch channels.

@@ -1,15 +1,15 @@
-﻿using butterBror.Core.Bot;
-using butterBror.Core.Bot.SQLColumnNames;
-using butterBror.Models;
-using butterBror.Services.External;
-using butterBror.Utils;
+﻿using bb.Core.Bot;
+using bb.Core.Bot.SQLColumnNames;
+using bb.Models;
+using bb.Services.External;
+using bb.Utils;
 using Microsoft.Extensions.Caching.Memory;
 using System.Globalization;
 using System.Text.RegularExpressions;
 using TwitchLib.Client.Enums;
-using static butterBror.Core.Bot.Console;
+using static bb.Core.Bot.Console;
 
-namespace butterBror.Core.Commands.List
+namespace bb.Core.Commands.List
 {
     /// <summary>
     /// Команда для получения информации о погоде с использованием Open-Meteo API
@@ -220,9 +220,9 @@ namespace butterBror.Core.Commands.List
             }
 
             var firstLocation = locations[0];
-            butterBror.Bot.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.Location, firstLocation.Name);
-            butterBror.Bot.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.Latitude, firstLocation.Latitude.ToString(System.Globalization.CultureInfo.InvariantCulture));
-            butterBror.Bot.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.Longitude, firstLocation.Longitude.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            bb.Bot.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.Location, firstLocation.Name);
+            bb.Bot.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.Latitude, firstLocation.Latitude.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            bb.Bot.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.Longitude, firstLocation.Longitude.ToString(System.Globalization.CultureInfo.InvariantCulture));
 
             CommandReturn commandReturn = new CommandReturn();
             commandReturn.SetMessage(LocalizationService.GetString(
@@ -238,7 +238,7 @@ namespace butterBror.Core.Commands.List
 
         private async Task<CommandReturn> HandleGetLocationActionAsync(CommandData data)
         {
-            var userPlace = (string)butterBror.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.Location);
+            var userPlace = (string)bb.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.Location);
 
             if (string.IsNullOrEmpty(userPlace))
             {
@@ -260,9 +260,9 @@ namespace butterBror.Core.Commands.List
         {
             if (string.IsNullOrWhiteSpace(action.Location))
             {
-                var userPlace = (string)butterBror.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.Location);
-                var userLat = (string)butterBror.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.Latitude);
-                var userLon = (string)butterBror.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.Longitude);
+                var userPlace = (string)bb.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.Location);
+                var userLat = (string)bb.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.Latitude);
+                var userLon = (string)bb.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.Longitude);
 
                 if (string.IsNullOrEmpty(userPlace) ||
                     string.IsNullOrEmpty(userLat) ||
@@ -327,7 +327,7 @@ namespace butterBror.Core.Commands.List
 
         private async Task<List<LocationResult>> GetSavedLocationsAsync(CommandData data)
         {
-            string weatherResultLocationsUnworkedString = (string)butterBror.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.WeatherResultLocations);
+            string weatherResultLocationsUnworkedString = (string)bb.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.WeatherResultLocations);
             if (weatherResultLocationsUnworkedString == null || weatherResultLocationsUnworkedString.Length == 0)
             {
                 return null;
@@ -363,7 +363,7 @@ namespace butterBror.Core.Commands.List
             List<string> jsons = locations.Select(loc =>
                 $"name: \"{loc.Name}\", lat: \"{loc.Latitude}\", lon: \"{loc.Longitude}\"").ToList();
 
-            butterBror.Bot.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.WeatherResultLocations, DataConversion.SerializeStringList(jsons));
+            bb.Bot.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.WeatherResultLocations, DataConversion.SerializeStringList(jsons));
         }
 
         private string BuildLocationPage(List<LocationResult> locations, long page)

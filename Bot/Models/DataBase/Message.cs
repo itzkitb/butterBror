@@ -1,5 +1,5 @@
 ﻿
-namespace butterBror.Models.DataBase
+namespace bb.Models.DataBase
 {
     /// <summary>
     /// Represents chat message data.

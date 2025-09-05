@@ -1,10 +1,10 @@
-﻿using butterBror.Models;
+﻿using bb.Models;
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
-using static butterBror.Core.Bot.Console;
+using static bb.Core.Bot.Console;
 
-namespace butterBror.Utils
+namespace bb.Utils
 {
     /// <summary>
     /// Provides comprehensive text processing utilities for command filtering, layout conversion, and formatting operations in chat environments.

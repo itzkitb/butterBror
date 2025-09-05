@@ -1,10 +1,10 @@
-﻿using butterBror.Core.Commands;
+﻿using bb.Core.Commands;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
-using static butterBror.Core.Bot.Console;
+using static bb.Core.Bot.Console;
 
-namespace butterBror.Events
+namespace bb.Events
 {
     /// <summary>
     /// Contains event handlers for Discord API interactions and bot behavior customization.
@@ -39,7 +39,6 @@ namespace butterBror.Events
         public static async Task ConnectToGuilt(SocketGuild g)
         {
             Write($"Discord - Connected to a server: {g.Name}", "info");
-            Bot.DiscordServers++;
         }
 
         /// <summary>

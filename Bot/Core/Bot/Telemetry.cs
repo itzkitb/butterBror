@@ -1,14 +1,14 @@
-﻿using butterBror.Core.Commands;
-using butterBror.Models;
-using butterBror.Services.External;
-using butterBror.Services.System;
-using butterBror.Utils;
+﻿using bb.Core.Commands;
+using bb.Models;
+using bb.Services.External;
+using bb.Services.System;
+using bb.Utils;
 using DankDB;
 using System.Diagnostics;
 using System.Net.NetworkInformation;
-using static butterBror.Core.Bot.Console;
+using static bb.Core.Bot.Console;
 
-namespace butterBror.Core.Bot
+namespace bb.Core.Bot
 {
     /// <summary>
     /// Collects, processes, and reports system performance metrics for monitoring bot health and performance.
@@ -60,13 +60,13 @@ namespace butterBror.Core.Bot
         {
             try
             {
-                if (butterBror.Bot.Clients == null || !butterBror.Bot.Clients.Twitch.IsConnected)
+                if (bb.Bot.Clients == null || !bb.Bot.Clients.Twitch.IsConnected)
                 {
-                    if (butterBror.Bot.Clients == null)
+                    if (bb.Bot.Clients == null)
                     {
                         Write("Clients are not initialized yet", "telemetry", LogLevel.Warning);
                     }
-                    else if (!butterBror.Bot.Clients.Twitch.IsConnected)
+                    else if (!bb.Bot.Clients.Twitch.IsConnected)
                     {
                         Write("Twitch is not connected", "telemetry", LogLevel.Warning);
                     }
@@ -129,7 +129,7 @@ namespace butterBror.Core.Bot
                 #endregion
 
                 decimal cpuPercent = CPUItems == 0 ? 0 : CPU / CPUItems;
-                decimal coinCurrency = butterBror.Bot.Coins == 0 ? 0 : butterBror.Bot.InBankDollars / butterBror.Bot.Coins;
+                decimal coinCurrency = bb.Bot.Coins == 0 ? 0 : bb.Bot.InBankDollars / bb.Bot.Coins;
 
                 CPU = 0;
                 CPUItems = 0;
@@ -137,19 +137,19 @@ namespace butterBror.Core.Bot
 
                 long memory = Process.GetCurrentProcess().PrivateMemorySize64 / (1024 * 1024);
 
-                PlatformMessageSender.TwitchSend(butterBror.Bot.BotName.ToLower(), $"/me glorp 📡 | " +
-                    $"🕒 {TextSanitizer.FormatTimeSpan(DateTime.Now - butterBror.Bot.StartTime, "en-US")} | " +
+                PlatformMessageSender.TwitchSend(bb.Bot.BotName.ToLower(), $"/me glorp 📡 | " +
+                    $"🕒 {TextSanitizer.FormatTimeSpan(DateTime.Now - bb.Bot.StartTime, "en-US")} | " +
                     $"{memory}Mbyte | " +
                     $"🔋 {Battery.GetBatteryCharge()}% {(Battery.IsCharging() ? "(Charging) " : "")}| " +
                     $"CPU: {cpuPercent:0.00}% | " +
-                    $"Emotes: {butterBror.Bot.EmotesCache.Count} | " +
-                    $"7tv: E:{butterBror.Bot.ChannelsSevenTVEmotes.Count},USC:{butterBror.Bot.UsersSearchCache.Count},ES:{butterBror.Bot.EmoteSetsCache.Count} | " +
-                    $"Messages: {butterBror.Bot.MessagesProccessed} | " +
-                    $"Discord guilds: {butterBror.Bot.Clients.Discord.Guilds.Count} | " +
-                    $"Twitch channels: {butterBror.Bot.Clients.Twitch.JoinedChannels.Count} | " +
-                    $"Completed: {butterBror.Bot.CompletedCommands} | " +
-                    $"Users: {butterBror.Bot.Users} | " +
-                    $"Coins: {butterBror.Bot.Coins:0.00} | " +
+                    $"Emotes: {bb.Bot.EmotesCache.Count} | " +
+                    $"7tv: E:{bb.Bot.ChannelsSevenTVEmotes.Count},USC:{bb.Bot.UsersSearchCache.Count},ES:{bb.Bot.EmoteSetsCache.Count} | " +
+                    $"Messages: {MessageProcessor.Proccessed} | " +
+                    $"Discord guilds: {bb.Bot.Clients.Discord.Guilds.Count} | " +
+                    $"Twitch channels: {bb.Bot.Clients.Twitch.JoinedChannels.Count} | " +
+                    $"Completed: {bb.Bot.CompletedCommands} | " +
+                    $"Users: {bb.Bot.Users} | " +
+                    $"Coins: {bb.Bot.Coins:0.00} | " +
                     $"Currency: ${coinCurrency:0.00000000} | " +
                     $"Twitch: {twitch.RoundtripTime}ms | " +
                     $"Discord: {discord.RoundtripTime}ms | " +
@@ -162,10 +162,10 @@ namespace butterBror.Core.Bot
 
                 try
                 {
-                    var newToken = await TwitchToken.RefreshAccessToken(butterBror.Bot.Tokens.Twitch);
+                    var newToken = await TwitchToken.RefreshAccessToken(bb.Bot.Tokens.Twitch);
                     if (newToken != null)
                     {
-                        butterBror.Bot.Tokens.Twitch = newToken;
+                        bb.Bot.Tokens.Twitch = newToken;
                     }
                 }
                 catch (Exception ex)

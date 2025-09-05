@@ -1,12 +1,12 @@
-﻿using butterBror.Core.Bot;
-using butterBror.Core.Bot.SQLColumnNames;
-using butterBror.Models;
-using butterBror.Services.External;
-using butterBror.Utils;
+﻿using bb.Core.Bot;
+using bb.Core.Bot.SQLColumnNames;
+using bb.Models;
+using bb.Services.External;
+using bb.Utils;
 using Microsoft.CodeAnalysis;
 using TwitchLib.Client.Enums;
 
-namespace butterBror.Core.Commands.List
+namespace bb.Core.Commands.List
 {
     public class AI : CommandBase
     {
@@ -39,7 +39,7 @@ namespace butterBror.Core.Commands.List
             {
                 if (MessageProcessor.GetArgument(data.Arguments, "chat") is null)
                 {
-                    decimal currency = butterBror.Bot.InBankDollars / butterBror.Bot.Coins;
+                    decimal currency = bb.Bot.InBankDollars / bb.Bot.Coins;
                     decimal cost = 0.5m / currency;
 
                     int coins = -(int)cost;
@@ -48,7 +48,7 @@ namespace butterBror.Core.Commands.List
                     if (Utils.CurrencyManager.GetBalance(data.User.ID, data.Platform) + Utils.CurrencyManager.GetSubbalance(data.User.ID, data.Platform) / 100f >= coins + subcoins / 100f)
                     {
                         if (data.Arguments.Count < 1)
-                            commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:not_enough_arguments", data.ChannelId, data.Platform, $"{butterBror.Bot.DefaultExecutor}ai model:qwen Hello!"));
+                            commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:not_enough_arguments", data.ChannelId, data.Platform, $"{bb.Bot.DefaultExecutor}ai model:qwen Hello!"));
                         else
                         {
                             Utils.CurrencyManager.Add(data.User.ID, coins, subcoins, data.Platform);
@@ -115,7 +115,7 @@ namespace butterBror.Core.Commands.List
                     string argument = MessageProcessor.GetArgument(data.Arguments, "chat").ToLower();
                     if (argument is "clear")
                     {
-                        butterBror.Bot.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.GPTHistory, "[]");
+                        bb.Bot.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.GPTHistory, "[]");
                         commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:gpt:cleared", data.ChannelId, data.Platform));
                     }
                     else if (argument is "models")

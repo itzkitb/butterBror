@@ -1,13 +1,13 @@
-﻿using butterBror.Core.Bot;
-using butterBror.Core.Services;
-using butterBror.Data;
-using butterBror.Events;
-using butterBror.Models;
-using butterBror.Models.DataBase;
-using butterBror.Services.External;
-using butterBror.Services.System;
-using butterBror.Utils;
-using butterBror.Workers;
+﻿using bb.Core.Bot;
+using bb.Core.Services;
+using bb.Data;
+using bb.Events;
+using bb.Models;
+using bb.Models.DataBase;
+using bb.Services.External;
+using bb.Services.System;
+using bb.Utils;
+using bb.Workers;
 using DankDB;
 using Discord;
 using Discord.Commands;
@@ -24,12 +24,14 @@ using Telegram.Bot.Types.Enums;
 using TwitchLib.Api;
 using TwitchLib.Api.Core.Enums;
 using TwitchLib.Client;
+using TwitchLib.Client.Extensions;
 using TwitchLib.Client.Models;
 using TwitchLib.Communication.Clients;
+using TwitchLib.Communication.Interfaces;
 using TwitchLib.Communication.Models;
-using static butterBror.Core.Bot.Console;
+using static bb.Core.Bot.Console;
 
-namespace butterBror
+namespace bb
 {
     /// <summary>
     /// Central class.
@@ -37,62 +39,70 @@ namespace butterBror
     public class Bot
     {
         #region Variables
-        public static bool Ready = false;
-        public static Version Version = new Version("2.18.0.1");
+        #region Core
+        public static Version Version = new Version("2.18.0.2");
         public static DateTime StartTime = new();
         public static string PreviousVersion = "";
+        public static bool Initialized = false;
+        public static bool Connected => Clients.Twitch?.IsConnected == true && Clients.Discord?.ConnectionState == Discord.ConnectionState.Connected;
+        public static string? BotName;
+        public static char DefaultExecutor = '#';
+        private static bool SkipFetch = false;
+        #endregion Core
 
+        #region Currency
         public static int Users = 0;
         public static int InBankDollars = 0;
         public static int CompletedCommands = 0;
         public static decimal Coins = 0;
-        
+        public static int CurrencyMentioned = 8;
+        public static int CurrencyMentioner = 2;
+        public static string CoinSymbol = "BTR";
+        #endregion Currency
+
+        #region Hosting
         public static string HostName = null;
         public static string HostVersion = null;
+        #endregion Hosting
 
+        #region Data
         public static ClientService Clients = new ClientService();
         public static PathService Paths = new PathService();
         internal static Tokens Tokens = new Tokens();
-        public static SQLService DataBase;
+        public static SQLService? DataBase;
+        #endregion Data
 
-        public static bool Initialized = false;
-        public static bool Connected = false;
+        #region Buffers
+        public static MessagesBuffer? MessagesBuffer;
+        public static UsersBuffer? UsersBuffer;
+        public static List<(PlatformsEnum platform, string channelId, long userId, Message message)> allFirstMessages = new();
+        #endregion
 
-        public static string TwitchClientId = string.Empty;
-        public static string CoinSymbol = "🥪";
-        public static string BotName = string.Empty;
-        public static char DefaultExecutor = '#';
-
+        #region Twitch
+        public static string? TwitchClientId;
         public static string[] TwitchNewVersionAnnounce = [];
         public static string[] TwitchReconnectAnnounce = [];
         public static string[] TwitchConnectAnnounce = [];
-        public static string[] TwitchChannels = [];
+        #endregion Twitch
 
-        public static ulong MessagesProccessed = 0;
-        public static ulong DiscordServers = 0;
-        public static ulong TelegramChats = 0;
-        public static int CurrencyMentioned = 8;
-        public static int CurrencyMentioner = 2;
-
+        #region Cache
         public static ConcurrentDictionary<string, (SevenTV.Types.Rest.Emote emote, DateTime expiration)> EmotesCache = new();
         public static ConcurrentDictionary<string, (List<string> emotes, DateTime expiration)> ChannelsSevenTVEmotes = new();
         public static ConcurrentDictionary<string, (string userId, DateTime expiration)> UsersSearchCache = new();
         public static ConcurrentDictionary<string, (string setId, DateTime expiration)> EmoteSetsCache = new();
         public static Dictionary<string, string> UsersSevenTVIDs = new Dictionary<string, string>();
+        public static readonly TimeSpan CacheTTL = TimeSpan.FromMinutes(30);
+        #endregion Cache
 
+
+        public static SevenTvService SevenTvService = new SevenTvService(new HttpClient());
         public static IServiceProvider? DiscordServiceProvider;
         public static ReceiverOptions? TelegramReceiverOptions;
         public static CommandService? DiscordCommandService;
-        public static SevenTvService SevenTvService = new SevenTvService(new HttpClient());
-        public static MessagesBuffer MessagesBuffer;
-        public static UsersBuffer UsersBuffer;
-        public static List<(PlatformsEnum platform, string channelId, long userId, Message message)> allFirstMessages = new();
-
-        public static readonly TimeSpan CacheTTL = TimeSpan.FromMinutes(30);
-
+        
         private static DateTime _startTime = DateTime.UtcNow;
         private static CpuUsage _CpuUsage = new CpuUsage();
-        private static Task _repeater;
+        private static Task? _repeater;
 
         private static DateTime _lastTelemtry = DateTime.UtcNow.AddMinutes(-1);
         private static DateTime _lastSave = DateTime.UtcNow.AddMinutes(-1);
@@ -110,12 +120,21 @@ namespace butterBror
         public static void Main(string[] args)
         {
             System.Console.Title = "Loading libraries...";
-            System.Console.WriteLine("Loading libraries...");
+            System.Console.WriteLine(":alienPls: Loading libraries...");
 
             AppDomain.CurrentDomain.UnhandledException += UnhandledException;
 
             Initialize(args);
-            SystemDataFetch();
+
+            if (SkipFetch)
+            {
+                Write("Launched with --skip-fetch parameter, skipping system fetch...", "core");
+            }
+            else
+            {
+                SystemDataFetch();
+            }
+
             Setup();
             StartBot();
 
@@ -275,9 +294,8 @@ namespace butterBror
         /// </remarks>
         private static void SystemDataFetch()
         {
-
             Write("Please wait...", "core");
-            string proccessor = "Unnamed processor";
+            string processor = "Unnamed processor";
             string OSName = "Unknown";
             double memory = 0;
             long totalDiskSpace = 0;
@@ -285,57 +303,195 @@ namespace butterBror
 
             try
             {
-                if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
-                    ManagementObjectSearcher searcher = new ManagementObjectSearcher("SELECT * FROM Win32_Processor");
-                    foreach (ManagementObject cpu in searcher.Get())
+                    using (var searcher = new ManagementObjectSearcher("SELECT * FROM Win32_Processor"))
                     {
-                        proccessor = cpu["Name"].ToString();
+                        foreach (ManagementObject cpu in searcher.Get())
+                        {
+                            processor = cpu["Name"]?.ToString() ?? "Unnamed processor";
+                            break;
+                        }
+                    }
+                }
+                else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                {
+                    try
+                    {
+                        string cpuInfo = File.ReadAllText("/proc/cpuinfo");
+                        string[] lines = cpuInfo.Split('\n');
+                        foreach (string line in lines)
+                        {
+                            if (line.StartsWith("model name"))
+                            {
+                                processor = line.Split(':')[1].Trim();
+                                break;
+                            }
+                        }
+                        if (processor == "Unnamed processor")
+                        {
+                            processor = "Linux CPU";
+                        }
+                    }
+                    catch
+                    {
+                        processor = "Linux CPU";
+                    }
+                }
+                else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                {
+                    try
+                    {
+                        using (Process process = new Process())
+                        {
+                            process.StartInfo.FileName = "sysctl";
+                            process.StartInfo.Arguments = "-n machdep.cpu.brand_string";
+                            process.StartInfo.RedirectStandardOutput = true;
+                            process.StartInfo.UseShellExecute = false;
+                            process.StartInfo.CreateNoWindow = true;
+                            process.Start();
+
+                            string output = process.StandardOutput.ReadToEnd();
+                            process.WaitForExit();
+
+                            if (!string.IsNullOrEmpty(output))
+                            {
+                                processor = output.Trim();
+                            }
+                            else
+                            {
+                                processor = "Apple CPU";
+                            }
+                        }
+                    }
+                    catch
+                    {
+                        processor = "Apple CPU";
                     }
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                Write("Unable to get operating system name", "core");
+                Write($"Unable to get processor info: {ex.Message}", "core");
+            } // CPU
+
+            try
+            {
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    try
+                    {
+                        using (var searcher = new ManagementObjectSearcher("SELECT Caption FROM Win32_OperatingSystem"))
+                        {
+                            var os = searcher.Get().Cast<ManagementObject>().FirstOrDefault();
+                            OSName = os?.GetPropertyValue("Caption")?.ToString() ?? Environment.OSVersion.ToString();
+                        }
+                    }
+                    catch
+                    {
+                        OSName = Environment.OSVersion.ToString();
+                    }
+                }
+                else
+                {
+                    OSName = RuntimeInformation.OSDescription;
+
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && File.Exists("/etc/os-release"))
+                    {
+                        try
+                        {
+                            string osInfo = File.ReadAllText("/etc/os-release");
+                            foreach (string line in osInfo.Split('\n'))
+                            {
+                                if (line.StartsWith("PRETTY_NAME"))
+                                {
+                                    OSName = line.Split('=')[1].Trim('"');
+                                    break;
+                                }
+                            }
+                        }
+                        catch
+                        {
+                            
+                        }
+                    }
+                }
             }
+            catch (Exception ex)
+            {
+                Write($"Unable to get OS name: {ex.Message}", "core");
+                OSName = Environment.OSVersion.ToString();
+            } // OS name
 
             try
             {
                 memory = Memory.BytesToGB(Memory.GetTotalMemoryBytes());
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                Write("Unable to get RAM size", "core");
-            }
+                Write($"Unable to get RAM size: {ex.Message}", "core");
+            } // RAM
 
             try
             {
-                foreach (DriveInfo drive in Drives.Get())
+                bool drivesFound = false;
+                foreach (DriveInfo drive in DriveInfo.GetDrives())
                 {
                     if (drive.IsReady)
                     {
                         totalDiskSpace += drive.TotalSize;
                         totalFreeDiskSpace += drive.AvailableFreeSpace;
+                        drivesFound = true;
+                    }
+                }
+
+                if (!drivesFound && (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ||
+                                   RuntimeInformation.IsOSPlatform(OSPlatform.OSX)))
+                {
+                    try
+                    {
+                        using (Process process = new Process())
+                        {
+                            process.StartInfo.FileName = "df";
+                            process.StartInfo.Arguments = "-B1";
+                            process.StartInfo.RedirectStandardOutput = true;
+                            process.StartInfo.UseShellExecute = false;
+                            process.StartInfo.CreateNoWindow = true;
+                            process.Start();
+
+                            string output = process.StandardOutput.ReadToEnd();
+                            process.WaitForExit();
+
+                            string[] lines = output.Split('\n');
+                            foreach (string line in lines)
+                            {
+                                string[] parts = line.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                                if (parts.Length >= 4 && long.TryParse(parts[1], out long total) &&
+                                    long.TryParse(parts[3], out long free))
+                                {
+                                    if (!parts[0].StartsWith("tmpfs") && !parts[0].StartsWith("dev") &&
+                                        !parts[0].StartsWith("sys") && !parts[0].StartsWith("run") &&
+                                        !parts[0].StartsWith("none"))
+                                    {
+                                        totalDiskSpace += total;
+                                        totalFreeDiskSpace += free;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    catch
+                    {
+                        
                     }
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                Write("Unable to get disks sizes", "core");
-            }
+                Write($"Unable to get disks sizes: {ex.Message}", "core");
+            } // Drives
 
-            try
-            {
-                var name = (from x in new ManagementObjectSearcher("SELECT Caption FROM Win32_OperatingSystem").Get().Cast<ManagementObject>()
-                            select x.GetPropertyValue("Caption")).FirstOrDefault();
-                OSName = name != null ? name.ToString() : "Unknown";
-            }
-            catch (Exception)
-            {
-                Write("Unable to get OS name", "core");
-            }
-
-            Write($@"ButterBror
+            Write($@"
 
             :::::::::                  
         :::::::::::::::::              
@@ -345,7 +501,7 @@ namespace butterBror
  {{~:::::::::::::::::::::::::::::::     Framework: {RuntimeInformation.FrameworkDescription.Pastel("#ff7b42")}
  0000XI::::::::::::::::::::::tC00:     v.{Version.ToString().Pastel("#ff7b42")}
  ::c0000nI::::::::::::::::(v1::<l      {OSName.Pastel("#ff7b42")}
- ((((:n0000f-::::::::}}x00(::n000(:     {proccessor.Pastel("#ff7b42")}
+ ((((:n0000f-::::::::}}x00(::n000(:     {processor.Pastel("#ff7b42")}
  n0((::::c0000f(:::>}}X(l!00QQ0((::     RAM: {memory.ToString().Pastel("#ff7b42")} GB
   :():::::::C000000000000:::::+l:      Total disks space: {Math.Round(Memory.BytesToGB(totalDiskSpace)).ToString().Pastel("#ff7b42")} GB
      Ix:(((((((:-}}-:((:::100_:         Available disks space: {Math.Round(Memory.BytesToGB(totalFreeDiskSpace)).ToString().Pastel("#ff7b42")} GB
@@ -388,6 +544,11 @@ namespace butterBror
                 if (args[i] == "--core-name" && i + 1 < args.Length)
                 {
                     HostName = args[i + 1];
+                }
+
+                if (args[i] == "--skip-fetch")
+                {
+                    SkipFetch = true;
                 }
             }
 
@@ -452,7 +613,7 @@ namespace butterBror
 
             try
             {
-                Write("Checking directories right now...", "initialization");
+                Write("Creating directories...", "initialization");
                 string[] directories = { Paths.General, Paths.Main, Paths.TranslateDefault, Paths.TranslateCustom };
 
                 foreach (var dir in directories)
@@ -462,7 +623,6 @@ namespace butterBror
 
                 string[] directories_with_platforms = { Paths.TranslateDefault, Paths.TranslateCustom };
 
-                Write("Checking files right now...", "initialization");
                 if (!FileUtil.FileExists(Paths.Settings))
                 {
                     SettingsService.InitializeFile(Paths.Settings);
@@ -486,10 +646,10 @@ namespace butterBror
                 Bot.PreviousVersion = File.ReadAllText(Path.Combine(Paths.Main, "VERSION.txt"));
                 File.WriteAllText(Path.Combine(Paths.Main, "VERSION.txt"), $"{Bot.Version}");
 
-                Write("Loading settigns...", "initialization");
+                Write("Loading settings...", "initialization");
                 SettingsService.Load();
 
-                Write("Initializing SQL...", "initialization");
+                Write("Initializing databases...", "initialization");
                 DataBase = new()
                 {
                     Messages = new(Paths.MessagesDatabase),
@@ -501,7 +661,7 @@ namespace butterBror
                 MessagesBuffer = new(DataBase.Messages);
                 UsersBuffer = new(DataBase.Users);
 
-                Write("Initializing currency counters...", "initialization");
+                Write("Loading currency counters...", "initialization");
                 Users = DataBase.Users.GetTotalUsers();
                 Coins = DataBase.Users.GetTotalBalance();
 
@@ -546,38 +706,40 @@ namespace butterBror
         {
             try
             {
+                Write("Connecting...", "initialization");
+
+                var tasks = new List<Task>
+                {
+                    Task.Run(ConnectToTwitch),
+                    ConnectToDiscord(),
+                    Task.Run(ConnectToTelegram),
+                    Task.Run(EmoteCacheService.Load)
+                };
+
+                await Task.WhenAll(tasks);
+
+                TimeSpan ConnectedIn = DateTime.UtcNow - _startTime;
                 Initialized = true;
-                Write("Connecting to Twitch...", "initialization");
-                ConnectToTwitch();
 
-                Write("Connecting to Discord...", "initialization");
-                await ConnectToDiscord();
-
-                Write("Connecting to Telegram...", "initialization");
-                ConnectToTelegram();
-
-                Write("Loading 7tv cache...", "initialization");
-                EmoteCacheService.Load();
-
-                DateTime endTime = DateTime.UtcNow;
-                Ready = true;
-                Connected = true;
-                await Task.Delay(1000);
-
-                if (PreviousVersion != Version.ToString() && PreviousVersion != string.Empty)
+                _ = Task.Run(async () =>
                 {
-                    foreach (string channel in TwitchNewVersionAnnounce)
+                    await Task.Delay(1000);
+
+                    if (PreviousVersion != Version.ToString() && PreviousVersion != string.Empty)
                     {
-                        PlatformMessageSender.TwitchSend(UsernameResolver.GetUsername(channel, PlatformsEnum.Twitch, true), $"{Bot.BotName} v.{Bot.PreviousVersion} > v.{Bot.Version}", channel, "", "en-US", true);
+                        foreach (string channel in TwitchNewVersionAnnounce)
+                        {
+                            PlatformMessageSender.TwitchSend(UsernameResolver.GetUsername(channel, PlatformsEnum.Twitch, true), $"{Bot.BotName} v.{Bot.PreviousVersion} > v.{Bot.Version}", channel, "", "en-US", true);
+                        }
                     }
-                }
 
-                foreach (string channel in Bot.TwitchConnectAnnounce)
-                {
-                    PlatformMessageSender.TwitchSend(UsernameResolver.GetUsername(channel, PlatformsEnum.Twitch, true), $"{Bot.BotName} Connected in {(endTime - _startTime).TotalMilliseconds} ms!", channel, "", "en-US", true);
-                }
+                    foreach (string channel in Bot.TwitchConnectAnnounce)
+                    {
+                        PlatformMessageSender.TwitchSend(UsernameResolver.GetUsername(channel, PlatformsEnum.Twitch, true), $"{Bot.BotName} Started in {(long)(ConnectedIn).TotalMilliseconds} ms!", channel, "", "en-US", true);
+                    }
+                });
 
-                Write($"Well done! ({(endTime - _startTime).TotalMilliseconds} ms)", "initialization");
+                Write($"Well done! ({(long)(ConnectedIn).TotalMilliseconds} ms)", "initialization");
             }
             catch (Exception ex)
             {
@@ -649,6 +811,8 @@ namespace butterBror
             JoinTwitchChannels();
 
             Clients.Twitch.SendMessage(BotName.ToLower(), "truckCrash Connecting to twitch...");
+
+            Write("Twitch is ready.", "initialization");
         }
 
         /// <summary>
@@ -664,19 +828,12 @@ namespace butterBror
         public static void JoinTwitchChannels()
         {
             var notFoundedChannels = new List<string>();
-            string sendChannels = string.Join(", ", TwitchChannels.Select(channel =>
-            {
-                var tempChannel = UsernameResolver.GetUsername(channel, PlatformsEnum.Twitch, true);
-                if (tempChannel == null) notFoundedChannels.Add(channel);
-                return tempChannel;
-            }).Where(channel => channel != null));
 
-            Write($"Twitch - Connecting to {sendChannels}", "core");
-
-            foreach (var channel in TwitchChannels)
+            foreach (var channel in Manager.Get<string[]>(Paths.Settings, "twitch_connect_channels"))
             {
                 var tempChannel = UsernameResolver.GetUsername(channel, PlatformsEnum.Twitch, true);
                 if (tempChannel != null) Clients.Twitch.JoinChannel(tempChannel);
+                else notFoundedChannels.Add(channel);
             }
 
             if (notFoundedChannels.Count > 0)
@@ -730,6 +887,8 @@ namespace butterBror
             await DiscordWorker.RegisterCommandsAsync();
             await Clients.Discord.LoginAsync(TokenType.Bot, Tokens.Discord);
             await Clients.Discord.StartAsync();
+
+            Write("Discord is ready.", "initialization");
         }
 
         /// <summary>
@@ -756,6 +915,7 @@ namespace butterBror
             };
 
             Clients.Telegram.StartReceiving(Events.TelegramEvents.UpdateHandler, Events.TelegramEvents.ErrorHandler, TelegramReceiverOptions, Clients.TelegramCancellationToken.Token);
+            Write("Telegram is ready.", "initialization");
         }
         #endregion Connects
         #region Other
@@ -840,7 +1000,6 @@ namespace butterBror
             Write("Initiating shutdown sequence...", "core");
 
             Initialized = false;
-            Connected = false;
 
             Write($"Shutdown process started (PID: {Environment.ProcessId})", "core", LogLevel.Info);
 

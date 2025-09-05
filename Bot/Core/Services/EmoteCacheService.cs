@@ -1,8 +1,8 @@
-﻿using butterBror.Data;
+﻿using bb.Data;
 using System.Collections.Concurrent;
-using static butterBror.Core.Bot.Console;
+using static bb.Core.Bot.Console;
 
-namespace butterBror.Core.Services
+namespace bb.Core.Services
 {
     /// <summary>
     /// Provides persistent storage management for 7TV emote cache data across application restarts.
@@ -46,15 +46,15 @@ namespace butterBror.Core.Services
             {
                 var data = new
                 {
-                    Channels7tvEmotes = butterBror.Bot.ChannelsSevenTVEmotes.ToDictionary(kv => kv.Key, kv => kv.Value),
-                    EmoteSetCache = butterBror.Bot.EmoteSetsCache.ToDictionary(kv => kv.Key, kv => kv.Value),
-                    UserSearchCache = butterBror.Bot.UsersSearchCache.ToDictionary(kv => kv.Key, kv => kv.Value),
-                    EmoteCache = butterBror.Bot.EmotesCache.ToDictionary(kv => kv.Key, kv => kv.Value)
+                    Channels7tvEmotes = bb.Bot.ChannelsSevenTVEmotes.ToDictionary(kv => kv.Key, kv => kv.Value),
+                    EmoteSetCache = bb.Bot.EmoteSetsCache.ToDictionary(kv => kv.Key, kv => kv.Value),
+                    UserSearchCache = bb.Bot.UsersSearchCache.ToDictionary(kv => kv.Key, kv => kv.Value),
+                    EmoteCache = bb.Bot.EmotesCache.ToDictionary(kv => kv.Key, kv => kv.Value)
                 };
 
                 string json = Newtonsoft.Json.JsonConvert.SerializeObject(data, Newtonsoft.Json.Formatting.Indented);
-                Directory.CreateDirectory(Path.GetDirectoryName(butterBror.Bot.Paths.SevenTVCache));
-                FileUtil.SaveFileContent(butterBror.Bot.Paths.SevenTVCache, json);
+                Directory.CreateDirectory(Path.GetDirectoryName(bb.Bot.Paths.SevenTVCache));
+                FileUtil.SaveFileContent(bb.Bot.Paths.SevenTVCache, json);
             }
             catch (Exception ex)
             {
@@ -82,9 +82,9 @@ namespace butterBror.Core.Services
         {
             try
             {
-                if (!FileUtil.FileExists(butterBror.Bot.Paths.SevenTVCache)) return;
+                if (!FileUtil.FileExists(bb.Bot.Paths.SevenTVCache)) return;
 
-                string json = FileUtil.GetFileContent(butterBror.Bot.Paths.SevenTVCache);
+                string json = FileUtil.GetFileContent(bb.Bot.Paths.SevenTVCache);
                 var template = new
                 {
                     Channels7tvEmotes = new Dictionary<string, (List<string> emotes, DateTime expiration)>(),
@@ -95,10 +95,10 @@ namespace butterBror.Core.Services
 
                 var data = Newtonsoft.Json.JsonConvert.DeserializeAnonymousType(json, template);
 
-                butterBror.Bot.ChannelsSevenTVEmotes = new ConcurrentDictionary<string, (List<string>, DateTime)>(data.Channels7tvEmotes);
-                butterBror.Bot.EmoteSetsCache = new ConcurrentDictionary<string, (string, DateTime)>(data.EmoteSetCache);
-                butterBror.Bot.UsersSearchCache = new ConcurrentDictionary<string, (string, DateTime)>(data.UserSearchCache);
-                butterBror.Bot.EmotesCache = new ConcurrentDictionary<string, (SevenTV.Types.Rest.Emote, DateTime)>(data.EmoteCache);
+                bb.Bot.ChannelsSevenTVEmotes = new ConcurrentDictionary<string, (List<string>, DateTime)>(data.Channels7tvEmotes);
+                bb.Bot.EmoteSetsCache = new ConcurrentDictionary<string, (string, DateTime)>(data.EmoteSetCache);
+                bb.Bot.UsersSearchCache = new ConcurrentDictionary<string, (string, DateTime)>(data.UserSearchCache);
+                bb.Bot.EmotesCache = new ConcurrentDictionary<string, (SevenTV.Types.Rest.Emote, DateTime)>(data.EmoteCache);
             }
             catch (Exception ex)
             {

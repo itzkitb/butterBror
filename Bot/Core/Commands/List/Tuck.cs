@@ -1,10 +1,10 @@
-﻿using butterBror.Core.Bot;
-using butterBror.Models;
-using butterBror.Utils;
+﻿using bb.Core.Bot;
+using bb.Models;
+using bb.Utils;
 using TwitchLib.Client.Enums;
-using static butterBror.Core.Bot.Console;
+using static bb.Core.Bot.Console;
 
-namespace butterBror.Core.Commands.List
+namespace bb.Core.Commands.List
 {
     public class Tuck : CommandBase
     {
@@ -46,10 +46,10 @@ namespace butterBror.Core.Commands.List
                     try
                     {
                         if (userID != null)
-                            isSelectedUserIsNotIgnored = !(butterBror.Bot.DataBase.Roles.GetIgnoredUser(data.Platform, DataConversion.ToLong(data.User.ID)) is not null);
+                            isSelectedUserIsNotIgnored = !(bb.Bot.DataBase.Roles.GetIgnoredUser(data.Platform, DataConversion.ToLong(data.User.ID)) is not null);
                     }
                     catch (Exception) { }
-                    if (username.ToLower() == butterBror.Bot.BotName.ToLower())
+                    if (username.ToLower() == bb.Bot.BotName.ToLower())
                     {
                         commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:tuck:bot", data.ChannelId, data.Platform));
                         commandReturn.SetColor(ChatColorPresets.CadetBlue);

@@ -1,6 +1,6 @@
-﻿using butterBror.Models;
+﻿using bb.Models;
 
-namespace butterBror.Core.Commands
+namespace bb.Core.Commands
 {
     public interface ICommand
     {

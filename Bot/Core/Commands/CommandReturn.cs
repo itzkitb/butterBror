@@ -1,6 +1,6 @@
 ﻿using TwitchLib.Client.Enums;
 
-namespace butterBror.Core.Commands
+namespace bb.Core.Commands
 {
     /// <summary>
     /// Represents the result of a command execution with customizable output options.

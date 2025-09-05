@@ -1,7 +1,7 @@
-﻿using butterBror.Models;
+﻿using bb.Models;
 using System.Data.SQLite;
 
-namespace butterBror.Data
+namespace bb.Data
 {
     /// <summary>
     /// Thread-safe database manager for game-related data operations across multiple streaming platforms.

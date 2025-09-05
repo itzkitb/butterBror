@@ -1,4 +1,4 @@
-﻿namespace butterBror.Core.Commands.List
+﻿namespace bb.Core.Commands.List
 {
     /*
     public class Gamble : CommandBase

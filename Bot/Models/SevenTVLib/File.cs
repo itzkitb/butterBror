@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace butterBror.Models.SevenTVLib
+namespace bb.Models.SevenTVLib
 {
     internal class File
     {

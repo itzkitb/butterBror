@@ -1,9 +1,9 @@
-﻿using butterBror.Core.Bot;
-using butterBror.Models;
-using butterBror.Utils;
+﻿using bb.Core.Bot;
+using bb.Models;
+using bb.Utils;
 using TwitchLib.Client.Enums;
 
-namespace butterBror.Core.Commands.List
+namespace bb.Core.Commands.List
 {
     public class LastLine : CommandBase
     {
@@ -38,9 +38,9 @@ namespace butterBror.Core.Commands.List
                 {
                     var name = TextSanitizer.UsernameFilter(data.Arguments.ElementAt(0).ToLower());
                     var userId = UsernameResolver.GetUserID(name, PlatformsEnum.Twitch, true);
-                    var message = userId is null ? null : butterBror.Bot.DataBase.Messages.GetMessage(data.Platform, data.ChannelId, DataConversion.ToLong(userId), 0);
+                    var message = userId is null ? null : bb.Bot.DataBase.Messages.GetMessage(data.Platform, data.ChannelId, DataConversion.ToLong(userId), 0);
 
-                    if (message != null && userId != null && name != butterBror.Bot.BotName.ToLower())
+                    if (message != null && userId != null && name != bb.Bot.BotName.ToLower())
                     {
                         if (name == data.User.Name.ToLower())
                         {
@@ -76,7 +76,7 @@ namespace butterBror.Core.Commands.List
                                 TextSanitizer.FormatTimeSpan(Utils.DataConversion.GetTimeTo(message.messageDate, DateTime.Now, false), data.User.Language)));
                         }
                     }
-                    else if (name != butterBror.Bot.BotName.ToLower())
+                    else if (name != bb.Bot.BotName.ToLower())
                     {
                         commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:last_line:bot", data.ChannelId, data.Platform));
                     }

@@ -1,10 +1,10 @@
-﻿using butterBror.Core.Commands.List;
+﻿using bb.Core.Commands.List;
 using Microsoft.Extensions.Caching.Memory;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using static butterBror.Core.Bot.Console;
+using static bb.Core.Bot.Console;
 
-namespace butterBror.Services.External
+namespace bb.Services.External
 {
     /// <summary>
     /// Implementation of a weather service using the Open-Meteo API.

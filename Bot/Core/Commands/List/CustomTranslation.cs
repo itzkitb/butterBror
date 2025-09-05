@@ -1,9 +1,9 @@
-﻿using butterBror.Core.Bot;
-using butterBror.Models;
-using butterBror.Utils;
+﻿using bb.Core.Bot;
+using bb.Models;
+using bb.Utils;
 using TwitchLib.Client.Enums;
 
-namespace butterBror.Core.Commands.List
+namespace bb.Core.Commands.List
 {
     public class CustomTranslation : CommandBase
     {
@@ -101,7 +101,7 @@ namespace butterBror.Core.Commands.List
                                         "error:not_enough_arguments",
                                         string.Empty,
                                         data.Platform,
-                                        $"{butterBror.Bot.DefaultExecutor}ct set [paramName] [en/ru] [text]"));
+                                        $"{bb.Bot.DefaultExecutor}ct set [paramName] [en/ru] [text]"));
                                     commandReturn.SetColor(ChatColorPresets.Red);
                                 }
                             }
@@ -186,7 +186,7 @@ namespace butterBror.Core.Commands.List
                         "error:not_enough_arguments",
                         string.Empty,
                         data.Platform,
-                        $"{butterBror.Bot.DefaultExecutor}ct set [paramName] [en/ru] [text]"));
+                        $"{bb.Bot.DefaultExecutor}ct set [paramName] [en/ru] [text]"));
                     commandReturn.SetColor(ChatColorPresets.Red);
                 }
             }

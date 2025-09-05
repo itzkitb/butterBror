@@ -1,12 +1,12 @@
-﻿using butterBror.Core.Commands;
-using butterBror.Models;
-using butterBror.Utils;
+﻿using bb.Core.Commands;
+using bb.Models;
+using bb.Utils;
 using Discord;
 using Discord.WebSocket;
 using System.Reflection;
-using static butterBror.Core.Bot.Console;
+using static bb.Core.Bot.Console;
 
-namespace butterBror.Workers
+namespace bb.Workers
 {
     /// <summary>
     /// Provides event handlers and command registration for Discord API interactions.
@@ -28,7 +28,6 @@ namespace butterBror.Workers
             try
             {
                 Write($"Discord - Connected as {Bot.Clients.Discord.CurrentUser}!", "info");
-                Bot.DiscordServers = (ulong)Bot.Clients.Discord.Guilds.Count;
             }
             catch (Exception ex)
             {

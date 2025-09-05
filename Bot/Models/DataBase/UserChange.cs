@@ -1,4 +1,4 @@
-﻿namespace butterBror.Models.DataBase
+﻿namespace bb.Models.DataBase
 {
     public class UserChange
     {

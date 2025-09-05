@@ -1,6 +1,6 @@
-﻿using butterBror.Data;
+﻿using bb.Data;
 
-namespace butterBror.Core.Services
+namespace bb.Core.Services
 {
     public class SQLService
     {
