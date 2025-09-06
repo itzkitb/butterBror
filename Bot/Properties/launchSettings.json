@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "butterBror": {
+      "commandName": "Project",
+      "commandLineArgs": "--skip-fetch",
+      "sqlDebugging": true
+    }
+  }
+}
