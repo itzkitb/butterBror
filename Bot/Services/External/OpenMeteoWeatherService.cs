@@ -1,5 +1,4 @@
 ﻿using bb.Core.Commands.List;
-using Microsoft.Extensions.Caching.Memory;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using static bb.Core.Bot.Console;
@@ -13,17 +12,15 @@ namespace bb.Services.External
     public class OpenMeteoWeatherService : IWeatherService
     {
         private readonly HttpClient _httpClient;
-        private readonly IMemoryCache _cache;
         private const string GeocodingUrl = "https://geocoding-api.open-meteo.com/v1/search";
         private const string WeatherUrl = "https://api.open-meteo.com/v1/forecast";
         private const int MaxRetries = 3;
         private const int CacheDurationMinutes = 60;
         private const int LocationsCacheDurationMinutes = 15;
 
-        public OpenMeteoWeatherService(HttpClient httpClient, IMemoryCache cache)
+        public OpenMeteoWeatherService(HttpClient httpClient)
         {
             _httpClient = httpClient;
-            _cache = cache;
         }
 
         /// <summary>
@@ -37,11 +34,6 @@ namespace bb.Services.External
         public async Task<WeatherData> GetCurrentWeatherAsync(string latitude, string longitude)
         {
             string cacheKey = $"weather_{latitude}_{longitude}";
-
-            if (_cache.TryGetValue(cacheKey, out WeatherData cachedWeather))
-            {
-                return cachedWeather;
-            }
 
             var queryParams = new Dictionary<string, string>
             {
@@ -85,7 +77,6 @@ namespace bb.Services.External
                         Visibility = weatherResponse.Current.Visibility / 1000
                     };
 
-                    _cache.Set(cacheKey, result, TimeSpan.FromMinutes(CacheDurationMinutes));
                     return result;
                 }
                 catch (Exception ex)
@@ -112,12 +103,6 @@ namespace bb.Services.External
         public async Task<List<LocationResult>> SearchLocationsAsync(string locationName)
         {
             string cacheKey = $"locations_{locationName.ToLowerInvariant()}";
-
-            if (_cache.TryGetValue(cacheKey, out List<LocationResult> cachedLocations))
-            {
-                return cachedLocations;
-            }
-
             var url = $"{GeocodingUrl}?name={Uri.EscapeDataString(locationName)}&count=10";
 
             for (int i = 0; i < MaxRetries; i++)
@@ -149,7 +134,6 @@ namespace bb.Services.External
                         })
                         .ToList();
 
-                    _cache.Set(cacheKey, locations, TimeSpan.FromMinutes(LocationsCacheDurationMinutes));
                     return locations;
                 }
                 catch (Exception ex)

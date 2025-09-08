@@ -140,7 +140,7 @@ namespace bb.Core.Commands
 
                     await Parallel.ForEachAsync(commandInstances, async (cmd, ct) =>
                     {
-                        if (!cmd.Aliases.Contains(commandName, StringComparer.OrdinalIgnoreCase))
+                        if (!cmd.Aliases.Contains(commandName, StringComparer.OrdinalIgnoreCase) || commandFounded)
                             return;
 
                         commandFounded = true;

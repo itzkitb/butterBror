@@ -3,7 +3,7 @@ using bb.Core.Bot.SQLColumnNames;
 using bb.Models;
 using bb.Services.External;
 using bb.Utils;
-using Microsoft.Extensions.Caching.Memory;
+//using Microsoft.Extensions.Caching.Memory;
 using System.Globalization;
 using System.Text.RegularExpressions;
 using TwitchLib.Client.Enums;
@@ -19,7 +19,7 @@ namespace bb.Core.Commands.List
         private IWeatherService _weatherService;
         private const int ResultsPerPage = 5;
         private const string WeatherResultKey = "WeatherResultLocations";
-        private static IMemoryCache _cache = new MemoryCache(new MemoryCacheOptions());
+        //private static IMemoryCache _cache = new MemoryCache(new MemoryCacheOptions());
 
         public override string Name => "Weather";
         public override string Author => "ItzKITb";
@@ -48,7 +48,7 @@ namespace bb.Core.Commands.List
         {
             CommandReturn commandReturn = new CommandReturn();
 
-            _weatherService = new OpenMeteoWeatherService(new HttpClient(), _cache);
+            _weatherService = new OpenMeteoWeatherService(new HttpClient());
 
             try
             {
