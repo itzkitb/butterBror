@@ -2,7 +2,6 @@
 using bb.Models;
 using bb.Models.SevenTVLib;
 using bb.Utils;
-using Microsoft.Extensions.Caching.Memory;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
@@ -16,11 +15,6 @@ namespace bb.Services.External
     public class SevenTvService
     {
         private readonly HttpClient _client;
-        private readonly MemoryCache _cache = new MemoryCache(new MemoryCacheOptions());
-        private readonly MemoryCacheEntryOptions _cacheOptions = new()
-        {
-            SlidingExpiration = TimeSpan.FromMinutes(30)
-        };
 
         /// <summary>
         /// Initializes a new instance of the SevenTvService class with HTTP client.
@@ -50,16 +44,16 @@ namespace bb.Services.External
 
         public async Task<string> SearchUser(string nickname, string bearer_token)
         {
-            if (_cache.TryGetValue<string>($"user_{nickname}", out var cached) && _cache is not null)
+            /*if (_cache.TryGetValue<string>($"user_{nickname}", out var cached) && _cache is not null)
             {
                 Write($"SevenTV - Getted cache data for @{nickname}", "info");
                 return cached;
-            }
+            }*/
 
             var result = await PerformSearchUser(nickname);
 
-            if (!string.IsNullOrEmpty(result))
-                _cache.Set($"user_{nickname}", result, _cacheOptions);
+            /*if (!string.IsNullOrEmpty(result))
+                _cache.Set($"user_{nickname}", result, _cacheOptions);*/
             Write($"SevenTV - Loaded data for @{nickname} ({result is null}): {TextSanitizer.CheckNull(result)}", "info");
             return result;
         }
@@ -78,16 +72,16 @@ namespace bb.Services.External
 
         public async Task<string> SearchEmote(string emoteName, string bearer_token)
         {
-            if (_cache.TryGetValue<string>($"emote_{emoteName}", out var cached))
+            /*if (_cache.TryGetValue<string>($"emote_{emoteName}", out var cached))
             {
                 Write($"SevenTV - Getted cache data for @{emoteName}", "info");
                 return cached;
-            }
+            }*/
 
             var result = await PerformSearchEmote(emoteName);
 
-            if (!string.IsNullOrEmpty(result))
-                _cache.Set($"emote_{emoteName}", result, _cacheOptions);
+            /*if (!string.IsNullOrEmpty(result))
+                _cache.Set($"emote_{emoteName}", result, _cacheOptions);*/
             Write($"SevenTV - Loaded emote {emoteName} ({result is null})", "info");
             return result;
         }

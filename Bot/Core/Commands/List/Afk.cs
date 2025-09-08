@@ -19,7 +19,7 @@ namespace bb.Core.Commands.List
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=afk";
         public override int CooldownPerUser => 20;
         public override int CooldownPerChannel => 1;
-        public override string[] Aliases => ["draw", "drw", "d", "рисовать", "рис", "р", "afk", "афк", "sleep", "goodnight", "gn", "slp", "s", "спать", "храп", "хррр", "с", "rest", "nap", "r", "отдых", "отдохнуть", "о", "lurk", "l", "наблюдатьизтени", "спрятаться", "study", "st", "учеба", "учится", "у", "poop", "p", "туалет", "shower", "sh", "ванная", "душ"];
+        public override string[] Aliases => ["draw", "drw", "d", "рисовать", "рис", "р", "afk", "афк", "sleep", "goodnight", "gn", "slp", "s", "спать", "храп", "хррр", "с", "rest", "nap", "re", "отдых", "отдохнуть", "о", "lurk", "l", "наблюдатьизтени", "спрятаться", "study", "st", "учеба", "учится", "у", "poop", "p", "туалет", "shower", "sh", "ванная", "душ"];
         public override string HelpArguments => "(message)";
         public override DateTime CreationDate => DateTime.Parse("04/07/2024");
         public override bool OnlyBotDeveloper => false;

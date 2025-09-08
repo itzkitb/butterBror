@@ -53,16 +53,24 @@ namespace bb.Core.Commands.List
 
                         foreach (string blockedEntry in blockedEntries)
                         {
-                            if (meMessage.StartsWith(blockedEntry))
+                            while (meMessage.StartsWith(blockedEntry))
                             {
                                 meMessage = string.Join("", meMessage.Skip(blockedEntry.Length)); // AB6 fix
                                 break;
-                            }
+                            } // repeat symbol fix
                         }
 
                         break; // AB5 fix
                     }
-                    commandReturn.SetMessage($"/me \u2063 {meMessage}");
+
+                    if (string.IsNullOrEmpty(meMessage))
+                    {
+                        commandReturn.SetMessage("/me " + LocalizationService.GetString(data.User.Language, "text:ad", data.ChannelId, data.Platform));
+                    }
+                    else
+                    {
+                        commandReturn.SetMessage($"/me \u034E {meMessage}");
+                    }
                 }
                 else
                 {

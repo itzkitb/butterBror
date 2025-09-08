@@ -53,18 +53,18 @@ namespace bb.Utils
         {
             var fullCode = $@"
         using DankDB;
-        using butterBror;
-        using butterBror.Utils;
-        using butterBror.Services.External;
-        using butterBror.Services.System;
-        using butterBror.Models;
-        using butterBror.Data;
-        using butterBror.Events;
-        using butterBror.Workers;
-        using butterBror.Core.Bot;
-        using butterBror.Core.Commands;
-        using butterBror.Core.Commands.List;
-        using butterBror.Core.Services;
+        using bb;
+        using bb.Utils;
+        using bb.Services.External;
+        using bb.Services.System;
+        using bb.Models;
+        using bb.Data;
+        using bb.Events;
+        using bb.Workers;
+        using bb.Core.Bot;
+        using bb.Core.Commands;
+        using bb.Core.Commands.List;
+        using bb.Core.Services;
         using System;
         using System.Collections.Generic;
         using System.Linq;

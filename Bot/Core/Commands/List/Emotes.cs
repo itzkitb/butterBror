@@ -3,7 +3,6 @@ using bb.Models;
 using bb.Utils;
 using DankDB;
 using SevenTV.Types.Rest;
-using V8.Net;
 using static bb.Core.Bot.Console;
 using static bb.Utils.MessageProcessor;
 
@@ -166,7 +165,7 @@ namespace bb.Core.Commands.List
         #region Processes
         public async Task<string> ProcessAddEmote(CommandData data)
         {
-            if (GetArgument(data.Arguments, 1).IsNullOrWhiteSpace())
+            if (GetArgument(data.Arguments, 1) == null)
             {
                 return ShowLowArgsError(data, "#emote add emotename as:alias from:itzkitb", data.Platform);
             }
