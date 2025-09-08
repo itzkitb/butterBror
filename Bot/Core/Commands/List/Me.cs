@@ -51,13 +51,19 @@ namespace bb.Core.Commands.List
                             break;
                         }
 
-                        foreach (string blockedEntry in blockedEntries)
+                        bool forbiddenSymbolFound = true;
+                        while (forbiddenSymbolFound)
                         {
-                            while (meMessage.StartsWith(blockedEntry))
+                            forbiddenSymbolFound = false;
+                            foreach (string blockedEntry in blockedEntries)
                             {
-                                meMessage = string.Join("", meMessage.Skip(blockedEntry.Length)); // AB6 fix
-                            } // repeat symbol fix
-                        }
+                                while (meMessage.StartsWith(blockedEntry))
+                                {
+                                    forbiddenSymbolFound = true;
+                                    meMessage = string.Join("", meMessage.Substring(blockedEntry.Length)); // AB6 fix
+                                } // repeat symbol fix
+                            }
+                        } // repeat symbol fix 2
 
                         break; // AB5 fix
                     }
