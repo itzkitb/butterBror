@@ -423,7 +423,7 @@ namespace bb.Utils
             }
 
             string? message = (string)Bot.UsersBuffer.GetParameter(platform, DataConversion.ToLong(userId), Users.AFKText);
-            if (!new BannedWordDetector().Check(message, platform == PlatformsEnum.Discord ? serverId : channelId, platform))
+            if (!new BlockedWordDetector().Check(message, platform == PlatformsEnum.Discord ? serverId : channelId, platform))
                 return;
 
             string send = (TextSanitizer.CleanAsciiWithoutSpaces(message) == "" ? "" : ": " + message);

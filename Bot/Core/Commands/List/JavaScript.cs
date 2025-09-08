@@ -37,7 +37,7 @@ namespace bb.Core.Commands.List
 
             try
             {
-                if (new BannedWordDetector().Check(data.ArgumentsString, data.ChannelId, data.Platform))
+                if (new BlockedWordDetector().Check(data.ArgumentsString, data.ChannelId, data.Platform))
                 {
                     try
                     {

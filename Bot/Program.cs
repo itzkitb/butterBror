@@ -40,7 +40,7 @@ namespace bb
     {
         #region Variables
         #region Core
-        public static Version Version = new Version("2.18.0.5");
+        public static Version Version = new Version("2.18.0.6");
         public static DateTime StartTime = new();
         public static string PreviousVersion = "";
         public static bool Initialized = false;

@@ -107,7 +107,7 @@ namespace bb.Utils
                 if (!Bot.Clients.Twitch.JoinedChannels.Contains(new JoinedChannel(channel)))
                     Bot.Clients.Twitch.JoinChannel(channel);
 
-                if (isSafeEx || new BannedWordDetector().Check(message, channelID, PlatformsEnum.Twitch))
+                if (isSafeEx || new BlockedWordDetector().Check(message, channelID, PlatformsEnum.Twitch))
                     Bot.Clients.Twitch.SendMessage(channel, message);
                 else
                     Bot.Clients.Twitch.SendReply(
@@ -186,7 +186,7 @@ namespace bb.Utils
                 if (!Bot.Clients.Twitch.JoinedChannels.Contains(new JoinedChannel(channel)))
                     Bot.Clients.Twitch.JoinChannel(channel);
 
-                if (isSafeEx || new BannedWordDetector().Check(message, channelID, PlatformsEnum.Twitch))
+                if (isSafeEx || new BlockedWordDetector().Check(message, channelID, PlatformsEnum.Twitch))
                     Bot.Clients.Twitch.SendReply(channel, messageID, message);
                 else
                     Bot.Clients.Twitch.SendReply(

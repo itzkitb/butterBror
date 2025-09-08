@@ -56,7 +56,6 @@ namespace bb.Core.Commands.List
                             while (meMessage.StartsWith(blockedEntry))
                             {
                                 meMessage = string.Join("", meMessage.Skip(blockedEntry.Length)); // AB6 fix
-                                break;
                             } // repeat symbol fix
                         }
 
