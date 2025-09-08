@@ -31,9 +31,9 @@ namespace bb.Utils
     /// </para>
     /// The system is engineered for high-throughput chat environments while maintaining accuracy in identifying sophisticated content bypass attempts.
     /// </remarks>
-    public class BannedWordDetector
+    public class BlockedWordDetector
     {
-        private readonly ConcurrentDictionary<string, string> _foundedBanWords = new();
+        private string _founded = "";
         private string _replacementPattern;
         private Regex _replacementRegex;
 
@@ -79,39 +79,36 @@ namespace bb.Utils
                 string sector = "";
                 DateTime start_time = DateTime.UtcNow;
 
-                string check_UUID = Guid.NewGuid().ToString();
+                string clearedMessage = TextSanitizer.CleanAsciiWithoutSpaces(message.ToLower());
+                string clearedMessageWithoutRepeats = TextSanitizer.RemoveDuplicates(clearedMessage);
+                string clearedMessageWithoutRepeatsChangedLayout = TextSanitizer.ChangeLayout(clearedMessageWithoutRepeats);
+                string clearedMessageChangedLayout = TextSanitizer.ChangeLayout(clearedMessage);
 
-                string cleared_message = TextSanitizer.CleanAsciiWithoutSpaces(message.ToLower());
-                string cleared_message_without_repeats = TextSanitizer.RemoveDuplicates(cleared_message);
-                string cleared_message_without_repeats_changed_layout = TextSanitizer.ChangeLayout(cleared_message_without_repeats);
-                string cleared_message_changed_layout = TextSanitizer.ChangeLayout(cleared_message);
+                string bannedWordsPath = Bot.Paths.BlacklistWords;
+                string replacementPath = Bot.Paths.BlacklistReplacements;
 
-                string banned_words_path = Bot.Paths.BlacklistWords;
-                string replacement_path = Bot.Paths.BlacklistReplacements;
-
-                List<string> single_banwords = Manager.Get<List<string>>(banned_words_path, "single_word");
-                Dictionary<string, string> replacements = Manager.Get<Dictionary<string, string>>(replacement_path, "list") ?? new Dictionary<string, string>();
-                List<string> banned_words = Manager.Get<List<string>>(banned_words_path, "list");
-                banned_words.AddRange(Bot.DataBase.Channels.GetBanWords(platform, channelId));
+                List<string> singleBanwords = Manager.Get<List<string>>(bannedWordsPath, "single_word");
+                Dictionary<string, string> replacements = Manager.Get<Dictionary<string, string>>(replacementPath, "list") ?? new Dictionary<string, string>();
+                List<string> bannedWords = Manager.Get<List<string>>(bannedWordsPath, "list");
+                bannedWords.AddRange(Bot.DataBase.Channels.GetBanWords(platform, channelId));
 
                 _replacementPattern = string.Join("|", replacements.Keys.Select(Regex.Escape));
                 _replacementRegex = new Regex(_replacementPattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
                 (bool, string) check_result = RunCheck(channelId,
-                    check_UUID,
-                    banned_words,
-                    single_banwords,
+                    bannedWords,
+                    singleBanwords,
                     replacements,
-                    cleared_message_without_repeats,
-                    cleared_message_without_repeats,
-                    cleared_message,
-                    cleared_message_changed_layout);
+                    clearedMessageWithoutRepeats,
+                    clearedMessageWithoutRepeats,
+                    clearedMessage,
+                    clearedMessageChangedLayout);
 
                 failed = !check_result.Item1;
                 sector = check_result.Item2;
 
-                if (failed) Write($"NoBanwords - [{check_UUID}] BANWORDS WAS FOUNDED! Banword: {_foundedBanWords[check_UUID]}, sector: {sector} ({(DateTime.UtcNow - start_time).TotalMilliseconds}ms)", "info");
-                else Write($"NoBanwords - [{check_UUID}] Succeful! ({(DateTime.UtcNow - start_time).TotalMilliseconds}ms)", "info");
+                if (failed) Write($"Blocked words detected! Word: {_founded}; Sector: {sector} (in {(DateTime.UtcNow - start_time).TotalMilliseconds}ms)", "info");
+                else Write($"No blocked words found! (in {(DateTime.UtcNow - start_time).TotalMilliseconds}ms)", "info");
 
                 return !failed;
             }
@@ -167,7 +164,7 @@ namespace bb.Utils
         /// This staged approach balances thoroughness with performance in high-volume chat environments.
         /// </remarks>
         private (bool, string) RunCheck(
-    string channelId, string checkUUID, List<string> bannedWords,
+    string channelId, List<string> bannedWords,
     List<string> singleBanwords, Dictionary<string, string> replacements,
     string clearedMessageWithoutRepeats, string clearedMessageWithoutRepeatsChangedLayout,
     string clearedMessage, string clearedMessageChangedLayout)
@@ -187,8 +184,8 @@ namespace bb.Utils
             foreach (var (message, useReplacement, label) in checks)
             {
                 bool result = useReplacement
-                    ? CheckReplacements(message, channelId, checkUUID, bannedWords, singleBanwords, replacements)
-                    : CheckBanWords(message, channelId, checkUUID, bannedWords, singleBanwords);
+                    ? CheckReplacements(message, channelId, bannedWords, singleBanwords, replacements)
+                    : CheckBanWords(message, channelId, bannedWords, singleBanwords);
 
                 if (!result) return (false, label);
             }
@@ -227,20 +224,30 @@ namespace bb.Utils
         /// This method serves as the foundation for both direct and replacement-based validation strategies.
         /// Handles the core matching logic without additional transformation overhead.
         /// </remarks>
-        private bool CheckBanWords(string message, string channelId, string checkUUID,
+        private bool CheckBanWords(string message, string channelId,
     List<string> bannedWords, List<string> singleBanwords)
         {
             try
             {
-                if (bannedWords.Any(word => message.Contains(word, StringComparison.OrdinalIgnoreCase)))
+                var foundBannedWord = bannedWords
+                    .FirstOrDefault(word =>
+                        !string.IsNullOrEmpty(word) &&
+                        message.Contains(word, StringComparison.OrdinalIgnoreCase));
+
+                if (foundBannedWord != null)
                 {
-                    _foundedBanWords.TryAdd(checkUUID, "BannedWordFound");
+                    _founded = foundBannedWord;
                     return false;
                 }
 
-                if (singleBanwords.Any(word => message.Equals(word, StringComparison.OrdinalIgnoreCase)))
+                var foundSingleWord = singleBanwords
+                    .FirstOrDefault(word =>
+                        !string.IsNullOrEmpty(word) &&
+                        message.Equals(word, StringComparison.OrdinalIgnoreCase));
+
+                if (foundSingleWord != null)
                 {
-                    _foundedBanWords.TryAdd(checkUUID, "SingleBannedWordFound");
+                    _founded = foundSingleWord;
                     return false;
                 }
 
@@ -249,7 +256,7 @@ namespace bb.Utils
             catch (Exception ex)
             {
                 Write(ex);
-                _foundedBanWords.TryAdd(checkUUID, "CHECK ERROR");
+                _founded = "Check error";
                 return false;
             }
         }
@@ -293,7 +300,7 @@ namespace bb.Utils
         /// <item>Keyboard-shifted characters</item>
         /// </list>
         /// </remarks>
-        private bool CheckReplacements(string message, string channelId, string checkUUID,
+        private bool CheckReplacements(string message, string channelId,
     List<string> bannedWords, List<string> singleBanwords, Dictionary<string, string> replacements)
         {
             try
@@ -301,7 +308,7 @@ namespace bb.Utils
                 string maskedWord = _replacementRegex.Replace(message, match =>
                     replacements[match.Value.ToLower()]);
 
-                return CheckBanWords(maskedWord, channelId, checkUUID, bannedWords, singleBanwords);
+                return CheckBanWords(maskedWord, channelId, bannedWords, singleBanwords);
             }
             catch (Exception ex)
             {

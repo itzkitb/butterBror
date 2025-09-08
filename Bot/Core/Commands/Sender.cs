@@ -61,7 +61,7 @@ namespace bb.Core.Commands
                     bb.Bot.Clients.Twitch.JoinChannel(data.Channel);
                 }
 
-                if (data.SafeExecute || new BannedWordDetector().Check(message, data.ChannelID, PlatformsEnum.Twitch))
+                if (data.SafeExecute || new BlockedWordDetector().Check(message, data.ChannelID, PlatformsEnum.Twitch))
                 {
                     Write(isReply.ToString(), "debug");
                     if (isReply)
@@ -129,7 +129,7 @@ namespace bb.Core.Commands
                     messageToSendPart2.Message = part2;
                 }
 
-                if (data.SafeExecute || new BannedWordDetector().Check(messageToSend, data.ChannelID, PlatformsEnum.Telegram))
+                if (data.SafeExecute || new BlockedWordDetector().Check(messageToSend, data.ChannelID, PlatformsEnum.Telegram))
                 {
                     if (isReply)
                     {
@@ -193,7 +193,7 @@ namespace bb.Core.Commands
 
                 if (data.SocketCommandBase != null)
                 {
-                    if ((data.SafeExecute | data.IsEphemeral) || new BannedWordDetector().Check(data.Message, data.ServerID, PlatformsEnum.Discord) && new BannedWordDetector().Check(data.Description, data.ServerID, PlatformsEnum.Discord))
+                    if ((data.SafeExecute | data.IsEphemeral) || new BlockedWordDetector().Check(data.Message, data.ServerID, PlatformsEnum.Discord) && new BlockedWordDetector().Check(data.Description, data.ServerID, PlatformsEnum.Discord))
                     {
                         if (data.IsEmbed)
                         {
@@ -246,7 +246,7 @@ namespace bb.Core.Commands
 
                     ITextChannel sender = await bb.Bot.Clients.Discord.GetChannelAsync(ulong.Parse(data.ChannelID)) as ITextChannel;
 
-                    if ((data.SafeExecute | data.IsEphemeral) || new BannedWordDetector().Check(data.Message, data.ServerID, PlatformsEnum.Discord) && new BannedWordDetector().Check(data.Description, data.ServerID, PlatformsEnum.Discord))
+                    if ((data.SafeExecute | data.IsEphemeral) || new BlockedWordDetector().Check(data.Message, data.ServerID, PlatformsEnum.Discord) && new BlockedWordDetector().Check(data.Description, data.ServerID, PlatformsEnum.Discord))
                     {
                         if (data.IsEmbed)
                         {
