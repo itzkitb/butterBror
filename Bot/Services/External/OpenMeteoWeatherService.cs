@@ -2,6 +2,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using static bb.Core.Bot.Console;
+using feels.Dank.Cache.LRU;
 
 namespace bb.Services.External
 {
@@ -12,6 +13,9 @@ namespace bb.Services.External
     public class OpenMeteoWeatherService : IWeatherService
     {
         private readonly HttpClient _httpClient;
+        private readonly ILruCache<string, WeatherData> _weatherCache;
+        private readonly ILruCache<string, List<LocationResult>> _locationsCache;
+
         private const string GeocodingUrl = "https://geocoding-api.open-meteo.com/v1/search";
         private const string WeatherUrl = "https://api.open-meteo.com/v1/forecast";
         private const int MaxRetries = 3;
@@ -21,6 +25,20 @@ namespace bb.Services.External
         public OpenMeteoWeatherService(HttpClient httpClient)
         {
             _httpClient = httpClient;
+
+            _weatherCache = new LruCache<string, WeatherData>(
+                capacity: 1000,
+                defaultTtl: TimeSpan.FromMinutes(CacheDurationMinutes),
+                expirationMode: ExpirationMode.Absolute,
+                cleanupInterval: TimeSpan.FromMinutes(2)
+            );
+
+            _locationsCache = new LruCache<string, List<LocationResult>>(
+                capacity: 500,
+                defaultTtl: TimeSpan.FromMinutes(LocationsCacheDurationMinutes),
+                expirationMode: ExpirationMode.Absolute,
+                cleanupInterval: TimeSpan.FromMinutes(2)
+            );
         }
 
         /// <summary>
@@ -103,51 +121,62 @@ namespace bb.Services.External
         public async Task<List<LocationResult>> SearchLocationsAsync(string locationName)
         {
             string cacheKey = $"locations_{locationName.ToLowerInvariant()}";
-            var url = $"{GeocodingUrl}?name={Uri.EscapeDataString(locationName)}&count=10";
 
-            for (int i = 0; i < MaxRetries; i++)
-            {
-                try
+            return await _locationsCache.GetOrAddAsync(
+                cacheKey,
+                async (key, ct) =>
                 {
-                    var response = await _httpClient.GetAsync(url);
-                    response.EnsureSuccessStatusCode();
+                    var url = $"{GeocodingUrl}?name={Uri.EscapeDataString(locationName)}&count=10";
 
-                    var json = await response.Content.ReadAsStringAsync();
-                    var geocodingResponse = JsonSerializer.Deserialize<GeocodingResponse>(json, new JsonSerializerOptions
+                    for (int i = 0; i < MaxRetries; i++)
                     {
-                        PropertyNameCaseInsensitive = true
-                    });
-
-                    if (geocodingResponse?.Results == null || !geocodingResponse.Results.Any())
-                    {
-                        return new List<LocationResult>();
-                    }
-
-                    var locations = geocodingResponse.Results
-                        .Select(r => new LocationResult
+                        try
                         {
-                            Name = $"{r.Name}{(!string.IsNullOrEmpty(r.Admin1) ? $", {r.Admin1}" : "")}{(!string.IsNullOrEmpty(r.Country) ? $", {r.Country}" : "")}",
-                            Latitude = r.Latitude,
-                            Longitude = r.Longitude,
-                            Elevation = r.Elevation,
-                            Timezone = r.Timezone
-                        })
-                        .ToList();
+                            var response = await _httpClient.GetAsync(url, ct);
+                            response.EnsureSuccessStatusCode();
 
-                    return locations;
-                }
-                catch (Exception ex)
-                {
-                    Write($"Location search failed (attempt {i + 1}/{MaxRetries}): {ex.Message}", "OpenMeteoWeatherService", LogLevel.Warning);
-                    if (i == MaxRetries - 1)
-                    {
-                        throw new WeatherApiException("Failed to search locations after multiple attempts", ex);
+                            var json = await response.Content.ReadAsStringAsync(ct);
+                            var geocodingResponse = JsonSerializer.Deserialize<GeocodingResponse>(json, new JsonSerializerOptions
+                            {
+                                PropertyNameCaseInsensitive = true
+                            });
+
+                            if (geocodingResponse?.Results == null || !geocodingResponse.Results.Any())
+                            {
+                                return new List<LocationResult>();
+                            }
+
+                            return geocodingResponse.Results
+                                .Select(r => new LocationResult
+                                {
+                                    Name = $"{r.Name}{(!string.IsNullOrEmpty(r.Admin1) ? $", {r.Admin1}" : "")}{(!string.IsNullOrEmpty(r.Country) ? $", {r.Country}" : "")}",
+                                    Latitude = r.Latitude,
+                                    Longitude = r.Longitude,
+                                    Elevation = r.Elevation,
+                                    Timezone = r.Timezone
+                                })
+                                .ToList();
+                        }
+                        catch (Exception ex)
+                        {
+                            Write($"Location search failed (attempt {i + 1}/{MaxRetries}): {ex.Message}",
+                                  "OpenMeteoWeatherService", LogLevel.Warning);
+
+                            if (i == MaxRetries - 1)
+                            {
+                                throw new WeatherApiException("Failed to search locations after multiple attempts", ex);
+                            }
+
+                            // Задержка с учётом cancellation
+                            await Task.Delay(200 * (i + 1), ct);
+                        }
                     }
-                    await Task.Delay(200 * (i + 1));
-                }
-            }
 
-            return new List<LocationResult>();
+                    // Недостижимый код
+                    throw new InvalidOperationException("Unexpected error in location search");
+                },
+                timeout: TimeSpan.FromSeconds(10) // Защита от зависаний
+            );
         }
 
         /// <summary>
