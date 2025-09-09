@@ -1,10 +1,7 @@
 ﻿using bb.Core.Bot.SQLColumnNames;
 using bb.Models;
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 using System.Collections.Concurrent;
 using System.Globalization;
-using System.Reflection;
 using System.Text.RegularExpressions;
 using Telegram.Bot.Types;
 using TwitchLib.Client.Models;

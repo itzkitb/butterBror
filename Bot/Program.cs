@@ -777,7 +777,7 @@ namespace bb
             Clients.TwitchAPI = new TwitchAPI();
             Clients.TwitchAPI.Settings.AccessToken = Tokens.Twitch.AccessToken;
             Clients.TwitchAPI.Settings.ClientId = TwitchClientId;
-            Clients.TwitchAPI.Settings.Scopes = [AuthScopes.Chat_Read, AuthScopes.Helix_Moderator_Read_Chatters, AuthScopes.Chat_Edit, AuthScopes.Helix_Moderator_Manage_Banned_Users];
+            Clients.TwitchAPI.Settings.Scopes = [AuthScopes.Chat_Read, AuthScopes.Moderator_Read_Chatters, AuthScopes.Chat_Edit, AuthScopes.Moderator_Manage_Banned_Users];
 
             #region Events subscription
             Clients.Twitch.OnJoinedChannel += TwitchEvents.OnJoin;
