@@ -34,6 +34,7 @@ namespace bb.Data
     public class ChannelsDatabase : SqlDatabaseBase
     {
         private readonly Dictionary<(PlatformsEnum platform, string channelId), HashSet<string>> _banWordsCache = new();
+        private readonly Dictionary<(PlatformsEnum platform, string channelId), string> _commandPrefixCache = new();
         private readonly object _cacheLock = new object();
 
         /// <summary>
@@ -85,6 +86,8 @@ namespace bb.Data
         /// For PlatformsEnum.Discord, returns "BanWords_DISCORD"
         /// </example>
         private string GetBanWordsTableName(PlatformsEnum platform) => $"BanWords_{platform.ToString().ToUpper()}";
+
+        private string GetCommandPrefixTableName(PlatformsEnum platform) => $"CommandPrefixes_{platform.ToString().ToUpper()}";
 
         /// <summary>
         /// Configures SQLite database performance settings for optimal operation in a chatbot environment.
@@ -177,10 +180,19 @@ namespace bb.Data
                     );
                     CREATE INDEX IF NOT EXISTS idx_{firstMessagesTableName}_channelid ON [{firstMessagesTableName}](ChannelID);
                     CREATE INDEX IF NOT EXISTS idx_{firstMessagesTableName}_userid ON [{firstMessagesTableName}](UserID);";
+                        string commandPrefixesTableName = GetCommandPrefixTableName(platform);
+                        string createCommandPrefixesTable = $@"
+                    CREATE TABLE IF NOT EXISTS [{commandPrefixesTableName}] (
+                        ChannelID TEXT NOT NULL,
+                        Prefix TEXT NOT NULL,
+                        PRIMARY KEY (ChannelID)
+                    );
+                    CREATE INDEX IF NOT EXISTS idx_{commandPrefixesTableName}_channelid ON [{commandPrefixesTableName}](ChannelID);";
 
                         ExecuteNonQuery(createCDDTable);
                         ExecuteNonQuery(createBanWordsTable);
                         ExecuteNonQuery(createFirstMessagesTable);
+                        ExecuteNonQuery(createCommandPrefixesTable);
                     }
                     transaction.Commit();
                 }
@@ -681,6 +693,89 @@ namespace bb.Data
                 new SQLiteParameter("@BanWord", banWord)
             });
             InvalidateBanWordsCache(platform, channelId);
+        }
+
+        public string GetCommandPrefix(PlatformsEnum platform, string channelId)
+        {
+            var key = (platform, channelId);
+            lock (_cacheLock)
+            {
+                if (_commandPrefixCache.TryGetValue(key, out string prefix))
+                {
+                    return prefix;
+                }
+            }
+
+            string tableName = GetCommandPrefixTableName(platform);
+            string sql = $@"
+                SELECT Prefix 
+                FROM [{tableName}] 
+                WHERE ChannelID = @ChannelId";
+
+            string prefixFromDb = ExecuteScalar<string>(sql, new[] {
+                new SQLiteParameter("@ChannelId", channelId)
+            });
+
+            string defaultPrefix = bb.Bot.DefaultCommandPrefix.ToString();
+            if (string.IsNullOrEmpty(prefixFromDb))
+            {
+                prefixFromDb = defaultPrefix;
+            }
+
+            lock (_cacheLock)
+            {
+                _commandPrefixCache[key] = prefixFromDb;
+            }
+
+            return prefixFromDb;
+        }
+
+        public void SetCommandPrefix(PlatformsEnum platform, string channelId, string prefix)
+        {
+            string tableName = GetCommandPrefixTableName(platform);
+
+            BeginTransaction();
+            try
+            {
+                if (string.IsNullOrEmpty(prefix))
+                {
+                    string deleteSql = $@"
+                        DELETE FROM [{tableName}] 
+                        WHERE ChannelID = @ChannelId";
+                    ExecuteNonQuery(deleteSql, new[]
+                    {
+                        new SQLiteParameter("@ChannelId", channelId)
+                    });
+                }
+                else
+                {
+                    string upsertSql = $@"
+                        INSERT OR REPLACE INTO [{tableName}] (ChannelID, Prefix)
+                        VALUES (@ChannelId, @Prefix)";
+                    ExecuteNonQuery(upsertSql, new[]
+                    {
+                        new SQLiteParameter("@ChannelId", channelId),
+                        new SQLiteParameter("@Prefix", prefix)
+                    });
+                }
+
+                CommitTransaction();
+                InvalidateCommandPrefixCache(platform, channelId);
+            }
+            catch
+            {
+                RollbackTransaction();
+                throw;
+            }
+        }
+
+        private void InvalidateCommandPrefixCache(PlatformsEnum platform, string channelId)
+        {
+            var key = (platform, channelId);
+            lock (_cacheLock)
+            {
+                _commandPrefixCache.Remove(key);
+            }
         }
 
         /// <summary>

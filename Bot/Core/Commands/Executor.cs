@@ -1,5 +1,6 @@
 ﻿using bb.Models;
 using Discord.WebSocket;
+using System;
 using Telegram.Bot.Types;
 using TwitchLib.Client.Events;
 using static bb.Core.Bot.Console;
@@ -12,7 +13,7 @@ namespace bb.Core.Commands
         /// Processes and executes Twitch chat commands from channel messages.
         /// </summary>
         /// <param name="sender">Event source object (typically TwitchClient instance)</param>
-        /// <param name="command">Event arguments containing command details and message context</param>
+        /// <param name="message">Event arguments containing command details and message context</param>
         /// <remarks>
         /// <list type="bullet">
         /// <item>Handles both standard commands and reply-based commands through ChatReply property</item>
@@ -30,55 +31,62 @@ namespace bb.Core.Commands
         /// </list>
         /// All exceptions are logged through the Console.Write system but don't interrupt bot operation.
         /// </remarks>
-
-        public static async void Twitch(object sender, OnChatCommandReceivedArgs command)
+        public static async void Twitch(object sender, OnMessageReceivedArgs message)
         {
             try
             {
-                string CommandName = command.Command.CommandText;
-                List<string> CommandArguments = command.Command.ArgumentsAsList;
-                string CommandArgumentsAsString = command.Command.ArgumentsAsString;
-
-                if (CommandName == string.Empty && CommandArguments.Count > 0)
+                if (!message.ChatMessage.Message.StartsWith(bb.Bot.DataBase.Channels.GetCommandPrefix(PlatformsEnum.Twitch, message.ChatMessage.RoomId)))
                 {
-                    CommandName = CommandArguments[0];
-                    CommandArguments = CommandArguments.Skip(1).ToList();
-                    CommandArgumentsAsString = string.Join(" ", CommandArguments);
+                    return;
                 }
-                else if (CommandName == string.Empty && CommandArguments.Count == 0)
+
+                string trimmedMessage = message.ChatMessage.Message.Replace("\u2063", "").Substring(bb.Bot.DataBase.Channels.GetCommandPrefix(PlatformsEnum.Twitch, message.ChatMessage.RoomId).Length);
+                string[] parts = trimmedMessage.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                string commandName = parts.Length > 0 ? parts[0] : string.Empty;
+                List<string> commandArguments = parts.Length > 1 ? parts.Skip(1).ToList() : new List<string>();
+                string commandArgumentsAsString = string.Join(" ", commandArguments);
+
+                if (string.IsNullOrEmpty(commandName) && commandArguments.Count > 0)
+                {
+                    commandName = commandArguments[0];
+                    commandArguments = commandArguments.Skip(1).ToList();
+                    commandArgumentsAsString = string.Join(" ", commandArguments);
+                }
+                else if (string.IsNullOrEmpty(commandName) && commandArguments.Count == 0)
                 {
                     return;
                 }
 
                 UserData user = new()
                 {
-                    ID = command.Command.ChatMessage.UserId,
-                    Language = "en",
-                    Name = command.Command.ChatMessage.Username,
-                    IsModerator = command.Command.ChatMessage.IsModerator,
-                    IsBroadcaster = command.Command.ChatMessage.IsBroadcaster
+                    ID = message.ChatMessage.UserId,
+                    Language = "en-US",
+                    Name = message.ChatMessage.Username,
+                    IsModerator = message.ChatMessage.IsModerator,
+                    IsBroadcaster = message.ChatMessage.IsBroadcaster
                 };
 
                 CommandData data = new()
                 {
-                    Name = CommandName.ToLower(),
-                    Arguments = CommandArguments,
-                    ArgumentsString = CommandArgumentsAsString,
-                    Channel = command.Command.ChatMessage.Channel,
-                    ChannelId = command.Command.ChatMessage.RoomId,
-                    MessageID = command.Command.ChatMessage.Id,
+                    Name = commandName.ToLower(),
+                    Arguments = commandArguments,
+                    ArgumentsString = commandArgumentsAsString,
+                    Channel = message.ChatMessage.Channel,
+                    ChannelId = message.ChatMessage.RoomId,
+                    MessageID = message.ChatMessage.Id,
                     Platform = PlatformsEnum.Twitch,
                     User = user,
-                    TwitchArguments = command,
+                    TwitchMessage = message,
                     CommandInstanceID = Guid.NewGuid().ToString()
                 };
 
-                if (command.Command.ChatMessage.ChatReply != null)
+                if (message.ChatMessage.ChatReply != null)
                 {
-                    string[] trimedReplyText = command.Command.ChatMessage.ChatReply.ParentMsgBody.Split(' ');
-                    data.Arguments.AddRange(trimedReplyText);
-                    data.ArgumentsString = data.ArgumentsString + command.Command.ChatMessage.ChatReply.ParentMsgBody;
+                    string[] replyParts = message.ChatMessage.ChatReply.ParentMsgBody.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                    data.Arguments.AddRange(replyParts);
+                    data.ArgumentsString += " " + message.ChatMessage.ChatReply.ParentMsgBody;
                 }
+
                 await Runner.Run(data);
             }
             catch (Exception ex)
@@ -121,7 +129,7 @@ namespace bb.Core.Commands
                 UserData user = new()
                 {
                     ID = command.User.Id.ToString(),
-                    Language = "en",
+                    Language = "en-US",
                     Name = command.User.Username
                 };
                 Guid RequestUuid = Guid.NewGuid();
@@ -186,7 +194,12 @@ namespace bb.Core.Commands
         {
             try
             {
-                string CommandName = message.Content.Split(' ')[0].TrimStart(bb.Bot.DefaultExecutor);
+                if (!message.Content.StartsWith(bb.Bot.DataBase.Channels.GetCommandPrefix(PlatformsEnum.Discord, ((SocketGuildChannel)message.Channel).Guild.Id.ToString())))
+                {
+                    return;
+                }
+
+                string CommandName = message.Content.Split(' ')[0].Substring(bb.Bot.DataBase.Channels.GetCommandPrefix(PlatformsEnum.Discord, ((SocketGuildChannel)message.Channel).Guild.Id.ToString()).Length);
                 List<string> CommandArguments = message.Content.Split(' ').Skip(1).ToList();
                 string CommandArgumentsAsString = string.Join(' ', CommandArguments);
 
@@ -204,7 +217,7 @@ namespace bb.Core.Commands
                 UserData user = new()
                 {
                     ID = message.Author.Id.ToString(),
-                    Language = "en",
+                    Language = "en-US",
                     Name = message.Author.Username
                 };
 
@@ -253,10 +266,15 @@ namespace bb.Core.Commands
         {
             try
             {
+                if (message.Text == null || !message.Text.StartsWith(bb.Bot.DataBase.Channels.GetCommandPrefix(PlatformsEnum.Telegram, message.Chat.Id.ToString())))
+                {
+                    return;
+                }
+
                 UserData user = new()
                 {
                     ID = message.From.Id.ToString(),
-                    Language = "en",
+                    Language = "en-US",
                     Name = message.From.Username ?? message.From.FirstName,
                     IsModerator = false,
                     IsBroadcaster = message.From.Id == message.Chat.Id
@@ -265,7 +283,7 @@ namespace bb.Core.Commands
                 Guid command_execution_uid = Guid.NewGuid();
                 CommandData data = new()
                 {
-                    Name = message.Text.ToLower().Split(' ')[0].TrimStart(bb.Bot.DefaultExecutor),
+                    Name = message.Text.ToLower().Split(' ')[0].Substring(bb.Bot.DataBase.Channels.GetCommandPrefix(PlatformsEnum.Telegram, message.Chat.Id.ToString()).Length),
                     Arguments = message.Text.Split(' ').Skip(1).ToList(),
                     ArgumentsString = string.Join(" ", message.Text.Split(' ').Skip(1)),
                     Channel = message.Chat.Title ?? message.Chat.Username ?? message.Chat.Id.ToString(),

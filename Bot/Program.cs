@@ -5,13 +5,14 @@ using bb.Events;
 using bb.Models;
 using bb.Models.DataBase;
 using bb.Services.External;
-using bb.Services.System;
+using bb.Services.Internal;
 using bb.Utils;
 using bb.Workers;
 using DankDB;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
+using feels.Dank.Cache.LRU;
 using Microsoft.Extensions.DependencyInjection;
 using Pastel;
 using System.Collections.Concurrent;
@@ -40,13 +41,13 @@ namespace bb
     {
         #region Variables
         #region Core
-        public static Version Version = new Version("2.18.0.7");
+        public static Version Version = new Version("2.18.0.8");
         public static DateTime StartTime = new();
         public static string PreviousVersion = "";
         public static bool Initialized = false;
         public static bool Connected => Clients.Twitch?.IsConnected == true && Clients.Discord?.ConnectionState == Discord.ConnectionState.Connected;
-        public static string? BotName;
-        public static char DefaultExecutor = '#';
+        public static string? Name;
+        public static char DefaultCommandPrefix = '#';
         private static bool SkipFetch = false;
         #endregion Core
 
@@ -57,7 +58,6 @@ namespace bb
         public static decimal Coins = 0;
         public static int CurrencyMentioned = 8;
         public static int CurrencyMentioner = 2;
-        public static string CoinSymbol = "BTR";
         #endregion Currency
 
         #region Hosting
@@ -729,13 +729,13 @@ namespace bb
                     {
                         foreach (string channel in TwitchNewVersionAnnounce)
                         {
-                            PlatformMessageSender.TwitchSend(UsernameResolver.GetUsername(channel, PlatformsEnum.Twitch, true), $"{Bot.BotName} v.{Bot.PreviousVersion} > v.{Bot.Version}", channel, "", "en-US", true);
+                            PlatformMessageSender.TwitchSend(UsernameResolver.GetUsername(channel, PlatformsEnum.Twitch, true), $"{Bot.Name} v.{Bot.PreviousVersion} > v.{Bot.Version}", channel, "", "en-US", true);
                         }
                     }
 
                     foreach (string channel in Bot.TwitchConnectAnnounce)
                     {
-                        PlatformMessageSender.TwitchSend(UsernameResolver.GetUsername(channel, PlatformsEnum.Twitch, true), $"{Bot.BotName} Started in {(long)(ConnectedIn).TotalMilliseconds} ms!", channel, "", "en-US", true);
+                        PlatformMessageSender.TwitchSend(UsernameResolver.GetUsername(channel, PlatformsEnum.Twitch, true), $"{Bot.Name} Started in {(long)(ConnectedIn).TotalMilliseconds} ms!", channel, "", "en-US", true);
                     }
                 });
 
@@ -764,7 +764,7 @@ namespace bb
         /// </remarks>
         private static void ConnectToTwitch()
         {
-            ConnectionCredentials credentials = new ConnectionCredentials(BotName, "oauth:" + Tokens.Twitch.AccessToken);
+            ConnectionCredentials credentials = new ConnectionCredentials(Name, "oauth:" + Tokens.Twitch.AccessToken);
             ClientOptions client_options = new ClientOptions
             {
                 MessagesAllowedInPeriod = 750,
@@ -773,7 +773,7 @@ namespace bb
             };
             WebSocketClient webSocket_client = new WebSocketClient(client_options);
             Clients.Twitch = new TwitchClient(webSocket_client);
-            Clients.Twitch.Initialize(credentials, BotName, DefaultExecutor);
+            Clients.Twitch.Initialize(credentials, Name);
             Clients.TwitchAPI = new TwitchAPI();
             Clients.TwitchAPI.Settings.AccessToken = Tokens.Twitch.AccessToken;
             Clients.TwitchAPI.Settings.ClientId = TwitchClientId;
@@ -781,7 +781,7 @@ namespace bb
 
             #region Events subscription
             Clients.Twitch.OnJoinedChannel += TwitchEvents.OnJoin;
-            Clients.Twitch.OnChatCommandReceived += Core.Commands.Executor.Twitch;
+            Clients.Twitch.OnMessageReceived += Core.Commands.Executor.Twitch;
             Clients.Twitch.OnMessageReceived += TwitchEvents.OnMessageReceived;
             Clients.Twitch.OnMessageThrottled += TwitchEvents.OnMessageThrottled;
             Clients.Twitch.OnMessageSent += TwitchEvents.OnMessageSend;
@@ -810,7 +810,7 @@ namespace bb
 
             JoinTwitchChannels();
 
-            Clients.Twitch.SendMessage(BotName.ToLower(), "truckCrash Connecting to twitch...");
+            Clients.Twitch.SendMessage(Name.ToLower(), "truckCrash Connecting to twitch...");
 
             Write("Twitch is ready.", "initialization");
         }
@@ -941,7 +941,7 @@ namespace bb
                 }
 
                 Clients.Twitch.SetConnectionCredentials(
-                    new ConnectionCredentials(BotName, Tokens.Twitch.AccessToken)
+                    new ConnectionCredentials(Name, Tokens.Twitch.AccessToken)
                 );
 
                 try
@@ -949,7 +949,7 @@ namespace bb
                     Clients.Twitch.Connect();
                     JoinTwitchChannels();
                     Write("The token has been updated and the connection has been restored", "core");
-                    PlatformMessageSender.TwitchSend(Bot.BotName, $"sillyCatThinks Token refreshed", "", "", "en-US", true);
+                    PlatformMessageSender.TwitchSend(Bot.Name, $"sillyCatThinks Token refreshed", "", "", "en-US", true);
                 }
                 catch (Exception ex)
                 {

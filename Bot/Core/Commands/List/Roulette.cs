@@ -65,7 +65,7 @@ namespace bb.Core.Commands.List
                                 "error:roulette_not_enough_coins",
                                 data.ChannelId,
                                 data.Platform,
-                                Utils.CurrencyManager.GetBalance(data.User.ID, data.Platform).ToString() + " " + bb.Bot.CoinSymbol));
+                                Utils.CurrencyManager.GetBalance(data.User.ID, data.Platform).ToString()));
                         else
                         {
                             int moves = new Random().Next(38, 380);
@@ -91,7 +91,7 @@ namespace bb.Core.Commands.List
                                     data.Platform,
                                     result_symbol,
                                     result.ToString(),
-                                    win.ToString() + " " + bb.Bot.CoinSymbol,
+                                    win.ToString(),
                                     multipliers[result_symbol].ToString()));
                             }
                             else
@@ -104,7 +104,7 @@ namespace bb.Core.Commands.List
                                     data.Platform,
                                     result_symbol,
                                     result.ToString(),
-                                    bid.ToString() + " " + bb.Bot.CoinSymbol));
+                                    bid.ToString()));
                             }
                         }
                     }
@@ -117,7 +117,7 @@ namespace bb.Core.Commands.List
                         "error:not_enough_arguments",
                         data.ChannelId,
                         data.Platform,
-                        $"{bb.Bot.DefaultExecutor}roulette [🟩/🟥/⬛] [{LocalizationService.GetString(data.User.Language, "text:bid", data.ChannelId, data.Platform)}]"));
+                        $"{bb.Bot.DefaultCommandPrefix}roulette [🟩/🟥/⬛] [{LocalizationService.GetString(data.User.Language, "text:bid", data.ChannelId, data.Platform)}]"));
             }
             catch (Exception e)
             {

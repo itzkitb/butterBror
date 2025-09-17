@@ -85,7 +85,7 @@ namespace bb.Core.Commands.List
                     {
                         if (data.Arguments.Count < 2 || data.Arguments.IndexOf("gift") >= data.Arguments.Count - 1)
                         {
-                            commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:not_enough_arguments", data.ChannelId, data.Platform, $"{bb.Bot.DefaultExecutor}cookie gift username"));
+                            commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:not_enough_arguments", data.ChannelId, data.Platform, $"{bb.Bot.DefaultCommandPrefix}cookie gift username"));
                             return commandReturn;
                         }
 

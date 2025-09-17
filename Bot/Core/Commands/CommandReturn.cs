@@ -66,7 +66,7 @@ namespace bb.Core.Commands
         /// </remarks>
         public CommandReturn()
         {
-            Message = "PauseChamp Empty result. Report that to @ItzKITb";
+            Message = "🪁 | Empty result | Report that to @ItzKITb";
             IsSafe = false;
             Description = string.Empty;
             Author = string.Empty;

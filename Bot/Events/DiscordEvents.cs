@@ -55,7 +55,7 @@ namespace bb.Events
                 if (message == null || message.Author.IsBot) return;
 
                 int argPos = 0;
-                if (message.HasCharPrefix(Bot.DefaultExecutor, ref argPos))
+                if (message.HasCharPrefix(Bot.DefaultCommandPrefix, ref argPos))
                 {
                     var context = new SocketCommandContext(Bot.Clients.Discord, message);
                     var result = await Bot.DiscordCommandService.ExecuteAsync(context, argPos, Bot.DiscordServiceProvider);

@@ -56,7 +56,7 @@ namespace bb.Core.Commands.List
                 }
                 else
                 {
-                    if (name == bb.Bot.BotName.ToLower())
+                    if (name == bb.Bot.Name.ToLower())
                     {
                         commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:first_global_line:bot", data.ChannelId, data.Platform));
                     }

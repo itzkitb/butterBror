@@ -78,7 +78,7 @@ namespace bb.Events
 
         public static void OnSuspended(object s, OnSuspendedArgs e)
         {
-            PlatformMessageSender.TwitchSend(Bot.BotName, $"What #{e.Channel} suspended", "", "", "en-US", true);
+            PlatformMessageSender.TwitchSend(Bot.Name, $"What #{e.Channel} suspended", "", "", "en-US", true);
             Write($"Twitch - #{e.Channel} suspended", "err");
         }
 
@@ -178,7 +178,7 @@ namespace bb.Events
 
         public static void OnError(object s, OnErrorEventArgs e)
         {
-            PlatformMessageSender.TwitchSend(Bot.BotName, $"DeadAss TwitchLib error: {e.Exception.Message}", "", "", "en-US", true);
+            PlatformMessageSender.TwitchSend(Bot.Name, $"DeadAss TwitchLib error: {e.Exception.Message}", "", "", "en-US", true);
             Write($"Twitch - Library error! {e.Exception.Message}", "info", LogLevel.Error);
         }
 
@@ -208,11 +208,11 @@ namespace bb.Events
             {
                 await Task.Delay(1000);
 
-                PlatformMessageSender.TwitchSend(Bot.BotName, $"BREAKDANCECAT Reconnected", UsernameResolver.GetUserID(Bot.BotName, PlatformsEnum.Twitch, true), "", "en-US", true);
+                PlatformMessageSender.TwitchSend(Bot.Name, $"BREAKDANCECAT Reconnected", UsernameResolver.GetUserID(Bot.Name, PlatformsEnum.Twitch, true), "", "en-US", true);
 
                 foreach (string channel in Bot.TwitchReconnectAnnounce)
                 {
-                    PlatformMessageSender.TwitchSend(UsernameResolver.GetUsername(channel, PlatformsEnum.Twitch, true), $"{Bot.BotName} Reconnected!", channel, "", "en-US", true);
+                    PlatformMessageSender.TwitchSend(UsernameResolver.GetUsername(channel, PlatformsEnum.Twitch, true), $"{Bot.Name} Reconnected!", channel, "", "en-US", true);
                 }
             });
         }
@@ -273,7 +273,7 @@ namespace bb.Events
             try
             {
                 Write($"Twitch - Bot was banned in channel #{e.Channel}!", "info");
-                PlatformMessageSender.TwitchSend(Bot.BotName, $"DeadAss Bot was banned in channel #{e.Channel}!", "", "", "en-US", true);
+                PlatformMessageSender.TwitchSend(Bot.Name, $"DeadAss Bot was banned in channel #{e.Channel}!", "", "", "en-US", true);
 
                 string[] channels = Manager.Get<string[]>(Bot.Paths.Settings, "channels");
                 List<string> list = new();

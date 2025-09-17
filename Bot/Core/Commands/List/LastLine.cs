@@ -40,7 +40,7 @@ namespace bb.Core.Commands.List
                     var userId = UsernameResolver.GetUserID(name, PlatformsEnum.Twitch, true);
                     var message = userId is null ? null : bb.Bot.DataBase.Messages.GetMessage(data.Platform, data.ChannelId, DataConversion.ToLong(userId), 0);
 
-                    if (message != null && userId != null && name != bb.Bot.BotName.ToLower())
+                    if (message != null && userId != null && name != bb.Bot.Name.ToLower())
                     {
                         if (name == data.User.Name.ToLower())
                         {
@@ -76,7 +76,7 @@ namespace bb.Core.Commands.List
                                 TextSanitizer.FormatTimeSpan(Utils.DataConversion.GetTimeTo(message.messageDate, DateTime.Now, false), data.User.Language)));
                         }
                     }
-                    else if (name != bb.Bot.BotName.ToLower())
+                    else if (name != bb.Bot.Name.ToLower())
                     {
                         commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:last_line:bot", data.ChannelId, data.Platform));
                     }

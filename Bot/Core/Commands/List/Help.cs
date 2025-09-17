@@ -52,9 +52,9 @@ namespace bb.Core.Commands.List
                             {
                                 num++;
                                 if (num < numWithoutComma)
-                                    aliasesList += $"{bb.Bot.DefaultExecutor}{alias}, ";
+                                    aliasesList += $"{bb.Bot.DefaultCommandPrefix}{alias}, ";
                                 else if (num == numWithoutComma)
-                                    aliasesList += $"{bb.Bot.DefaultExecutor}{alias}";
+                                    aliasesList += $"{bb.Bot.DefaultCommandPrefix}{alias}";
                             }
                             commandReturn.SetMessage(LocalizationService.GetString(
                                 data.User.Language,

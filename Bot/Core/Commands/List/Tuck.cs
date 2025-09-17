@@ -49,7 +49,7 @@ namespace bb.Core.Commands.List
                             isSelectedUserIsNotIgnored = !(bb.Bot.DataBase.Roles.GetIgnoredUser(data.Platform, DataConversion.ToLong(data.User.ID)) is not null);
                     }
                     catch (Exception) { }
-                    if (username.ToLower() == bb.Bot.BotName.ToLower())
+                    if (username.ToLower() == bb.Bot.Name.ToLower())
                     {
                         commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:tuck:bot", data.ChannelId, data.Platform));
                         commandReturn.SetColor(ChatColorPresets.CadetBlue);
