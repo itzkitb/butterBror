@@ -8,7 +8,7 @@ namespace bb.Models
     {
         public required string Name { set; get; }
         public List<string>? Arguments { get; set; }
-        public OnChatCommandReceivedArgs? TwitchArguments { get; set; }
+        public OnMessageReceivedArgs? TwitchMessage { get; set; }
         public Dictionary<string, dynamic>? DiscordArguments { get; set; }
         public string MessageID { get; set; }
         public string? Channel { get; set; }

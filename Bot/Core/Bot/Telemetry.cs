@@ -1,7 +1,7 @@
 ﻿using bb.Core.Commands;
 using bb.Models;
 using bb.Services.External;
-using bb.Services.System;
+using bb.Services.Internal;
 using bb.Utils;
 using DankDB;
 using System.Diagnostics;
@@ -120,7 +120,7 @@ namespace bb.Core.Bot
                     MessageID = "a123456789",
                     Platform = PlatformsEnum.Telegram,
                     User = user,
-                    TwitchArguments = new TwitchLib.Client.Events.OnChatCommandReceivedArgs(),
+                    TwitchMessage = new TwitchLib.Client.Events.OnMessageReceivedArgs(),
                     CommandInstanceID = Guid.NewGuid().ToString()
                 };
 
@@ -137,7 +137,7 @@ namespace bb.Core.Bot
 
                 long memory = Process.GetCurrentProcess().PrivateMemorySize64 / (1024 * 1024);
 
-                PlatformMessageSender.TwitchSend(bb.Bot.BotName.ToLower(), $"/me glorp 📡 | " +
+                PlatformMessageSender.TwitchSend(bb.Bot.Name.ToLower(), $"/me glorp 📡 | " +
                     $"🕒 {TextSanitizer.FormatTimeSpan(DateTime.Now - bb.Bot.StartTime, "en-US")} | " +
                     $"{memory}Mbyte | " +
                     $"🔋 {Battery.GetBatteryCharge()}% {(Battery.IsCharging() ? "(Charging) " : "")}| " +

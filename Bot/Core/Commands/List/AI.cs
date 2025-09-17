@@ -48,7 +48,7 @@ namespace bb.Core.Commands.List
                     if (Utils.CurrencyManager.GetBalance(data.User.ID, data.Platform) + Utils.CurrencyManager.GetSubbalance(data.User.ID, data.Platform) / 100f >= coins + subcoins / 100f)
                     {
                         if (data.Arguments.Count < 1)
-                            commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:not_enough_arguments", data.ChannelId, data.Platform, $"{bb.Bot.DefaultExecutor}ai model:qwen Hello!"));
+                            commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:not_enough_arguments", data.ChannelId, data.Platform, $"{bb.Bot.DefaultCommandPrefix}ai model:qwen Hello!"));
                         else
                         {
                             Utils.CurrencyManager.Add(data.User.ID, coins, subcoins, data.Platform);

@@ -2,7 +2,7 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
-namespace bb.Services.System
+namespace bb.Services.Internal
 {
     /// <summary>
     /// Provides platform-specific methods to retrieve system memory information and conversion utilities.

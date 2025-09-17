@@ -228,7 +228,7 @@ namespace bb.Core.Commands.List
                                 "error:not_enough_arguments",
                                 data.ChannelId,
                                 data.Platform,
-                                $"{bb.Bot.DefaultExecutor}frog gift [user] [frogs]"));
+                                $"{bb.Bot.DefaultCommandPrefix}frog gift [user] [frogs]"));
                             commandReturn.SetColor(ChatColorPresets.Red);
                         }
                     }
@@ -387,7 +387,7 @@ namespace bb.Core.Commands.List
                 }
                 else
                 {
-                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:not_enough_arguments", data.ChannelId, data.Platform, $"{bb.Bot.DefaultExecutor}frog {HelpArguments}"));
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:not_enough_arguments", data.ChannelId, data.Platform, $"{bb.Bot.DefaultCommandPrefix}frog {HelpArguments}"));
                     commandReturn.SetColor(ChatColorPresets.Red);
                 }
             }

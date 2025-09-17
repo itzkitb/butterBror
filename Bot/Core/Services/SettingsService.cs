@@ -38,7 +38,7 @@ namespace bb.Core.Services
             Manager.Save(path, "telegram_token", "");
             Manager.Save(path, "twitch_version_message_channels", Array.Empty<string>());
             Manager.Save(path, "7tv_token", "");
-            Manager.Save(path, "coin_symbol", "\U0001f96a");
+            Manager.Save(path, "prefix", "#");
             Manager.Save(path, "currency_mentioned_payment", 8);
             Manager.Save(path, "currency_mentioner_payment", 2);
             Manager.Save(path, "dashboard_password", "6FF8E2CF58249F757ECEE669C6CB015A1C1F44552442B364C8A388B0BDB1322A7AF6B67678D9206378D8969FFEC48263C9AB3167D222C80486FC848099535568"); //bbAdmin
@@ -52,7 +52,7 @@ namespace bb.Core.Services
         /// <item>Reads all configuration parameters from the settings file</item>
         /// <item>Maps stored values to corresponding bot properties and services</item>
         /// <item>Handles multiple data types including strings, arrays, and dictionaries</item>
-        /// <item>Converts executor character from string representation</item>
+        /// <item>Converts prefix character from string representation</item>
         /// <item>Initializes token managers with loaded credentials</item>
         /// </list>
         /// Critical initialization step that must complete successfully before platform connections.
@@ -63,7 +63,7 @@ namespace bb.Core.Services
         public static void Load()
         {
             string settingsPath = bb.Bot.Paths.Settings;
-            bb.Bot.BotName = Manager.Get<string>(settingsPath, "bot_name");
+            bb.Bot.Name = Manager.Get<string>(settingsPath, "bot_name");
             bb.Bot.TwitchReconnectAnnounce = Manager.Get<string[]>(settingsPath, "twitch_reconnect_message_channels");
             bb.Bot.TwitchConnectAnnounce = Manager.Get<string[]>(settingsPath, "twitch_connect_message_channels");
             bb.Bot.Tokens.Discord = Manager.Get<string>(settingsPath, "discord_token");
@@ -74,10 +74,9 @@ namespace bb.Core.Services
             bb.Bot.TwitchNewVersionAnnounce = Manager.Get<string[]>(settingsPath, "twitch_version_message_channels");
             bb.Bot.Tokens.SevenTV = Manager.Get<string>(settingsPath, "7tv_token");
             bb.Bot.UsersSevenTVIDs = Manager.Get<Dictionary<string, string>>(settingsPath, "Ids");
-            bb.Bot.CoinSymbol = Manager.Get<string>(settingsPath, "coin_symbol");
             bb.Bot.CurrencyMentioned = Manager.Get<int>(settingsPath, "currency_mentioned_payment");
             bb.Bot.CurrencyMentioner = Manager.Get<int>(settingsPath, "currency_mentioner_payment");
-            bb.Bot.DefaultExecutor = Convert.ToChar(Manager.Get<string>(settingsPath, "executor"));
+            bb.Bot.DefaultCommandPrefix = Convert.ToChar(Manager.Get<string>(settingsPath, "prefix"));
         }
     }
 }

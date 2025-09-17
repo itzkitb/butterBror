@@ -74,7 +74,7 @@ namespace bb.Core.Commands.List
                             if (flag) message_badges += LocalizationService.GetString(data.User.Language, symbol, data.ChannelId, data.Platform);
                         }
 
-                        if (!name.Equals(bb.Bot.BotName, StringComparison.CurrentCultureIgnoreCase))
+                        if (!name.Equals(bb.Bot.Name, StringComparison.CurrentCultureIgnoreCase))
                         {
                             commandReturn.SetMessage(LocalizationService.GetString(
                                 data.User.Language,

@@ -111,11 +111,8 @@ namespace bb.Events
                         cancellationToken: cancellation_token
                     );
                 }
-                else if (text.StartsWith(Bot.DefaultExecutor))
-                {
-                    text = text[1..];
-                    Executor.Telegram(message);
-                }
+
+                Executor.Telegram(message);
 
                 return;
             }

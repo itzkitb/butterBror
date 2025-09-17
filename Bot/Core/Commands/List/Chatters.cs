@@ -48,7 +48,7 @@ namespace bb.Core.Commands.List
                     {
                         var response = await bb.Bot.Clients.TwitchAPI.Helix.Chat.GetChattersAsync(
                             broadcasterId: UsernameResolver.GetUserID(targetChannel, PlatformsEnum.Twitch, true),
-                            moderatorId: UsernameResolver.GetUserID(bb.Bot.BotName, PlatformsEnum.Twitch, true),
+                            moderatorId: UsernameResolver.GetUserID(bb.Bot.Name, PlatformsEnum.Twitch, true),
                             first: 100,
                             after: cursor
                         );

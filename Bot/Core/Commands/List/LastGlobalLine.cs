@@ -52,7 +52,7 @@ namespace bb.Core.Commands.List
                         string lastChannel = (string)bb.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(userID), Users.LastChannel);
                         DateTime lastLineDate = DateTime.Parse((string)bb.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(userID), Users.LastSeen), null, DateTimeStyles.AdjustToUniversal);
 
-                        if (name == bb.Bot.BotName.ToLower())
+                        if (name == bb.Bot.Name.ToLower())
                         {
                             commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:last_global_line:bot", data.ChannelId, data.Platform));
                         }

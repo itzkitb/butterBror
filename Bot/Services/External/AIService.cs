@@ -92,7 +92,7 @@ namespace bb.Services.External
             var system_message = new Message
             {
                 role = "system",
-                content = $@"You are a chatbot on the platform: {PlatformsPathName.strings[(int)platform]}. Your name: {Bot.BotName}.
+                content = $@"You are a chatbot on the platform: {PlatformsPathName.strings[(int)platform]}. Your name: {Bot.Name}.
 {(generatingModels.Contains(model, StringComparer.OrdinalIgnoreCase) ? "\nForm a constructive message right while you think\n" : "")}
 CRITICAL RESTRICTIONS:
 - 50 WORDS MAXIMUM per response

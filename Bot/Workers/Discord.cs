@@ -66,10 +66,7 @@ namespace bb.Workers
                     ((SocketGuildChannel)message.Channel).Guild.Name,
                     ((SocketGuildChannel)message.Channel).Guild.Id.ToString());
 
-                if (message.Content.StartsWith(Bot.DefaultExecutor))
-                {
-                    Executor.Discord(message);
-                }
+                Executor.Discord(message);
             }
             catch (Exception ex)
             {

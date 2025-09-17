@@ -62,7 +62,7 @@ namespace bb.Core.Commands.List
                                 await Task.Delay(rand.Next(10000, 30000));
                             }
 
-                            var videos = YouTubeService.GetPlaylistVideos("https://www.youtube.com/playlist?list=PLAZUCud8HyO-9Ni4BSFkuBTOK8e3S5OLL");
+                            var videos = new YouTubeService(new HttpClient()).GetPlaylistVideosAsync("https://www.youtube.com/playlist?list=PLAZUCud8HyO-9Ni4BSFkuBTOK8e3S5OLL").Result;
                             int index = rand.Next(videos.Length);
                             string randomUrl = videos[index];
 

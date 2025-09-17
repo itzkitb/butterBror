@@ -126,7 +126,7 @@ namespace bb.Core.Commands
                     data.User.Ignored = bb.Bot.DataBase.Roles.IsIgnored(data.Platform, DataConversion.ToLong(data.User.ID));
 
                     if ((bool)data.User.IsBanned || (bool)data.User.Ignored ||
-                        (data.Platform is PlatformsEnum.Twitch && data.TwitchArguments.Command.ChatMessage.IsMe))
+                        (data.Platform is PlatformsEnum.Twitch && data.TwitchMessage.ChatMessage.IsMe))
                         return;
 
                     string language = (string)bb.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.Language);
