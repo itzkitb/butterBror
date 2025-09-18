@@ -1,4 +1,6 @@
 ﻿
+using Newtonsoft.Json;
+
 namespace bb.Models.AI
 {
     /// <summary>
@@ -9,11 +11,13 @@ namespace bb.Models.AI
         /// <summary>
         /// Gets or sets the role of the message sender (system/user/assistant).
         /// </summary>
-        public string role { get; set; }
+        [JsonProperty("role")]
+        public string Role { get; set; }
 
         /// <summary>
         /// Gets or sets the content of the message.
         /// </summary>
-        public string content { get; set; }
+        [JsonProperty("content")]
+        public string Content { get; set; }
     }
 }

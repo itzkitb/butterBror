@@ -50,11 +50,11 @@ namespace bb
 
             if (selectedInterface == null)
             {
-                Write("No active network interfaces available.", "dashboard");
+                Write("No active network interfaces available.");
                 Task.Delay(-1).Wait();
             }
 
-            Write($"Automatically selected network interface: {selectedInterface.Name} ({selectedInterface.Description})", "dashboard");
+            Write($"Automatically selected network interface: {selectedInterface.Name} ({selectedInterface.Description})");
         }
 
         private static NetworkInterface GetActiveNetworkInterface()
@@ -391,7 +391,7 @@ namespace bb
                     "Please run as administrator." :
                     "Please run with sudo (Linux/MacOS).";
 
-                Write($"Dashboard requires elevated privileges to run. {platformMessage}", "dashboard");
+                Write($"Dashboard requires elevated privileges to run. {platformMessage}");
                 return;
             }
 
@@ -406,7 +406,7 @@ namespace bb
             Listener.Prefixes.Add(Host + "/");
             Listener.Start();
             string localAddress = GetLocalIPAddress();
-            Write($"The web interface is running on {localAddress}:8080", "dashboard");
+            Write($"The web interface is running on {localAddress}:8080");
 
             timer = new Timer(_ =>
             {
@@ -461,7 +461,7 @@ namespace bb
                 }
                 catch (Exception ex)
                 {
-                    Write($"Error in dashboard timer: {ex.Message}", "dashboard");
+                    Write($"Error in dashboard timer: {ex.Message}");
                 }
             }, null, 0, 1000);
 
@@ -483,12 +483,11 @@ namespace bb
         /// Broadcasts as "log" event type to all connected SSE clients.
         /// Used by the bot's logging system to display real-time logs in the dashboard.
         /// </remarks>
-        public static void HandleLog(string message, string channel, LogLevel level)
+        public static void HandleLog(string message, LogLevel level)
         {
             var logData = new
             {
                 Time = DateTime.UtcNow.ToString("HH:mm:ss.FF"),
-                Channel = channel,
                 Message = message,
                 Level = level.ToString()
             };

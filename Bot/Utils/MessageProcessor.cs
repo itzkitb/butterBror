@@ -159,7 +159,7 @@ namespace bb.Utils
         {
             try
             {
-                Write($"Executed command {data.Name} (User: {data.User.Name}, full message: \"{data.Name} {data.ArgumentsString}\", arguments: \"{data.ArgumentsString}\", command: \"{data.Name}\")", "info");
+                Write($"Executed command {data.Name} (User: {data.User.Name}, full message: \"{data.Name} {data.ArgumentsString}\", arguments: \"{data.ArgumentsString}\", command: \"{data.Name}\")");
                 Bot.CompletedCommands++;
             }
             catch (Exception ex)

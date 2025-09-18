@@ -21,7 +21,7 @@ namespace bb.Core.Commands.List
         public override int CooldownPerChannel => 1;
         public override string[] Aliases => ["roulette", "r", "рулетка", "р"];
         public override string HelpArguments => "[select: \"🟩\", \"🟥\", \"⬛\"] [bid]";
-        public override DateTime CreationDate => DateTime.Parse("29/01/2025");
+        public override DateTime CreationDate => DateTime.Parse("2025-01-29T00:00:00.0000000Z");
         public override bool OnlyBotModerator => false;
         public override bool OnlyBotDeveloper => false;
         public override bool OnlyChannelModerator => false;

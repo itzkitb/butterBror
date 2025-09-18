@@ -36,7 +36,7 @@ namespace bb.Core.Commands.List
         public override int CooldownPerChannel => 10;
         public override string[] Aliases => ["weather", "погода", "wthr", "пгд", "пугода", "meteo"];
         public override string HelpArguments => "[location] | [action] [parameters]";
-        public override DateTime CreationDate => DateTime.Parse("07/04/2024");
+        public override DateTime CreationDate => DateTime.Parse("2024-07-04T00:00:00.0000000Z");
         public override bool OnlyBotModerator => false;
         public override bool OnlyBotDeveloper => false;
         public override bool OnlyChannelModerator => false;
@@ -417,7 +417,7 @@ namespace bb.Core.Commands.List
 
         private void LogError(CommandData data, string errorType, Exception ex)
         {
-            Write($"[{errorType}] Weather command error for user {data.User.Name}: {ex.Message}", "info");
+            Write($"[{errorType}] Weather command error for user {data.User.Name}: {ex.Message}");
             Write(ex);
         }
 

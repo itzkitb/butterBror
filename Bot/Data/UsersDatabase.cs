@@ -1,6 +1,7 @@
 ﻿using bb.Models;
 using bb.Models.DataBase;
 using Newtonsoft.Json.Linq;
+using SevenTV.Types.Rest;
 using System.Collections.Concurrent;
 using System.Data;
 using System.Data.SQLite;
@@ -312,6 +313,29 @@ namespace bb.Data
                         TotalMessagesLength INTEGER DEFAULT 0
                     );
                     CREATE INDEX IF NOT EXISTS idx_{tableName}_id ON [{tableName}](ID);";
+
+                        string[] columnsToAdd = {
+                            "LastHourlyReward TEXT DEFAULT '2000-01-01T00:00:00.0000000Z'",
+                            "LastDailyReward TEXT DEFAULT '2000-01-01T00:00:00.0000000Z'",
+                            "LastWeeklyReward TEXT DEFAULT '2000-01-01T00:00:00.0000000Z'",
+                            "LastMonthlyReward TEXT DEFAULT '2000-01-01T00:00:00.0000000Z'",
+                            "LastYearlyReward TEXT DEFAULT '2000-01-01T00:00:00.0000000Z'"
+                        };
+
+                        foreach (var column in columnsToAdd)
+                        {
+                            try
+                            {
+                                ExecuteNonQuery($"ALTER TABLE [{tableName}] ADD COLUMN {column}");
+                            }
+                            catch (SQLiteException ex)
+                            {
+                                if (!ex.Message.Contains("duplicate column name"))
+                                {
+                                    throw;
+                                }
+                            }
+                        }
 
                         string channelCountsTable = $"{tableName}_ChannelCounts";
                         string createChannelCountsTable = $@"
@@ -1151,7 +1175,8 @@ namespace bb.Data
                 "Balance", "AfterDotBalance", "Rating", "IsAFK", "AFKText", "AFKType", "Reminders", "LastCookie",
                 "GiftedCookies", "EatedCookies", "BuyedCookies", "Location", "Longitude", "Latitude", "Language",
                 "AFKStart", "AFKResume", "AFKResumeTimes", "LastUse", "GPTHistory", "WeatherResultLocations",
-                "TotalMessages", "TotalMessagesLength"
+                "TotalMessages", "TotalMessagesLength", "LastHourlyReward", "LastDailyReward", "LastWeeklyReward",
+                "LastMonthlyReward", "LastYearlyReward"
             };
             if (!validColumns.Contains(columnName))
             {

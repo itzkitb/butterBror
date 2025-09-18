@@ -1,4 +1,6 @@
 ﻿
+using Newtonsoft.Json;
+
 namespace bb.Models.AI
 {
     /// <summary>
@@ -9,6 +11,7 @@ namespace bb.Models.AI
         /// <summary>
         /// Gets or sets the list of response choices from the AI model.
         /// </summary>
-        public List<Choice> choices { get; set; }
+        [JsonProperty("choices")]
+        public List<Choice> Choices { get; set; }
     }
 }

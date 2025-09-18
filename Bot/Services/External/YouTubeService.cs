@@ -57,8 +57,7 @@ namespace bb.Services.External
                         }
                         catch (HttpRequestException ex)
                         {
-                            Write($"YouTube API request failed (attempt {i + 1}/{MaxRetries}): {ex.Message}",
-                                  "YouTubeService", LogLevel.Warning);
+                            Write($"YouTube API request failed (attempt {i + 1}/{MaxRetries}): {ex.Message}", LogLevel.Warning);
 
                             if (i == MaxRetries - 1)
                             {

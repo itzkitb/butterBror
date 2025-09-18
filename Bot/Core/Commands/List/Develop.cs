@@ -22,7 +22,7 @@ namespace bb.Core.Commands.List
         public override int CooldownPerChannel => 0;
         public override string[] Aliases => ["run", "code", "csharp", "dev"];
         public override string HelpArguments => "[crap code]";
-        public override DateTime CreationDate => DateTime.Parse("26/09/2024");
+        public override DateTime CreationDate => DateTime.Parse("2024-09-26T00:00:00.0000000Z");
         public override bool OnlyBotModerator => false;
         public override bool OnlyBotDeveloper => true;
         public override bool OnlyChannelModerator => false;

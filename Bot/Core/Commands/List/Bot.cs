@@ -25,7 +25,7 @@ namespace bb.Core.Commands.List
         public override int CooldownPerChannel => 5;
         public override string[] Aliases => ["bot", "bt", "бот", "бт", "main", "start", "старт", "главная", "info", "инфо", "information", "информация"];
         public override string HelpArguments => "(lang (set [en/ru]), verify, currency (adddollars [int]), ban [username] (reason), pardon [username], rejoinchannel [channel], addchannel [channel], delchannel [channel], joinchannel [channel], leavechannel [channel], modadd [username], demod [username])";
-        public override DateTime CreationDate => DateTime.Parse("07/04/2024");
+        public override DateTime CreationDate => DateTime.Parse("2024-07-04T00:00:00.0000000Z");
         public override bool OnlyBotModerator => false;
         public override bool OnlyBotDeveloper => false;
         public override bool OnlyChannelModerator => false;
@@ -126,7 +126,7 @@ namespace bb.Core.Commands.List
                     }
                     else if (inviteAlias.Contains(argumentOne, StringComparer.OrdinalIgnoreCase))
                     {
-                        Write($"Request to add a bot from @{data.User.Name}", "info");
+                        Write($"Request to add a bot from @{data.User.Name}");
                         Dictionary<string, dynamic> userData = new()
                             {
                                 { "language", data.User.Language },

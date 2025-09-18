@@ -23,7 +23,7 @@ namespace bb.Events
 
         public static void OnConnected(object sender, OnConnectedArgs e)
         {
-            Write("Twitch - Connected!", "info");
+            Write("Twitch - Connected!");
         }
 
         /// <summary>
@@ -34,7 +34,7 @@ namespace bb.Events
 
         public static void OnMessageSend(object s, OnMessageSentArgs e)
         {
-            Write($"Twitch - Message sent to #{e.SentMessage.Channel}: \"{e.SentMessage.Message}\"", "info");
+            Write($"Twitch - Message sent to #{e.SentMessage.Channel}: \"{e.SentMessage.Message}\"");
         }
 
         /// <summary>
@@ -45,7 +45,7 @@ namespace bb.Events
 
         public static void OnMessageThrottled(object s, OnMessageThrottledEventArgs e)
         {
-            Write($"Twitch - Message not sent! \"{e.Message}\" ", "err");
+            Write($"Twitch - Message not sent! \"{e.Message}\" ");
         }
 
         /// <summary>
@@ -79,7 +79,7 @@ namespace bb.Events
         public static void OnSuspended(object s, OnSuspendedArgs e)
         {
             PlatformMessageSender.TwitchSend(Bot.Name, $"What #{e.Channel} suspended", "", "", "en-US", true);
-            Write($"Twitch - #{e.Channel} suspended", "err");
+            Write($"Twitch - #{e.Channel} suspended");
         }
 
         /// <summary>
@@ -156,7 +156,7 @@ namespace bb.Events
 
         public static void OnIncorrectLogin(object s, OnIncorrectLoginArgs e)
         {
-            Write("Twitch - Incorrect login!", "info", LogLevel.Error);
+            Write("Twitch - Incorrect login!", LogLevel.Error);
         }
 
         /// <summary>
@@ -179,7 +179,7 @@ namespace bb.Events
         public static void OnError(object s, OnErrorEventArgs e)
         {
             PlatformMessageSender.TwitchSend(Bot.Name, $"DeadAss TwitchLib error: {e.Exception.Message}", "", "", "en-US", true);
-            Write($"Twitch - Library error! {e.Exception.Message}", "info", LogLevel.Error);
+            Write($"Twitch - Library error! {e.Exception.Message}", LogLevel.Error);
         }
 
         /// <summary>
@@ -190,7 +190,7 @@ namespace bb.Events
 
         public static void OnLeftChannel(object s, OnLeftChannelArgs e)
         {
-            Write($"Twitch - Succeful leaved from #{e.Channel}", "info");
+            Write($"Twitch - Succeful leaved from #{e.Channel}");
         }
 
         /// <summary>
@@ -201,7 +201,7 @@ namespace bb.Events
 
         public static void OnReconnected(object s, OnReconnectedEventArgs e)
         {
-            Write("Twitch - Reconnected!", "info");
+            Write("Twitch - Reconnected!");
             Bot.JoinTwitchChannels();
 
             _ = Task.Run(async () =>
@@ -225,7 +225,7 @@ namespace bb.Events
 
         public static void OnTwitchDisconnected(object s, OnDisconnectedEventArgs e)
         {
-            Write("Twitch - Disconnected!", "info");
+            Write("Twitch - Disconnected!");
             Bot.RefreshTwitchTokenAsync().Wait();
         }
 
@@ -272,7 +272,7 @@ namespace bb.Events
         {
             try
             {
-                Write($"Twitch - Bot was banned in channel #{e.Channel}!", "info");
+                Write($"Twitch - Bot was banned in channel #{e.Channel}!");
                 PlatformMessageSender.TwitchSend(Bot.Name, $"DeadAss Bot was banned in channel #{e.Channel}!", "", "", "en-US", true);
 
                 string[] channels = Manager.Get<string[]>(Bot.Paths.Settings, "channels");
@@ -300,7 +300,7 @@ namespace bb.Events
 
         public static void OnConnectionError(object s, OnConnectionErrorArgs e)
         {
-            Write($"Twitch - Connection error! \"{e.Error.Message}\"", "info", LogLevel.Error);
+            Write($"Twitch - Connection error! \"{e.Error.Message}\"", LogLevel.Error);
         }
 
         /// <summary>

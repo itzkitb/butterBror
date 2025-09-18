@@ -169,7 +169,7 @@ namespace bb.Core.Commands
                                         true, ChatColorPresets.Red);
                                 }
 
-                                Write($"Command failed: OBD check: {isOnlyBotDeveloper}; OBM check: {isOnlyBotModerator}; OCM check: {isOnlyChannelModerator}; Cooldown check: {cooldown};", "info", LogLevel.Warning);
+                                Write($"Command failed: OBD check: {isOnlyBotDeveloper}; OBM check: {isOnlyBotModerator}; OCM check: {isOnlyChannelModerator}; Cooldown check: {cooldown};", LogLevel.Warning);
                                 return;
                             }
 
@@ -211,7 +211,7 @@ namespace bb.Core.Commands
                             }
                             else
                             {
-                                Write("Result is null", "info", LogLevel.Warning);
+                                Write("Result is null", LogLevel.Warning);
                             }
                         }
                         finally
@@ -222,7 +222,7 @@ namespace bb.Core.Commands
 
                     if (!commandFounded)
                     {
-                        Write($"@{data.User.Name} (id: {data.User.ID}; message: {data.MessageID}; channel: {data.Channel} (id {data.ChannelId}); server: {TextSanitizer.CheckNull(data.Server)} (id {TextSanitizer.CheckNull(data.ServerID)})) tried unknown command: {commandName}", "info", LogLevel.Warning);
+                        Write($"@{data.User.Name} (id: {data.User.ID}; message: {data.MessageID}; channel: {data.Channel} (id {data.ChannelId}); server: {TextSanitizer.CheckNull(data.Server)} (id {TextSanitizer.CheckNull(data.ServerID)})) tried unknown command: {commandName}", LogLevel.Warning);
                     }
                 }
                 catch (Exception ex)
@@ -240,7 +240,7 @@ namespace bb.Core.Commands
                 finally
                 {
                     start.Stop();
-                    Write($"Command completed in {start.ElapsedMilliseconds}ms", "info");
+                    Write($"Command completed in {start.ElapsedMilliseconds}ms");
                 }
             });
         }

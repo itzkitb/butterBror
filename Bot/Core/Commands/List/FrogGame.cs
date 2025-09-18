@@ -332,8 +332,6 @@ namespace bb.Core.Commands.List
                                 long plusBalance = (long)price;
                                 long plusSubbalance = (long)((price - (double)plusBalance) * 100);
 
-                                Core.Bot.Console.Write($"P:{price};PB:{plusBalance};PS:{plusSubbalance}", "debug");
-
                                 CurrencyManager.Add(data.User.ID, plusBalance, plusSubbalance, data.Platform);
                                 bb.Bot.DataBase.Games.SetData("Frogs", data.Platform, DataConversion.ToLong(data.User.ID), "Frogs", balance - amount);
                                 commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:frog:sell:success", data.ChannelId, data.Platform, LocalizationService.GetPluralString(data.User.Language, "text:frog2", data.ChannelId, data.Platform, amount, amount), Math.Round(frogSellPriceBTR * amount, 2)));
@@ -365,8 +363,6 @@ namespace bb.Core.Commands.List
                             {
                                 long minusBalance = (long)price;
                                 long minusSubbalance = (long)((price - (double)minusBalance) * 100);
-
-                                Core.Bot.Console.Write($"P:{price};MB:{-minusBalance};MS:{-minusSubbalance}", "debug");
 
                                 CurrencyManager.Add(data.User.ID, -minusBalance, -minusSubbalance, data.Platform);
                                 bb.Bot.DataBase.Games.SetData("Frogs", data.Platform, DataConversion.ToLong(data.User.ID), "Frogs", balance + amount);

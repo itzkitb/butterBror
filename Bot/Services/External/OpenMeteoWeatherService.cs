@@ -99,7 +99,7 @@ namespace bb.Services.External
                 }
                 catch (Exception ex)
                 {
-                    Write($"Weather API request failed (attempt {i + 1}/{MaxRetries}): {ex.Message}", "OpenMeteoWeatherService", LogLevel.Warning);
+                    Write($"Weather API request failed (attempt {i + 1}/{MaxRetries}): {ex.Message}", LogLevel.Warning);
                     if (i == MaxRetries - 1)
                     {
                         throw new WeatherApiException("Failed to get weather data after multiple attempts", ex);
@@ -159,8 +159,7 @@ namespace bb.Services.External
                         }
                         catch (Exception ex)
                         {
-                            Write($"Location search failed (attempt {i + 1}/{MaxRetries}): {ex.Message}",
-                                  "OpenMeteoWeatherService", LogLevel.Warning);
+                            Write($"Location search failed (attempt {i + 1}/{MaxRetries}): {ex.Message}", LogLevel.Warning);
 
                             if (i == MaxRetries - 1)
                             {

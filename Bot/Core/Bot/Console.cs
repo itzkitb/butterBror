@@ -60,19 +60,13 @@ namespace bb.Core.Bot
         /// </remarks>
         public static void Write(
             string message,
-            string channel,
             LogLevel type = LogLevel.Info,
             [CallerFilePath] string filePath = "",
             [CallerLineNumber] int lineNumber = 0,
             [CallerMemberName] string memberName = "")
         {
-            #if RELEASE
-            if (channel == "debug") {
-                return;
-            }
-            #endif
-
             string logEntry = FormatLogEntry(filePath, lineNumber, memberName, type, message);
+            string fileName = Path.GetFileName(filePath) ?? "Unknown";
 
             try
             {
@@ -84,8 +78,8 @@ namespace bb.Core.Bot
                 Debug.WriteLine($"Failed to write log to file: {ex.Message}\n{ex.StackTrace}");
             }
 
-            System.Console.WriteLine($"{DateTime.Now.ToString("HH:mm:ss.FF").PadRight(11).Pastel("#666666")} [ {channel.Pastel("#ff7b42")} ] {message.Pastel("#bababa")}");
-            DashboardServer.HandleLog(message, channel, type);
+            System.Console.WriteLine($"{DateTime.Now.ToString("HH:mm:ss.FF").PadRight(11).Pastel("#666666")} [ {$"{fileName}:{lineNumber}".Pastel("#ff7b42")} ] {message.Pastel("#bababa")}");
+            DashboardServer.HandleLog(message, type);
         }
 
         /// <summary>
@@ -133,7 +127,7 @@ namespace bb.Core.Bot
             }
 
             System.Console.WriteLine($"{DateTime.Now.ToString("HH:mm:ss.FF").PadRight(11).Pastel("#666666")} [ {"errors".Pastel("#ff4f4f")} ] {logEntry.Pastel("#bababa")}");
-            DashboardServer.HandleLog(text, "errors", LogLevel.Error);
+            DashboardServer.HandleLog(text, LogLevel.Error);
         }
 
         /// <summary>
@@ -268,7 +262,8 @@ namespace bb.Core.Bot
             /// <summary>
             /// Error messages representing functional failures.
             /// </summary>
-            Error
+            Error,
+            Critical
         }
     }
 }
