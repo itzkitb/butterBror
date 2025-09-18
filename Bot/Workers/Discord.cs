@@ -27,7 +27,7 @@ namespace bb.Workers
         {
             try
             {
-                Write($"Discord - Connected as {Bot.Clients.Discord.CurrentUser}!", "info");
+                Write($"Discord - Connected as {Bot.Clients.Discord.CurrentUser}!");
             }
             catch (Exception ex)
             {
@@ -114,7 +114,7 @@ namespace bb.Workers
 
         private static async Task RegisterSlashCommands()
         {
-            Write("Discord - Updating commands...", "info");
+            Write("Discord - Updating commands...");
 
             await Bot.Clients.Discord.Rest.DeleteAllGlobalCommandsAsync();
 
@@ -127,7 +127,7 @@ namespace bb.Workers
                 .WithDescription("View the bot's status. (Bot administrators only)")
                 .Build());
 
-            Write("Discord - Commands updated!", "info");
+            Write("Discord - Commands updated!");
         }
     }
 }

@@ -107,8 +107,8 @@ namespace bb.Utils
                 failed = !check_result.Item1;
                 sector = check_result.Item2;
 
-                if (failed) Write($"Blocked words detected! Word: {_founded}; Sector: {sector} (in {(DateTime.UtcNow - start_time).TotalMilliseconds}ms)", "info");
-                else Write($"No blocked words found! (in {(DateTime.UtcNow - start_time).TotalMilliseconds}ms)", "info");
+                if (failed) Write($"Blocked words detected! Word: {_founded}; Sector: {sector} (in {(DateTime.UtcNow - start_time).TotalMilliseconds}ms)");
+                else Write($"No blocked words found! (in {(DateTime.UtcNow - start_time).TotalMilliseconds}ms)");
 
                 return !failed;
             }

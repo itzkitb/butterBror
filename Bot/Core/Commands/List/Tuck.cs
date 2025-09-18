@@ -23,7 +23,7 @@ namespace bb.Core.Commands.List
         public override int CooldownPerChannel => 1;
         public override string[] Aliases => ["tuck", "уложить", "tk", "улож", "тык"];
         public override string HelpArguments => "(name) (text)";
-        public override DateTime CreationDate => DateTime.Parse("07/04/2024");
+        public override DateTime CreationDate => DateTime.Parse("2024-07-04T00:00:00.0000000Z");
         public override bool OnlyBotModerator => false;
         public override bool OnlyBotDeveloper => false;
         public override bool OnlyChannelModerator => false;
@@ -69,7 +69,7 @@ namespace bb.Core.Commands.List
                     }
                     else
                     {
-                        Write($"User @{data.User.Name} tried to put a user to sleep who is in the ignore list", "info");
+                        Write($"User @{data.User.Name} tried to put a user to sleep who is in the ignore list");
                         commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:user_ignored", data.ChannelId, data.Platform));
                     }
                 }

@@ -97,7 +97,7 @@ namespace bb.Utils
                     double userElapsedSec = (now - lastUserUse).TotalSeconds;
                     if (userElapsedSec < userCooldown)
                     {
-                        Write($"#{userID} tried to use the command, but it's on cooldown! (userElapsedSec: {userElapsedSec}, userCooldown: {userCooldown}, now: {now}, lastUserUse: {lastUserUse})", "info", LogLevel.Warning);
+                        Write($"#{userID} tried to use the command, but it's on cooldown! (userElapsedSec: {userElapsedSec}, userCooldown: {userCooldown}, now: {now}, lastUserUse: {lastUserUse})", LogLevel.Warning);
                         return false;
                     }
 
@@ -115,7 +115,7 @@ namespace bb.Utils
                     bool isOnGlobalCooldown = !Bot.DataBase.Channels.IsCommandCooldown(platform, roomID, cooldownName, globalCooldown);
                     if (!isOnGlobalCooldown)
                     {
-                        Write($"#{userID} tried to use the command, but it is on global cooldown!", "info", LogLevel.Warning);
+                        Write($"#{userID} tried to use the command, but it is on global cooldown!", LogLevel.Warning);
                     }
                     return isOnGlobalCooldown;
                 }

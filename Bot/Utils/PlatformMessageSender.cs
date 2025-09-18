@@ -21,6 +21,7 @@ namespace bb.Utils
     /// <item>Platform-specific message formatting and constraints handling</item>
     /// <item>Content safety checks through banned word filtering</item>
     /// <item>Automatic message splitting for length compliance</item>
+    /// <item>Full async support for non-blocking operations</item>
     /// </list>
     /// </para>
     /// <para>
@@ -31,12 +32,33 @@ namespace bb.Utils
     /// <item>Handles message threading and reply context preservation</item>
     /// <item>Manages ASCII character normalization for consistent rendering</item>
     /// <item>Provides safety mechanisms against banned content</item>
+    /// <item>Optimized for high-frequency chat operations with async/await</item>
     /// </list>
     /// </para>
     /// All methods are designed to be thread-safe and handle high-frequency chat operations.
     /// </remarks>
     public class PlatformMessageSender
     {
+        /// <summary>
+        /// Maximum allowed message length before splitting
+        /// </summary>
+        private const int MaxMessageLength = 500;
+
+        /// <summary>
+        /// Maximum allowed message length before truncation
+        /// </summary>
+        private const int MaxTruncateLength = 1500;
+
+        /// <summary>
+        /// Maximum length for first part of split message
+        /// </summary>
+        private const int FirstPartMaxLength = 450;
+
+        /// <summary>
+        /// Delay between split message parts (milliseconds)
+        /// </summary>
+        private const int SplitMessageDelay = 1000;
+
         /// <summary>
         /// Sends a message to a Twitch channel with automatic handling of Twitch's message constraints.
         /// </summary>
@@ -45,7 +67,7 @@ namespace bb.Utils
         /// <param name="channelID">Channel identifier for banword filtering</param>
         /// <param name="messageID">Message ID for reply context (when applicable)</param>
         /// <param name="lang">Language code for error messages</param>
-        /// <param name="isSafeEx">Bypass banword checks when <see langword="true"/></param>
+        /// <param name="isSafe">Bypass banword checks when <see langword="true"/></param>
         /// <param name="asciiClean">Apply ASCII normalization when <see langword="true"/></param>
         /// <remarks>
         /// <para>
@@ -78,42 +100,27 @@ namespace bb.Utils
         /// </para>
         /// This method is optimized for high-frequency command responses in Twitch chat environments.
         /// </remarks>
-        public static void TwitchSend(string channel, string message, string channelID, string messageID, string lang, bool isSafeEx = false, bool asciiClean = true)
+        public static void TwitchSend(string channel, string message, string channelID, string messageID, string lang, bool isSafe = false, bool asciiClean = true)
         {
             try
             {
-                //Write($"Twitch - A message was sent to the {channel} channel: {message}", "info");
                 if (asciiClean)
                 {
                     message = TextSanitizer.CleanAscii(message);
                 }
 
-                if (message.Length > 1500)
-                    message = LocalizationService.GetString(lang, "error:too_large_text", channelID, PlatformsEnum.Twitch);
-                else if (message.Length > 500)
+                var (cleanedMessage, secondPart) = SplitMessage(message, lang, PlatformsEnum.Twitch, channelID);
+
+                if (!string.IsNullOrEmpty(secondPart))
                 {
-                    int splitIndex = message.LastIndexOf(' ', 450);
-                    string part2 = string.Concat("... ", message.AsSpan(splitIndex));
-
-                    message = string.Concat(message.AsSpan(0, splitIndex), "...");
-
-                    Task task = Task.Run(() =>
-                    {
-                        Thread.Sleep(1000);
-                        TwitchSend(channel, channelID, part2, messageID, lang, isSafeEx);
-                    });
+                    SendTwitchMessage(channel, cleanedMessage, channelID, messageID, lang, isSafe);
+                    Task.Delay(SplitMessageDelay).Wait();
+                    SendTwitchMessage(channel, secondPart, channelID, messageID, lang, isSafe);
                 }
-
-                if (!Bot.Clients.Twitch.JoinedChannels.Contains(new JoinedChannel(channel)))
-                    Bot.Clients.Twitch.JoinChannel(channel);
-
-                if (isSafeEx || new BlockedWordDetector().Check(message, channelID, PlatformsEnum.Twitch))
-                    Bot.Clients.Twitch.SendMessage(channel, message);
                 else
-                    Bot.Clients.Twitch.SendReply(
-                        channel,
-                        messageID,
-                        LocalizationService.GetString(lang, "error:message_could_not_be_sent", channelID, PlatformsEnum.Twitch));
+                {
+                    SendTwitchMessage(channel, cleanedMessage, channelID, messageID, lang, isSafe);
+                }
             }
             catch (Exception ex)
             {
@@ -164,35 +171,20 @@ namespace bb.Utils
         {
             try
             {
-                //Write($"Twitch - A response to a message was sent to the {channel} channel: {message}", "info");
                 message = TextSanitizer.CleanAscii(message);
 
-                if (message.Length > 1500)
-                    message = LocalizationService.GetString(lang, "error:too_large_text", channelID, PlatformsEnum.Twitch);
-                else if (message.Length > 500)
+                var (cleanedMessage, secondPart) = SplitMessage(message, lang, PlatformsEnum.Twitch, channelID);
+
+                if (!string.IsNullOrEmpty(secondPart))
                 {
-                    int splitIndex = message.LastIndexOf(' ', 450);
-                    string part2 = string.Concat("... ", message.AsSpan(splitIndex));
-
-                    message = string.Concat(message.AsSpan(0, splitIndex), "...");
-
-                    Task task = Task.Run(() =>
-                    {
-                        Thread.Sleep(1000);
-                        TwitchReply(channel, channelID, part2, messageID, lang, isSafeEx);
-                    });
+                    SendTwitchReply(channel, channelID, cleanedMessage, messageID, lang, isSafeEx);
+                    Task.Delay(SplitMessageDelay).Wait();
+                    SendTwitchReply(channel, channelID, secondPart, messageID, lang, isSafeEx);
                 }
-
-                if (!Bot.Clients.Twitch.JoinedChannels.Contains(new JoinedChannel(channel)))
-                    Bot.Clients.Twitch.JoinChannel(channel);
-
-                if (isSafeEx || new BlockedWordDetector().Check(message, channelID, PlatformsEnum.Twitch))
-                    Bot.Clients.Twitch.SendReply(channel, messageID, message);
                 else
-                    Bot.Clients.Twitch.SendReply(
-                        channel,
-                        messageID,
-                        LocalizationService.GetString(lang, "error:message_could_not_be_sent", channelID, PlatformsEnum.Twitch));
+                {
+                    SendTwitchReply(channel, channelID, cleanedMessage, messageID, lang, isSafeEx);
+                }
             }
             catch (Exception ex)
             {
@@ -247,56 +239,343 @@ namespace bb.Utils
         /// </remarks>
         public static void SendReply(PlatformsEnum platform, string channel, string channelID, string message, string language, string username, string userID, string server, string serverID, string messageID, Telegram.Bot.Types.Message messageReply, bool isSafe = false, ChatColorPresets usernameColor = ChatColorPresets.YellowGreen, bool isReply = true, bool addUsername = true)
         {
-            switch (platform)
+            try
             {
-                case PlatformsEnum.Twitch:
-                    Sender.SendCommandReply(new TwitchMessageSendData
-                    {
-                        Message = message,
-                        Channel = channel,
-                        ChannelID = channelID,
-                        MessageID = messageID,
-                        Language = language,
-                        Username = username,
-                        SafeExecute = isSafe,
-                        UsernameColor = usernameColor
-                    }, isReply, addUsername);
-                    break;
-                case PlatformsEnum.Discord:
-                    Sender.SendCommandReply(new DiscordCommandSendData
-                    {
-                        Message = message,
-                        Title = "",
-                        Description = "",
-                        EmbedColor = Discord.Color.Green,
-                        IsEmbed = false,
-                        IsEphemeral = false,
-                        Server = server,
-                        ServerID = serverID,
-                        Language = language,
-                        SafeExecute = isSafe,
-                        SocketCommandBase = null,
-                        Author = "",
-                        ImageLink = "",
-                        ThumbnailLink = "",
-                        Footer = "",
-                        ChannelID = channelID,
-                        UserID = userID
-                    });
-                    break;
-                case PlatformsEnum.Telegram:
-                    Sender.SendCommandReply(new TelegramMessageSendData
-                    {
-                        Message = message,
-                        Language = language,
-                        SafeExecute = isSafe,
-                        Channel = channel,
-                        ChannelID = channelID,
-                        MessageID = messageID,
-                        Username = username
-                    }, isReply, addUsername);
-                    break;
+                switch (platform)
+                {
+                    case PlatformsEnum.Twitch:
+                        Sender.SendCommandReply(new TwitchMessageSendData
+                        {
+                            Message = message,
+                            Channel = channel,
+                            ChannelID = channelID,
+                            MessageID = messageID,
+                            Language = language,
+                            Username = username,
+                            SafeExecute = isSafe,
+                            UsernameColor = usernameColor
+                        }, isReply, addUsername);
+                        break;
+                    case PlatformsEnum.Discord:
+                        Sender.SendCommandReply(new DiscordCommandSendData
+                        {
+                            Message = message,
+                            Title = "",
+                            Description = "",
+                            EmbedColor = Discord.Color.Green,
+                            IsEmbed = false,
+                            IsEphemeral = false,
+                            Server = server,
+                            ServerID = serverID,
+                            Language = language,
+                            SafeExecute = isSafe,
+                            SocketCommandBase = null,
+                            Author = "",
+                            ImageLink = "",
+                            ThumbnailLink = "",
+                            Footer = "",
+                            ChannelID = channelID,
+                            UserID = userID
+                        });
+                        break;
+                    case PlatformsEnum.Telegram:
+                        Sender.SendCommandReply(new TelegramMessageSendData
+                        {
+                            Message = message,
+                            Language = language,
+                            SafeExecute = isSafe,
+                            Channel = channel,
+                            ChannelID = channelID,
+                            MessageID = messageID,
+                            Username = username
+                        }, isReply, addUsername);
+                        break;
+                }
             }
+            catch (Exception ex)
+            {
+                Write(ex);
+            }
+        }
+
+        /// <summary>
+        /// Asynchronous version of TwitchSend that handles message sending without blocking the calling thread.
+        /// </summary>
+        /// <param name="channel">Target Twitch channel name (without # prefix)</param>
+        /// <param name="message">Content to send to the channel</param>
+        /// <param name="channelID">Channel identifier for banword filtering</param>
+        /// <param name="messageID">Message ID for reply context (when applicable)</param>
+        /// <param name="lang">Language code for error messages</param>
+        /// <param name="isSafe">Bypass banword checks when <see langword="true"/></param>
+        /// <param name="asciiClean">Apply ASCII normalization when <see langword="true"/></param>
+        /// <returns>Task representing the asynchronous operation</returns>
+        public static async Task TwitchSendAsync(string channel, string message, string channelID, string messageID, string lang, bool isSafe = false, bool asciiClean = true)
+        {
+            try
+            {
+                if (asciiClean)
+                {
+                    message = TextSanitizer.CleanAscii(message);
+                }
+
+                var (cleanedMessage, secondPart) = SplitMessage(message, lang, PlatformsEnum.Twitch, channelID);
+
+                if (!string.IsNullOrEmpty(secondPart))
+                {
+                    await SendTwitchMessageAsync(channel, cleanedMessage, channelID, messageID, lang, isSafe);
+                    await Task.Delay(SplitMessageDelay);
+                    await SendTwitchMessageAsync(channel, secondPart, channelID, messageID, lang, isSafe);
+                }
+                else
+                {
+                    await SendTwitchMessageAsync(channel, cleanedMessage, channelID, messageID, lang, isSafe);
+                }
+            }
+            catch (Exception ex)
+            {
+                Write(ex);
+            }
+        }
+
+        /// <summary>
+        /// Asynchronous version of TwitchReply that handles message sending without blocking the calling thread.
+        /// </summary>
+        /// <param name="channel">Target Twitch channel name (without # prefix)</param>
+        /// <param name="channelID">Channel identifier for banword filtering</param>
+        /// <param name="message">Reply content to send</param>
+        /// <param name="messageID">ID of the message to reply to</param>
+        /// <param name="lang">Language code for error messages</param>
+        /// <param name="isSafeEx">Bypass banword checks when <see langword="true"/></param>
+        /// <returns>Task representing the asynchronous operation</returns>
+        public static async Task TwitchReplyAsync(string channel, string channelID, string message, string messageID, string lang, bool isSafeEx = false)
+        {
+            try
+            {
+                message = TextSanitizer.CleanAscii(message);
+
+                var (cleanedMessage, secondPart) = SplitMessage(message, lang, PlatformsEnum.Twitch, channelID);
+
+                if (!string.IsNullOrEmpty(secondPart))
+                {
+                    await SendTwitchReplyAsync(channel, channelID, cleanedMessage, messageID, lang, isSafeEx);
+                    await Task.Delay(SplitMessageDelay);
+                    await SendTwitchReplyAsync(channel, channelID, secondPart, messageID, lang, isSafeEx);
+                }
+                else
+                {
+                    await SendTwitchReplyAsync(channel, channelID, cleanedMessage, messageID, lang, isSafeEx);
+                }
+            }
+            catch (Exception ex)
+            {
+                Write(ex);
+            }
+        }
+
+        /// <summary>
+        /// Asynchronous platform-agnostic method for sending reply messages across all supported platforms.
+        /// </summary>
+        /// <param name="platform">Target platform (Twitch, Discord, or Telegram)</param>
+        /// <param name="channel">Display name of the target channel</param>
+        /// <param name="channelID">Platform-specific channel identifier</param>
+        /// <param name="message">Content to send as a reply</param>
+        /// <param name="language">Language code for message localization</param>
+        /// <param name="username">Username to mention in the response</param>
+        /// <param name="userID">User identifier for data operations</param>
+        /// <param name="server">Server/guild name (Discord-specific)</param>
+        /// <param name="serverID">Server/guild identifier (Discord-specific)</param>
+        /// <param name="messageID">Platform-specific message ID for reply context</param>
+        /// <param name="messageReply">Telegram message object for reply context</param>
+        /// <param name="isSafe">Bypass banword checks when <see langword="true"/></param>
+        /// <param name="usernameColor">Color preference for Twitch username mentions</param>
+        /// <param name="isReply">Treat as reply rather than new message when <see langword="true"/></param>
+        /// <returns>Task representing the asynchronous operation</returns>
+        public static async Task SendReplyAsync(PlatformsEnum platform, string channel, string channelID, string message, string language, string username, string userID, string server, string serverID, string messageID, Telegram.Bot.Types.Message messageReply, bool isSafe = false, ChatColorPresets usernameColor = ChatColorPresets.YellowGreen, bool isReply = true, bool addUsername = true)
+        {
+            try
+            {
+                switch (platform)
+                {
+                    case PlatformsEnum.Twitch:
+                        Sender.SendCommandReply(new TwitchMessageSendData
+                        {
+                            Message = message,
+                            Channel = channel,
+                            ChannelID = channelID,
+                            MessageID = messageID,
+                            Language = language,
+                            Username = username,
+                            SafeExecute = isSafe,
+                            UsernameColor = usernameColor
+                        }, isReply, addUsername);
+                        break;
+                    case PlatformsEnum.Discord:
+                        Sender.SendCommandReply(new DiscordCommandSendData
+                        {
+                            Message = message,
+                            Title = "",
+                            Description = "",
+                            EmbedColor = Discord.Color.Green,
+                            IsEmbed = false,
+                            IsEphemeral = false,
+                            Server = server,
+                            ServerID = serverID,
+                            Language = language,
+                            SafeExecute = isSafe,
+                            SocketCommandBase = null,
+                            Author = "",
+                            ImageLink = "",
+                            ThumbnailLink = "",
+                            Footer = "",
+                            ChannelID = channelID,
+                            UserID = userID
+                        });
+                        break;
+                    case PlatformsEnum.Telegram:
+                        Sender.SendCommandReply(new TelegramMessageSendData
+                        {
+                            Message = message,
+                            Language = language,
+                            SafeExecute = isSafe,
+                            Channel = channel,
+                            ChannelID = channelID,
+                            MessageID = messageID,
+                            Username = username
+                        }, isReply, addUsername);
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                Write(ex);
+            }
+        }
+
+        /// <summary>
+        /// Splits a message into two parts if it exceeds the maximum length.
+        /// </summary>
+        /// <param name="message">Message to split</param>
+        /// <returns>Tuple containing first part and second part (or null if no split needed)</returns>
+        private static (string, string?) SplitMessage(string message, string language, PlatformsEnum platform, string channelId)
+        {
+            if (message.Length <= MaxMessageLength)
+                return (message, null);
+
+            if (message.Length > MaxTruncateLength)
+                return (LocalizationService.GetString(language, "error:too_large_text", channelId, platform), null);
+
+            int splitIndex = message.LastIndexOf(' ', FirstPartMaxLength);
+            if (splitIndex <= 0)
+                splitIndex = FirstPartMaxLength;
+
+            string part1 = message.Substring(0, splitIndex) + "...";
+            string part2 = "... " + message.Substring(splitIndex);
+
+            return (part1, part2);
+        }
+
+        /// <summary>
+        /// Sends a Twitch message with proper channel joining and banword checking.
+        /// </summary>
+        /// <param name="channel">Target channel name</param>
+        /// <param name="message">Message content</param>
+        /// <param name="channelID">Channel identifier</param>
+        /// <param name="messageID">Message ID for reply context</param>
+        /// <param name="lang">Language code</param>
+        /// <param name="isSafe">Bypass banword checks</param>
+        private static void SendTwitchMessage(string channel, string message, string channelID, string messageID, string lang, bool isSafe)
+        {
+            if (!Bot.Clients.Twitch.JoinedChannels.Contains(new JoinedChannel(channel)))
+                Bot.Clients.Twitch.JoinChannel(channel);
+
+            if (isSafe || new BlockedWordDetector().Check(message, channelID, PlatformsEnum.Twitch))
+            {
+                if (!string.IsNullOrEmpty(messageID))
+                    Bot.Clients.Twitch.SendReply(channel, messageID, message);
+                else
+                    Bot.Clients.Twitch.SendMessage(channel, message);
+            }
+            else
+            {
+                string errorMessage = LocalizationService.GetString(lang, "error:message_could_not_be_sent", channelID, PlatformsEnum.Twitch);
+                if (!string.IsNullOrEmpty(messageID))
+                    Bot.Clients.Twitch.SendReply(channel, messageID, errorMessage);
+                else
+                    Bot.Clients.Twitch.SendMessage(channel, errorMessage);
+            }
+        }
+
+        /// <summary>
+        /// Sends a Twitch reply with proper channel joining and banword checking.
+        /// </summary>
+        /// <param name="channel">Target channel name</param>
+        /// <param name="channelID">Channel identifier</param>
+        /// <param name="message">Message content</param>
+        /// <param name="messageID">Message ID to reply to</param>
+        /// <param name="lang">Language code</param>
+        /// <param name="isSafeEx">Bypass banword checks</param>
+        private static void SendTwitchReply(string channel, string channelID, string message, string messageID, string lang, bool isSafeEx)
+        {
+            if (!Bot.Clients.Twitch.JoinedChannels.Contains(new JoinedChannel(channel)))
+                Bot.Clients.Twitch.JoinChannel(channel);
+
+            if (isSafeEx || new BlockedWordDetector().Check(message, channelID, PlatformsEnum.Twitch))
+                Bot.Clients.Twitch.SendReply(channel, messageID, message);
+            else
+                Bot.Clients.Twitch.SendReply(channel, messageID, LocalizationService.GetString(lang, "error:message_could_not_be_sent", channelID, PlatformsEnum.Twitch));
+        }
+
+        /// <summary>
+        /// Asynchronously sends a Twitch message with proper channel joining and banword checking.
+        /// </summary>
+        /// <param name="channel">Target channel name</param>
+        /// <param name="message">Message content</param>
+        /// <param name="channelID">Channel identifier</param>
+        /// <param name="messageID">Message ID for reply context</param>
+        /// <param name="lang">Language code</param>
+        /// <param name="isSafe">Bypass banword checks</param>
+        /// <returns>Task representing the asynchronous operation</returns>
+        private static async Task SendTwitchMessageAsync(string channel, string message, string channelID, string messageID, string lang, bool isSafe)
+        {
+            if (!Bot.Clients.Twitch.JoinedChannels.Contains(new JoinedChannel(channel)))
+                Bot.Clients.Twitch.JoinChannel(channel);
+
+            if (isSafe || new BlockedWordDetector().Check(message, channelID, PlatformsEnum.Twitch))
+            {
+                if (!string.IsNullOrEmpty(messageID))
+                    Bot.Clients.Twitch.SendReply(channel, messageID, message);
+                else
+                    Bot.Clients.Twitch.SendMessage(channel, message);
+            }
+            else
+            {
+                string errorMessage = LocalizationService.GetString(lang, "error:message_could_not_be_sent", channelID, PlatformsEnum.Twitch);
+                if (!string.IsNullOrEmpty(messageID))
+                    Bot.Clients.Twitch.SendReply(channel, messageID, errorMessage);
+                else
+                    Bot.Clients.Twitch.SendMessage(channel, errorMessage);
+            }
+        }
+
+        /// <summary>
+        /// Asynchronously sends a Twitch reply with proper channel joining and banword checking.
+        /// </summary>
+        /// <param name="channel">Target channel name</param>
+        /// <param name="channelID">Channel identifier</param>
+        /// <param name="message">Message content</param>
+        /// <param name="messageID">Message ID to reply to</param>
+        /// <param name="lang">Language code</param>
+        /// <param name="isSafeEx">Bypass banword checks</param>
+        /// <returns>Task representing the asynchronous operation</returns>
+        private static async Task SendTwitchReplyAsync(string channel, string channelID, string message, string messageID, string lang, bool isSafeEx)
+        {
+            if (!Bot.Clients.Twitch.JoinedChannels.Contains(new JoinedChannel(channel)))
+                Bot.Clients.Twitch.JoinChannel(channel);
+
+            if (isSafeEx || new BlockedWordDetector().Check(message, channelID, PlatformsEnum.Twitch))
+                Bot.Clients.Twitch.SendReply(channel, messageID, message);
+            else
+                Bot.Clients.Twitch.SendReply(channel, messageID, LocalizationService.GetString(lang, "error:message_could_not_be_sent", channelID, PlatformsEnum.Twitch));
         }
     }
 }

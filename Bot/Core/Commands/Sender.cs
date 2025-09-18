@@ -63,7 +63,6 @@ namespace bb.Core.Commands
 
                 if (data.SafeExecute || new BlockedWordDetector().Check(message, data.ChannelID, PlatformsEnum.Twitch))
                 {
-                    Write(isReply.ToString(), "debug");
                     if (isReply)
                     {
                         bb.Bot.Clients.Twitch.SendReply(data.Channel, data.MessageID, message);
@@ -112,7 +111,7 @@ namespace bb.Core.Commands
             {
                 string messageToSend = data.Message;
                 TelegramMessageSendData messageToSendPart2 = null;
-                Write($"Telegram - A message response was sent to the {data.Channel} channel: {data.Message}", "info");
+                Write($"Telegram - A message response was sent to the {data.Channel} channel: {data.Message}");
                 messageToSend = TextSanitizer.CleanAscii(data.Message);
 
                 if (messageToSend.Length > 12288)
@@ -188,7 +187,7 @@ namespace bb.Core.Commands
         {
             try
             {
-                Write($"Discord - A message response was sent to the {data.Server}: {data.Message}", "info");
+                Write($"Discord - A message response was sent to the {data.Server}: {data.Message}");
                 data.Message = TextSanitizer.CleanAscii(data.Message);
 
                 if (data.SocketCommandBase != null)

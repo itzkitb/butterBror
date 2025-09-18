@@ -25,7 +25,7 @@ namespace bb.Core.Commands.List
         public override int CooldownPerChannel => 2;
         public override string[] Aliases => ["emote", "emotes", "эмоут", "эмоуты", "7tv", "seventv", "семьтелефизоров", "7тв"];
         public override string HelpArguments => "(update/random/add {name} (as:{name}, from:{channel})/delete {name}/rename {old_name} {new_name})";
-        public override DateTime CreationDate => DateTime.Parse("07/04/2024");
+        public override DateTime CreationDate => DateTime.Parse("2024-07-04T00:00:00.0000000Z");
         public override bool OnlyBotModerator => false;
         public override bool OnlyBotDeveloper => false;
         public override bool OnlyChannelModerator => false;

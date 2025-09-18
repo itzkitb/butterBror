@@ -64,17 +64,17 @@ namespace bb.Core.Bot
                 {
                     if (bb.Bot.Clients == null)
                     {
-                        Write("Clients are not initialized yet", "telemetry", LogLevel.Warning);
+                        Write("Clients are not initialized yet", LogLevel.Warning);
                     }
                     else if (!bb.Bot.Clients.Twitch.IsConnected)
                     {
-                        Write("Twitch is not connected", "telemetry", LogLevel.Warning);
+                            Write("Twitch is not connected", LogLevel.Warning);
                     }
 
                     return;
                 }
 
-                Write("Twitch - Telemetry started!", "telemetry");
+                Write("Twitch - Telemetry started!");
                 Stopwatch Start = Stopwatch.StartNew();
 
                 int cacheItemsBefore = Worker.cache.count;
@@ -91,7 +91,7 @@ namespace bb.Core.Bot
                 if (ISP.Status != IPStatus.Success)
                 {
                     ISP = ping.Send("192.168.0.1", 1000);
-                    if (ISP.Status != IPStatus.Success) Write("Twitch - Error ISP ping: " + ISP.Status.ToString(), "info", LogLevel.Warning);
+                    if (ISP.Status != IPStatus.Success) Write("Twitch - Error ISP ping: " + ISP.Status.ToString(), LogLevel.Warning);
                 }
                 #endregion
                 #region Commands ping
@@ -158,7 +158,7 @@ namespace bb.Core.Bot
                     $"ISP: {ISP.RoundtripTime}ms | " +
                     $"Command: {CommandExecute.ElapsedMilliseconds}ms", "", "", "", true, false);
 
-                Write($"Twitch - Telemetry ended! ({Start.ElapsedMilliseconds}ms)", "telemetry");
+                Write($"Twitch - Telemetry ended! ({Start.ElapsedMilliseconds}ms)");
 
                 try
                 {

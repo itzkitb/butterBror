@@ -25,7 +25,7 @@ namespace bb.Core.Commands.List
         public override int CooldownPerChannel => 0;
         public override string[] Aliases => ["cookie", "печенье", "horoscope", "гадание"];
         public override string HelpArguments => "[gift <user>] [stats] [stats <user>]";
-        public override DateTime CreationDate => DateTime.Parse("15/08/2024");
+        public override DateTime CreationDate => DateTime.Parse("2024-08-15T00:00:00.0000000Z");
         public override bool OnlyBotModerator => false;
         public override bool OnlyBotDeveloper => false;
         public override bool OnlyChannelModerator => false;
@@ -248,7 +248,7 @@ Example (just to understand the style):
 'Today, it is recommended to put on a clown costume and go online. If you have problems, hit yourself on the corner of the refrigerator. Attacks by Jedi midwives are possible!'
 
 Generate ONLY 4 sentence variations following these rules. The answer must be in the user's language! In your answer write ONLY text! DO NOT indicate sentence numbers! DO NOT write more than 4 sentences!",
-                    null, data.Platform, data.User.Name, data.User.ID, data.User.Language, 2, false
+                    data.Platform, null, data.User.Name, data.User.ID, data.User.Language, 2, false, false
                 );
 
                 if (result[0] == "ERR")

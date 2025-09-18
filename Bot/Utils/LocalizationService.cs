@@ -112,7 +112,7 @@ namespace bb.Utils
                     return string.Format(pluralDefaultValue, args);
                 }
 
-                Write($"Plural translate \"{pluralKey}\" in lang \"{userLang}\" was not found!", "info", Core.Bot.Console.LogLevel.Warning);
+                Write($"Plural translate \"{pluralKey}\" in lang \"{userLang}\" was not found!", Core.Bot.Console.LogLevel.Warning);
                 return key;
             }
             catch (Exception ex)
@@ -217,7 +217,7 @@ namespace bb.Utils
                     return defaultVal;
                 }
 
-                Write($"Translate \"{key}\" in lang \"{userLang}\" was not found!", "info", Core.Bot.Console.LogLevel.Warning);
+                Write($"Translate \"{key}\" in lang \"{userLang}\" was not found!", Core.Bot.Console.LogLevel.Warning);
                 return key;
             }
             catch (Exception ex)
@@ -292,7 +292,7 @@ namespace bb.Utils
                     return defaultVal;
                 }
 
-                Write($"Translate \"{key}\" in lang \"{userLang}\" was not found!", "info", Core.Bot.Console.LogLevel.Warning);
+                Write($"Translate \"{key}\" in lang \"{userLang}\" was not found!", Core.Bot.Console.LogLevel.Warning);
                 return key;
             }
             catch (Exception ex)

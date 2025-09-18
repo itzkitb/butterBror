@@ -38,7 +38,7 @@ namespace bb.Events
 
         public static async Task ConnectToGuilt(SocketGuild g)
         {
-            Write($"Discord - Connected to a server: {g.Name}", "info");
+            Write($"Discord - Connected to a server: {g.Name}");
         }
 
         /// <summary>
@@ -55,13 +55,13 @@ namespace bb.Events
                 if (message == null || message.Author.IsBot) return;
 
                 int argPos = 0;
-                if (message.HasCharPrefix(Bot.DefaultCommandPrefix, ref argPos))
+                if (message.Content.StartsWith(Bot.DefaultCommandPrefix))
                 {
                     var context = new SocketCommandContext(Bot.Clients.Discord, message);
                     var result = await Bot.DiscordCommandService.ExecuteAsync(context, argPos, Bot.DiscordServiceProvider);
                     if (!result.IsSuccess)
                     {
-                        Write($"Discord - {result.ErrorReason}", "info", LogLevel.Warning);
+                        Write($"Discord - {result.ErrorReason}", LogLevel.Warning);
                     }
                 }
             }
@@ -90,7 +90,7 @@ namespace bb.Events
 
         public static async Task ApplicationCommandCreated(SocketApplicationCommand e)
         {
-            Write("Discord - The command has been created: /" + e.Name + " (" + e.Description + ")", "info");
+            Write("Discord - The command has been created: /" + e.Name + " (" + e.Description + ")");
         }
 
         /// <summary>
@@ -101,7 +101,7 @@ namespace bb.Events
 
         public static async Task ApplicationCommandDeleted(SocketApplicationCommand e)
         {
-            Write("Discord - Command deleted: /" + e.Name + " (" + e.Description + ")", "info");
+            Write("Discord - Command deleted: /" + e.Name + " (" + e.Description + ")");
         }
 
         /// <summary>
@@ -112,7 +112,7 @@ namespace bb.Events
 
         public static async Task ApplicationCommandUpdated(SocketApplicationCommand e)
         {
-            Write($"Discord - Command updated: /{e.Name} ({e.Description})", "info");
+            Write($"Discord - Command updated: /{e.Name} ({e.Description})");
         }
 
         /// <summary>
@@ -123,7 +123,7 @@ namespace bb.Events
 
         public static async Task ChannelCreated(SocketChannel e)
         {
-            Write("Discord - New channel created: " + e.Id, "info");
+            Write("Discord - New channel created: " + e.Id);
         }
 
         /// <summary>
@@ -134,7 +134,7 @@ namespace bb.Events
 
         public static async Task ChannelDeleted(SocketChannel e)
         {
-            Write("Discord - The channel has been deleted: " + e.Id, "info");
+            Write("Discord - The channel has been deleted: " + e.Id);
         }
 
         /// <summary>
@@ -146,7 +146,7 @@ namespace bb.Events
 
         public static async Task ChannelUpdated(SocketChannel e, SocketChannel a)
         {
-            Write("Discord - Channel updated: " + e.Id + "/" + a.Id, "info");
+            Write("Discord - Channel updated: " + e.Id + "/" + a.Id);
         }
 
         /// <summary>
@@ -167,7 +167,7 @@ namespace bb.Events
 
         public static async Task ButtonTouched(SocketMessageComponent e)
         {
-            Write($"Discord - A button was pressed. User: {e.User}, Button ID: {e.Id}, Server: {((SocketGuildChannel)e.Channel).Guild.Name}", "info");
+            Write($"Discord - A button was pressed. User: {e.User}, Button ID: {e.Id}, Server: {((SocketGuildChannel)e.Channel).Guild.Name}");
         }
     }
 }

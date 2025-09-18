@@ -242,7 +242,7 @@ namespace bb.Utils
                 var userId = Bot.SevenTvService.SearchUser(channel, Bot.Tokens.SevenTV).Result;
                 if (string.IsNullOrEmpty(userId))
                 {
-                    Write($"SevenTV - #{channel} doesn't exist on 7tv!", "info");
+                    Write($"SevenTV - #{channel} doesn't exist on 7tv!");
                     return new List<string>();
                 }
 
@@ -290,7 +290,7 @@ namespace bb.Utils
             var emote = await Bot.Clients.SevenTV.rest.GetUser(userId);
             if (emote?.connections?[0].emote_set?.emotes == null)
             {
-                Write($"SevenTV - No emotes found for user {userId}", "info");
+                Write($"SevenTV - No emotes found for user {userId}");
                 return new List<string>();
             }
 

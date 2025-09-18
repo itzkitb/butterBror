@@ -24,7 +24,7 @@ namespace bb.Core.Commands.List
         public override int CooldownPerChannel => 10;
         public override string[] Aliases => ["gpt", "гпт", "chatgpt", "чатгпт", "джипити", "neuro", "нейро", "нейросеть", "neuralnetwork", "gwen", "ai", "ии"];
         public override string HelpArguments => "[(model:gemma) (history:ignore) text/chat:clear/chat:models]";
-        public override DateTime CreationDate => DateTime.Parse("04/07/2024");
+        public override DateTime CreationDate => DateTime.Parse("2024-07-04T00:00:00.0000000Z");
         public override bool OnlyBotDeveloper => false;
         public override bool OnlyBotModerator => false;
         public override bool OnlyChannelModerator => false;
@@ -82,7 +82,7 @@ namespace bb.Core.Commands.List
                                 request = request.Replace("history:ignore", "");
                             }
 
-                            if (AIService.generatingModels.Contains(model, StringComparer.OrdinalIgnoreCase))
+                            if (AIService.models.ContainsKey(model.ToLower()))
                             {
                                 Utils.PlatformMessageSender.SendReply(data.Platform, data.Channel, data.ChannelId,
                                     LocalizationService.GetString(data.User.Language, "command:gpt:generating", data.ChannelId, data.Platform),
@@ -92,7 +92,7 @@ namespace bb.Core.Commands.List
                                     );
                             }
 
-                            string[] result = await AIService.Request(request, model, data.Platform, data.User.Name, data.User.ID, data.User.Language, repetitionPenalty, useHistory);
+                            string[] result = await AIService.Request(request, data.Platform, model, data.User.Name, data.User.ID, data.User.Language, repetitionPenalty, useHistory);
 
                             if (result[0] == "ERR")
                             {
@@ -120,7 +120,7 @@ namespace bb.Core.Commands.List
                     }
                     else if (argument is "models")
                     {
-                        List<string> models = AIService.availableModels.Select(model => model.Key).ToList();
+                        List<string> models = AIService.models.Select(model => model.Key).ToList();
 
                         commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:gpt:models", data.ChannelId, data.Platform, string.Join(",", models)));
                     }

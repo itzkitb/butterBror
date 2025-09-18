@@ -42,6 +42,9 @@ namespace bb.Core.Services
             Manager.Save(path, "currency_mentioned_payment", 8);
             Manager.Save(path, "currency_mentioner_payment", 2);
             Manager.Save(path, "dashboard_password", "6FF8E2CF58249F757ECEE669C6CB015A1C1F44552442B364C8A388B0BDB1322A7AF6B67678D9206378D8969FFEC48263C9AB3167D222C80486FC848099535568"); //bbAdmin
+            Manager.Save(path, "twitch_currency_random_event", Array.Empty<string>());
+            Manager.Save(path, "twitch_taxes_event", Array.Empty<string>());
+            Manager.Save(path, "taxes_cost", 0.0069d);
         }
 
         /// <summary>
@@ -72,11 +75,14 @@ namespace bb.Core.Services
             bb.Bot.Tokens.TwitchSecretToken = Manager.Get<string>(settingsPath, "twitch_secret_token");
             bb.Bot.Tokens.Telegram = Manager.Get<string>(settingsPath, "telegram_token");
             bb.Bot.TwitchNewVersionAnnounce = Manager.Get<string[]>(settingsPath, "twitch_version_message_channels");
+            bb.Bot.TwitchCurrencyRandomEvent = Manager.Get<List<string>>(settingsPath, "twitch_currency_random_event");
+            bb.Bot.TwitchTaxesEvent = Manager.Get<List<string>>(settingsPath, "twitch_taxes_event");
             bb.Bot.Tokens.SevenTV = Manager.Get<string>(settingsPath, "7tv_token");
             bb.Bot.UsersSevenTVIDs = Manager.Get<Dictionary<string, string>>(settingsPath, "Ids");
             bb.Bot.CurrencyMentioned = Manager.Get<int>(settingsPath, "currency_mentioned_payment");
             bb.Bot.CurrencyMentioner = Manager.Get<int>(settingsPath, "currency_mentioner_payment");
-            bb.Bot.DefaultCommandPrefix = Convert.ToChar(Manager.Get<string>(settingsPath, "prefix"));
+            bb.Bot.DefaultCommandPrefix = Manager.Get<string>(settingsPath, "prefix");
+            bb.Bot.TaxesCost = Manager.Get<double>(settingsPath, "taxes_cost");
         }
     }
 }

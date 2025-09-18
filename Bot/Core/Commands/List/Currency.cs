@@ -21,7 +21,7 @@ namespace bb.Core.Commands.List
         public override int CooldownPerChannel => 5;
         public override string[] Aliases => ["currency", "curr", "convert", "конвертер", "валюта"];
         public override string HelpArguments => "<currency quantity> [initialCurrency] to [wantedCurrency]";
-        public override DateTime CreationDate => DateTime.Parse("04/06/2025");
+        public override DateTime CreationDate => DateTime.Parse("2025-06-04T00:00:00.0000000Z");
         public override bool OnlyBotModerator => false;
         public override bool OnlyBotDeveloper => false;
         public override bool OnlyChannelModerator => false;

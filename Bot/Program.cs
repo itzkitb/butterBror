@@ -47,7 +47,7 @@ namespace bb
         public static bool Initialized = false;
         public static bool Connected => Clients.Twitch?.IsConnected == true && Clients.Discord?.ConnectionState == Discord.ConnectionState.Connected;
         public static string? Name;
-        public static char DefaultCommandPrefix = '#';
+        public static string DefaultCommandPrefix = "#";
         private static bool SkipFetch = false;
         #endregion Core
 
@@ -58,6 +58,7 @@ namespace bb
         public static decimal Coins = 0;
         public static int CurrencyMentioned = 8;
         public static int CurrencyMentioner = 2;
+        public static double TaxesCost = 0.0069d;
         #endregion Currency
 
         #region Hosting
@@ -83,6 +84,8 @@ namespace bb
         public static string[] TwitchNewVersionAnnounce = [];
         public static string[] TwitchReconnectAnnounce = [];
         public static string[] TwitchConnectAnnounce = [];
+        public static List<string> TwitchCurrencyRandomEvent = [];
+        public static List<string> TwitchTaxesEvent = [];
         #endregion Twitch
 
         #region Cache
@@ -128,7 +131,7 @@ namespace bb
 
             if (SkipFetch)
             {
-                Write("Launched with --skip-fetch parameter, skipping system fetch...", "core");
+                Write("Launched with --skip-fetch parameter, skipping system fetch...");
             }
             else
             {
@@ -146,7 +149,7 @@ namespace bb
                 }
                 catch (Exception ex)
                 {
-                    Write($"Error starting dashboard: {ex.Message}", "dashboard", LogLevel.Error);
+                    Write($"Error starting dashboard: {ex.Message}", LogLevel.Error);
                 }
             });
 
@@ -212,11 +215,16 @@ namespace bb
 
                         if (now.Hour == 0 && now.Minute == 0 && now.Second == 0)
                         {
-                            _ = Backup.BackupDataAsync();
+                            _ = Task.Run(() =>
+                            {
+                                _ = Backup.BackupDataAsync();
+                                _ = CurrencyManager.GenerateRandomEventAsync();
+                                _ = CurrencyManager.CollectTaxesAsync();
 
-                            Write("Reinitializing currency counters...", "core");
-                            Users = DataBase.Users.GetTotalUsers();
-                            Coins = DataBase.Users.GetTotalBalance();
+                                Write("Reinitializing currency counters...");
+                                Users = DataBase.Users.GetTotalUsers();
+                                Coins = DataBase.Users.GetTotalBalance();
+                            });
                         }
 
                         //Write($"({now.Second == 0} && {(now - _lastSave).TotalSeconds > 2}); ({now.Second}; {(now - _lastSave).TotalSeconds}; {now}; {_lastSave})", "debug");
@@ -263,7 +271,7 @@ namespace bb
                             #endregion Currency save
 
                             stopwatch.Stop();
-                            Write($"Saved {messages} messages, {users} users and currency in {stopwatch.ElapsedMilliseconds} ms", "info");
+                            Write($"Saved {messages} messages, {users} users and currency in {stopwatch.ElapsedMilliseconds} ms");
                         }
                     }
                 }
@@ -294,7 +302,7 @@ namespace bb
         /// </remarks>
         private static void SystemDataFetch()
         {
-            Write("Please wait...", "core");
+            Write("Please wait...");
             string processor = "Unnamed processor";
             string OSName = "Unknown";
             double memory = 0;
@@ -372,7 +380,7 @@ namespace bb
             }
             catch (Exception ex)
             {
-                Write($"Unable to get processor info: {ex.Message}", "core");
+                Write($"Unable to get processor info: {ex.Message}");
             } // CPU
 
             try
@@ -419,7 +427,7 @@ namespace bb
             }
             catch (Exception ex)
             {
-                Write($"Unable to get OS name: {ex.Message}", "core");
+                Write($"Unable to get OS name: {ex.Message}");
                 OSName = Environment.OSVersion.ToString();
             } // OS name
 
@@ -429,7 +437,7 @@ namespace bb
             }
             catch (Exception ex)
             {
-                Write($"Unable to get RAM size: {ex.Message}", "core");
+                Write($"Unable to get RAM size: {ex.Message}");
             } // RAM
 
             try
@@ -488,7 +496,7 @@ namespace bb
             }
             catch (Exception ex)
             {
-                Write($"Unable to get disks sizes: {ex.Message}", "core");
+                Write($"Unable to get disks sizes: {ex.Message}");
             } // Drives
 
             Write($@"
@@ -508,7 +516,7 @@ namespace bb
         :X00:((:::::]000x;:            
             :x0000000n:                
               :::::::
-", "core");
+");
         }
 
         /// <summary>
@@ -581,7 +589,7 @@ namespace bb
             Paths.Main = Paths.General + "butterBror/";
 
             _repeater = Task.Run(() => StartRepeater());
-            Write($"TPS counter successfully started.", "core");
+            Write($"TPS counter successfully started.");
 
             StartTime = DateTime.Now;
         }
@@ -613,7 +621,7 @@ namespace bb
 
             try
             {
-                Write("Creating directories...", "initialization");
+                Write("Creating directories...");
                 string[] directories = { Paths.General, Paths.Main, Paths.TranslateDefault, Paths.TranslateCustom };
 
                 foreach (var dir in directories)
@@ -626,7 +634,7 @@ namespace bb
                 if (!FileUtil.FileExists(Paths.Settings))
                 {
                     SettingsService.InitializeFile(Paths.Settings);
-                    Write($"The settings file has been created! ({Paths.Settings})", "initialization");
+                    Write($"The settings file has been created! ({Paths.Settings})");
                     Thread.Sleep(-1);
                 }
 
@@ -637,7 +645,7 @@ namespace bb
                             Path.Combine(Paths.TranslateDefault, "en-US.json"), Path.Combine(Paths.Main, "VERSION.txt")
                     };
 
-                Write("Creating files...", "initialization");
+                Write("Creating files...");
                 foreach (var file in files)
                 {
                     FileUtil.CreateFile(file);
@@ -646,10 +654,10 @@ namespace bb
                 Bot.PreviousVersion = File.ReadAllText(Path.Combine(Paths.Main, "VERSION.txt"));
                 File.WriteAllText(Path.Combine(Paths.Main, "VERSION.txt"), $"{Bot.Version}");
 
-                Write("Loading settings...", "initialization");
+                Write("Loading settings...");
                 SettingsService.Load();
 
-                Write("Initializing databases...", "initialization");
+                Write("Initializing databases...");
                 DataBase = new()
                 {
                     Messages = new(Paths.MessagesDatabase),
@@ -661,11 +669,11 @@ namespace bb
                 MessagesBuffer = new(DataBase.Messages);
                 UsersBuffer = new(DataBase.Users);
 
-                Write("Loading currency counters...", "initialization");
+                Write("Loading currency counters...");
                 Users = DataBase.Users.GetTotalUsers();
                 Coins = DataBase.Users.GetTotalBalance();
 
-                Write("Getting twitch token...", "initialization");
+                Write("Getting twitch token...");
                 Tokens.TwitchGetter = new(TwitchClientId, Tokens.TwitchSecretToken, Paths.Main + "TWITCH_AUTH.json");
                 var token = await TwitchToken.GetTokenAsync();
 
@@ -676,7 +684,7 @@ namespace bb
                 }
                 else
                 {
-                    Write("Twitch token is null! Something went wrong...", "initialization");
+                    Write("Twitch token is null! Something went wrong...");
                     await Shutdown();
                 }
             }
@@ -706,7 +714,7 @@ namespace bb
         {
             try
             {
-                Write("Connecting...", "initialization");
+                Write("Connecting...");
 
                 var tasks = new List<Task>
                 {
@@ -739,7 +747,7 @@ namespace bb
                     }
                 });
 
-                Write($"Well done! ({(long)(ConnectedIn).TotalMilliseconds} ms)", "initialization");
+                Write($"Well done! ({(long)(ConnectedIn).TotalMilliseconds} ms)");
             }
             catch (Exception ex)
             {
@@ -812,7 +820,7 @@ namespace bb
 
             Clients.Twitch.SendMessage(Name.ToLower(), "truckCrash Connecting to twitch...");
 
-            Write("Twitch is ready.", "initialization");
+            Write("Twitch is ready.");
         }
 
         /// <summary>
@@ -838,7 +846,7 @@ namespace bb
 
             if (notFoundedChannels.Count > 0)
             {
-                Write("Twitch - Can't find ID for " + string.Join(',', notFoundedChannels), "core", LogLevel.Warning);
+                Write("Twitch - Can't find ID for " + string.Join(',', notFoundedChannels), LogLevel.Warning);
             }
         }
 
@@ -888,7 +896,7 @@ namespace bb
             await Clients.Discord.LoginAsync(TokenType.Bot, Tokens.Discord);
             await Clients.Discord.StartAsync();
 
-            Write("Discord is ready.", "initialization");
+            Write("Discord is ready.");
         }
 
         /// <summary>
@@ -915,7 +923,7 @@ namespace bb
             };
 
             Clients.Telegram.StartReceiving(Events.TelegramEvents.UpdateHandler, Events.TelegramEvents.ErrorHandler, TelegramReceiverOptions, Clients.TelegramCancellationToken.Token);
-            Write("Telegram is ready.", "initialization");
+            Write("Telegram is ready.");
         }
         #endregion Connects
         #region Other
@@ -948,12 +956,12 @@ namespace bb
                 {
                     Clients.Twitch.Connect();
                     JoinTwitchChannels();
-                    Write("The token has been updated and the connection has been restored", "core");
+                    Write("The token has been updated and the connection has been restored");
                     PlatformMessageSender.TwitchSend(Bot.Name, $"sillyCatThinks Token refreshed", "", "", "en-US", true);
                 }
                 catch (Exception ex)
                 {
-                    Write("Twitch connection error!", "core");
+                    Write("Twitch connection error!");
                     Write(ex);
                 }
             }
@@ -997,11 +1005,11 @@ namespace bb
         /// <returns>Task representing the asynchronous shutdown operation</returns>
         public static async Task Shutdown(bool force = false)
         {
-            Write("Initiating shutdown sequence...", "core");
+            Write("Initiating shutdown sequence...");
 
             Initialized = false;
 
-            Write($"Shutdown process started (PID: {Environment.ProcessId})", "core", LogLevel.Info);
+            Write($"Shutdown process started (PID: {Environment.ProcessId})", LogLevel.Info);
 
             try
             {
@@ -1009,13 +1017,13 @@ namespace bb
                 {
                     try
                     {
-                        Write("Flushing user data buffer...", "core");
+                        Write("Flushing user data buffer...");
                         UsersBuffer.Flush();
-                        Write("User buffer disposed successfully", "core", LogLevel.Info);
+                        Write("User buffer disposed successfully", LogLevel.Info);
                     }
                     catch (Exception ex)
                     {
-                        Write($"User buffer flush failed: {ex.Message}", "core", LogLevel.Warning);
+                        Write($"User buffer flush failed: {ex.Message}", LogLevel.Warning);
                     }
                     finally
                     {
@@ -1028,13 +1036,13 @@ namespace bb
                 {
                     try
                     {
-                        Write("Flushing message data buffer...", "core");
+                        Write("Flushing message data buffer...");
                         MessagesBuffer.Flush();
-                        Write("Message buffer disposed successfully", "core", LogLevel.Info);
+                        Write("Message buffer disposed successfully", LogLevel.Info);
                     }
                     catch (Exception ex)
                     {
-                        Write($"Message buffer flush failed: {ex.Message}", "core", LogLevel.Warning);
+                        Write($"Message buffer flush failed: {ex.Message}", LogLevel.Warning);
                     }
                     finally
                     {
@@ -1047,13 +1055,13 @@ namespace bb
                 {
                     try
                     {
-                        Write("Cancelling Telegram operations...", "core");
+                        Write("Cancelling Telegram operations...");
                         Clients.TelegramCancellationToken.Cancel();
-                        Write("Telegram cancellation requested", "core", LogLevel.Info);
+                        Write("Telegram cancellation requested", LogLevel.Info);
                     }
                     catch (Exception ex)
                     {
-                        Write($"Telegram cancellation failed: {ex.Message}", "core", LogLevel.Warning);
+                        Write($"Telegram cancellation failed: {ex.Message}", LogLevel.Warning);
                     }
                     finally
                     {
@@ -1066,14 +1074,14 @@ namespace bb
                 {
                     try
                     {
-                        Write("Disconnecting from Discord...", "core");
+                        Write("Disconnecting from Discord...");
                         await Clients.Discord.LogoutAsync();
                         await Clients.Discord.StopAsync();
-                        Write("Discord client disconnected", "core", LogLevel.Info);
+                        Write("Discord client disconnected", LogLevel.Info);
                     }
                     catch (Exception ex)
                     {
-                        Write($"Discord disconnect failed: {ex.Message}", "core", LogLevel.Warning);
+                        Write($"Discord disconnect failed: {ex.Message}", LogLevel.Warning);
                     }
                     finally
                     {
@@ -1084,7 +1092,7 @@ namespace bb
 
                 if (DataBase != null)
                 {
-                    Write("Disposing SQL...", "core");
+                    Write("Disposing SQL...");
                     try
                     {
                         DataBase.Channels.Dispose();
@@ -1095,7 +1103,7 @@ namespace bb
                     }
                     catch (Exception ex)
                     {
-                        Write($"SQL dispose failed: {ex.Message}", "core", LogLevel.Warning);
+                        Write($"SQL dispose failed: {ex.Message}", LogLevel.Warning);
                     }
                 }
 
@@ -1118,19 +1126,19 @@ namespace bb
                 }
                 catch (Exception ex)
                 {
-                    Write($"Currency dispose failed: {ex.Message}", "core", LogLevel.Warning);
+                    Write($"Currency dispose failed: {ex.Message}", LogLevel.Warning);
                 }
 
-                Write("Waiting for pending operations to complete...", "core");
+                Write("Waiting for pending operations to complete...");
                 await Task.Delay(2000);
             }
             catch (Exception ex)
             {
-                Write($"Critical error during shutdown sequence: {ex}", "core", LogLevel.Error);
+                Write($"Critical error during shutdown sequence: {ex}", LogLevel.Error);
             }
             finally
             {
-                Write("Restart sequence completed - terminating process", "core");
+                Write("Restart sequence completed - terminating process");
                 Environment.Exit(force ? 5001 : 0);
             }
         }
@@ -1140,7 +1148,7 @@ namespace bb
             Exception ex = (Exception)e.ExceptionObject;
             try
             {
-                Write("Critical error.", "core", LogLevel.Error);
+                Write("Critical error.", LogLevel.Error);
                 Write(ex);
                 Shutdown().RunSynchronously();
             }

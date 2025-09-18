@@ -1,4 +1,6 @@
 ﻿
+using Newtonsoft.Json;
+
 namespace bb.Models.AI
 {
     /// <summary>
@@ -9,6 +11,7 @@ namespace bb.Models.AI
         /// <summary>
         /// Gets or sets the message response from the AI model.
         /// </summary>
-        public Message message { get; set; }
+        [JsonProperty("message")]
+        public Message Message { get; set; }
     }
 }
