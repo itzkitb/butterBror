@@ -563,7 +563,7 @@ namespace bb
 #if RELEASE
             if (HostName is null || HostVersion is null)
             {
-                Write("The bot is running without a host! Please run it from the host, not directly.", "core");
+                Write("The bot is running without a host! Please run it from the host, not directly.");
                 System.Console.ReadLine();
                 return;
             }
