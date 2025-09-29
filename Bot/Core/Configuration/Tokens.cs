@@ -4,9 +4,9 @@ using static bb.Core.Configuration.TwitchToken;
 namespace bb.Core.Configuration
 {
     /// <summary>
-    /// Internal class storing authentication tokens for various external services used by the application.
+    /// Storing authentication tokens for various external services used by the application.
     /// </summary>
-    internal class Tokens
+    public class Tokens
     {
         /// <summary>
         /// Gets or sets the Telegram bot API token used for Telegram integration.

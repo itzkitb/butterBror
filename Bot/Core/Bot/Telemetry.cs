@@ -64,13 +64,13 @@ namespace bb.Core.Bot
         {
             try
             {
-                if (bb.Bot.Clients == null || !bb.Bot.Clients.Twitch.IsConnected)
+                if (bb.Program.BotInstance.Clients == null || !bb.Program.BotInstance.Clients.Twitch.IsConnected)
                 {
-                    if (bb.Bot.Clients == null)
+                    if (bb.Program.BotInstance.Clients == null)
                     {
                         Write("Clients are not initialized yet", LogLevel.Warning);
                     }
-                    else if (!bb.Bot.Clients.Twitch.IsConnected)
+                    else if (!bb.Program.BotInstance.Clients.Twitch.IsConnected)
                     {
                             Write("Twitch is not connected", LogLevel.Warning);
                     }
@@ -88,7 +88,7 @@ namespace bb.Core.Bot
                 Ping ping = new();
                 PingReply twitch = ping.Send(URLs.twitch, 1000);
                 PingReply discord = ping.Send(URLs.discord, 1000);
-                long telegram = await TelegramService.Ping();
+                long telegram = await TelegramPing.Ping();
                 PingReply sevenTV = ping.Send(URLs.seventv, 1000);
                 PingReply ISP = ping.Send("192.168.1.1", 1000);
 
@@ -133,7 +133,7 @@ namespace bb.Core.Bot
                 #endregion
 
                 decimal cpuPercent = CPUItems == 0 ? 0 : CPU / CPUItems;
-                decimal coinCurrency = bb.Bot.Coins == 0 ? 0 : bb.Bot.InBankDollars / bb.Bot.Coins;
+                decimal coinCurrency = bb.Program.BotInstance.Coins == 0 ? 0 : bb.Program.BotInstance.InBankDollars / bb.Program.BotInstance.Coins;
 
                 CPU = 0;
                 CPUItems = 0;
@@ -141,19 +141,19 @@ namespace bb.Core.Bot
 
                 long memory = Process.GetCurrentProcess().PrivateMemorySize64 / (1024 * 1024);
 
-                PlatformMessageSender.TwitchSend(bb.Bot.TwitchName.ToLower(), $"/me glorp 📡 | " +
-                    $"🕒 {TextSanitizer.FormatTimeSpan(DateTime.Now - bb.Bot.StartTime, "en-US")} | " +
+                PlatformMessageSender.TwitchSend(bb.Program.BotInstance.TwitchName.ToLower(), $"/me glorp 📡 | " +
+                    $"🕒 {TextSanitizer.FormatTimeSpan(DateTime.Now - bb.Program.BotInstance.StartTime, "en-US")} | " +
                     $"{memory}Mbyte | " +
                     $"🔋 {Battery.GetBatteryCharge()}% {(Battery.IsCharging() ? "(Charging) " : "")}| " +
                     $"CPU: {cpuPercent:0.00}% | " +
-                    $"Emotes: {bb.Bot.EmotesCache.Count} | " +
-                    $"7tv: E:{bb.Bot.ChannelsSevenTVEmotes.Count},USC:{bb.Bot.UsersSearchCache.Count},ES:{bb.Bot.EmoteSetsCache.Count} | " +
+                    $"Emotes: {bb.Program.BotInstance.EmotesCache.Count} | " +
+                    $"7tv: E:{bb.Program.BotInstance.ChannelsSevenTVEmotes.Count},USC:{bb.Program.BotInstance.UsersSearchCache.Count},ES:{bb.Program.BotInstance.EmoteSetsCache.Count} | " +
                     $"Messages: {MessageProcessor.Proccessed} | " +
-                    $"Discord guilds: {bb.Bot.Clients.Discord.Guilds.Count} | " +
-                    $"Twitch channels: {bb.Bot.Clients.Twitch.JoinedChannels.Count} | " +
-                    $"Completed: {bb.Bot.CompletedCommands} | " +
-                    $"Users: {bb.Bot.Users} | " +
-                    $"Coins: {bb.Bot.Coins:0.00} | " +
+                    $"Discord guilds: {bb.Program.BotInstance.Clients.Discord.Guilds.Count} | " +
+                    $"Twitch channels: {bb.Program.BotInstance.Clients.Twitch.JoinedChannels.Count} | " +
+                    $"Completed: {bb.Program.BotInstance.CompletedCommands} | " +
+                    $"Users: {bb.Program.BotInstance.Users} | " +
+                    $"Coins: {bb.Program.BotInstance.Coins:0.00} | " +
                     $"Currency: ${coinCurrency:0.00000000} | " +
                     $"Twitch: {twitch.RoundtripTime}ms | " +
                     $"Discord: {discord.RoundtripTime}ms | " +
@@ -166,11 +166,7 @@ namespace bb.Core.Bot
 
                 try
                 {
-                    var newToken = await TwitchToken.RefreshAccessToken(bb.Bot.Tokens.Twitch);
-                    if (newToken != null)
-                    {
-                        bb.Bot.Tokens.Twitch = newToken;
-                    }
+                    await bb.Program.BotInstance.RefreshTwitchToken();
                 }
                 catch (Exception ex)
                 {

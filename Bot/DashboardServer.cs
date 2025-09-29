@@ -9,8 +9,8 @@ using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Security.Principal;
 using System.Text;
-using System.Runtime.InteropServices; // Добавлен для кросс-платформенной проверки ОС
-using System.IO; // Для работы с файловой системой
+using System.Runtime.InteropServices;
+using System.IO;
 using static bb.Core.Bot.Console;
 using bb.Utils;
 

@@ -44,10 +44,10 @@ namespace bb.Core.Bot
         {
             try
             {
-                PlatformMessageSender.TwitchSend(bb.Bot.TwitchName.ToLower(), "🗃️ Backup started...", "", "", "", true, false);
+                PlatformMessageSender.TwitchSend(bb.Program.BotInstance.TwitchName.ToLower(), "🗃️ Backup started...", "", "", "", true, false);
                 Write("Backup started...");
 
-                string reservePath = bb.Bot.Paths.Reserve;
+                string reservePath = bb.Program.BotInstance.Paths.Reserve;
                 Directory.CreateDirectory(reservePath);
 
                 string archiveName = $"backup_{DateTime.UtcNow:yyyyMMdd}.zip";
@@ -67,7 +67,7 @@ namespace bb.Core.Bot
                 {
                     // Use EnumerateFiles instead of GetFiles for line-by-line reading
                     var allFiles = Directory.EnumerateFiles(
-                        bb.Bot.Paths.Main,
+                        bb.Program.BotInstance.Paths.Main,
                         "*",
                         SearchOption.AllDirectories
                     );
@@ -76,7 +76,7 @@ namespace bb.Core.Bot
                     {
                         if (!file.EndsWith(".db", StringComparison.OrdinalIgnoreCase))
                         {
-                            string relativePath = Path.GetRelativePath(bb.Bot.Paths.Main, file);
+                            string relativePath = Path.GetRelativePath(bb.Program.BotInstance.Paths.Main, file);
                             string destFile = Path.Combine(tempBackupDir, relativePath);
 
                             Directory.CreateDirectory(Path.GetDirectoryName(destFile));
@@ -123,7 +123,7 @@ namespace bb.Core.Bot
                 double archiveSizeMB = archiveSize / (1024.0 * 1024.0);
 
                 Write($"Backup completed in {stopwatch.Elapsed.TotalSeconds:0} seconds (Archive size: {archiveSizeMB:0.00} MB)!");
-                PlatformMessageSender.TwitchSend(bb.Bot.TwitchName.ToLower(),
+                PlatformMessageSender.TwitchSend(bb.Program.BotInstance.TwitchName.ToLower(),
                     $"🗃️ Backup completed in {stopwatch.Elapsed.TotalSeconds:0} seconds (Archive size: {archiveSizeMB:0.00} MB)",
                     "", "", "", true, false);
             }
@@ -159,11 +159,11 @@ namespace bb.Core.Bot
         /// </remarks>
         private static IEnumerable<SqlRepositoryBase> GetDatabaseManagers()
         {
-            yield return bb.Bot.DataBase.Games;
-            yield return bb.Bot.DataBase.Channels;
-            yield return bb.Bot.DataBase.Messages;
-            yield return bb.Bot.DataBase.Roles;
-            yield return bb.Bot.DataBase.Users;
+            yield return bb.Program.BotInstance.DataBase.Games;
+            yield return bb.Program.BotInstance.DataBase.Channels;
+            yield return bb.Program.BotInstance.DataBase.Messages;
+            yield return bb.Program.BotInstance.DataBase.Roles;
+            yield return bb.Program.BotInstance.DataBase.Users;
         }
     }
 }

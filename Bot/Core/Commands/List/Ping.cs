@@ -52,7 +52,7 @@ namespace bb.Core.Commands.List
                     long pingSpeed = 0;
                     if (data.Platform == PlatformsEnum.Telegram)
                     {
-                        pingSpeed = bb.Services.External.TelegramService.Ping().Result;
+                        pingSpeed = bb.Services.External.TelegramPing.Ping().Result;
                     }
                     else
                     {

@@ -3,7 +3,7 @@ using Telegram.Bot;
 
 namespace bb.Services.External
 {
-    public class TelegramService
+    public class TelegramPing
     {
         public static async Task<long> Ping()
         {

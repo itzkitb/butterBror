@@ -203,7 +203,7 @@ namespace bb.Core.Bot
         /// </remarks>
         private static void EnsureDirectoryExists()
         {
-            string logDirectory = Path.GetDirectoryName(bb.Bot.Paths.Logs);
+            string logDirectory = Path.GetDirectoryName(bb.Program.BotInstance.Paths.Logs);
 
             if (!_directoryChecked && !Directory.Exists(logDirectory))
             {
@@ -230,7 +230,7 @@ namespace bb.Core.Bot
         {
             lock (_fileLock) // Thread-safe writing
             {
-                using var writer = new StreamWriter(bb.Bot.Paths.Logs, true);
+                using var writer = new StreamWriter(bb.Program.BotInstance.Paths.Logs, true);
                 writer.WriteLine(logEntry);
             }
         }
