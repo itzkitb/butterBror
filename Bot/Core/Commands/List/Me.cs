@@ -17,8 +17,8 @@ namespace bb.Core.Commands.List
             { "en-US", "This command... Just exists for some reason" }
         };
         public override string WikiLink => "https://itzkitb.ru/bot/command?name=me";
-        public override int CooldownPerUser => 15;
-        public override int CooldownPerChannel => 5;
+        public override int CooldownPerUser => 10;
+        public override int CooldownPerChannel => 1;
         public override string[] Aliases => ["me", "m", "я"];
         public override string HelpArguments => "[text]";
         public override DateTime CreationDate => DateTime.Parse("2024-07-04T00:00:00.0000000Z");
@@ -34,6 +34,12 @@ namespace bb.Core.Commands.List
 
             try
             {
+                if (data.ChannelId == null)
+                {
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:unknown", string.Empty, data.Platform));
+                    return commandReturn;
+                }
+
                 if (TextSanitizer.CleanAsciiWithoutSpaces(data.ArgumentsString) != "")
                 {
                     string[] blockedEntries = ["/", "$", "#", "+", "-", ">", "<", "*", "\\", ";"];

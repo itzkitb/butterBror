@@ -16,8 +16,8 @@ namespace bb.Core.Commands.List
             { "en-US", "Find out how much time is left until the beginning/end of autumn." }
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=autumn";
-        public override int CooldownPerUser => 120;
-        public override int CooldownPerChannel => 10;
+        public override int CooldownPerUser => 10;
+        public override int CooldownPerChannel => 1;
         public override string[] Aliases => ["autumn", "a", "осень", "fall"];
         public override string HelpArguments => string.Empty;
         public override DateTime CreationDate => DateTime.Parse("2024-07-04T00:00:00.0000000Z");
@@ -34,6 +34,12 @@ namespace bb.Core.Commands.List
 
             try
             {
+                if (data.ChannelId == null)
+                {
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:unknown", string.Empty, data.Platform));
+                    return commandReturn;
+                }
+
                 commandReturn.SetMessage(TextSanitizer.TimeTo(
                     new(2000, 9, 1),
                     new(2000, 12, 1),

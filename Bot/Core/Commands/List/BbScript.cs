@@ -35,12 +35,18 @@ namespace bb.Core.Commands.List
 
             try
             {
+                if (data.ChannelId == null)
+                {
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:unknown", string.Empty, data.Platform));
+                    return commandReturn;
+                }
+
                 DateTime StartTime = DateTime.Now;
 
                 try
                 {
                     bb.Script interpretator = new bb.Script();
-                    string result = TextSanitizer.CheckNull((string)(interpretator.Execute(data.ArgumentsString) ?? null));
+                    string result = (string)(interpretator.Execute(data.ArgumentsString) ?? "null");
                     DateTime EndTime = DateTime.Now;
                     string message = LocalizationService.GetString(data.User.Language, "command:csharp:result", data.ChannelId, data.Platform, result, (int)(EndTime - StartTime).TotalMilliseconds);
                     if (message == "command:csharp:result")

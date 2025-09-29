@@ -17,7 +17,7 @@ namespace bb.Core.Commands.List
             { "en-US", "Displays a list of chatters." }
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=chatters";
-        public override int CooldownPerUser => 5;
+        public override int CooldownPerUser => 10;
         public override int CooldownPerChannel => 1;
         public override string[] Aliases => ["chatters", "chat", "чатеры", "чат"];
         public override string HelpArguments => "(none)";
@@ -35,11 +35,17 @@ namespace bb.Core.Commands.List
 
             try
             {
-                string targetChannel = data.Arguments.Count > 0
-                    ? data.Arguments[0]
-                    : data.Channel;
+                if (data.ChannelId == null || data.Channel == null || bb.Bot.Clients.TwitchAPI == null ||
+                    bb.Bot.TwitchName == null)
+                {
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:unknown", string.Empty, data.Platform));
+                    return commandReturn;
+                }
 
-                string cursor = null;
+                string targetChannel = data.Arguments != null && data.Arguments.Count > 0
+                    ? data.Arguments[0] : data.Channel;
+
+                string? cursor = null;
                 var allChatters = new List<TwitchLib.Api.Helix.Models.Chat.GetChatters.Chatter>();
 
                 try
@@ -48,7 +54,7 @@ namespace bb.Core.Commands.List
                     {
                         var response = await bb.Bot.Clients.TwitchAPI.Helix.Chat.GetChattersAsync(
                             broadcasterId: UsernameResolver.GetUserID(targetChannel, PlatformsEnum.Twitch, true),
-                            moderatorId: UsernameResolver.GetUserID(bb.Bot.Name, PlatformsEnum.Twitch, true),
+                            moderatorId: UsernameResolver.GetUserID(bb.Bot.TwitchName, PlatformsEnum.Twitch, true),
                             first: 100,
                             after: cursor
                         );

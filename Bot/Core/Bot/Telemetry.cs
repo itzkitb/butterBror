@@ -103,7 +103,7 @@ namespace bb.Core.Bot
 
                 UserData user = new()
                 {
-                    ID = "a123456789",
+                    Id = "a123456789",
                     Language = "en",
                     Name = "test",
                     IsModerator = true,
@@ -137,7 +137,7 @@ namespace bb.Core.Bot
 
                 long memory = Process.GetCurrentProcess().PrivateMemorySize64 / (1024 * 1024);
 
-                PlatformMessageSender.TwitchSend(bb.Bot.Name.ToLower(), $"/me glorp 📡 | " +
+                PlatformMessageSender.TwitchSend(bb.Bot.TwitchName.ToLower(), $"/me glorp 📡 | " +
                     $"🕒 {TextSanitizer.FormatTimeSpan(DateTime.Now - bb.Bot.StartTime, "en-US")} | " +
                     $"{memory}Mbyte | " +
                     $"🔋 {Battery.GetBatteryCharge()}% {(Battery.IsCharging() ? "(Charging) " : "")}| " +

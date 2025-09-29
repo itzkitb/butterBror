@@ -17,7 +17,7 @@ namespace bb.Core.Commands.List
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=help";
         public override int CooldownPerUser => 10;
-        public override int CooldownPerChannel => 10;
+        public override int CooldownPerChannel => 5;
         public override string[] Aliases => ["help", "помощь", "hlp"];
         public override string HelpArguments => "(command name)";
         public override DateTime CreationDate => DateTime.Parse("2024-09-12T00:00:00.0000000Z");
@@ -33,7 +33,13 @@ namespace bb.Core.Commands.List
 
             try
             {
-                if (data.Arguments.Count == 1)
+                if (data.ChannelId == null)
+                {
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:unknown", string.Empty, data.Platform));
+                    return commandReturn;
+                }
+
+                if (data.Arguments != null && data.Arguments.Count == 1)
                 {
                     string classToFind = data.Arguments[0];
                     commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:help:not_found", data.ChannelId, data.Platform));
@@ -73,7 +79,7 @@ namespace bb.Core.Commands.List
                         }
                     }
                 }
-                else if (data.Arguments.Count > 1)
+                else if (data.Arguments != null && data.Arguments.Count > 1)
                     commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:a_few_arguments", data.ChannelId, data.Platform).Replace("%args%", "(command_name)"));
                 else
                     commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "text:bot_info", data.ChannelId, data.Platform));

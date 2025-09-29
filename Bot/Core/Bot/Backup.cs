@@ -44,7 +44,7 @@ namespace bb.Core.Bot
         {
             try
             {
-                PlatformMessageSender.TwitchSend(bb.Bot.Name.ToLower(), "🗃️ Backup started...", "", "", "", true, false);
+                PlatformMessageSender.TwitchSend(bb.Bot.TwitchName.ToLower(), "🗃️ Backup started...", "", "", "", true, false);
                 Write("Backup started...");
 
                 string reservePath = bb.Bot.Paths.Reserve;
@@ -123,7 +123,7 @@ namespace bb.Core.Bot
                 double archiveSizeMB = archiveSize / (1024.0 * 1024.0);
 
                 Write($"Backup completed in {stopwatch.Elapsed.TotalSeconds:0} seconds (Archive size: {archiveSizeMB:0.00} MB)!");
-                PlatformMessageSender.TwitchSend(bb.Bot.Name.ToLower(),
+                PlatformMessageSender.TwitchSend(bb.Bot.TwitchName.ToLower(),
                     $"🗃️ Backup completed in {stopwatch.Elapsed.TotalSeconds:0} seconds (Archive size: {archiveSizeMB:0.00} MB)",
                     "", "", "", true, false);
             }

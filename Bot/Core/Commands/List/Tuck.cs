@@ -19,7 +19,7 @@ namespace bb.Core.Commands.List
             { "en-US", "Good night... 👁" }
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=tuck";
-        public override int CooldownPerUser => 5;
+        public override int CooldownPerUser => 10;
         public override int CooldownPerChannel => 1;
         public override string[] Aliases => ["tuck", "уложить", "tk", "улож", "тык"];
         public override string HelpArguments => "(name) (text)";
@@ -37,8 +37,14 @@ namespace bb.Core.Commands.List
 
             try
             {
+                if (data.ChannelId == null || bb.Bot.DataBase == null || bb.Bot.TwitchName == null)
+                {
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:unknown", string.Empty, data.Platform));
+                    return commandReturn;
+                }
+
                 commandReturn.SetColor(ChatColorPresets.HotPink);
-                if (data.Arguments.Count >= 1)
+                if (data.Arguments != null && data.Arguments.Count >= 1)
                 {
                     var username = TextSanitizer.UsernameFilter(TextSanitizer.CleanAsciiWithoutSpaces(data.Arguments[0]));
                     var isSelectedUserIsNotIgnored = true;
@@ -46,10 +52,10 @@ namespace bb.Core.Commands.List
                     try
                     {
                         if (userID != null)
-                            isSelectedUserIsNotIgnored = !(bb.Bot.DataBase.Roles.GetIgnoredUser(data.Platform, DataConversion.ToLong(data.User.ID)) is not null);
+                            isSelectedUserIsNotIgnored = !(bb.Bot.DataBase.Roles.GetIgnoredUser(data.Platform, DataConversion.ToLong(data.User.Id)) is not null);
                     }
                     catch (Exception) { }
-                    if (username.ToLower() == bb.Bot.Name.ToLower())
+                    if (username.ToLower() == bb.Bot.TwitchName.ToLower())
                     {
                         commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:tuck:bot", data.ChannelId, data.Platform));
                         commandReturn.SetColor(ChatColorPresets.CadetBlue);

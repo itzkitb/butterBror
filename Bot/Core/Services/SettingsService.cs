@@ -33,7 +33,6 @@ namespace bb.Core.Services
             Manager.Save(path, "twitch_reconnect_message_channels", Array.Empty<string>());
             Manager.Save(path, "twitch_connect_channels", new[] { "First channel", "Second channel" });
             string[] apis = { "First api", "Second api" };
-            Manager.Save(path, "weather_token", apis);
             Manager.Save(path, "gpt_tokens", apis);
             Manager.Save(path, "telegram_token", "");
             Manager.Save(path, "twitch_version_message_channels", Array.Empty<string>());
@@ -66,7 +65,7 @@ namespace bb.Core.Services
         public static void Load()
         {
             string settingsPath = bb.Bot.Paths.Settings;
-            bb.Bot.Name = Manager.Get<string>(settingsPath, "bot_name");
+            bb.Bot.TwitchName = Manager.Get<string>(settingsPath, "bot_name");
             bb.Bot.TwitchReconnectAnnounce = Manager.Get<string[]>(settingsPath, "twitch_reconnect_message_channels");
             bb.Bot.TwitchConnectAnnounce = Manager.Get<string[]>(settingsPath, "twitch_connect_message_channels");
             bb.Bot.Tokens.Discord = Manager.Get<string>(settingsPath, "discord_token");

@@ -16,7 +16,7 @@ namespace bb.Core.Commands.List
             { "en-US", "Shuffle text or output a random number." }
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=random";
-        public override int CooldownPerUser => 5;
+        public override int CooldownPerUser => 10;
         public override int CooldownPerChannel => 1;
         public override string[] Aliases => ["random", "rnd", "рандом", "ранд"];
         public override string HelpArguments => "(123-456/text)";
@@ -33,7 +33,13 @@ namespace bb.Core.Commands.List
 
             try
             {
-                if (data.Arguments.Count > 0)
+                if (data.ChannelId == null)
+                {
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:unknown", string.Empty, data.Platform));
+                    return commandReturn;
+                }
+
+                if (data.Arguments != null && data.Arguments.Count > 0)
                 {
                     if (data.ArgumentsString.Contains('-'))
                     {

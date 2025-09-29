@@ -17,8 +17,8 @@ namespace bb.Core.Commands.List
             { "en-US", "Find out the bot's ping." }
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=ping";
-        public override int CooldownPerUser => 30;
-        public override int CooldownPerChannel => 5;
+        public override int CooldownPerUser => 10;
+        public override int CooldownPerChannel => 1;
         public override string[] Aliases => ["ping", "пинг", "понг", "пенг", "п"];
         public override string HelpArguments => "(ISP/dev)";
         public override DateTime CreationDate => DateTime.Parse("2024-07-04T00:00:00.0000000Z");
@@ -34,11 +34,17 @@ namespace bb.Core.Commands.List
 
             try
             {
+                if (data.ChannelId == null || bb.Bot.Clients.Twitch == null || bb.Bot.Clients.Discord == null)
+                {
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:unknown", string.Empty, data.Platform));
+                    return commandReturn;
+                }
+
                 string argument = "";
-                if (data.Arguments.Count > 0)
+                if (data.Arguments != null && data.Arguments.Count > 0)
                     argument = data.Arguments[0].ToLower();
 
-                if (data.Arguments.Count == 0)
+                if (data.Arguments != null && data.Arguments.Count == 0)
                 {
                     var workTime = DateTime.Now - bb.Bot.StartTime;
                     string host = "";
@@ -85,42 +91,6 @@ namespace bb.Core.Commands.List
 
                     commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:ping:isp", data.ChannelId, data.Platform, pingSpeed.ToString()));
                 }
-                /*else if (argument.Equals("dev"))
-                {
-                    var workTime = DateTime.Now - Engine.StartTime;
-                    string host = "";
-                    long pingSpeed = 0;
-                    if (data.Platform == PlatformsEnum.Telegram)
-                    {
-                        pingSpeed = Services.External.TelegramService.Ping().Result;
-                    }
-                    else
-                    {
-                        if (data.Platform == PlatformsEnum.Discord) host = URLs.discord;
-                        else if (data.Platform == PlatformsEnum.Twitch) host = URLs.twitch;
-                        else if (data.Platform == PlatformsEnum.Telegram) host = URLs.telegram;
-
-                        PingReply reply = new Ping().Send(host, 1000);
-                        pingSpeed = reply.Status == IPStatus.Success ? reply.RoundtripTime : -1;
-                    }
-
-                    commandReturn.SetMessage(LocalizationService.GetString(
-                        data.User.Language,
-                        "command:ping:development",
-                        data.ChannelId,
-                        data.Platform,
-                        Engine.Version,
-                        Engine.Patch,
-                        Text.FormatTimeSpan(workTime, data.User.Language),
-                        (Engine.Bot.Clients.Twitch.JoinedChannels.Count + Engine.Bot.Clients.Discord.Guilds.Count) + " (Twitch, Discord)",
-                        Runner.commandInstances.Count,
-                        pingSpeed.ToString(),
-                        Engine.TicksPerSecond.ToString(),
-                        Engine.Ticks.ToString(),
-                        Engine.TickDelay.ToString(),
-                        Engine.TicksCounter.ToString(),
-                        Engine.SkippedTicks.ToString()));
-                }*/
             }
             catch (Exception e)
             {

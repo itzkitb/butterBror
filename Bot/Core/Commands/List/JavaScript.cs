@@ -9,7 +9,7 @@ namespace bb.Core.Commands.List
 {
     public class JavaScript : CommandBase
     {
-        public override string Name => "Java";
+        public override string Name => "JavaScript";
         public override string Author => "ItzKITb";
         public override string AuthorsGithub => "https://github.com/itzkitb";
         public override string GithubSource => $"{URLs.githubSource}blob/master/butterBror/Core/Commands/List/JavaScript.cs";
@@ -20,7 +20,7 @@ namespace bb.Core.Commands.List
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=jaba";
         public override int CooldownPerUser => 10;
-        public override int CooldownPerChannel => 5;
+        public override int CooldownPerChannel => 1;
         public override string[] Aliases => ["js", "javascript", "джаваскрипт", "жс", "jabascript", "supinic"];
         public override string HelpArguments => "[code]";
         public override DateTime CreationDate => DateTime.Parse("2024-07-04T00:00:00.0000000Z");
@@ -37,6 +37,12 @@ namespace bb.Core.Commands.List
 
             try
             {
+                if (data.ChannelId == null)
+                {
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:unknown", string.Empty, data.Platform));
+                    return commandReturn;
+                }
+
                 if (new BlockedWordDetector().Check(data.ArgumentsString, data.ChannelId, data.Platform))
                 {
                     try

@@ -14,8 +14,8 @@ namespace bb.Core.Commands.List
         public override Version Version => new("1.0.1");
         public override Dictionary<string, string> Description => new()
         {
-            { "ru-RU", "Эта команда не для тебя PauseChamp" },
-            { "en-US", "This command is not for you PauseChamp" }
+            { "ru-RU", "Эта команда не для тебя." },
+            { "en-US", "This command is not for you." }
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=dev";
         public override int CooldownPerUser => 0;
@@ -35,6 +35,12 @@ namespace bb.Core.Commands.List
 
             try
             {
+                if (data.ChannelId == null)
+                {
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:unknown", string.Empty, data.Platform));
+                    return commandReturn;
+                }
+
                 DateTime StartTime = DateTime.Now;
 
                 try

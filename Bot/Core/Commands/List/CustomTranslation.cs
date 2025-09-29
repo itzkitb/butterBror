@@ -23,9 +23,9 @@ namespace bb.Core.Commands.List
         public override string[] Aliases => ["customtranslation", "ct", "кастомныйперевод", "кп"];
         public override string HelpArguments => "(set [paramName] [en/ru] [text])/(get [paramName] [en/ru])/(original [paramName] [en/ru])/(reset [paramName] [en/ru])";
         public override DateTime CreationDate => DateTime.Parse("2024-05-08T00:00:00.0000000Z");
-        public override bool OnlyBotModerator => false;
-        public override bool OnlyBotDeveloper => false;
-        public override bool OnlyChannelModerator => false;
+        public override bool OnlyBotModerator => true;
+        public override bool OnlyBotDeveloper => true;
+        public override bool OnlyChannelModerator => true;
         public override PlatformsEnum[] Platforms => [PlatformsEnum.Twitch, PlatformsEnum.Telegram, PlatformsEnum.Discord];
         public override bool IsAsync => false;
 
@@ -35,6 +35,13 @@ namespace bb.Core.Commands.List
 
             try
             {
+                if (data.Channel == null || data.ChannelId == null || data.User.IsModerator == null ||
+                    data.User.IsBroadcaster == null || data.User.IsBotModerator == null)
+                {
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:API_error", string.Empty, data.Platform));
+                    return commandReturn;
+                }
+
                 string[] setAliases = ["set", "s", "установить", "сет", "с", "у"];
                 string[] getAliases = ["get", "g", "гет", "получить", "п", "г"];
                 string[] originalAliases = ["original", "оригинал", "о", "o"];
@@ -46,7 +53,7 @@ namespace bb.Core.Commands.List
                     "userPardon", "rejoinedChannel", "joinedChannel", "leavedChannel", "modAdded", "modDel", "addedChannel", "delChannel", "welcomeChannel", "error", "botVerified",
                     "unhandledError", "Err"];
 
-                if (data.Arguments.Count >= 3)
+                if (data.Arguments != null && data.Arguments.Count >= 3)
                 {
                     try
                     {
@@ -55,7 +62,7 @@ namespace bb.Core.Commands.List
                         string lang = data.Arguments[2];
                         if (langs.Contains(lang))
                         {
-                            if (setAliases.Contains(arg1) && ((bool)data.User.IsModerator || (bool)data.User.IsBroadcaster || (bool)data.User.IsBotModerator))
+                            if (setAliases.Contains(arg1))
                             {
                                 if (data.Arguments.Count > 3)
                                 {
@@ -105,7 +112,7 @@ namespace bb.Core.Commands.List
                                     commandReturn.SetColor(ChatColorPresets.Red);
                                 }
                             }
-                            else if (getAliases.Contains(arg1) && ((bool)data.User.IsModerator || (bool)data.User.IsBroadcaster || (bool)data.User.IsBotModerator))
+                            else if (getAliases.Contains(arg1))
                             {
                                 if (LocalizationService.TranslateContains(paramName))
                                 {

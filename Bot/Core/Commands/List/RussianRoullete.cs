@@ -17,7 +17,7 @@ namespace bb.Core.Commands.List
             { "en-US", "Mike Klubnika <3" }
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=rr";
-        public override int CooldownPerUser => 5;
+        public override int CooldownPerUser => 10;
         public override int CooldownPerChannel => 1;
         public override string[] Aliases => ["rr", "russianroullete", "русскаярулетка", "рр", "br", "buckshotroullete"];
         public override string HelpArguments => string.Empty;
@@ -34,16 +34,22 @@ namespace bb.Core.Commands.List
 
             try
             {
+                if (data.ChannelId == null)
+                {
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:unknown", string.Empty, data.Platform));
+                    return commandReturn;
+                }
+
                 int win = new Random().Next(1, 3);
                 int page2 = new Random().Next(1, 5);
                 string translationParam = "command:russian_roullete:";
-                if (Utils.CurrencyManager.GetBalance(data.User.ID, data.Platform) > 4)
+                if (Utils.CurrencyManager.GetBalance(data.User.Id, data.Platform) > 4)
                 {
                     if (win == 1)
                     {
                         // WIN
                         translationParam += "win:" + page2;
-                        Utils.CurrencyManager.Add(data.User.ID, 1, 0, data.Platform);
+                        Utils.CurrencyManager.Add(data.User.Id, 1, 0, data.Platform);
                     }
                     else
                     {
@@ -51,11 +57,11 @@ namespace bb.Core.Commands.List
                         translationParam += "over:" + page2;
                         if (page2 == 4)
                         {
-                            Utils.CurrencyManager.Add(data.User.ID, -1, 0, data.Platform);
+                            Utils.CurrencyManager.Add(data.User.Id, -1, 0, data.Platform);
                         }
                         else
                         {
-                            Utils.CurrencyManager.Add(data.User.ID, -5, 0, data.Platform);
+                            Utils.CurrencyManager.Add(data.User.Id, -5, 0, data.Platform);
                         }
                         commandReturn.SetColor(ChatColorPresets.Red);
                     }
@@ -63,7 +69,7 @@ namespace bb.Core.Commands.List
                 }
                 else
                 {
-                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:roulette_not_enough_coins", data.ChannelId, data.Platform, Utils.CurrencyManager.GetBalance(data.User.ID, data.Platform)));
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:roulette_not_enough_coins", data.ChannelId, data.Platform, Utils.CurrencyManager.GetBalance(data.User.Id, data.Platform)));
                 }
             }
             catch (Exception e)

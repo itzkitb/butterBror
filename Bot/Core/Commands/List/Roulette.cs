@@ -17,7 +17,7 @@ namespace bb.Core.Commands.List
             { "en-US", "Play Roulette! Details: https://bit.ly/bb_roulette " }
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=roulette";
-        public override int CooldownPerUser => 5;
+        public override int CooldownPerUser => 10;
         public override int CooldownPerChannel => 1;
         public override string[] Aliases => ["roulette", "r", "рулетка", "р"];
         public override string HelpArguments => "[select: \"🟩\", \"🟥\", \"⬛\"] [bid]";
@@ -34,23 +34,44 @@ namespace bb.Core.Commands.List
 
             try
             {
-                string[] selections = ["🟥", "🟩", "⬛"];
+                if (data.ChannelId == null)
+                {
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:unknown", string.Empty, data.Platform));
+                    return commandReturn;
+                }
+
+                Dictionary<string, List<string>> aliases = new(){
+                    { "red", ["red", "r", "красный", "красное", "к", "🔴", "🟥", "❤️"] },
+                    { "green", ["green", "g", "зеленый", "зеленое", "з", "🟢", "🟩", "💚"] },
+                    { "black", ["black", "b", "черный", "черное", "ч", "⚫", "⬛", "◼️", "◾", "🖤"] }
+                };
+                string[] selections = ["red", "green", "black"];
                 Dictionary<string, int[]> selectionsNumbers = new()
                     {
-                        { "🟥", new int[]{ 32, 19, 21, 25, 34, 27, 36, 30, 23, 5, 16, 1, 14, 9, 18, 7, 12, 3 } },
-                        { "⬛", new int[]{ 15, 4, 2, 17, 6, 13, 11, 8, 10, 24, 33, 20, 31, 22, 29, 28, 35, 26 } },
-                        { "🟩", new int[]{ 0, 36 } }
+                        { "red", new int[]{ 32, 19, 21, 25, 34, 27, 36, 30, 23, 5, 16, 1, 14, 9, 18, 7, 12, 3 } },
+                        { "black", new int[]{ 15, 4, 2, 17, 6, 13, 11, 8, 10, 24, 33, 20, 31, 22, 29, 28, 35, 26 } },
+                        { "green", new int[]{ 0, 36 } }
                     };
                 Dictionary<string, double> multipliers = new()
                     {
-                        { "🟥", 1.5 },
-                        { "⬛", 1.5 },
-                        { "🟩", 2 },
+                        { "red", 1.5 },
+                        { "black", 1.5 },
+                        { "green", 2 },
                     };
 
-                if (data.Arguments.Count > 1)
+                if (data.Arguments != null && data.Arguments.Count > 1)
                 {
-                    if (selections.Contains(data.Arguments[0]))
+                    string? selected = null;
+                    foreach (KeyValuePair<string, List<string>> alias in aliases)
+                    {
+                        if (alias.Value.Contains(data.Arguments[0]))
+                        {
+                            selected = alias.Key;
+                            break;
+                        }
+                    }
+
+                    if (selected != null)
                     {
                         int bid = DataConversion.ToInt(data.Arguments[1]);
                         commandReturn.SetColor(ChatColorPresets.Red);
@@ -59,13 +80,13 @@ namespace bb.Core.Commands.List
                             commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:roulette_wrong_bid", data.ChannelId, data.Platform));
                         else if (bid < 0)
                             commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:roulette_steal", data.ChannelId, data.Platform));
-                        else if (Utils.CurrencyManager.GetBalance(data.User.ID, data.Platform) < bid)
+                        else if (Utils.CurrencyManager.GetBalance(data.User.Id, data.Platform) < bid)
                             commandReturn.SetMessage(LocalizationService.GetString(
                                 data.User.Language,
                                 "error:roulette_not_enough_coins",
                                 data.ChannelId,
                                 data.Platform,
-                                Utils.CurrencyManager.GetBalance(data.User.ID, data.Platform).ToString()));
+                                Utils.CurrencyManager.GetBalance(data.User.Id, data.Platform).ToString()));
                         else
                         {
                             int moves = new Random().Next(38, 380);
@@ -83,7 +104,7 @@ namespace bb.Core.Commands.List
                                 commandReturn.SetColor(ChatColorPresets.YellowGreen);
 
                                 int win = (int)(bid * multipliers[result_symbol]);
-                                Utils.CurrencyManager.Add(data.User.ID, win, 0, data.Platform);
+                                Utils.CurrencyManager.Add(data.User.Id, win, 0, data.Platform);
                                 commandReturn.SetMessage(LocalizationService.GetString(
                                     data.User.Language,
                                     "command:roulette:result:win",
@@ -96,7 +117,7 @@ namespace bb.Core.Commands.List
                             }
                             else
                             {
-                                Utils.CurrencyManager.Add(data.User.ID, -bid, 0, data.Platform);
+                                Utils.CurrencyManager.Add(data.User.Id, -bid, 0, data.Platform);
                                 commandReturn.SetMessage(LocalizationService.GetString(
                                     data.User.Language,
                                     "command:roulette:result:lose",
@@ -117,7 +138,7 @@ namespace bb.Core.Commands.List
                         "error:not_enough_arguments",
                         data.ChannelId,
                         data.Platform,
-                        $"{bb.Bot.DefaultCommandPrefix}roulette [🟩/🟥/⬛] [{LocalizationService.GetString(data.User.Language, "text:bid", data.ChannelId, data.Platform)}]"));
+                        $"{bb.Bot.DefaultCommandPrefix}roulette [red/green/black] [{LocalizationService.GetString(data.User.Language, "text:bid", data.ChannelId, data.Platform)}]"));
             }
             catch (Exception e)
             {

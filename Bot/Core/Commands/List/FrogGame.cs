@@ -34,11 +34,11 @@ namespace bb.Core.Commands.List
 
             try
             {
-                if (bb.Bot.DataBase == null || data.ChannelId == null) return null;
+                if (bb.Bot.DataBase == null || data.ChannelId == null) return commandReturn;
 
-                long balance = Convert.ToInt64(bb.Bot.DataBase.Games.GetData("Frogs", data.Platform, DataConversion.ToLong(data.User.ID), "Frogs"));
-                long gifted = Convert.ToInt64(bb.Bot.DataBase.Games.GetData("Frogs", data.Platform, DataConversion.ToLong(data.User.ID), "Gifted"));
-                long received = Convert.ToInt64(bb.Bot.DataBase.Games.GetData("Frogs", data.Platform, DataConversion.ToLong(data.User.ID), "Received"));
+                long balance = Convert.ToInt64(bb.Bot.DataBase.Games.GetData("Frogs", data.Platform, DataConversion.ToLong(data.User.Id), "Frogs"));
+                long gifted = Convert.ToInt64(bb.Bot.DataBase.Games.GetData("Frogs", data.Platform, DataConversion.ToLong(data.User.Id), "Gifted"));
+                long received = Convert.ToInt64(bb.Bot.DataBase.Games.GetData("Frogs", data.Platform, DataConversion.ToLong(data.User.Id), "Received"));
 
                 double frogPriceUSD = 0.12;
                 double BTRCurrency = (double)(bb.Bot.Coins == 0 ? 0 : bb.Bot.InBankDollars / bb.Bot.Coins);
@@ -121,7 +121,7 @@ namespace bb.Core.Commands.List
                     }
                     else if (caughtAliases.Contains(data.Arguments[0].ToLower()))
                     {
-                        if (CooldownManager.CheckCooldown(3600, 0, "FrogsReseter", data.User.ID, data.ChannelId, data.Platform, false, true))
+                        if (CooldownManager.CheckCooldown(3600, 0, "FrogsReseter", data.User.Id, data.ChannelId, data.Platform, false, true))
                         {
                             Random rand = new Random();
                             long frogCaughtType = rand.Next(0, 4);
@@ -154,7 +154,7 @@ namespace bb.Core.Commands.List
                                     currentBalance,
                                     frogsCaughted));
 
-                                bb.Bot.DataBase.Games.SetData("Frogs", data.Platform, DataConversion.ToLong(data.User.ID), "Frogs", currentBalance); // Pizdec
+                                bb.Bot.DataBase.Games.SetData("Frogs", data.Platform, DataConversion.ToLong(data.User.Id), "Frogs", currentBalance); // Pizdec
                             }
                         }
                         else
@@ -164,7 +164,7 @@ namespace bb.Core.Commands.List
                                 "command:frog:error:caught",
                                 data.ChannelId,
                                 data.Platform,
-                                TextSanitizer.FormatTimeSpan(CooldownManager.GetCooldownTime(data.User.ID, "FrogsReseter", 3600, data.Platform), data.User.Language)));
+                                TextSanitizer.FormatTimeSpan(CooldownManager.GetCooldownTime(data.User.Id, "FrogsReseter", 3600, data.Platform), data.User.Language)));
                             commandReturn.SetColor(ChatColorPresets.Red);
                         }
                     }
@@ -212,8 +212,8 @@ namespace bb.Core.Commands.List
 
                                 bb.Bot.DataBase.Games.SetData("Frogs", data.Platform, DataConversion.ToLong(receiverId), "Frogs", receiverBalance + frogs);
                                 bb.Bot.DataBase.Games.SetData("Frogs", data.Platform, DataConversion.ToLong(receiverId), "Received", receiverReceived + frogs);
-                                bb.Bot.DataBase.Games.SetData("Frogs", data.Platform, DataConversion.ToLong(data.User.ID), "Frogs", balance - frogs);
-                                bb.Bot.DataBase.Games.SetData("Frogs", data.Platform, DataConversion.ToLong(data.User.ID), "Gifted", gifted + frogs);
+                                bb.Bot.DataBase.Games.SetData("Frogs", data.Platform, DataConversion.ToLong(data.User.Id), "Frogs", balance - frogs);
+                                bb.Bot.DataBase.Games.SetData("Frogs", data.Platform, DataConversion.ToLong(data.User.Id), "Gifted", gifted + frogs);
                             }
                             else
                             {
@@ -257,7 +257,7 @@ namespace bb.Core.Commands.List
                         string userPosition = LocalizationService.GetString(data.User.Language, "text:empty", data.ChannelId, data.Platform);
                         for (int i = 0; i < fullSortedList.Count; i++)
                         {
-                            if (fullSortedList[i].UserId == DataConversion.ToLong(data.User.ID))
+                            if (fullSortedList[i].UserId == DataConversion.ToLong(data.User.Id))
                             {
                                 userPosition = $"{i + 1}.";
                                 break;
@@ -332,8 +332,8 @@ namespace bb.Core.Commands.List
                                 long plusBalance = (long)price;
                                 long plusSubbalance = (long)((price - (double)plusBalance) * 100);
 
-                                CurrencyManager.Add(data.User.ID, plusBalance, plusSubbalance, data.Platform);
-                                bb.Bot.DataBase.Games.SetData("Frogs", data.Platform, DataConversion.ToLong(data.User.ID), "Frogs", balance - amount);
+                                CurrencyManager.Add(data.User.Id, plusBalance, plusSubbalance, data.Platform);
+                                bb.Bot.DataBase.Games.SetData("Frogs", data.Platform, DataConversion.ToLong(data.User.Id), "Frogs", balance - amount);
                                 commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:frog:sell:success", data.ChannelId, data.Platform, LocalizationService.GetPluralString(data.User.Language, "text:frog2", data.ChannelId, data.Platform, amount, amount), Math.Round(frogSellPriceBTR * amount, 2)));
                             }
                         }
@@ -349,7 +349,7 @@ namespace bb.Core.Commands.List
                         {
                             long amount = DataConversion.ToLong(data.Arguments[1]);
                             double price = amount * frogBuyPriceBTR;
-                            double userBalance = CurrencyManager.GetBalance(data.User.ID, data.Platform) + CurrencyManager.GetSubbalance(data.User.ID, data.Platform) / 100;
+                            double userBalance = CurrencyManager.GetBalance(data.User.Id, data.Platform) + CurrencyManager.GetSubbalance(data.User.Id, data.Platform) / 100;
 
                             if (amount < 0)
                             {
@@ -364,8 +364,8 @@ namespace bb.Core.Commands.List
                                 long minusBalance = (long)price;
                                 long minusSubbalance = (long)((price - (double)minusBalance) * 100);
 
-                                CurrencyManager.Add(data.User.ID, -minusBalance, -minusSubbalance, data.Platform);
-                                bb.Bot.DataBase.Games.SetData("Frogs", data.Platform, DataConversion.ToLong(data.User.ID), "Frogs", balance + amount);
+                                CurrencyManager.Add(data.User.Id, -minusBalance, -minusSubbalance, data.Platform);
+                                bb.Bot.DataBase.Games.SetData("Frogs", data.Platform, DataConversion.ToLong(data.User.Id), "Frogs", balance + amount);
                                 commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:frog:buy:success", data.ChannelId, data.Platform, LocalizationService.GetPluralString(data.User.Language, "text:frog2", data.ChannelId, data.Platform, amount, amount), Math.Round(price, 2)));
                             }
                         }

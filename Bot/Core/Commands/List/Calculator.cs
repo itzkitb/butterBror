@@ -18,8 +18,8 @@ namespace bb.Core.Commands.List
             { "en-US", "Get the answer to the arithmetic expression." }
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=math";
-        public override int CooldownPerUser => 15;
-        public override int CooldownPerChannel => 5;
+        public override int CooldownPerUser => 10;
+        public override int CooldownPerChannel => 1;
         public override string[] Aliases => ["calc", "calculate", "кальк", "math", "матем", "математика", "калькулятор"];
         public override string HelpArguments => "[2+2]";
         public override DateTime CreationDate => DateTime.Parse("2024-07-04T00:00:00.0000000Z");
@@ -35,6 +35,12 @@ namespace bb.Core.Commands.List
 
             try
             {
+                if (data.ChannelId == null)
+                {
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:unknown", string.Empty, data.Platform));
+                    return commandReturn;
+                }
+
                 string input = data.ArgumentsString;
                 Dictionary<string, string> replacements = new() {
                         { ",", "." },

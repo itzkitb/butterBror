@@ -36,9 +36,15 @@ namespace bb.Core.Commands.List
 
             try
             {
+                if (bb.Bot.UsersBuffer == null || data.ChannelId == null || bb.Bot.TwitchName == null)
+                {
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:unknown", string.Empty, data.Platform));
+                    return commandReturn;
+                }
+
                 string name, userID;
 
-                if (data.Arguments.Count > 0)
+                if (data.Arguments != null && data.Arguments.Count > 0)
                 {
                     name = TextSanitizer.UsernameFilter(data.Arguments.ElementAt(0).ToLower());
                     userID = UsernameResolver.GetUserID(name, data.Platform);
@@ -46,7 +52,7 @@ namespace bb.Core.Commands.List
                 else
                 {
                     name = data.User.Name;
-                    userID = data.User.ID;
+                    userID = data.User.Id;
                 }
 
                 if (userID == null)
@@ -56,7 +62,7 @@ namespace bb.Core.Commands.List
                 }
                 else
                 {
-                    if (name == bb.Bot.Name.ToLower())
+                    if (name == bb.Bot.TwitchName.ToLower())
                     {
                         commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:first_global_line:bot", data.ChannelId, data.Platform));
                     }
