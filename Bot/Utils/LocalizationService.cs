@@ -1,5 +1,5 @@
 ﻿using bb.Data;
-using bb.Models;
+using bb.Models.Platform;
 using DankDB;
 using Newtonsoft.Json;
 using static bb.Core.Bot.Console;

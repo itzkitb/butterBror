@@ -3,6 +3,10 @@
     "butterBror": {
       "commandName": "Project",
       "commandLineArgs": "--skip-fetch",
+      "environmentVariables": {
+        "BRANCH": "local",
+        "COMMIT": "local-commit"
+      },
       "sqlDebugging": true
     }
   }

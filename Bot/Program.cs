@@ -1,14 +1,11 @@
 ﻿using bb.Core.Bot;
 using bb.Core.Services;
 using bb.Data;
-using bb.Events;
-using bb.Models;
-using bb.Models.DataBase;
 using bb.Services.External;
 using bb.Services.Internal;
 using bb.Utils;
-using bb.Workers;
-using butterBror.Models.Exceptions;
+using bb.Core.Configuration;
+using bb.Models.Exceptions;
 using DankDB;
 using Discord;
 using Discord.Commands;
@@ -29,6 +26,16 @@ using TwitchLib.Client.Models;
 using TwitchLib.Communication.Clients;
 using TwitchLib.Communication.Models;
 using static bb.Core.Bot.Console;
+using bb.Core.Configuration;
+using bb.Data.Repositories;
+using bb.Data.Entities;
+using bb.Services.Platform.Discord;
+using bb.Services.Platform.Twitch;
+using bb.Services.Platform.Telegram;
+using bb.Models.Platform;
+
+
+// Task: Add a DI container for all this crap
 
 namespace bb
 {
@@ -40,8 +47,8 @@ namespace bb
         #region Variables
         #region Core
         public static Version Version = new Version("2.18.0.9");
-        public static string Branch = Environment.GetEnvironmentVariable("GITHUB_REF")?.Replace("refs/heads/", "") ?? "master";
-        public static string Commit = Environment.GetEnvironmentVariable("GITHUB_SHA") ?? "";
+        public static string Branch = Environment.GetEnvironmentVariable("BRANCH") ?? "master";
+        public static string Commit = Environment.GetEnvironmentVariable("COMMIT") ?? "";
         public static DateTime StartTime = new();
         public static string PreviousVersion = "";
         public static bool Initialized = false;
@@ -97,7 +104,6 @@ namespace bb
         public static readonly TimeSpan CacheTTL = TimeSpan.FromMinutes(30);
         #endregion Cache
 
-
         public static SevenTvService SevenTvService = new SevenTvService(new HttpClient());
         public static IServiceProvider? DiscordServiceProvider;
         public static ReceiverOptions? TelegramReceiverOptions;
@@ -110,6 +116,7 @@ namespace bb
         private static DateTime _lastTelemtry = DateTime.UtcNow.AddMinutes(-1);
         private static DateTime _lastSave = DateTime.UtcNow.AddMinutes(-1);
         #endregion
+
         #region Core
         /// <summary>
         /// Entry point of the application. Initializes and starts the bot core.
@@ -920,19 +927,19 @@ namespace bb
                 .AddSingleton(DiscordCommandService)
                 .BuildServiceProvider();
 
-            Clients.Discord.Log += Events.DiscordEvents.LogAsync;
-            Clients.Discord.JoinedGuild += Events.DiscordEvents.ConnectToGuilt;
+            Clients.Discord.Log += DiscordEvents.LogAsync;
+            Clients.Discord.JoinedGuild += DiscordEvents.ConnectToGuilt;
             Clients.Discord.Ready += DiscordWorker.ReadyAsync;
             Clients.Discord.MessageReceived += DiscordWorker.MessageReceivedAsync;
-            Clients.Discord.SlashCommandExecuted += Events.DiscordEvents.SlashCommandHandler;
-            Clients.Discord.ApplicationCommandCreated += Events.DiscordEvents.ApplicationCommandCreated;
-            Clients.Discord.ApplicationCommandDeleted += Events.DiscordEvents.ApplicationCommandDeleted;
-            Clients.Discord.ApplicationCommandUpdated += Events.DiscordEvents.ApplicationCommandUpdated;
-            Clients.Discord.ChannelCreated += Events.DiscordEvents.ChannelCreated;
-            Clients.Discord.ChannelDestroyed += Events.DiscordEvents.ChannelDeleted;
-            Clients.Discord.ChannelUpdated += Events.DiscordEvents.ChannelUpdated;
-            Clients.Discord.Connected += Events.DiscordEvents.Connected;
-            Clients.Discord.ButtonExecuted += Events.DiscordEvents.ButtonTouched;
+            Clients.Discord.SlashCommandExecuted += DiscordEvents.SlashCommandHandler;
+            Clients.Discord.ApplicationCommandCreated += DiscordEvents.ApplicationCommandCreated;
+            Clients.Discord.ApplicationCommandDeleted += DiscordEvents.ApplicationCommandDeleted;
+            Clients.Discord.ApplicationCommandUpdated += DiscordEvents.ApplicationCommandUpdated;
+            Clients.Discord.ChannelCreated += DiscordEvents.ChannelCreated;
+            Clients.Discord.ChannelDestroyed += DiscordEvents.ChannelDeleted;
+            Clients.Discord.ChannelUpdated += DiscordEvents.ChannelUpdated;
+            Clients.Discord.Connected += DiscordEvents.Connected;
+            Clients.Discord.ButtonExecuted += DiscordEvents.ButtonTouched;
 
             await DiscordWorker.RegisterCommandsAsync();
             await Clients.Discord.LoginAsync(TokenType.Bot, Tokens.Discord);
@@ -970,7 +977,7 @@ namespace bb
                 DropPendingUpdates = true,
             };
 
-            Clients.Telegram.StartReceiving(Events.TelegramEvents.UpdateHandler, Events.TelegramEvents.ErrorHandler, TelegramReceiverOptions, Clients.TelegramCancellationToken.Token);
+            Clients.Telegram.StartReceiving(TelegramEvents.UpdateHandler, TelegramEvents.ErrorHandler, TelegramReceiverOptions, Clients.TelegramCancellationToken.Token);
             Write("Telegram is ready.");
         }
         #endregion Connects

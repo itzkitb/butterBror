@@ -1,9 +1,9 @@
-﻿using bb.Core.Bot.SQLColumnNames;
-using bb.Models;
-using bb.Services.External;
-using butterBror.Models.Currency;
+﻿using bb.Services.External;
+using bb.Models.Currency;
 using Newtonsoft.Json;
 using static bb.Core.Bot.Console;
+using bb.Core.Configuration;
+using bb.Models.Platform;
 
 namespace bb.Utils
 {

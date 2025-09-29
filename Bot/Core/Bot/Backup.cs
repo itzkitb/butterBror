@@ -1,5 +1,5 @@
 ﻿using bb.Core.Services;
-using bb.Data;
+using bb.Data.Repositories;
 using bb.Utils;
 using System.Diagnostics;
 using System.IO.Compression;
@@ -157,7 +157,7 @@ namespace bb.Core.Bot
         /// Each manager implements CreateBackup() method for consistent snapshot creation.
         /// Database files require special handling compared to regular configuration files.
         /// </remarks>
-        private static IEnumerable<SqlDatabaseBase> GetDatabaseManagers()
+        private static IEnumerable<SqlRepositoryBase> GetDatabaseManagers()
         {
             yield return bb.Bot.DataBase.Games;
             yield return bb.Bot.DataBase.Channels;

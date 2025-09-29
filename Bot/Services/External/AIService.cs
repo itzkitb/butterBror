@@ -1,6 +1,6 @@
-﻿using bb.Core.Bot.SQLColumnNames;
-using bb.Models;
+﻿using bb.Core.Configuration;
 using bb.Models.AI;
+using bb.Models.Platform;
 using bb.Utils;
 using DankDB;
 using Microsoft.CodeAnalysis;

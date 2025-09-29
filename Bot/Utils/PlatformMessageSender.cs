@@ -1,6 +1,8 @@
-﻿using bb.Core.Bot.SQLColumnNames;
-using bb.Core.Commands;
-using bb.Models;
+﻿using bb.Core.Commands;
+using bb.Models.Platform;
+using bb.Services.Platform.Discord;
+using bb.Services.Platform.Telegram;
+using bb.Services.Platform.Twitch;
 using System.Globalization;
 using Telegram.Bot;
 using TwitchLib.Client.Enums;

@@ -1,9 +1,7 @@
-﻿using bb.Core.Bot;
-using bb.Core.Bot.SQLColumnNames;
-using bb.Models;
-using bb.Models.SevenTVLib;
+﻿using bb.Models.SevenTVLib;
 using bb.Services.External;
 using bb.Utils;
+using bb.Core.Configuration;
 using Microsoft.CodeAnalysis;
 
 //using Microsoft.Extensions.Caching.Memory;
@@ -12,6 +10,8 @@ using System.Text.RegularExpressions;
 using TwitchLib.Client.Enums;
 using static bb.Core.Bot.Console;
 using static System.Runtime.InteropServices.JavaScript.JSType;
+using bb.Models.Command;
+using bb.Models.Platform;
 
 namespace bb.Core.Commands.List
 {

@@ -1,5 +1,5 @@
-﻿using bb.Core.Bot.SQLColumnNames;
-using bb.Models;
+﻿using bb.Core.Configuration;
+using bb.Models.Platform;
 using System;
 using System.Collections.Generic;
 using System.Globalization;

@@ -1,5 +1,6 @@
-﻿using bb.Core.Bot.SQLColumnNames;
-using bb.Models;
+﻿using bb.Core.Configuration;
+using bb.Models.Command;
+using bb.Models.Platform;
 using System.Collections.Concurrent;
 using System.Globalization;
 using System.Text.RegularExpressions;
@@ -340,7 +341,7 @@ namespace bb.Utils
                 Bot.UsersBuffer.SetParameter(platform, DataConversion.ToLong(userId), Users.LastSeen, now_utc.ToString("o"));
 
                 // Persist message history
-                var msg = new Models.DataBase.Message
+                var msg = new Data.Entities.Message
                 {
                     messageDate = now_utc,
                     messageText = message,

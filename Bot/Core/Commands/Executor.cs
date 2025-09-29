@@ -1,4 +1,6 @@
-﻿using bb.Models;
+﻿using bb.Models.Command;
+using bb.Models.Platform;
+using bb.Models.Users;
 using Discord.WebSocket;
 using System;
 using Telegram.Bot.Types;

@@ -1,5 +1,6 @@
-﻿using bb.Core.Bot.SQLColumnNames;
-using bb.Models;
+﻿using bb.Core.Configuration;
+using bb.Models.Command;
+using bb.Models.Platform;
 using bb.Utils;
 using Microsoft.CodeAnalysis;
 using System.Collections.Concurrent;

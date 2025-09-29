@@ -1,12 +1,16 @@
 ﻿using bb.Core.Commands;
-using bb.Models;
 using bb.Services.External;
 using bb.Services.Internal;
 using bb.Utils;
+using bb.Core.Configuration;
 using DankDB;
 using System.Diagnostics;
 using System.Net.NetworkInformation;
 using static bb.Core.Bot.Console;
+using bb.Core.Configuration;
+using bb.Models.Command;
+using bb.Models.Platform;
+using bb.Models.Users;
 
 namespace bb.Core.Bot
 {

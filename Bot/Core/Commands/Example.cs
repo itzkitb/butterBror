@@ -1,4 +1,5 @@
-﻿using bb.Models;
+﻿using bb.Models.Command;
+using bb.Models.Platform;
 
 namespace bb.Core.Commands
 {

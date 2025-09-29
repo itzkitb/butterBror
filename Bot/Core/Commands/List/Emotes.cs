@@ -1,13 +1,14 @@
 ﻿using Acornima;
-using bb.Core.Bot;
-using bb.Models;
 using bb.Utils;
+using bb.Core.Configuration;
 using DankDB;
 using Jint.Runtime;
 using Newtonsoft.Json.Linq;
 using SevenTV.Types.Rest;
 using static bb.Core.Bot.Console;
 using static bb.Utils.MessageProcessor;
+using bb.Models.Command;
+using bb.Models.Platform;
 
 namespace bb.Core.Commands.List
 {
