@@ -1,5 +1,6 @@
 ﻿using bb.Core.Bot;
 using bb.Models;
+using bb.Utils;
 
 namespace bb.Core.Commands.List
 {
@@ -15,7 +16,7 @@ namespace bb.Core.Commands.List
             { "en-US", "Sends a random percentage with a comma." }
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=percent";
-        public override int CooldownPerUser => 5;
+        public override int CooldownPerUser => 10;
         public override int CooldownPerChannel => 1;
         public override string[] Aliases => ["%", "percent", "процент", "perc", "проц"];
         public override string HelpArguments => string.Empty;
@@ -32,8 +33,14 @@ namespace bb.Core.Commands.List
 
             try
             {
+                if (data.ChannelId == null)
+                {
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:unknown", string.Empty, data.Platform));
+                    return commandReturn;
+                }
+
                 float percent = (float)new Random().Next(10000) / 100;
-                commandReturn.SetMessage($"🤔 {percent}%");
+                commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:percent", data.ChannelId, data.Platform, percent));
             }
             catch (Exception e)
             {

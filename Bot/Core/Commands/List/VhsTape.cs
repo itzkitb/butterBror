@@ -19,8 +19,8 @@ namespace bb.Core.Commands.List
             { "en-US", "Scy2zL8gzLhjzLbMlTRuzLYnzLXNg3QgzLjMjXPMt2UzzLTMjyDMt8yEzKNhzLVuzLTMkHnMtXTMt8yNaMy1zYQxbsy0zYFnzLQuzLTMjiDMtUnMt82bdCfMt82ANcy0zZEgzLfMlXTMtjDMuG/MtsyAIMy1zI3Mr2TMtM2QNHLMtc2Ya8y0zZ0uzLggQzTMtc2XzKduzLjMgsy8IMy1ecy3zIXMmG/MtnXMtSDMuM2bc8y2M2XMtMy/IMy4bcy4zYMzzLbNkD/Mtw==" }
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=vhs";
-        public override int CooldownPerUser => 60;
-        public override int CooldownPerChannel => 10;
+        public override int CooldownPerUser => 10;
+        public override int CooldownPerChannel => 1;
         public override string[] Aliases => ["cassette", "vhs", "foundfootage", "footage"];
         public override string HelpArguments => string.Empty;
         public override DateTime CreationDate => DateTime.Parse("2024-07-04T00:00:00.0000000Z");
@@ -28,27 +28,32 @@ namespace bb.Core.Commands.List
         public override bool OnlyBotDeveloper => false;
         public override bool OnlyChannelModerator => false;
         public override PlatformsEnum[] Platforms => [PlatformsEnum.Twitch, PlatformsEnum.Telegram, PlatformsEnum.Discord];
-        public override bool IsAsync => true;
+        public override bool IsAsync => false;
 
-
-        public override async Task<CommandReturn> ExecuteAsync(CommandData data)
+        public override CommandReturn Execute(CommandData data)
         {
             CommandReturn commandReturn = new CommandReturn();
 
             try
             {
-                if (CooldownManager.CheckCooldown(3600, 1, "VhsReset", data.User.ID, data.ChannelId, data.Platform, false, true))
+                if (data.ChannelId == null || data.Channel == null)
+                {
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:unknown", string.Empty, data.Platform));
+                    return commandReturn;
+                }
+
+                if (CooldownManager.CheckCooldown(3600, 1, "VhsReset", data.User.Id, data.ChannelId, data.Platform, false, true))
                 {
                     var platform = data.Platform;
                     var channelId = data.ChannelId;
                     var channel = data.Channel;
                     var serverId = data.ServerID;
                     var server = data.Server;
-                    var userId = data.User.ID;
+                    var userId = data.User.Id;
                     var language = data.User.Language;
                     var username = data.User.Name;
                     var messageId = data.MessageID;
-                    var telegramMessage = data.TelegramMessage;
+                    var telegramMessage = data.TelegramMessage ?? new Telegram.Bot.Types.Message();
 
                     commandReturn.SetMessage(LocalizationService.GetString(language, "command:vhs:wait", channelId, platform)); // fix AB4
 

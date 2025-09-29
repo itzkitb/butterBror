@@ -1,7 +1,10 @@
-﻿using bb.Core.Bot;
+﻿using Acornima;
+using bb.Core.Bot;
 using bb.Models;
 using bb.Utils;
 using DankDB;
+using Jint.Runtime;
+using Newtonsoft.Json.Linq;
 using SevenTV.Types.Rest;
 using static bb.Core.Bot.Console;
 using static bb.Utils.MessageProcessor;
@@ -22,7 +25,7 @@ namespace bb.Core.Commands.List
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=emote";
         public override int CooldownPerUser => 5;
-        public override int CooldownPerChannel => 2;
+        public override int CooldownPerChannel => 1;
         public override string[] Aliases => ["emote", "emotes", "эмоут", "эмоуты", "7tv", "seventv", "семьтелефизоров", "7тв"];
         public override string HelpArguments => "(update/random/add {name} (as:{name}, from:{channel})/delete {name}/rename {old_name} {new_name})";
         public override DateTime CreationDate => DateTime.Parse("2024-07-04T00:00:00.0000000Z");
@@ -38,17 +41,28 @@ namespace bb.Core.Commands.List
 
             try
             {
+                if (data.ChannelId == null || data.Channel == null || bb.Bot.DataBase == null ||
+                    data.User.IsBotModerator == null || data.User.IsModerator == null || data.User.IsBroadcaster == null ||
+                    data.User.IsBotDeveloper == null || bb.Bot.Tokens.SevenTV == null)
+                {
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:unknown", string.Empty, data.Platform));
+                    return commandReturn;
+                }
+
+                string token = bb.Bot.Tokens.SevenTV;
+                string prefix = bb.Bot.DataBase.Channels.GetCommandPrefix(data.Platform, data.ChannelId);
+
                 string[] updateAlias = ["update", "обновить", "u", "о"];
                 string[] randomAlias = ["random", "рандом", "рандомный", "r", "р"];
                 string[] addAlias = ["add", "добавить", "д", "a"];
                 string[] deleteAlias = ["remove", "delete", "удалить", "у", "d"];
                 string[] renameAlias = ["rename", "переименовать", "ren", "re", "п"];
 
-                if (data.Arguments.Count > 0)
+                if (data.Arguments != null && data.Arguments.Count > 0)
                 {
                     if (updateAlias.Contains(GetArgument(data.Arguments, 0)))
                     {
-                        if (bb.Bot.DataBase.Roles.IsDeveloper(data.Platform, DataConversion.ToLong(data.User.ID)) || bb.Bot.DataBase.Roles.IsModerator(data.Platform, DataConversion.ToLong(data.User.ID)) || (bool)data.User.IsModerator || (bool)data.User.IsBroadcaster)
+                        if (bb.Bot.DataBase.Roles.IsDeveloper(data.Platform, DataConversion.ToLong(data.User.Id)) || bb.Bot.DataBase.Roles.IsModerator(data.Platform, DataConversion.ToLong(data.User.Id)) || (bool)data.User.IsModerator || (bool)data.User.IsBroadcaster)
                         {
                             await Utils.SevenTvEmoteCache.EmoteUpdate(data.Channel, data.ChannelId);
                             commandReturn.SetMessage(LocalizationService.GetString(
@@ -81,15 +95,15 @@ namespace bb.Core.Commands.List
                     {
                         if (addAlias.Contains(GetArgument(data.Arguments, 0)))
                         {
-                            commandReturn.SetMessage(await ProcessAddEmote(data));
+                            commandReturn.SetMessage(await ProcessAddEmote(data.Arguments, data.ChannelId, data.Platform, data.User.Language, prefix, token));
                         }
                         else if (deleteAlias.Contains(GetArgument(data.Arguments, 0)))
                         {
-                            commandReturn.SetMessage(await ProcessDeleteEmote(data));
+                            commandReturn.SetMessage(await ProcessDeleteEmote(data.Arguments, data.User.Language, data.ChannelId, data.Platform, token, prefix));
                         }
                         else if (renameAlias.Contains(GetArgument(data.Arguments, 0)))
                         {
-                            commandReturn.SetMessage(await ProcessRenameEmote(data));
+                            commandReturn.SetMessage(await ProcessRenameEmote(data.Arguments, data.User.Language, data.ChannelId, data.Platform, token, prefix));
                         }
                     }
                     else if (addAlias.Contains(GetArgument(data.Arguments, 0)) || deleteAlias.Contains(GetArgument(data.Arguments, 0)) || renameAlias.Contains(GetArgument(data.Arguments, 0)))
@@ -132,9 +146,9 @@ namespace bb.Core.Commands.List
         }
 
         #region 7tv Is Shit
-        public string GetUserID(string id)
+        private string? GetUserID(string id)
         {
-            string from_id = null;
+            string? from_id = null;
 
             if (bb.Bot.UsersSevenTVIDs is not null && bb.Bot.UsersSevenTVIDs.ContainsKey(id))
                 from_id = bb.Bot.UsersSevenTVIDs[id];
@@ -153,128 +167,122 @@ namespace bb.Core.Commands.List
 
             return from_id;
         }
-
-        public string GetEmoteFromList(Emote[] list, string name)
-        {
-            foreach (Emote e in list)
-                if (e.name == name)
-                    return e.id;
-            return null;
-        }
         #endregion
+
         #region Processes
-        public async Task<string> ProcessAddEmote(CommandData data)
+        private async Task<string> ProcessAddEmote(List<string> arguments, string channelId, PlatformsEnum platform, string language, string prefix, string token)
         {
-            if (GetArgument(data.Arguments, 1) == null)
+            if (GetArgument(arguments, 1) == null)
             {
-                return ShowLowArgsError(data, "#emote add emotename as:alias from:itzkitb", data.Platform);
+                return ShowLowArgsError(language, channelId, $"{prefix}emote add emotename as:alias from:itzkitb", platform);
             }
 
-            var (setId, error) = await GetEmoteSetId(data.ChannelId, data.Platform);
+            var (setId, error) = await GetEmoteSetId(channelId, platform);
             if (setId == null)
             {
                 return error;
             }
 
-            string from = GetArgument(data.Arguments, "from");
-            string emoteName = GetArgument(data.Arguments, "as") ?? GetArgument(data.Arguments, 1);
+            string from = GetArgument(arguments, "from");
+            string emoteName = GetArgument(arguments, "as") ?? GetArgument(arguments, 1);
 
             if (FindEmoteInSet(setId, emoteName).Result is not null)
             {
-                return LocalizationService.GetString(data.User.Language, "command:emotes:7tv:add:already", data.ChannelId, data.Platform);
+                return LocalizationService.GetString(language, "command:emotes:7tv:add:already", channelId, platform);
             }
             else if (string.IsNullOrWhiteSpace(from))
             {
-                return await AddEmoteFromGlobal(setId, emoteName, data, data.Platform);
+                return await AddEmoteFromGlobal(setId, emoteName, platform, language, channelId, token);
             }
             else
             {
-                return await AddEmoteFromUser(setId, from, emoteName, data, data.Platform);
+                return await AddEmoteFromUser(setId, from, emoteName, language, channelId, platform, token);
             }
         }
 
-        public async Task<string> ProcessDeleteEmote(CommandData data)
+        private async Task<string> ProcessDeleteEmote(List<string> arguments, string language, string channelId, PlatformsEnum platform, string token, string prefix)
         {
-            string emoteName = GetArgument(data.Arguments, 1);
+            string emoteName = GetArgument(arguments, 1);
             if (string.IsNullOrWhiteSpace(emoteName))
             {
-                return ShowLowArgsError(data, "#emote delete emotename", data.Platform);
+                return ShowLowArgsError(language, channelId, $"{prefix}emote delete emotename", platform);
             }
 
-            var (setId, error) = await GetEmoteSetId(data.ChannelId, data.Platform);
+            var (setId, error) = await GetEmoteSetId(channelId, platform);
             if (setId == null)
             {
                 return error;
             }
 
             var emote = await FindEmoteInSet(setId, emoteName);
-            if (emote == null)
+            if (emote == null || emote.id == null)
             {
-                return LocalizationService.GetString(data.User.Language, "command:emotes:7tv:not_founded", data.ChannelId, data.Platform, emoteName);
+                return LocalizationService.GetString(language, "command:emotes:7tv:not_founded", channelId, platform, emoteName);
             }
 
-            var result = await bb.Bot.SevenTvService.Remove(setId, emote.id, bb.Bot.Tokens.SevenTV);
+            var result = await bb.Bot.SevenTvService.Remove(setId, emote.id, token);
             if (result && bb.Bot.EmotesCache.ContainsKey($"{setId}_{emoteName}"))
             {
                 bb.Bot.EmotesCache.Remove($"{setId}_{emoteName}", out var cache);
             }
 
-            return ProcessResult(result, data, "command:emotes:7tv:removed", "command:emotes:7tv:noaccess:editor", emoteName, data.Platform);
+            return ProcessResult(result, "command:emotes:7tv:removed", "command:emotes:7tv:noaccess:editor", emoteName, language, channelId, platform);
         }
 
-        public async Task<string> ProcessRenameEmote(CommandData data)
+        private async Task<string> ProcessRenameEmote(List<string> arguments, string language, string channelId, PlatformsEnum platform, string token, string prefix)
         {
-            string oldName = GetArgument(data.Arguments, 1);
-            string newName = GetArgument(data.Arguments, "as");
+            string oldName = GetArgument(arguments, 1);
+            string newName = GetArgument(arguments, "as");
 
             if (string.IsNullOrWhiteSpace(oldName) || string.IsNullOrWhiteSpace(newName))
             {
-                return ShowLowArgsError(data, "#emote rename oldname as:newname", data.Platform);
+                return ShowLowArgsError(language, channelId, $"{prefix}emote rename oldname as:newname", platform);
             }
 
-            var (setId, error) = await GetEmoteSetId(data.ChannelId, data.Platform);
+            var (setId, error) = await GetEmoteSetId(channelId, platform);
             if (setId == null)
             {
                 return error;
             }
 
             var emote = await FindEmoteInSet(setId, oldName);
-            if (emote == null)
+            if (emote == null || emote.id == null)
             {
-                return LocalizationService.GetString(data.User.Language, "command:emotes:7tv:not_founded", data.ChannelId, data.Platform, oldName);
+                return LocalizationService.GetString(language, "command:emotes:7tv:not_founded", channelId, platform, oldName);
             }
 
-            var result = await bb.Bot.SevenTvService.Rename(setId, newName, emote.id, bb.Bot.Tokens.SevenTV);
-            return ProcessResult(result, data, "command:emotes:7tv:renamed", "command:emotes:7tv:noaccess:editor", $"{oldName} → {newName}", data.Platform);
+            var result = await bb.Bot.SevenTvService.Rename(setId, newName, emote.id, token);
+            return ProcessResult(result, "command:emotes:7tv:renamed", "command:emotes:7tv:noaccess:editor", $"{oldName} → {newName}", language, channelId, platform);
         }
         #endregion
-        #region Help Methods
 
-        public async Task<(string setId, string error)> GetEmoteSetId(string channelId, PlatformsEnum platform)
+        #region Help Methods
+        private async Task<(string setId, string error)> GetEmoteSetId(string channelId, PlatformsEnum platform)
         {
             if (bb.Bot.EmoteSetsCache.TryGetValue(channelId, out var cached) &&
                 DateTime.UtcNow < cached.expiration)
             {
-                return (cached.setId, null);
+                return (cached.setId, string.Empty);
             }
 
             try
             {
                 var userId = GetUserID(channelId);
                 var user = await bb.Bot.Clients.SevenTV.rest.GetUser(userId);
+
                 var setId = user.connections[0].emote_set.id;
 
                 bb.Bot.EmoteSetsCache[channelId] = (setId, DateTime.UtcNow.Add(bb.Bot.CacheTTL));
-                return (setId, null);
+                return (setId, string.Empty);
             }
             catch (Exception ex)
             {
                 Write(ex);
-                return (null, LocalizationService.GetString("en-US", "command:emotes:7tv:set_error", channelId, platform));
+                return (string.Empty, LocalizationService.GetString("en-US", "command:emotes:7tv:set_error", channelId, platform));
             }
         }
 
-        public async Task<Emote> FindEmoteInSet(string setId, string emoteName)
+        private async Task<Emote> FindEmoteInSet(string setId, string emoteName)
         {
             var cacheKey = $"{setId}_{emoteName}";
             if (bb.Bot.EmotesCache.TryGetValue(cacheKey, out var cached) &&
@@ -294,33 +302,34 @@ namespace bb.Core.Commands.List
             return emote;
         }
         #endregion
+
         #region Other Things
-        public string ProcessResult(bool result, CommandData data, string successKey, string errorKey, string emoteName, PlatformsEnum platform)
+        private string ProcessResult(bool result, string successKey, string errorKey, string emoteName, string language, string channelId, PlatformsEnum platform)
         {
             return result
-                ? LocalizationService.GetString(data.User.Language, successKey, data.ChannelId, platform, emoteName)
-                : LocalizationService.GetString(data.User.Language, errorKey, data.ChannelId, platform);
+                ? LocalizationService.GetString(language, successKey, channelId, platform, emoteName)
+                : LocalizationService.GetString(language, errorKey, channelId, platform);
         }
 
-        public string ShowLowArgsError(CommandData data, string commandExample, PlatformsEnum platform)
+        private string ShowLowArgsError(string language, string channelId, string commandExample, PlatformsEnum platform)
         {
-            return LocalizationService.GetString(data.User.Language, "error:not_enough_arguments", data.ChannelId, platform)
+            return LocalizationService.GetString(language, "error:not_enough_arguments", channelId, platform)
                 .Replace("command_example", commandExample);
         }
 
-        public async Task<string> AddEmoteFromGlobal(string setId, string emoteName, CommandData data, PlatformsEnum platform)
+        private async Task<string> AddEmoteFromGlobal(string setId, string emoteName, PlatformsEnum platform, string language, string channelId, string token)
         {
-            var emote = await bb.Bot.SevenTvService.SearchEmote(emoteName, bb.Bot.Tokens.SevenTV);
+            var emote = await bb.Bot.SevenTvService.SearchEmote(emoteName, token);
             if (emote == null)
             {
-                return LocalizationService.GetString(data.User.Language, "command:emotes:7tv:not_founded", data.ChannelId, platform, emoteName);
+                return LocalizationService.GetString(language, "command:emotes:7tv:not_founded", channelId, platform, emoteName);
             }
 
-            var result = await bb.Bot.SevenTvService.Add(setId, emoteName, emote, bb.Bot.Tokens.SevenTV);
-            return ProcessResult(result, data, "command:emotes:7tv:added", "command:emotes:7tv:noaccess:editor", emoteName, platform);
+            var result = await bb.Bot.SevenTvService.Add(setId, emoteName, emote, token);
+            return ProcessResult(result, "command:emotes:7tv:added", "command:emotes:7tv:noaccess:editor", emoteName, language, channelId, platform);
         }
 
-        public async Task<string> AddEmoteFromUser(string setId, string fromUser, string emoteName, CommandData data, PlatformsEnum platform)
+        private async Task<string> AddEmoteFromUser(string setId, string fromUser, string emoteName, string language, string channelId, PlatformsEnum platform, string token)
         {
             var sourceUserId = GetUserID(UsernameResolver.GetUserID(fromUser, PlatformsEnum.Twitch));
             var sourceUser = await bb.Bot.Clients.SevenTV.rest.GetUser(sourceUserId);
@@ -329,11 +338,11 @@ namespace bb.Core.Commands.List
             var emote = await FindEmoteInSet(sourceSetId, emoteName);
             if (emote == null)
             {
-                return LocalizationService.GetString(data.User.Language, "command:emotes:7tv:not_founded", data.ChannelId, platform, emoteName);
+                return LocalizationService.GetString(language, "command:emotes:7tv:not_founded", channelId, platform, emoteName);
             }
 
-            var result = await bb.Bot.SevenTvService.Add(setId, emoteName, emote.id, bb.Bot.Tokens.SevenTV);
-            return ProcessResult(result, data, "command:emotes:7tv:added", "command:emotes:7tv:noaccess:editor", emoteName, platform);
+            var result = await bb.Bot.SevenTvService.Add(setId, emoteName, emote.id, token);
+            return ProcessResult(result, "command:emotes:7tv:added", "command:emotes:7tv:noaccess:editor", emoteName, language, channelId, platform);
         }
         #endregion
     }

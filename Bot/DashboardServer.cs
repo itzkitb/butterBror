@@ -428,7 +428,7 @@ namespace bb
                         Coins = Bot.Coins,
                         IsInitialized = Bot.Initialized,
                         IsConnected = Bot.Connected,
-                        Name = Bot.Name,
+                        Name = Bot.TwitchName,
                         MessagesProcessed = MessageProcessor.Proccessed,
                         Battery = GetBatteryInfo(),
                         Memory = $"{Process.GetCurrentProcess().PrivateMemorySize64 / (1024 * 1024)} Mbyte",
@@ -622,7 +622,7 @@ namespace bb
 <html>
 <head>
     <meta charset=""UTF-8"">
-    <title>{Bot.Name} Dashboard</title>
+    <title>{Bot.TwitchName} Dashboard</title>
     <link rel=""icon"" href=""https://cdn.7tv.app/emote/01H16FA16G0005EZED5J0EY7KN/4x.webp"" type=""image/webp"">
     <style>
         :root {{
@@ -787,7 +787,7 @@ namespace bb
 </head>
 <body>
     <header>
-        <h1>Bot Dashboard - {Bot.Name} v.{Bot.Version}</h1>
+        <h1>Bot Dashboard - {Bot.TwitchName} v.{Bot.Version}</h1>
         <div id=""connection-status"" class=""status-connecting"">Connecting...</div>
     </header>
     <main>

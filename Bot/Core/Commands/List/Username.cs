@@ -18,7 +18,7 @@ namespace bb.Core.Commands.List
             { "en-US", "Get name from ID." }
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=name";
-        public override int CooldownPerUser => 5;
+        public override int CooldownPerUser => 10;
         public override int CooldownPerChannel => 1;
         public override string[] Aliases => ["name", "nick", "nickname", "никнейм", "ник", "имя"];
         public override string HelpArguments => "[user ID]";
@@ -35,12 +35,18 @@ namespace bb.Core.Commands.List
 
             try
             {
-                if (data.Arguments.Count > 0)
+                if (data.ChannelId == null)
+                {
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:unknown", string.Empty, data.Platform));
+                    return commandReturn;
+                }
+
+                if (data.Arguments != null && data.Arguments.Count > 0)
                 {
                     string name = UsernameResolver.GetUsername(data.Arguments[0], PlatformsEnum.Twitch, true);
-                    if (name == data.User.ID)
+                    if (name == data.User.Id)
                     {
-                        commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:name", data.ChannelId, data.Platform, data.User.ID)); // Fix AB3
+                        commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:name", data.ChannelId, data.Platform, data.User.Id)); // Fix AB3
                     }
                     else if (name == null)
                     {
@@ -54,7 +60,7 @@ namespace bb.Core.Commands.List
                 }
                 else
                 {
-                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:name", data.ChannelId, data.Platform, data.User.ID)); // Fix AB3
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:name", data.ChannelId, data.Platform, data.User.Id)); // Fix AB3
                 }
             }
             catch (Exception e)

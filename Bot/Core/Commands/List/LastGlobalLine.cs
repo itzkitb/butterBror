@@ -36,12 +36,18 @@ namespace bb.Core.Commands.List
 
             try
             {
-                if (data.Arguments.Count != 0)
+                if (bb.Bot.UsersBuffer == null || bb.Bot.TwitchName == null || data.ChannelId == null)
+                {
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:unknown", string.Empty, data.Platform));
+                    return commandReturn;
+                }
+
+                if (data.Arguments != null && data.Arguments.Count != 0)
                 {
                     string name = TextSanitizer.UsernameFilter(data.Arguments.ElementAt(0).ToLower());
                     string userID = UsernameResolver.GetUserID(name, PlatformsEnum.Twitch, true);
 
-                    if (userID == null)
+                    if (userID == null || bb.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(userID), Users.LastSeen) == null)
                     {
                         commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:user_not_found", data.ChannelId, data.Platform, UsernameResolver.Unmention(name)));
                         commandReturn.SetColor(ChatColorPresets.Red);
@@ -52,7 +58,7 @@ namespace bb.Core.Commands.List
                         string lastChannel = (string)bb.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(userID), Users.LastChannel);
                         DateTime lastLineDate = DateTime.Parse((string)bb.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(userID), Users.LastSeen), null, DateTimeStyles.AdjustToUniversal);
 
-                        if (name == bb.Bot.Name.ToLower())
+                        if (name == bb.Bot.TwitchName.ToLower())
                         {
                             commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:last_global_line:bot", data.ChannelId, data.Platform));
                         }

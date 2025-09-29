@@ -15,8 +15,8 @@ namespace bb.Core.Commands.List
             { "en-US", "Set your location to get weather information." }
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=setlocation";
-        public override int CooldownPerUser => 0;
-        public override int CooldownPerChannel => 0;
+        public override int CooldownPerUser => 15;
+        public override int CooldownPerChannel => 5;
         public override string[] Aliases => ["loc", "location", "city", "setlocation", "setloc", "setcity", "улокацию", "угород", "установитьлокацию", "установитьгород"];
         public override string HelpArguments => "(city name)";
         public override DateTime CreationDate => DateTime.Parse("2025-04-29T00:00:00.0000000Z");

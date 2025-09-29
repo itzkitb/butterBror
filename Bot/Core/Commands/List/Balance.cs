@@ -17,7 +17,7 @@ namespace bb.Core.Commands.List
             { "en-US", "Find out the balance in the bot's economy." }
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=wallet";
-        public override int CooldownPerUser => 10;
+        public override int CooldownPerUser => 5;
         public override int CooldownPerChannel => 1;
         public override string[] Aliases => ["balance", "баланс", "bal", "бал", "кошелек", "wallet"];
         public override string HelpArguments => string.Empty;
@@ -34,6 +34,12 @@ namespace bb.Core.Commands.List
 
             try
             {
+                if (data.ChannelId == null || data.Arguments == null)
+                {
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:unknown", string.Empty, data.Platform));
+                    return commandReturn;
+                }
+
                 if (data.Arguments.Count == 0)
                 {
                     commandReturn.SetMessage(LocalizationService.GetString(
@@ -41,7 +47,7 @@ namespace bb.Core.Commands.List
                         "command:balance",
                         data.ChannelId,
                         data.Platform,
-                        Utils.CurrencyManager.GetBalance(data.User.ID, data.Platform) + "." + Utils.CurrencyManager.GetSubbalance(data.User.ID, data.Platform)));
+                        Utils.CurrencyManager.GetBalance(data.User.Id, data.Platform) + "." + Utils.CurrencyManager.GetSubbalance(data.User.Id, data.Platform)));
                     commandReturn.SetSafe(true);
                 }
                 else

@@ -8,11 +8,11 @@ using bb.Services.External;
 using bb.Services.Internal;
 using bb.Utils;
 using bb.Workers;
+using butterBror.Models.Exceptions;
 using DankDB;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
-using feels.Dank.Cache.LRU;
 using Microsoft.Extensions.DependencyInjection;
 using Pastel;
 using System.Collections.Concurrent;
@@ -25,10 +25,8 @@ using Telegram.Bot.Types.Enums;
 using TwitchLib.Api;
 using TwitchLib.Api.Core.Enums;
 using TwitchLib.Client;
-using TwitchLib.Client.Extensions;
 using TwitchLib.Client.Models;
 using TwitchLib.Communication.Clients;
-using TwitchLib.Communication.Interfaces;
 using TwitchLib.Communication.Models;
 using static bb.Core.Bot.Console;
 
@@ -41,13 +39,15 @@ namespace bb
     {
         #region Variables
         #region Core
-        public static Version Version = new Version("2.18.0.8");
+        public static Version Version = new Version("2.18.0.9");
+        public static string Branch = Environment.GetEnvironmentVariable("GITHUB_REF")?.Replace("refs/heads/", "") ?? "master";
+        public static string Commit = Environment.GetEnvironmentVariable("GITHUB_SHA") ?? "";
         public static DateTime StartTime = new();
         public static string PreviousVersion = "";
         public static bool Initialized = false;
         public static bool Connected => Clients.Twitch?.IsConnected == true && Clients.Discord?.ConnectionState == Discord.ConnectionState.Connected;
-        public static string? Name;
-        public static string DefaultCommandPrefix = "#";
+        public static string? TwitchName;
+        public static string DefaultCommandPrefix = "!";
         private static bool SkipFetch = false;
         #endregion Core
 
@@ -62,8 +62,8 @@ namespace bb
         #endregion Currency
 
         #region Hosting
-        public static string HostName = null;
-        public static string HostVersion = null;
+        public static string? HostName = null;
+        public static string? HostVersion = null;
         #endregion Hosting
 
         #region Data
@@ -102,7 +102,7 @@ namespace bb
         public static IServiceProvider? DiscordServiceProvider;
         public static ReceiverOptions? TelegramReceiverOptions;
         public static CommandService? DiscordCommandService;
-        
+
         private static DateTime _startTime = DateTime.UtcNow;
         private static CpuUsage _CpuUsage = new CpuUsage();
         private static Task? _repeater;
@@ -221,6 +221,12 @@ namespace bb
                                 _ = CurrencyManager.GenerateRandomEventAsync();
                                 _ = CurrencyManager.CollectTaxesAsync();
 
+                                if (DataBase == null)
+                                {
+                                    Write("Reinitialization of currency counters failed: Database is null", LogLevel.Error);
+                                    return;
+                                }
+
                                 Write("Reinitializing currency counters...");
                                 Users = DataBase.Users.GetTotalUsers();
                                 Coins = DataBase.Users.GetTotalBalance();
@@ -230,31 +236,37 @@ namespace bb
                         //Write($"({now.Second == 0} && {(now - _lastSave).TotalSeconds > 2}); ({now.Second}; {(now - _lastSave).TotalSeconds}; {now}; {_lastSave})", "debug");
                         if (now.Second == 0 && (now - _lastSave).TotalSeconds > 2)
                         {
-                            _lastSave = now;
-                            Stopwatch stopwatch = Stopwatch.StartNew();
-
-                            #region Buffer save 
-                            int messages = MessagesBuffer.Count() + allFirstMessages.Count;
-                            int users = UsersBuffer.Count();
-
-                            if (MessagesBuffer.Count() > 0)
+                            if (MessagesBuffer == null || UsersBuffer == null || DataBase == null)
                             {
-                                MessagesBuffer.Flush();
+                                Write("Failed to save buffers and currency: MessagesBuffer, UsersBuffer, or DataBase are null", LogLevel.Error);
                             }
-
-                            if (UsersBuffer.Count() > 0)
+                            else
                             {
-                                UsersBuffer.Flush();
-                            }
+                                _lastSave = now;
+                                Stopwatch stopwatch = Stopwatch.StartNew();
 
-                            if (allFirstMessages.Count > 0)
-                            {
-                                DataBase.Channels.SaveFirstMessages(allFirstMessages);
-                                allFirstMessages.Clear();
-                            }
-                            #endregion Buffer save 
-                            #region Currency save
-                            Dictionary<string, dynamic> currencyData = new()
+                                #region Buffer save 
+                                int messages = MessagesBuffer.Count() + allFirstMessages.Count;
+                                int users = UsersBuffer.Count();
+
+                                if (MessagesBuffer.Count() > 0)
+                                {
+                                    MessagesBuffer.Flush();
+                                }
+
+                                if (UsersBuffer.Count() > 0)
+                                {
+                                    UsersBuffer.Flush();
+                                }
+
+                                if (allFirstMessages.Count > 0)
+                                {
+                                    DataBase.Channels.SaveFirstMessages(allFirstMessages);
+                                    allFirstMessages.Clear();
+                                }
+                                #endregion Buffer save 
+                                #region Currency save
+                                Dictionary<string, dynamic> currencyData = new()
                             {
                                     { "amount", Coins },
                                     { "users", Users },
@@ -263,15 +275,16 @@ namespace bb
                                     { "middleBalance", Coins / Users }
                             };
 
-                            if (Paths.Currency is not null)
-                            {
-                                Manager.Save(Paths.Currency, "total", currencyData);
-                                Manager.Save(Paths.Currency, $"{now.Day}.{now.Month}.{now.Year}", currencyData);
-                            }
-                            #endregion Currency save
+                                if (Paths.Currency is not null)
+                                {
+                                    Manager.Save(Paths.Currency, "total", currencyData);
+                                    Manager.Save(Paths.Currency, $"{now.Day}.{now.Month}.{now.Year}", currencyData);
+                                }
+                                #endregion Currency save
 
-                            stopwatch.Stop();
-                            Write($"Saved {messages} messages, {users} users and currency in {stopwatch.ElapsedMilliseconds} ms");
+                                stopwatch.Stop();
+                                Write($"Saved {messages} messages, {users} users and currency in {stopwatch.ElapsedMilliseconds} ms");
+                            }
                         }
                     }
                 }
@@ -420,7 +433,7 @@ namespace bb
                         }
                         catch
                         {
-                            
+
                         }
                     }
                 }
@@ -490,7 +503,7 @@ namespace bb
                     }
                     catch
                     {
-                        
+
                     }
                 }
             }
@@ -674,6 +687,17 @@ namespace bb
                 Coins = DataBase.Users.GetTotalBalance();
 
                 Write("Getting twitch token...");
+
+                if (TwitchClientId == null)
+                {
+                    throw new TwitchDataNullException("Twitch client id is null.");
+                }
+
+                if (Tokens.TwitchSecretToken == null)
+                {
+                    throw new TwitchDataNullException("Twitch secret token is null.");
+                }
+
                 Tokens.TwitchGetter = new(TwitchClientId, Tokens.TwitchSecretToken, Paths.Main + "TWITCH_AUTH.json");
                 var token = await TwitchToken.GetTokenAsync();
 
@@ -737,13 +761,13 @@ namespace bb
                     {
                         foreach (string channel in TwitchNewVersionAnnounce)
                         {
-                            PlatformMessageSender.TwitchSend(UsernameResolver.GetUsername(channel, PlatformsEnum.Twitch, true), $"{Bot.Name} v.{Bot.PreviousVersion} > v.{Bot.Version}", channel, "", "en-US", true);
+                            PlatformMessageSender.TwitchSend(UsernameResolver.GetUsername(channel, PlatformsEnum.Twitch, true), $"{Bot.TwitchName} v.{Bot.PreviousVersion} > v.{Bot.Version}", channel, "", "en-US", true);
                         }
                     }
 
                     foreach (string channel in Bot.TwitchConnectAnnounce)
                     {
-                        PlatformMessageSender.TwitchSend(UsernameResolver.GetUsername(channel, PlatformsEnum.Twitch, true), $"{Bot.Name} Started in {(long)(ConnectedIn).TotalMilliseconds} ms!", channel, "", "en-US", true);
+                        PlatformMessageSender.TwitchSend(UsernameResolver.GetUsername(channel, PlatformsEnum.Twitch, true), $"{Bot.TwitchName} Started in {(long)(ConnectedIn).TotalMilliseconds} ms!", channel, "", "en-US", true);
                     }
                 });
 
@@ -770,9 +794,21 @@ namespace bb
         /// Handles channel ID resolution through Names.GetUsername().
         /// Automatically reconnects on disconnection events.
         /// </remarks>
+        /// <exception cref="TwitchDataNullException">Twitch token cannot be null or empty.</exception>
+        /// <exception cref="TwitchDataNullException">Twitch nickname cannot be null or empty.</exception>
         private static void ConnectToTwitch()
         {
-            ConnectionCredentials credentials = new ConnectionCredentials(Name, "oauth:" + Tokens.Twitch.AccessToken);
+            if (Tokens.Twitch == null)
+            {
+                throw new TwitchDataNullException("Twitch token cannot be null or empty.");
+            }
+
+            if (TwitchName == null)
+            {
+                throw new TwitchDataNullException("Twitch nickname cannot be null or empty.");
+            }
+
+            ConnectionCredentials credentials = new ConnectionCredentials(TwitchName, "oauth:" + Tokens.Twitch.AccessToken);
             ClientOptions client_options = new ClientOptions
             {
                 MessagesAllowedInPeriod = 750,
@@ -781,7 +817,7 @@ namespace bb
             };
             WebSocketClient webSocket_client = new WebSocketClient(client_options);
             Clients.Twitch = new TwitchClient(webSocket_client);
-            Clients.Twitch.Initialize(credentials, Name);
+            Clients.Twitch.Initialize(credentials, TwitchName);
             Clients.TwitchAPI = new TwitchAPI();
             Clients.TwitchAPI.Settings.AccessToken = Tokens.Twitch.AccessToken;
             Clients.TwitchAPI.Settings.ClientId = TwitchClientId;
@@ -818,7 +854,7 @@ namespace bb
 
             JoinTwitchChannels();
 
-            Clients.Twitch.SendMessage(Name.ToLower(), "truckCrash Connecting to twitch...");
+            Clients.Twitch.SendMessage(TwitchName.ToLower(), "truckCrash Connecting to twitch...");
 
             Write("Twitch is ready.");
         }
@@ -833,8 +869,14 @@ namespace bb
         /// It then connects to each valid channel and logs warnings for any channels that couldn't be resolved.
         /// This is typically called during application initialization to establish connections to all configured Twitch channels.
         /// </remarks>
+        /// <exception cref="TwitchClientNullException">Twitch client is null.</exception>
         public static void JoinTwitchChannels()
         {
+            if (Clients.Twitch == null)
+            {
+                throw new TwitchClientNullException();
+            }
+
             var notFoundedChannels = new List<string>();
 
             foreach (var channel in Manager.Get<string[]>(Paths.Settings, "twitch_connect_channels"))
@@ -913,8 +955,14 @@ namespace bb
         /// Processes only Message-type updates (UpdateType.Message).
         /// Integrates with TelegramEvents error handling system.
         /// </remarks>
+        /// <exception cref="ArgumentNullException">Telegram token is null.</exception>
         private static void ConnectToTelegram()
         {
+            if (Tokens.Telegram == null)
+            {
+                throw new TelegramTokenNullException();
+            }
+
             Clients.Telegram = new TelegramBotClient(Tokens.Telegram);
             TelegramReceiverOptions = new ReceiverOptions
             {
@@ -938,10 +986,27 @@ namespace bb
         /// If any errors occur during the process, they are logged but not rethrown to prevent application crashes.
         /// This is essential for maintaining uninterrupted connection to Twitch when access tokens expire.
         /// </remarks>
+        /// <exception cref="TwitchClientNullException"></exception>
+        /// <exception cref="TwitchDataNullException"></exception>
         public static async Task RefreshTwitchTokenAsync()
         {
             try
             {
+                if (Clients.Twitch == null)
+                {
+                    throw new TwitchClientNullException();
+                }
+
+                if (Tokens.Twitch == null)
+                {
+                    throw new TwitchDataNullException("Twitch token cannot be null or empty.");
+                }
+
+                if (TwitchName == null)
+                {
+                    throw new TwitchDataNullException("Twitch nickname cannot be null or empty.");
+                }
+
                 if (Clients.Twitch.IsConnected)
                 {
                     Clients.Twitch.Disconnect();
@@ -949,7 +1014,7 @@ namespace bb
                 }
 
                 Clients.Twitch.SetConnectionCredentials(
-                    new ConnectionCredentials(Name, Tokens.Twitch.AccessToken)
+                    new ConnectionCredentials(TwitchName, Tokens.Twitch.AccessToken)
                 );
 
                 try
@@ -957,7 +1022,7 @@ namespace bb
                     Clients.Twitch.Connect();
                     JoinTwitchChannels();
                     Write("The token has been updated and the connection has been restored");
-                    PlatformMessageSender.TwitchSend(Bot.Name, $"sillyCatThinks Token refreshed", "", "", "en-US", true);
+                    PlatformMessageSender.TwitchSend(TwitchName, $"sillyCatThinks Token refreshed", "", "", "en-US", true);
                 }
                 catch (Exception ex)
                 {

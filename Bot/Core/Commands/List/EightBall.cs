@@ -35,6 +35,12 @@ namespace bb.Core.Commands.List
 
             try
             {
+                if (data.ChannelId == null)
+                {
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:unknown", string.Empty, data.Platform));
+                    return commandReturn;
+                }
+
                 int stage1 = new Random().Next(1, 5);
                 int stage2 = new Random().Next(1, 6);
                 string translationParam = "command:8ball:";

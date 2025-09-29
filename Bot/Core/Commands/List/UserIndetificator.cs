@@ -18,7 +18,7 @@ namespace bb.Core.Commands.List
             { "en-US", "Find out user ID." }
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=id";
-        public override int CooldownPerUser => 5;
+        public override int CooldownPerUser => 10;
         public override int CooldownPerChannel => 1;
         public override string[] Aliases => ["id", "indetificator", "ид"];
         public override string HelpArguments => "(name)";
@@ -35,13 +35,19 @@ namespace bb.Core.Commands.List
 
             try
             {
-                if (data.Arguments.Count > 0)
+                if (data.ChannelId == null)
+                {
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:unknown", string.Empty, data.Platform));
+                    return commandReturn;
+                }
+
+                if (data.Arguments != null && data.Arguments.Count > 0)
                 {
                     string username = TextSanitizer.UsernameFilter(data.Arguments[0].ToLower());
                     string ID = UsernameResolver.GetUserID(username, data.Platform, true);
-                    if (ID == data.User.ID)
+                    if (ID == data.User.Id)
                     {
-                        commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:id", data.ChannelId, data.Platform, data.User.ID));
+                        commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:id", data.ChannelId, data.Platform, data.User.Id));
                     }
                     else if (ID == null)
                     {
@@ -55,7 +61,7 @@ namespace bb.Core.Commands.List
                 }
                 else
                 {
-                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:id", data.ChannelId, data.Platform, data.User.ID));
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:id", data.ChannelId, data.Platform, data.User.Id));
                 }
             }
             catch (Exception e)

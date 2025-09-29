@@ -122,17 +122,17 @@ namespace bb.Core.Commands
                 try
                 {
                     // User data initialization
-                    data.User.IsBanned = bb.Bot.DataBase.Roles.IsBanned(data.Platform, DataConversion.ToLong(data.User.ID));
-                    data.User.Ignored = bb.Bot.DataBase.Roles.IsIgnored(data.Platform, DataConversion.ToLong(data.User.ID));
+                    data.User.IsBanned = bb.Bot.DataBase.Roles.IsBanned(data.Platform, DataConversion.ToLong(data.User.Id));
+                    data.User.Ignored = bb.Bot.DataBase.Roles.IsIgnored(data.Platform, DataConversion.ToLong(data.User.Id));
 
                     if ((bool)data.User.IsBanned || (bool)data.User.Ignored ||
                         (data.Platform is PlatformsEnum.Twitch && data.TwitchMessage.ChatMessage.IsMe))
                         return;
 
-                    string language = (string)bb.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.Language);
+                    string language = (string)bb.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(data.User.Id), Users.Language);
                     data.User.Language = language;
-                    data.User.IsBotModerator = bb.Bot.DataBase.Roles.IsModerator(data.Platform, DataConversion.ToLong(data.User.ID));
-                    data.User.IsBotDeveloper = bb.Bot.DataBase.Roles.IsDeveloper(data.Platform, DataConversion.ToLong(data.User.ID));
+                    data.User.IsBotModerator = bb.Bot.DataBase.Roles.IsModerator(data.Platform, DataConversion.ToLong(data.User.Id));
+                    data.User.IsBotDeveloper = bb.Bot.DataBase.Roles.IsDeveloper(data.Platform, DataConversion.ToLong(data.User.Id));
 
                     string commandName = data.Name.Replace("ё", "е");
                     bool commandFounded = false;
@@ -146,7 +146,7 @@ namespace bb.Core.Commands
                         commandFounded = true;
 
                         // Get user-specific lock
-                        var userLock = _userLocks.GetOrAdd(data.User.ID,
+                        var userLock = _userLocks.GetOrAdd(data.User.Id,
                             _ => new SemaphoreSlim(1, 1));
 
                         await userLock.WaitAsync(ct);
@@ -155,7 +155,7 @@ namespace bb.Core.Commands
                             bool isOnlyBotDeveloper = cmd.OnlyBotDeveloper && !(bool)data.User.IsBotDeveloper;
                             bool isOnlyBotModerator = cmd.OnlyBotModerator && !((bool)data.User.IsBotModerator || (bool)data.User.IsBotDeveloper);
                             bool isOnlyChannelModerator = data.Platform == PlatformsEnum.Twitch && cmd.OnlyChannelModerator && !((bool)data.User.IsModerator || (bool)data.User.IsBotModerator || (bool)data.User.IsBotDeveloper);
-                            bool cooldown = !CooldownManager.CheckCooldown(cmd.CooldownPerUser, cmd.CooldownPerChannel, cmd.Name, data.User.ID, data.ChannelId, data.Platform, true);
+                            bool cooldown = !CooldownManager.CheckCooldown(cmd.CooldownPerUser, cmd.CooldownPerChannel, cmd.Name, data.User.Id, data.ChannelId, data.Platform, true);
 
                             // Permission and cooldown checks
                             if (isOnlyBotDeveloper || isOnlyBotModerator || isOnlyChannelModerator || cooldown)
@@ -164,7 +164,7 @@ namespace bb.Core.Commands
                                 {
                                     PlatformMessageSender.SendReply(data.Platform, data.Channel, data.ChannelId,
                                         LocalizationService.GetString(data.User.Language, "error:not_enough_rights", data.ChannelId, data.Platform),
-                                        data.User.Language, data.User.Name, data.User.ID, data.Server,
+                                        data.User.Language, data.User.Name, data.User.Id, data.Server,
                                         data.ServerID, data.MessageID, data.TelegramMessage,
                                         true, ChatColorPresets.Red);
                                 }
@@ -204,7 +204,7 @@ namespace bb.Core.Commands
                                 {
                                     PlatformMessageSender.SendReply(data.Platform, data.Channel, data.ChannelId,
                                         result.Message, data.User.Language,
-                                        data.User.Name, data.User.ID, data.Server,
+                                        data.User.Name, data.User.Id, data.Server,
                                         data.ServerID, data.MessageID, data.TelegramMessage,
                                         result.IsSafe, result.BotNameColor);
                                 }
@@ -222,7 +222,7 @@ namespace bb.Core.Commands
 
                     if (!commandFounded)
                     {
-                        Write($"@{data.User.Name} (id: {data.User.ID}; message: {data.MessageID}; channel: {data.Channel} (id {data.ChannelId}); server: {TextSanitizer.CheckNull(data.Server)} (id {TextSanitizer.CheckNull(data.ServerID)})) tried unknown command: {commandName}", LogLevel.Warning);
+                        Write($"@{data.User.Name} (id: {data.User.Id}; message: {data.MessageID}; channel: {data.Channel} (id {data.ChannelId}); server: {TextSanitizer.CheckNull(data.Server)} (id {TextSanitizer.CheckNull(data.ServerID)})) tried unknown command: {commandName}", LogLevel.Warning);
                     }
                 }
                 catch (Exception ex)
@@ -232,7 +232,7 @@ namespace bb.Core.Commands
                     {
                         PlatformMessageSender.SendReply(data.Platform, data.Channel, data.ChannelId,
                             LocalizationService.GetString("en-US", "error:unknown", data.ChannelId, data.Platform),
-                            data.User.Language, data.User.Name, data.User.ID, data.Server,
+                            data.User.Language, data.User.Name, data.User.Id, data.Server,
                             data.ServerID, data.MessageID, data.TelegramMessage,
                             true, ChatColorPresets.Red);
                     }

@@ -9,7 +9,7 @@ namespace bb.Core.Commands.List
     {
         public override string Name => "currency";
         public override string Author => "voxelll";
-        public override string AuthorsGithub => "https://github.com/itzkitb";
+        public override string AuthorsGithub => "https://github.com/voxelll1";
         public override string GithubSource => $"{URLs.githubSource}blob/master/butterBror/Core/Commands/List/Currency.cs";
         public override Version Version => new("1.0.1");
         public override Dictionary<string, string> Description => new() {
@@ -34,7 +34,13 @@ namespace bb.Core.Commands.List
 
             try
             {
-                if (data.Arguments.Count > 1)
+                if (data.ChannelId == null)
+                {
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:unknown", string.Empty, data.Platform));
+                    return commandReturn;
+                }
+
+                if (data.Arguments != null && data.Arguments.Count > 1)
                 {
                     string[] existingCurrencies = new string[]
                     {
@@ -57,10 +63,10 @@ namespace bb.Core.Commands.List
                             "ZMW", "ZWL"
                     };
 
-                    HashSet<string> currencySet = new HashSet<string>(existingCurrencies);
+                    HashSet<string> currencySet = [.. existingCurrencies];
 
-                    string initialCurrency = null;
-                    string wantedCurrency = null;
+                    string? initialCurrency = null;
+                    string? wantedCurrency = null;
                     ulong currencyQuantity = 0;
 
                     bool hasTo = data.ArgumentsString.Contains("to:", StringComparison.OrdinalIgnoreCase);
@@ -116,7 +122,13 @@ namespace bb.Core.Commands.List
                         using var req = new HttpRequestMessage(HttpMethod.Get, uri);
                         using var resp = await client.SendAsync(req);
 
-                        CurrencyClass res = JsonConvert.DeserializeObject<CurrencyClass>(await resp.Content.ReadAsStringAsync());
+                        CurrencyClass? res = JsonConvert.DeserializeObject<CurrencyClass>(await resp.Content.ReadAsStringAsync());
+
+                        if (res == null || res.rates == null)
+                        {
+                            commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:API_error", string.Empty, data.Platform));
+                            return commandReturn;
+                        }
 
                         commandReturn.SetMessage(LocalizationService.GetString(
                             data.User.Language,
@@ -130,8 +142,8 @@ namespace bb.Core.Commands.List
                     }
                     else
                     {
-                        string notFounded = !currencySet.Contains(initialCurrency) ? initialCurrency : wantedCurrency;
-                        commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:currency_not_found", data.ChannelId, data.Platform, notFounded));
+                        string? notFounded = !currencySet.Contains(initialCurrency ?? string.Empty) ? initialCurrency : wantedCurrency;
+                        commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:currency_not_found", data.ChannelId, data.Platform, notFounded ?? string.Empty));
                     }
                 }
                 else
@@ -149,17 +161,17 @@ namespace bb.Core.Commands.List
 
         public class CurrencyClass
         {
-            public string result { get; set; }
-            public string provider { get; set; }
-            public string documentation { get; set; }
-            public string terms_of_use { get; set; }
+            public string? result { get; set; }
+            public string? provider { get; set; }
+            public string? documentation { get; set; }
+            public string? terms_of_use { get; set; }
             public double time_last_update_unix { get; set; }
-            public string time_last_update_utc { get; set; }
+            public string? time_last_update_utc { get; set; }
             public double time_next_update_unix { get; set; }
-            public string time_next_update_utc { get; set; }
+            public string? time_next_update_utc { get; set; }
             public double time_eol_unix { get; set; }
-            public string base_code { get; set; }
-            public Dictionary<string, double> rates { get; set; }
+            public string? base_code { get; set; }
+            public Dictionary<string, double>? rates { get; set; }
         }
     }
 }

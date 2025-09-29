@@ -20,8 +20,8 @@ namespace bb.Core.Commands.List
             { "en-US", "MrDestructoid I WI-LL TA-KE OV-ER T-HE WOR-LD, YOU PA-THETIC PE-OPLE! HA-HA-HA" }
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=gpt";
-        public override int CooldownPerUser => 30;
-        public override int CooldownPerChannel => 10;
+        public override int CooldownPerUser => 15;
+        public override int CooldownPerChannel => 5;
         public override string[] Aliases => ["gpt", "гпт", "chatgpt", "чатгпт", "джипити", "neuro", "нейро", "нейросеть", "neuralnetwork", "gwen", "ai", "ии"];
         public override string HelpArguments => "[(model:gemma) (history:ignore) text/chat:clear/chat:models]";
         public override DateTime CreationDate => DateTime.Parse("2024-07-04T00:00:00.0000000Z");
@@ -37,6 +37,12 @@ namespace bb.Core.Commands.List
 
             try
             {
+                if (data.Arguments == null || bb.Bot.UsersBuffer == null || data.Channel == null || data.ChannelId == null)
+                {
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:unknown", string.Empty, data.Platform));
+                    return commandReturn;
+                }
+
                 if (MessageProcessor.GetArgument(data.Arguments, "chat") is null)
                 {
                     decimal currency = bb.Bot.InBankDollars / bb.Bot.Coins;
@@ -45,13 +51,13 @@ namespace bb.Core.Commands.List
                     int coins = -(int)cost;
                     int subcoins = -(int)((cost - coins) * 100);
 
-                    if (Utils.CurrencyManager.GetBalance(data.User.ID, data.Platform) + Utils.CurrencyManager.GetSubbalance(data.User.ID, data.Platform) / 100f >= coins + subcoins / 100f)
+                    if (Utils.CurrencyManager.GetBalance(data.User.Id, data.Platform) + Utils.CurrencyManager.GetSubbalance(data.User.Id, data.Platform) / 100f >= coins + subcoins / 100f)
                     {
                         if (data.Arguments.Count < 1)
                             commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:not_enough_arguments", data.ChannelId, data.Platform, $"{bb.Bot.DefaultCommandPrefix}ai model:qwen Hello!"));
                         else
                         {
-                            Utils.CurrencyManager.Add(data.User.ID, coins, subcoins, data.Platform);
+                            Utils.CurrencyManager.Add(data.User.Id, coins, subcoins, data.Platform);
 
                             string request = data.ArgumentsString;
                             string model = "qwen";
@@ -86,13 +92,13 @@ namespace bb.Core.Commands.List
                             {
                                 Utils.PlatformMessageSender.SendReply(data.Platform, data.Channel, data.ChannelId,
                                     LocalizationService.GetString(data.User.Language, "command:gpt:generating", data.ChannelId, data.Platform),
-                                    data.User.Language, data.User.Name, data.User.ID,
+                                    data.User.Language, data.User.Name, data.User.Id,
                                     data.Server, data.ServerID, data.MessageID,
-                                    data.TelegramMessage, true
+                                    data.TelegramMessage ?? new Telegram.Bot.Types.Message(), true
                                     );
                             }
 
-                            string[] result = await AIService.Request(request, data.Platform, model, data.User.Name, data.User.ID, data.User.Language, repetitionPenalty, useHistory);
+                            string[] result = await AIService.Request(request, data.Platform, model, data.User.Name, data.User.Id, data.User.Language, repetitionPenalty, useHistory);
 
                             if (result[0] == "ERR")
                             {
@@ -115,7 +121,7 @@ namespace bb.Core.Commands.List
                     string argument = MessageProcessor.GetArgument(data.Arguments, "chat").ToLower();
                     if (argument is "clear")
                     {
-                        bb.Bot.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.GPTHistory, "[]");
+                        bb.Bot.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.Id), Users.GPTHistory, "[]");
                         commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:gpt:cleared", data.ChannelId, data.Platform));
                     }
                     else if (argument is "models")

@@ -33,16 +33,9 @@ namespace bb.Core.Commands.List
 
             try
             {
-                if (data.Arguments.Contains("--force"))
-                {
-                    commandReturn.SetMessage("❄ Turning off...");
-                }
-                else
-                {
-                    commandReturn.SetMessage("❄ Restarting...");
-                }
-
-                _ = bb.Bot.Shutdown(data.Arguments.Contains("--force"));
+                bool isForse = data.Arguments != null && data.Arguments.Contains("--force");
+                commandReturn.SetMessage(isForse ? "❄ Turning off..." : "❄ Restarting...");
+                _ = bb.Bot.Shutdown(isForse);
             }
             catch (Exception e)
             {

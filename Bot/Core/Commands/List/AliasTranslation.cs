@@ -15,8 +15,8 @@ namespace bb.Core.Commands.List
             { "en-US", "Set bot language" }
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=translate";
-        public override int CooldownPerUser => 0;
-        public override int CooldownPerChannel => 0;
+        public override int CooldownPerUser => 10;
+        public override int CooldownPerChannel => 1;
         public override string[] Aliases => ["translate", "translation", "lang", "language", "перевод", "язык"];
         public override string HelpArguments => "[en/ru]";
         public override DateTime CreationDate => DateTime.Parse("2025-04-29T00:00:00.0000000Z");

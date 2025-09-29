@@ -31,10 +31,16 @@ namespace bb.Core.Commands
         /// </list>
         /// All exceptions are logged through the Console.Write system but don't interrupt bot operation.
         /// </remarks>
-        public static async void Twitch(object sender, OnMessageReceivedArgs message)
+        public static async void Twitch(object? sender, OnMessageReceivedArgs message)
         {
             try
             {
+                if (bb.Bot.DataBase == null)
+                {
+                    Write("The database is null.", LogLevel.Critical);
+                    return;
+                }
+
                 if (!message.ChatMessage.Message.StartsWith(bb.Bot.DataBase.Channels.GetCommandPrefix(PlatformsEnum.Twitch, message.ChatMessage.RoomId)))
                 {
                     return;
@@ -59,7 +65,7 @@ namespace bb.Core.Commands
 
                 UserData user = new()
                 {
-                    ID = message.ChatMessage.UserId,
+                    Id = message.ChatMessage.UserId,
                     Language = "en-US",
                     Name = message.ChatMessage.Username,
                     IsModerator = message.ChatMessage.IsModerator,
@@ -128,7 +134,7 @@ namespace bb.Core.Commands
             {
                 UserData user = new()
                 {
-                    ID = command.User.Id.ToString(),
+                    Id = command.User.Id.ToString(),
                     Language = "en-US",
                     Name = command.User.Username
                 };
@@ -142,7 +148,7 @@ namespace bb.Core.Commands
                 {
                     ArgsAsString += info.Value.ToString();
                     argsDS.Add(info.Name, info.Value);
-                    args.Add(info.Value.ToString());
+                    args.Add(info.Value.ToString() ?? "");
                 }
 
                 CommandData data = new()
@@ -194,6 +200,12 @@ namespace bb.Core.Commands
         {
             try
             {
+                if (bb.Bot.DataBase == null)
+                {
+                    Write("The database is null.", LogLevel.Critical);
+                    return;
+                }
+
                 if (!message.Content.StartsWith(bb.Bot.DataBase.Channels.GetCommandPrefix(PlatformsEnum.Discord, ((SocketGuildChannel)message.Channel).Guild.Id.ToString())))
                 {
                     return;
@@ -216,7 +228,7 @@ namespace bb.Core.Commands
 
                 UserData user = new()
                 {
-                    ID = message.Author.Id.ToString(),
+                    Id = message.Author.Id.ToString(),
                     Language = "en-US",
                     Name = message.Author.Username
                 };
@@ -266,6 +278,18 @@ namespace bb.Core.Commands
         {
             try
             {
+                if (bb.Bot.DataBase == null)
+                {
+                    Write("The database is null.", LogLevel.Critical);
+                    return;
+                }
+
+                if (message.From == null)
+                {
+                    Write("Unknown Telegram user (API error?).", LogLevel.Error);
+                    return;
+                }
+
                 if (message.Text == null || !message.Text.StartsWith(bb.Bot.DataBase.Channels.GetCommandPrefix(PlatformsEnum.Telegram, message.Chat.Id.ToString())))
                 {
                     return;
@@ -273,7 +297,7 @@ namespace bb.Core.Commands
 
                 UserData user = new()
                 {
-                    ID = message.From.Id.ToString(),
+                    Id = message.From.Id.ToString(),
                     Language = "en-US",
                     Name = message.From.Username ?? message.From.FirstName,
                     IsModerator = false,
@@ -297,7 +321,7 @@ namespace bb.Core.Commands
 
                 if (message.ReplyToMessage != null)
                 {
-                    string[] trimmedReplyText = message.ReplyToMessage.Text.Split(' ');
+                    string[] trimmedReplyText = (message.ReplyToMessage.Text ?? "").Split(' ');
                     data.Arguments.AddRange(trimmedReplyText);
                     data.ArgumentsString += " " + string.Join(" ", trimmedReplyText);
                 }

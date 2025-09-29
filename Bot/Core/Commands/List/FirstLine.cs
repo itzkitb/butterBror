@@ -26,14 +26,20 @@ namespace bb.Core.Commands.List
         public override bool OnlyBotDeveloper => false;
         public override bool OnlyChannelModerator => false;
         public override PlatformsEnum[] Platforms => [PlatformsEnum.Twitch, PlatformsEnum.Telegram, PlatformsEnum.Discord];
-        public override bool IsAsync => true;
+        public override bool IsAsync => false;
 
-        public override async Task<CommandReturn> ExecuteAsync(CommandData data)
+        public override CommandReturn Execute(CommandData data)
         {
             CommandReturn commandReturn = new CommandReturn();
 
             try
             {
+                if (data.ChannelId == null || bb.Bot.DataBase == null)
+                {
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:unknown", string.Empty, data.Platform));
+                    return commandReturn;
+                }
+
                 string name, userId;
 
                 if (data.Arguments != null && data.Arguments.Count != 0)
@@ -43,7 +49,7 @@ namespace bb.Core.Commands.List
                 }
                 else
                 {
-                    userId = data.User.ID;
+                    userId = data.User.Id;
                     name = data.User.Name;
                 }
 
@@ -74,7 +80,7 @@ namespace bb.Core.Commands.List
                             if (flag) message_badges += LocalizationService.GetString(data.User.Language, symbol, data.ChannelId, data.Platform);
                         }
 
-                        if (!name.Equals(bb.Bot.Name, StringComparison.CurrentCultureIgnoreCase))
+                        if (!name.Equals(bb.Bot.TwitchName, StringComparison.CurrentCultureIgnoreCase))
                         {
                             commandReturn.SetMessage(LocalizationService.GetString(
                                 data.User.Language,

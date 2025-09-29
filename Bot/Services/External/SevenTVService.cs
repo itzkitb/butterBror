@@ -42,7 +42,7 @@ namespace bb.Services.External
         /// - Stores successful results in cache for future requests
         /// </remarks>
 
-        public async Task<string> SearchUser(string nickname, string bearer_token)
+        public async Task<string> SearchUser(string nickname, string? bearer_token)
         {
             /*if (_cache.TryGetValue<string>($"user_{nickname}", out var cached) && _cache is not null)
             {

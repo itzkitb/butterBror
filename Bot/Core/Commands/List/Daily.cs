@@ -16,19 +16,19 @@ namespace bb.Core.Commands.List
         public override Version Version => new("1.0.0");
         public override Dictionary<string, string> Description => new()
         {
-            { "ru-RU", "Получить ежедневную награду" },
-            { "en-US", "Get daily reward" }
+            { "ru-RU", "Получить ежедневную награду." },
+            { "en-US", "Get daily reward." }
         };
         public override string WikiLink => "https://itzkitb.ru/bot/command?name=daily";
         public override int CooldownPerUser => 0;
         public override int CooldownPerChannel => 0;
-        public override string[] Aliases => new[] { "daily", "d", "день" };
+        public override string[] Aliases => ["daily", "d", "день"];
         public override DateTime CreationDate => DateTime.Parse("2025-09-18T00:00:00.0000000Z");
         public override string HelpArguments => string.Empty;
         public override bool OnlyBotModerator => false;
         public override bool OnlyBotDeveloper => false;
         public override bool OnlyChannelModerator => false;
-        public override PlatformsEnum[] Platforms => new[] { PlatformsEnum.Twitch, PlatformsEnum.Discord };
+        public override PlatformsEnum[] Platforms => [PlatformsEnum.Twitch, PlatformsEnum.Discord];
         public override bool IsAsync => false;
 
         public override CommandReturn Execute(CommandData data)
@@ -36,8 +36,14 @@ namespace bb.Core.Commands.List
             CommandReturn commandReturn = new CommandReturn();
             try
             {
+                if (data.ChannelId == null || bb.Bot.UsersBuffer == null)
+                {
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:unknown", string.Empty, data.Platform));
+                    return commandReturn;
+                }
+
                 DateTime currentTime = DateTime.UtcNow;
-                string lastRewardStr = bb.Bot.DataBase.Users.GetParameter(data.Platform, DataConversion.ToLong(data.User.ID), "LastDailyReward").ToString();
+                string? lastRewardStr = bb.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(data.User.Id), "LastDailyReward").ToString();
                 DateTime lastTime = DateTime.MinValue;
                 if (!string.IsNullOrEmpty(lastRewardStr))
                 {
@@ -46,7 +52,7 @@ namespace bb.Core.Commands.List
                 }
 
                 TimeSpan timeSinceLast = currentTime - lastTime;
-                double hourPriceUSD = 1.69;
+                double hourPriceUSD = 0.69;
                 double BTRCurrency = bb.Bot.Coins == 0 ? 0 : (double)(bb.Bot.InBankDollars / bb.Bot.Coins);
                 double hourPriceBTR = BTRCurrency == 0 ? 0 : hourPriceUSD / BTRCurrency;
                 double dailyPriceBTR = hourPriceBTR * 24;
@@ -56,8 +62,8 @@ namespace bb.Core.Commands.List
                 {
                     long plusBalance = (long)dailyPriceBTR;
                     long plusSubbalance = (long)((dailyPriceBTR - plusBalance) * 100);
-                    CurrencyManager.Add(data.User.ID, plusBalance, plusSubbalance, data.Platform);
-                    bb.Bot.DataBase.Users.SetParameter(data.Platform, DataConversion.ToLong(data.User.ID), "LastDailyReward", currentTime.ToString("o"));
+                    CurrencyManager.Add(data.User.Id, plusBalance, plusSubbalance, data.Platform);
+                    bb.Bot.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.Id), "LastDailyReward", currentTime.ToString("o"));
                     string message = LocalizationService.GetString(data.User.Language, "command:daily:get", data.ChannelId, data.Platform, plusBalance, plusSubbalance);
                     commandReturn.SetMessage(message);
                 }

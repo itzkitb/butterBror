@@ -15,7 +15,7 @@ namespace bb.Core.Commands.List
             { "en-US", "Sends a message on behalf of the bot to the current chat." }
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=say";
-        public override int CooldownPerUser => 5;
+        public override int CooldownPerUser => 1;
         public override int CooldownPerChannel => 1;
         public override string[] Aliases => ["say", "tell", "сказать", "type", "написать"];
         public override string HelpArguments => "[text]";

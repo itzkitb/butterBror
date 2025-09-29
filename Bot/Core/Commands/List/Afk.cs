@@ -17,7 +17,7 @@ namespace bb.Core.Commands.List
             { "en-US", "This command will help you leave the chat and go afk." }
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=afk";
-        public override int CooldownPerUser => 20;
+        public override int CooldownPerUser => 5;
         public override int CooldownPerChannel => 1;
         public override string[] Aliases => ["draw", "drw", "d", "рисовать", "рис", "р", "afk", "афк", "sleep", "goodnight", "gn", "slp", "s", "спать", "храп", "хррр", "с", "rest", "nap", "re", "отдых", "отдохнуть", "о", "lurk", "l", "наблюдатьизтени", "спрятаться", "study", "st", "учеба", "учится", "у", "poop", "p", "туалет", "shower", "sh", "ванная", "душ"];
         public override string HelpArguments => "(message)";
@@ -85,15 +85,21 @@ namespace bb.Core.Commands.List
 
             try
             {
+                if (bb.Bot.UsersBuffer == null || data.ChannelId == null)
+                {
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:unknown", string.Empty, data.Platform));
+                    return commandReturn;
+                }
+
                 string result = LocalizationService.GetString(data.User.Language, $"command:afk:{afkType}:start", data.ChannelId, data.Platform, data.User.Name);
                 string text = data.ArgumentsString;
 
-                bb.Bot.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.IsAFK, 1);
-                bb.Bot.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.AFKText, text);
-                bb.Bot.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.AFKType, afkType);
-                bb.Bot.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.AFKStart, DateTime.UtcNow.ToString("o"));
-                bb.Bot.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.AFKResume, DateTime.UtcNow.ToString("o"));
-                bb.Bot.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.ID), Users.AFKResumeTimes, 0);
+                bb.Bot.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.Id), Users.IsAFK, 1);
+                bb.Bot.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.Id), Users.AFKText, text);
+                bb.Bot.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.Id), Users.AFKType, afkType);
+                bb.Bot.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.Id), Users.AFKStart, DateTime.UtcNow.ToString("o"));
+                bb.Bot.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.Id), Users.AFKResume, DateTime.UtcNow.ToString("o"));
+                bb.Bot.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.Id), Users.AFKResumeTimes, 0);
 
                 if (TextSanitizer.CleanAsciiWithoutSpaces(text) == "")
                     commandReturn.SetMessage(result);
