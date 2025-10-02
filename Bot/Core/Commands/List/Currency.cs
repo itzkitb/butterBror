@@ -149,7 +149,7 @@ namespace bb.Core.Commands.List
                 }
                 else
                 {
-                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:not_enough_arguments", data.ChannelId, data.Platform, $"{bb.Bot.DefaultCommandPrefix}currency 1 USD to RUB"));
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:not_enough_arguments", data.ChannelId, data.Platform, $"{bb.Program.BotInstance.DefaultCommandPrefix}currency 1 USD to RUB"));
                 }
             }
             catch (Exception e)

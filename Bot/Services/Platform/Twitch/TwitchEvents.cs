@@ -64,7 +64,7 @@ namespace bb.Services.Platform.Twitch
         /// <param name="e">Event arguments containing ban details.</param>
         public static void OnUserBanned(object? s, OnUserBannedArgs e)
         {
-            //Write($"Twitch - #{e.UserBan.Channel} User {e.UserBan.Username} has been permanently banned!", "info");
+            //Write($"Twitch: #{e.UserBan.Channel} User {e.UserBan.Username} has been permanently banned!", "info");
         }
 
         /// <summary>
@@ -75,13 +75,13 @@ namespace bb.Services.Platform.Twitch
         public static void OnSuspended(object? s, OnSuspendedArgs e)
         {
             Write($"Twitch: #{e.Channel} suspended.");
-            if (Bot.TwitchName == null)
+            if (bb.Program.BotInstance.TwitchName == null)
             {
                 Write("The bot nickname is null.", LogLevel.Error);
                 return;
             }
 
-            PlatformMessageSender.TwitchSend(Bot.TwitchName, $"What #{e.Channel} suspended.", string.Empty, string.Empty, "en-US", true);
+            bb.Program.BotInstance.MessageSender.Send(PlatformsEnum.Twitch, $"What #{e.Channel} suspended.", bb.Program.BotInstance.TwitchName);
         }
 
         /// <summary>
@@ -91,7 +91,7 @@ namespace bb.Services.Platform.Twitch
         /// <param name="e">Event arguments containing timeout details.</param>
         public static void OnUserTimedout(object? s, OnUserTimedoutArgs e)
         {
-            //Write($"Twitch - #{e.UserTimeout.Channel} User {e.UserTimeout.Username} has been blocked for {e.UserTimeout.TimeoutDuration} seconds", "info");
+            //Write($"Twitch: #{e.UserTimeout.Channel} User {e.UserTimeout.Username} has been blocked for {e.UserTimeout.TimeoutDuration} seconds", "info");
         }
 
         /// <summary>
@@ -101,7 +101,7 @@ namespace bb.Services.Platform.Twitch
         /// <param name="e">Event arguments containing resubscription details.</param>
         public static void OnReSubscriber(object? s, OnReSubscriberArgs e)
         {
-            //Write($"Twitch - #{e.Channel} {e.ReSubscriber.DisplayName} has renewed his subscription! He has been subscribing for {e.ReSubscriber.MsgParamCumulativeMonths} ​​month(s) \"{e.ReSubscriber.ResubMessage}\"", "info");
+            //Write($"Twitch: #{e.Channel} {e.ReSubscriber.DisplayName} has renewed his subscription! He has been subscribing for {e.ReSubscriber.MsgParamCumulativeMonths} ​​month(s) \"{e.ReSubscriber.ResubMessage}\"", "info");
         }
 
         /// <summary>
@@ -111,7 +111,7 @@ namespace bb.Services.Platform.Twitch
         /// <param name="e">Event arguments containing gift subscription details.</param>
         public static void OnGiftedSubscription(object? s, OnGiftedSubscriptionArgs e)
         {
-            //Write($"Twitch - #{e.Channel} {e.GiftedSubscription.DisplayName} has given a subscription to {e.GiftedSubscription.MsgParamRecipientDisplayName} for {e.GiftedSubscription.MsgParamMonths} ​​month(s)!", "info");
+            //Write($"Twitch: #{e.Channel} {e.GiftedSubscription.DisplayName} has given a subscription to {e.GiftedSubscription.MsgParamRecipientDisplayName} for {e.GiftedSubscription.MsgParamMonths} ​​month(s)!", "info");
         }
 
         /// <summary>
@@ -121,7 +121,7 @@ namespace bb.Services.Platform.Twitch
         /// <param name="e">Event arguments containing raid details.</param>
         public static void OnRaidNotification(object? s, OnRaidNotificationArgs e)
         {
-            //Write($"Twitch - #{e.Channel} PagMan RAID from @{e.RaidNotification.DisplayName} with {e.RaidNotification.MsgParamViewerCount} raider(s)", "info");
+            //Write($"Twitch: #{e.Channel} PagMan RAID from @{e.RaidNotification.DisplayName} with {e.RaidNotification.MsgParamViewerCount} raider(s)", "info");
         }
 
         /// <summary>
@@ -131,7 +131,7 @@ namespace bb.Services.Platform.Twitch
         /// <param name="e">Event arguments containing subscription details.</param>
         public static void OnNewSubscriber(object? s, OnNewSubscriberArgs e)
         {
-            //Write($"Twitch - #{e.Channel} {e.Subscriber.DisplayName} subscribed! \"{e.Subscriber.ResubMessage}\"", "info");
+            //Write($"Twitch: #{e.Channel} {e.Subscriber.DisplayName} subscribed! \"{e.Subscriber.ResubMessage}\"", "info");
         }
 
         /// <summary>
@@ -141,7 +141,7 @@ namespace bb.Services.Platform.Twitch
         /// <param name="e">Event arguments containing message deletion details.</param>
         public static void OnMessageCleared(object? s, OnMessageClearedArgs e)
         {
-            //Write($"Twitch - #{e.Channel} The message \"{e.Message}\" has been deleted!", "info");
+            //Write($"Twitch: #{e.Channel} The message \"{e.Message}\" has been deleted!", "info");
         }
 
         /// <summary>
@@ -161,7 +161,7 @@ namespace bb.Services.Platform.Twitch
         /// <param name="e">Event arguments containing chat clear details.</param>
         public static void OnChatCleared(object? s, OnChatClearedArgs e)
         {
-            //Write($"Twitch - #{e.Channel} The chat was cleared!", "info");
+            //Write($"Twitch: #{e.Channel} The chat was cleared!", "info");
         }
 
         /// <summary>
@@ -172,12 +172,12 @@ namespace bb.Services.Platform.Twitch
         public static void OnError(object? s, OnErrorEventArgs e)
         {
             Write($"Twitch: Library error! Info: {e.Exception.Message}", LogLevel.Error);
-            if (Bot.TwitchName == null)
+            if (bb.Program.BotInstance.TwitchName == null)
             {
                 Write("The bot nickname is null.", LogLevel.Error);
                 return;
             }
-            PlatformMessageSender.TwitchSend(Bot.TwitchName, $"DeadAss TwitchLib error: {e.Exception.Message}", string.Empty, string.Empty, "en-US", true);
+            bb.Program.BotInstance.MessageSender.Send(PlatformsEnum.Twitch, $"DeadAss TwitchLib error: {e.Exception.Message}", bb.Program.BotInstance.TwitchName);
         }
 
         /// <summary>
@@ -199,24 +199,24 @@ namespace bb.Services.Platform.Twitch
         public static void OnReconnected(object? s, OnReconnectedEventArgs e)
         {
             Write("Twitch: Reconnected!");
-            Bot.JoinTwitchChannels();
+            bb.Program.BotInstance.JoinTwitchChannels();
 
             _ = Task.Run(async () =>
             {
                 await Task.Delay(1000);
 
-                if (Bot.TwitchName == null)
+                if (bb.Program.BotInstance.TwitchName == null)
                 {
                     Write("The bot nickname is null.", LogLevel.Error);
                 }
                 else
                 {
-                    PlatformMessageSender.TwitchSend(Bot.TwitchName, $"BREAKDANCECAT Reconnected", UsernameResolver.GetUserID(Bot.TwitchName, PlatformsEnum.Twitch, true), string.Empty, "en-US", true);
+                    bb.Program.BotInstance.MessageSender.Send(PlatformsEnum.Twitch, $"BREAKDANCECAT Reconnected", bb.Program.BotInstance.TwitchName);
                 }
 
-                foreach (string channel in Bot.TwitchReconnectAnnounce)
+                foreach (string channel in bb.Program.BotInstance.TwitchReconnectAnnounce)
                 {
-                    PlatformMessageSender.TwitchSend(UsernameResolver.GetUsername(channel, PlatformsEnum.Twitch, true), $"{Bot.TwitchName} Reconnected!", channel, string.Empty, "en-US", true);
+                    bb.Program.BotInstance.MessageSender.Send(PlatformsEnum.Twitch, $"{bb.Program.BotInstance.TwitchName} Reconnected!", UsernameResolver.GetUsername(channel, PlatformsEnum.Twitch, true));
                 }
             });
         }
@@ -230,7 +230,7 @@ namespace bb.Services.Platform.Twitch
         public static void OnTwitchDisconnected(object? s, OnDisconnectedEventArgs e)
         {
             Write("Twitch: Disconnected!");
-            Bot.RefreshTwitchTokenAsync().Wait();
+            bb.Program.BotInstance.RefreshTwitchTokenAsync().Wait();
         }
 
         /// <summary>
@@ -241,7 +241,7 @@ namespace bb.Services.Platform.Twitch
 
         public static void OnCommunitySubscription(object? s, OnCommunitySubscriptionArgs e)
         {
-            //Write($"Twitch - #{e.Channel} {e.GiftedSubscription.DisplayName} was gifted {e.GiftedSubscription.MsgParamMassGiftCount} subscription(s) on {e.GiftedSubscription.MsgParamMultiMonthGiftDuration} month(s)", "info");
+            //Write($"Twitch: #{e.Channel} {e.GiftedSubscription.DisplayName} was gifted {e.GiftedSubscription.MsgParamMassGiftCount} subscription(s) on {e.GiftedSubscription.MsgParamMultiMonthGiftDuration} month(s)", "info");
         }
 
         /// <summary>
@@ -252,7 +252,7 @@ namespace bb.Services.Platform.Twitch
 
         public static void OnAnnounce(object? s, OnAnnouncementArgs e)
         {
-            //Write($"Twitch - #{e.Channel} Announce {e.Announcement.Message}", "info");
+            //Write($"Twitch: #{e.Channel} Announce {e.Announcement.Message}", "info");
         }
 
         /// <summary>
@@ -263,7 +263,7 @@ namespace bb.Services.Platform.Twitch
 
         public static void OnContinuedGiftedSubscription(object? s, OnContinuedGiftedSubscriptionArgs e)
         {
-            //Write($"Twitch - #{e.Channel} User @{e.ContinuedGiftedSubscription.DisplayName} extended gift subscription!", "info");
+            //Write($"Twitch: #{e.Channel} User @{e.ContinuedGiftedSubscription.DisplayName} extended gift subscription!", "info");
         }
 
         /// <summary>
@@ -278,16 +278,16 @@ namespace bb.Services.Platform.Twitch
             {
                 Write($"Twitch: Bot was banned in #{e.Channel}", LogLevel.Warning);
 
-                if (Bot.TwitchName == null)
+                if (bb.Program.BotInstance.TwitchName == null)
                 {
                     Write("The bot nickname is null.", LogLevel.Error);
                 }
                 else
                 {
-                    PlatformMessageSender.TwitchSend(Bot.TwitchName, $"DeadAss Bot was banned in #{e.Channel}", string.Empty, string.Empty, "en-US", true);
+                    bb.Program.BotInstance.MessageSender.Send(PlatformsEnum.Twitch, $"DeadAss Bot was banned in #{e.Channel}", bb.Program.BotInstance.TwitchName);
                 }
 
-                string[] channels = Manager.Get<string[]>(Bot.Paths.Settings, "channels");
+                string[] channels = bb.Program.BotInstance.Settings.Get<string[]>("twitch_connect_channels");
                 List<string> list = new();
                 foreach (var channel in channels)
                 {
@@ -296,7 +296,7 @@ namespace bb.Services.Platform.Twitch
                         list.Add(channel);
                     }
                 }
-                Manager.Save(Bot.Paths.Settings, "channels", JToken.FromObject(list));
+                bb.Program.BotInstance.Settings.Set("channels", JToken.FromObject(list));
             }
             catch (Exception ex)
             {
@@ -323,7 +323,7 @@ namespace bb.Services.Platform.Twitch
 
         public static void OnJoin(object? sender, OnJoinedChannelArgs e)
         {
-            //Write($"Twitch - Connected to #{e.Channel}", "info");
+            //Write($"Twitch: Connected to #{e.Channel}", "info");
         }
 
         /// <summary>
@@ -338,7 +338,7 @@ namespace bb.Services.Platform.Twitch
             {
                 ChatMessage message = e.ChatMessage;
 
-                await MessageProcessor.ProcessMessageAsync(
+                await bb.Program.BotInstance.MessageProcessor.ProcessMessageAsync(
                     message.UserId,
                     message.RoomId,
                     message.Username,

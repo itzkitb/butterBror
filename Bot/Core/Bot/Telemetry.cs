@@ -68,17 +68,17 @@ namespace bb.Core.Bot
                 {
                     if (bb.Program.BotInstance.Clients == null)
                     {
-                        Write("Clients are not initialized yet", LogLevel.Warning);
+                        Write("Clients are not initialized yet.", LogLevel.Warning);
                     }
                     else if (!bb.Program.BotInstance.Clients.Twitch.IsConnected)
                     {
-                            Write("Twitch is not connected", LogLevel.Warning);
+                            Write("Twitch is not connected.", LogLevel.Warning);
                     }
 
                     return;
                 }
 
-                Write("Twitch - Telemetry started!");
+                Write("Twitch: Telemetry started!");
                 Stopwatch Start = Stopwatch.StartNew();
 
                 int cacheItemsBefore = Worker.cache.count;
@@ -95,7 +95,7 @@ namespace bb.Core.Bot
                 if (ISP.Status != IPStatus.Success)
                 {
                     ISP = ping.Send("192.168.0.1", 1000);
-                    if (ISP.Status != IPStatus.Success) Write("Twitch - Error ISP ping: " + ISP.Status.ToString(), LogLevel.Warning);
+                    if (ISP.Status != IPStatus.Success) Write("Error ISP ping: " + ISP.Status.ToString(), LogLevel.Warning);
                 }
                 #endregion
                 #region Commands ping
@@ -128,7 +128,7 @@ namespace bb.Core.Bot
                     CommandInstanceID = Guid.NewGuid().ToString()
                 };
 
-                await Runner.Run(data, true);
+                await bb.Program.BotInstance.CommandRunner.Execute(data, true);
                 CommandExecute.Stop();
                 #endregion
 
@@ -141,14 +141,14 @@ namespace bb.Core.Bot
 
                 long memory = Process.GetCurrentProcess().PrivateMemorySize64 / (1024 * 1024);
 
-                PlatformMessageSender.TwitchSend(bb.Program.BotInstance.TwitchName.ToLower(), $"/me glorp 📡 | " +
-                    $"🕒 {TextSanitizer.FormatTimeSpan(DateTime.Now - bb.Program.BotInstance.StartTime, "en-US")} | " +
+                bb.Program.BotInstance.MessageSender.Send(PlatformsEnum.Twitch, $"/me glorp 📡 | " +
+                    $"🕒 {TextSanitizer.FormatTimeSpan(DateTime.UtcNow - bb.Program.BotInstance.StartTime, "en-US")} | " +
                     $"{memory}Mbyte | " +
                     $"🔋 {Battery.GetBatteryCharge()}% {(Battery.IsCharging() ? "(Charging) " : "")}| " +
                     $"CPU: {cpuPercent:0.00}% | " +
                     $"Emotes: {bb.Program.BotInstance.EmotesCache.Count} | " +
                     $"7tv: E:{bb.Program.BotInstance.ChannelsSevenTVEmotes.Count},USC:{bb.Program.BotInstance.UsersSearchCache.Count},ES:{bb.Program.BotInstance.EmoteSetsCache.Count} | " +
-                    $"Messages: {MessageProcessor.Proccessed} | " +
+                    $"Messages: {bb.Program.BotInstance.MessageProcessor.Proccessed} | " +
                     $"Discord guilds: {bb.Program.BotInstance.Clients.Discord.Guilds.Count} | " +
                     $"Twitch channels: {bb.Program.BotInstance.Clients.Twitch.JoinedChannels.Count} | " +
                     $"Completed: {bb.Program.BotInstance.CompletedCommands} | " +
@@ -160,9 +160,9 @@ namespace bb.Core.Bot
                     $"Telegram: {telegram}ms | " +
                     $"7tv: {sevenTV.RoundtripTime}ms | " +
                     $"ISP: {ISP.RoundtripTime}ms | " +
-                    $"Command: {CommandExecute.ElapsedMilliseconds}ms", "", "", "", true, false);
+                    $"Command: {CommandExecute.ElapsedMilliseconds}ms", bb.Program.BotInstance.TwitchName.ToLower());
 
-                Write($"Twitch - Telemetry ended! ({Start.ElapsedMilliseconds}ms)");
+                Write($"Twitch: Telemetry ended! ({Start.ElapsedMilliseconds}ms)");
 
                 try
                 {

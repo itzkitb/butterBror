@@ -3,10 +3,12 @@ using bb.Models.AI;
 using bb.Models.Platform;
 using bb.Utils;
 using DankDB;
+using feels.Dank.Cache.LRU;
 using Microsoft.CodeAnalysis;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -22,7 +24,7 @@ namespace bb.Services.External
         /// <summary>
         /// Dictionary of available AI models with their corresponding API identifiers.
         /// </summary>
-        public static readonly Dictionary<string, ModelInfo> models = new()
+        public readonly Dictionary<string, ModelInfo> models = new()
                 {
                     { "qwen", new ModelInfo() { 
                         Name = "qwen",
@@ -66,7 +68,7 @@ namespace bb.Services.External
                     }  },
                 };
 
-        public static TimeSpan GetModelTimeout(ModelInfo model) 
+        public TimeSpan GetModelTimeout(ModelInfo model) 
         {
             if (model == null) return TimeSpan.Zero;
 
@@ -79,7 +81,7 @@ namespace bb.Services.External
                 return TimeSpan.FromMinutes(1);
             }
         }
-        private static bool _tokensInitialized = false;
+        private bool _tokensInitialized = false;
 
         /// <summary>
         /// Manages multiple OpenRouter API tokens with automatic switching on rate limits.
@@ -94,7 +96,7 @@ namespace bb.Services.External
 
             public static void Initialize()
             {
-                var tokens = Manager.Get<List<string>>(Bot.Paths.Settings, "openrouter_tokens") ?? new List<string>();
+                var tokens = bb.Program.BotInstance.Settings.Get<List<string>>("open_router_tokens") ?? new List<string>();
                 _tokens = tokens.Select(token => new TokenInfo { Token = token, Usage = 0, Limit = null, LastUpdated = DateTime.MinValue }).ToList();
                 _currentTokenIndex = 0;
                 UpdateTokenInfo();
@@ -238,7 +240,7 @@ namespace bb.Services.External
         /// </returns>
         /// <exception cref="ArgumentNullException">Thrown when required parameters are null.</exception>
         /// <exception cref="ArgumentOutOfRangeException">Thrown when parameters are out of valid range.</exception>
-        public static async Task<string[]> Request(
+        public async Task<string[]> Request(
             string request,
             PlatformsEnum platform,
             string? model = null,
@@ -315,7 +317,7 @@ namespace bb.Services.External
 
         #region Helper Methods
 
-        private static ModelInfo ValidateModelSelection(string? model)
+        private ModelInfo ValidateModelSelection(string? model)
         {
             if (string.IsNullOrWhiteSpace(model))
                 return models["qwen"];
@@ -327,9 +329,9 @@ namespace bb.Services.External
             return models[normalizedModel];
         }
 
-        private static Message BuildSystemMessage(PlatformsEnum platform, ModelInfo model, string language)
+        private Message BuildSystemMessage(PlatformsEnum platform, ModelInfo model, string language)
         {
-            var baseSystem = $@"You're a bot on the platform: {Enum.GetName(platform)}. Your name: {Bot.TwitchName}.
+            var baseSystem = $@"You're a bot on the platform: {Enum.GetName(platform)}. Your name: {bb.Program.BotInstance.TwitchName}.
 CRITICAL RESTRICTIONS:
 - 50 WORDS MAXIMUM per response
 - DO NOT make statements about your age or the ages of others
@@ -351,7 +353,7 @@ PROHIBITED CONTENT:
             };
         }
 
-        private static string GetEmoteRules(PlatformsEnum platform)
+        private string GetEmoteRules(PlatformsEnum platform)
         {
             if (platform != PlatformsEnum.Twitch)
                 return string.Empty;
@@ -407,7 +409,7 @@ OVERLAY EMOTES (apply effects to other emotes):
 - SteerR: Steering wheel driving effect";
         }
 
-        private static List<Message> BuildMessageList(
+        private List<Message> BuildMessageList(
             Message systemMessage,
             Message userInfoMessage,
             Message userMessage,
@@ -442,13 +444,13 @@ OVERLAY EMOTES (apply effects to other emotes):
             return messages;
         }
 
-        private static List<string> GetChatHistory(PlatformsEnum platform, string userId)
+        private List<string> GetChatHistory(PlatformsEnum platform, string userId)
         {
-            var historyString = (string)Bot.UsersBuffer.GetParameter(platform, DataConversion.ToLong(userId), Users.GPTHistory);
+            var historyString = (string)bb.Program.BotInstance.UsersBuffer.GetParameter(platform, DataConversion.ToLong(userId), Users.GPTHistory);
             return DataConversion.ParseStringList(historyString) ?? new List<string>();
         }
 
-        private static async Task<string[]> ProcessRequestWithTokenManagement(RequestBody requestBody, string userId, ModelInfo model, bool includeChatHistory)
+        private async Task<string[]> ProcessRequestWithTokenManagement(RequestBody requestBody, string userId, ModelInfo model, bool includeChatHistory)
         {
             int maxAttempts = TokenManager.GetTokenCount();
             int attempts = 0;
@@ -502,7 +504,7 @@ OVERLAY EMOTES (apply effects to other emotes):
             return new[] { "ERR", "All tokens failed to process request" };
         }
 
-        private static async Task<(HttpStatusCode, string)> SendApiRequest(RequestBody requestBody, ModelInfo model, string apiKey)
+        private async Task<(HttpStatusCode, string)> SendApiRequest(RequestBody requestBody, ModelInfo model, string apiKey)
         {
             try
             {
@@ -533,14 +535,14 @@ OVERLAY EMOTES (apply effects to other emotes):
             }
         }
 
-        private static string CleanResponseContent(string content)
+        private string CleanResponseContent(string content)
         {
             var cleaned = Regex.Replace(content, @"<think>.*?</think>", string.Empty, RegexOptions.IgnoreCase | RegexOptions.Singleline);
             cleaned = cleaned.ReplaceLineEndings(" ");
             return cleaned.Trim();
         }
 
-        private static void UpdateChatHistory(PlatformsEnum platform, string userId, string userMessage, string aiResponse)
+        private void UpdateChatHistory(PlatformsEnum platform, string userId, string userMessage, string aiResponse)
         {
             var history = GetChatHistory(platform, userId);
 
@@ -550,14 +552,14 @@ OVERLAY EMOTES (apply effects to other emotes):
             if (history.Count > 10)
                 history.RemoveRange(0, history.Count - 6);
 
-            Bot.UsersBuffer.SetParameter(
+            bb.Program.BotInstance.UsersBuffer.SetParameter(
                 platform,
                 DataConversion.ToLong(userId),
                 Users.GPTHistory,
                 DataConversion.SerializeStringList(history));
         }
 
-        private static string[] HandleApiError(HttpStatusCode statusCode, string responseContent)
+        private string[] HandleApiError(HttpStatusCode statusCode, string responseContent)
         {
             var errorDetails = $"API Error: {statusCode}";
 

@@ -55,7 +55,7 @@ namespace bb.Utils
         /// </para>
         /// This method handles all cooldown logic for command execution across all platforms.
         /// </remarks>
-        public static bool CheckCooldown(
+        public bool CheckCooldown(
             int userCooldown,
             int globalCooldown,
             string cooldownName,
@@ -69,15 +69,15 @@ namespace bb.Utils
             try
             {
                 // VIP or dev/mod bypass
-                bool isVipOrStaff = Bot.DataBase.Roles.IsModerator(platform, DataConversion.ToLong(userID))
-                                    || Bot.DataBase.Roles.IsDeveloper(platform, DataConversion.ToLong(userID));
+                bool isVipOrStaff = bb.Program.BotInstance.DataBase.Roles.IsModerator(platform, DataConversion.ToLong(userID))
+                                    || bb.Program.BotInstance.DataBase.Roles.IsDeveloper(platform, DataConversion.ToLong(userID));
 
                 if (isVipOrStaff && ignoreUserVIP)
                 {
                     return true;
                 }
 
-                string lastUsesJson = (string)Bot.UsersBuffer.GetParameter(platform, DataConversion.ToLong(userID), Users.LastUse);
+                string lastUsesJson = (string)bb.Program.BotInstance.UsersBuffer.GetParameter(platform, DataConversion.ToLong(userID), Users.LastUse);
 
                 if (lastUsesJson != null)
                 {
@@ -88,7 +88,7 @@ namespace bb.Utils
                     if (!lastUses.ContainsKey(cooldownName))
                     {
                         lastUses.Add(cooldownName, now.ToString("o"));
-                        Bot.UsersBuffer.SetParameter(platform, DataConversion.ToLong(userID), Users.LastUse, DataConversion.SerializeStringDictionary(lastUses));
+                        bb.Program.BotInstance.UsersBuffer.SetParameter(platform, DataConversion.ToLong(userID), Users.LastUse, DataConversion.SerializeStringDictionary(lastUses));
                         return true;
                     }
 
@@ -103,7 +103,7 @@ namespace bb.Utils
 
                     // Reset user timer
                     lastUses[cooldownName] = now.ToString("o");
-                    Bot.UsersBuffer.SetParameter(platform, DataConversion.ToLong(userID), Users.LastUse, DataConversion.SerializeStringDictionary(lastUses));
+                    bb.Program.BotInstance.UsersBuffer.SetParameter(platform, DataConversion.ToLong(userID), Users.LastUse, DataConversion.SerializeStringDictionary(lastUses));
 
                     // Global cooldown bypass
                     if (ignoreGlobalCooldown)
@@ -112,7 +112,7 @@ namespace bb.Utils
                     }
 
                     // Global cooldown check
-                    bool isOnGlobalCooldown = !Bot.DataBase.Channels.IsCommandCooldown(platform, roomID, cooldownName, globalCooldown);
+                    bool isOnGlobalCooldown = !bb.Program.BotInstance.DataBase.Channels.IsCommandCooldown(platform, roomID, cooldownName, globalCooldown);
                     if (!isOnGlobalCooldown)
                     {
                         Write($"#{userID} tried to use the command, but it is on global cooldown!", LogLevel.Warning);
@@ -167,7 +167,7 @@ namespace bb.Utils
         /// </para>
         /// Time calculations use UTC for consistent timezone handling across distributed systems.
         /// </remarks>
-        public static TimeSpan GetCooldownTime(
+        public TimeSpan GetCooldownTime(
             string userID,
             string cooldownName,
             int userSecondsCooldown,
@@ -176,7 +176,7 @@ namespace bb.Utils
         {
             try
             {
-                Dictionary<string, string> LastUses = DataConversion.ParseStringDictionary((string)Bot.UsersBuffer.GetParameter(platform, DataConversion.ToLong(userID), Users.LastUse));
+                Dictionary<string, string> LastUses = DataConversion.ParseStringDictionary((string)bb.Program.BotInstance.UsersBuffer.GetParameter(platform, DataConversion.ToLong(userID), Users.LastUse));
                 if (LastUses.TryGetValue(cooldownName, out var lastUse))
                 {
                     return TimeSpan.FromSeconds(userSecondsCooldown) - (DateTime.UtcNow - DateTime.Parse(lastUse, null, DateTimeStyles.AdjustToUniversal));

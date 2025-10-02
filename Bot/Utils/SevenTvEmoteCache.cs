@@ -72,7 +72,7 @@ namespace bb.Utils
         {
             try
             {
-                if (Bot.ChannelsSevenTVEmotes.TryGetValue(channel_id, out var cached) &&
+                if (bb.Program.BotInstance.ChannelsSevenTVEmotes.TryGetValue(channel_id, out var cached) &&
                     DateTime.UtcNow < cached.expiration)
                 {
                     return cached.emotes;
@@ -81,14 +81,14 @@ namespace bb.Utils
                 await _cacheLock.WaitAsync();
                 try
                 {
-                    if (Bot.ChannelsSevenTVEmotes.TryGetValue(channel_id, out cached) &&
+                    if (bb.Program.BotInstance.ChannelsSevenTVEmotes.TryGetValue(channel_id, out cached) &&
                         DateTime.UtcNow < cached.expiration)
                     {
                         return cached.emotes;
                     }
 
                     var emotes = await GetEmotes(channel);
-                    Bot.ChannelsSevenTVEmotes[channel_id] = (emotes, DateTime.UtcNow.Add(Bot.CacheTTL));
+                    bb.Program.BotInstance.ChannelsSevenTVEmotes[channel_id] = (emotes, DateTime.UtcNow.Add(bb.Program.BotInstance.CacheTTL));
                     return emotes;
                 }
                 finally
@@ -192,7 +192,7 @@ namespace bb.Utils
             try
             {
                 var emotes = await GetEmotes(channel);
-                Bot.ChannelsSevenTVEmotes[channel_id] = (emotes, DateTime.UtcNow.Add(Bot.CacheTTL));
+                bb.Program.BotInstance.ChannelsSevenTVEmotes[channel_id] = (emotes, DateTime.UtcNow.Add(bb.Program.BotInstance.CacheTTL));
             }
             catch (Exception ex)
             {
@@ -233,20 +233,20 @@ namespace bb.Utils
         {
             try
             {
-                if (Bot.UsersSearchCache.TryGetValue(channel, out var userCache) &&
+                if (bb.Program.BotInstance.UsersSearchCache.TryGetValue(channel, out var userCache) &&
                     DateTime.UtcNow < userCache.expiration)
                 {
                     return await GetEmotesFromCache(userCache.userId);
                 }
 
-                var userId = Bot.SevenTvService.SearchUser(channel, Bot.Tokens.SevenTV).Result;
+                var userId = bb.Program.BotInstance.SevenTv.SearchUser(channel, bb.Program.BotInstance.Tokens.SevenTV).Result;
                 if (string.IsNullOrEmpty(userId))
                 {
-                    Write($"SevenTV - #{channel} doesn't exist on 7tv!");
+                    Write($"SevenTV: #{channel} doesn't exist on 7tv!");
                     return new List<string>();
                 }
 
-                Bot.UsersSearchCache[channel] = (userId, DateTime.UtcNow.Add(Bot.CacheTTL));
+                bb.Program.BotInstance.UsersSearchCache[channel] = (userId, DateTime.UtcNow.Add(bb.Program.BotInstance.CacheTTL));
                 return await GetEmotesFromCache(userId);
             }
             catch (Exception ex)
@@ -287,10 +287,10 @@ namespace bb.Utils
         /// </remarks>
         private static async Task<List<string>> GetEmotesFromCache(string userId)
         {
-            var emote = await Bot.Clients.SevenTV.rest.GetUser(userId);
+            var emote = await bb.Program.BotInstance.Clients.SevenTV.rest.GetUser(userId);
             if (emote?.connections?[0].emote_set?.emotes == null)
             {
-                Write($"SevenTV - No emotes found for user {userId}");
+                Write($"SevenTV: No emotes found for user {userId}");
                 return new List<string>();
             }
 

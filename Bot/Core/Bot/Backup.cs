@@ -1,5 +1,6 @@
 ﻿using bb.Core.Services;
 using bb.Data.Repositories;
+using bb.Models.Platform;
 using bb.Utils;
 using System.Diagnostics;
 using System.IO.Compression;
@@ -44,7 +45,7 @@ namespace bb.Core.Bot
         {
             try
             {
-                PlatformMessageSender.TwitchSend(bb.Program.BotInstance.TwitchName.ToLower(), "🗃️ Backup started...", "", "", "", true, false);
+                bb.Program.BotInstance.MessageSender.Send(PlatformsEnum.Twitch, "🗃️ Backup started...", bb.Program.BotInstance.TwitchName, isSafe: true);
                 Write("Backup started...");
 
                 string reservePath = bb.Program.BotInstance.Paths.Reserve;
@@ -67,7 +68,7 @@ namespace bb.Core.Bot
                 {
                     // Use EnumerateFiles instead of GetFiles for line-by-line reading
                     var allFiles = Directory.EnumerateFiles(
-                        bb.Program.BotInstance.Paths.Main,
+                        bb.Program.BotInstance.Paths.General,
                         "*",
                         SearchOption.AllDirectories
                     );
@@ -76,7 +77,7 @@ namespace bb.Core.Bot
                     {
                         if (!file.EndsWith(".db", StringComparison.OrdinalIgnoreCase))
                         {
-                            string relativePath = Path.GetRelativePath(bb.Program.BotInstance.Paths.Main, file);
+                            string relativePath = Path.GetRelativePath(bb.Program.BotInstance.Paths.General, file);
                             string destFile = Path.Combine(tempBackupDir, relativePath);
 
                             Directory.CreateDirectory(Path.GetDirectoryName(destFile));
@@ -123,9 +124,8 @@ namespace bb.Core.Bot
                 double archiveSizeMB = archiveSize / (1024.0 * 1024.0);
 
                 Write($"Backup completed in {stopwatch.Elapsed.TotalSeconds:0} seconds (Archive size: {archiveSizeMB:0.00} MB)!");
-                PlatformMessageSender.TwitchSend(bb.Program.BotInstance.TwitchName.ToLower(),
-                    $"🗃️ Backup completed in {stopwatch.Elapsed.TotalSeconds:0} seconds (Archive size: {archiveSizeMB:0.00} MB)",
-                    "", "", "", true, false);
+
+                bb.Program.BotInstance.MessageSender.Send(PlatformsEnum.Twitch, $"🗃️ Backup completed in {stopwatch.Elapsed.TotalSeconds:0} seconds (Archive size: {archiveSizeMB:0.00} MB)", bb.Program.BotInstance.TwitchName, isSafe: true);
             }
             catch (Exception ex)
             {

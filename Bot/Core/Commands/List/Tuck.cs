@@ -38,7 +38,7 @@ namespace bb.Core.Commands.List
 
             try
             {
-                if (data.ChannelId == null || bb.Bot.DataBase == null || bb.Bot.TwitchName == null)
+                if (data.ChannelId == null || bb.Program.BotInstance.DataBase == null || bb.Program.BotInstance.TwitchName == null)
                 {
                     commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:unknown", string.Empty, data.Platform));
                     return commandReturn;
@@ -53,10 +53,10 @@ namespace bb.Core.Commands.List
                     try
                     {
                         if (userID != null)
-                            isSelectedUserIsNotIgnored = !(bb.Bot.DataBase.Roles.GetIgnoredUser(data.Platform, DataConversion.ToLong(data.User.Id)) is not null);
+                            isSelectedUserIsNotIgnored = !(bb.Program.BotInstance.DataBase.Roles.GetIgnoredUser(data.Platform, DataConversion.ToLong(data.User.Id)) is not null);
                     }
                     catch (Exception) { }
-                    if (username.ToLower() == bb.Bot.TwitchName.ToLower())
+                    if (username.ToLower() == bb.Program.BotInstance.TwitchName.ToLower())
                     {
                         commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:tuck:bot", data.ChannelId, data.Platform));
                         commandReturn.SetColor(ChatColorPresets.CadetBlue);
@@ -76,7 +76,7 @@ namespace bb.Core.Commands.List
                     }
                     else
                     {
-                        Write($"User @{data.User.Name} tried to put a user to sleep who is in the ignore list");
+                        Write($"User @{data.User.Name} tried to put a user to sleep who is in the ignore list.");
                         commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:user_ignored", data.ChannelId, data.Platform));
                     }
                 }

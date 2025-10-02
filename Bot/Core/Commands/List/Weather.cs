@@ -221,7 +221,7 @@ namespace bb.Core.Commands.List
         private async Task<CommandReturn> HandleSetLocationActionAsync(WeatherAction action, PlatformsEnum platform, string userId, string language, string channelId)
         {
             CommandReturn commandReturn = new CommandReturn();
-            if (bb.Bot.UsersBuffer == null)
+            if (bb.Program.BotInstance.UsersBuffer == null)
             {
                 commandReturn.SetMessage(LocalizationService.GetString(language, "error:unknown", string.Empty, platform));
                 return commandReturn;
@@ -237,9 +237,9 @@ namespace bb.Core.Commands.List
             var firstLocation = locations[0];
             long userLongId = DataConversion.ToLong(userId);
 
-            bb.Bot.UsersBuffer.SetParameter(platform, userLongId, Users.Location, firstLocation.Name);
-            bb.Bot.UsersBuffer.SetParameter(platform, userLongId, Users.Latitude, firstLocation.Latitude.ToString(CultureInfo.InvariantCulture));
-            bb.Bot.UsersBuffer.SetParameter(platform, userLongId, Users.Longitude, firstLocation.Longitude.ToString(CultureInfo.InvariantCulture));
+            bb.Program.BotInstance.UsersBuffer.SetParameter(platform, userLongId, Users.Location, firstLocation.Name);
+            bb.Program.BotInstance.UsersBuffer.SetParameter(platform, userLongId, Users.Latitude, firstLocation.Latitude.ToString(CultureInfo.InvariantCulture));
+            bb.Program.BotInstance.UsersBuffer.SetParameter(platform, userLongId, Users.Longitude, firstLocation.Longitude.ToString(CultureInfo.InvariantCulture));
 
             commandReturn.SetMessage(LocalizationService.GetString(
                     language,
@@ -255,13 +255,13 @@ namespace bb.Core.Commands.List
         private CommandReturn HandleGetLocationAction(PlatformsEnum platform, string userId, string language, string channelId)
         {
             CommandReturn commandReturn = new CommandReturn();
-            if (bb.Bot.UsersBuffer == null)
+            if (bb.Program.BotInstance.UsersBuffer == null)
             {
                 commandReturn.SetMessage(LocalizationService.GetString(language, "error:unknown", string.Empty, platform));
                 return commandReturn;
             }
 
-            var userPlace = (string)bb.Bot.UsersBuffer.GetParameter(platform, DataConversion.ToLong(userId), Users.Location);
+            var userPlace = (string)bb.Program.BotInstance.UsersBuffer.GetParameter(platform, DataConversion.ToLong(userId), Users.Location);
 
             if (string.IsNullOrEmpty(userPlace))
             {
@@ -281,7 +281,7 @@ namespace bb.Core.Commands.List
         private async Task<CommandReturn> HandleGetWeatherActionAsync(WeatherAction action, PlatformsEnum platform, string userId, string language, string channelId)
         {
             CommandReturn commandReturn = new CommandReturn();
-            if (bb.Bot.UsersBuffer == null)
+            if (bb.Program.BotInstance.UsersBuffer == null)
             {
                 commandReturn.SetMessage(LocalizationService.GetString(language, "error:unknown", string.Empty, platform));
                 return commandReturn;
@@ -291,9 +291,9 @@ namespace bb.Core.Commands.List
             {
                 long userLongId = DataConversion.ToLong(userId);
 
-                var userPlace = (string)bb.Bot.UsersBuffer.GetParameter(platform, userLongId, Users.Location);
-                var userLat = (string)bb.Bot.UsersBuffer.GetParameter(platform, userLongId, Users.Latitude);
-                var userLon = (string)bb.Bot.UsersBuffer.GetParameter(platform, userLongId, Users.Longitude);
+                var userPlace = (string)bb.Program.BotInstance.UsersBuffer.GetParameter(platform, userLongId, Users.Location);
+                var userLat = (string)bb.Program.BotInstance.UsersBuffer.GetParameter(platform, userLongId, Users.Latitude);
+                var userLon = (string)bb.Program.BotInstance.UsersBuffer.GetParameter(platform, userLongId, Users.Longitude);
 
                 if (string.IsNullOrEmpty(userPlace) ||
                     string.IsNullOrEmpty(userLat) ||
@@ -363,12 +363,12 @@ namespace bb.Core.Commands.List
 
         private List<LocationResult>? GetSavedLocations(PlatformsEnum platform, string userId)
         {
-            if (bb.Bot.UsersBuffer == null)
+            if (bb.Program.BotInstance.UsersBuffer == null)
             {
                 return null;
             }
 
-            string weatherResultLocationsUnworkedString = (string)bb.Bot.UsersBuffer.GetParameter(platform, DataConversion.ToLong(userId), Users.WeatherResultLocations);
+            string weatherResultLocationsUnworkedString = (string)bb.Program.BotInstance.UsersBuffer.GetParameter(platform, DataConversion.ToLong(userId), Users.WeatherResultLocations);
             if (weatherResultLocationsUnworkedString == null || weatherResultLocationsUnworkedString.Length == 0)
             {
                 return null;
@@ -401,7 +401,7 @@ namespace bb.Core.Commands.List
 
         private void SaveSearchResults(List<LocationResult> locations, PlatformsEnum platform, string userId)
         {
-            if (bb.Bot.UsersBuffer == null)
+            if (bb.Program.BotInstance.UsersBuffer == null)
             {
                 throw new Exception("The user buffer is not initialized.");
             }
@@ -409,7 +409,7 @@ namespace bb.Core.Commands.List
             List<string> jsons = locations.Select(loc =>
                 $"name: \"{loc.Name}\", lat: \"{loc.Latitude}\", lon: \"{loc.Longitude}\"").ToList();
 
-            bb.Bot.UsersBuffer.SetParameter(platform, DataConversion.ToLong(userId), Users.WeatherResultLocations, DataConversion.SerializeStringList(jsons));
+            bb.Program.BotInstance.UsersBuffer.SetParameter(platform, DataConversion.ToLong(userId), Users.WeatherResultLocations, DataConversion.SerializeStringList(jsons));
         }
 
         private string BuildLocationPage(List<LocationResult> locations, long page)
@@ -463,7 +463,7 @@ namespace bb.Core.Commands.List
 
         private void LogError(string errorType, Exception ex, string userName)
         {
-            Write($"[{errorType}] Weather command error for user {userName}: {ex.Message}");
+            Write($"Weather: [{errorType}] Command error for user {userName}: {ex.Message}");
             Write(ex);
         }
 

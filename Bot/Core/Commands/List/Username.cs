@@ -12,7 +12,7 @@ namespace bb.Core.Commands.List
         public override string Author => "ItzKITb";
         public override string AuthorsGithub => "https://github.com/itzkitb";
         public override string GithubSource => $"{URLs.githubSource}blob/master/butterBror/Core/Commands/List/Name.cs";
-        public override Version Version => new("1.0.0");
+        public override Version Version => new("1.0.1");
         public override Dictionary<string, string> Description => new()
         {
             { "ru-RU", "Получить имя из ID." },
@@ -56,7 +56,7 @@ namespace bb.Core.Commands.List
                     }
                     else
                     {
-                        commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:name:user", data.ChannelId, data.Platform, data.Arguments[0], name)); // Fix AB3
+                        commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:name:user", data.ChannelId, data.Platform, data.Arguments[0], UsernameResolver.Unmention(name))); // Fix AB3
                     }
                 }
                 else

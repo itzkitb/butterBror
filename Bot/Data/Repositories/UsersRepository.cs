@@ -314,14 +314,17 @@ namespace bb.Data.Repositories
                     );
                     CREATE INDEX IF NOT EXISTS idx_{tableName}_id ON [{tableName}](ID);";
 
-                        string[] columnsToAdd = {
-                            "LastHourlyReward TEXT DEFAULT '2000-01-01T00:00:00.0000000Z'",
-                            "LastDailyReward TEXT DEFAULT '2000-01-01T00:00:00.0000000Z'",
-                            "LastWeeklyReward TEXT DEFAULT '2000-01-01T00:00:00.0000000Z'",
-                            "LastMonthlyReward TEXT DEFAULT '2000-01-01T00:00:00.0000000Z'",
-                            "LastYearlyReward TEXT DEFAULT '2000-01-01T00:00:00.0000000Z'"
-                        };
+                        // Сначала создаем таблицу
+                        ExecuteNonQuery(createTableSql);
 
+                        // Затем добавляем дополнительные столбцы
+                        string[] columnsToAdd = {
+                    "LastHourlyReward TEXT DEFAULT '2000-01-01T00:00:00.0000000Z'",
+                    "LastDailyReward TEXT DEFAULT '2000-01-01T00:00:00.0000000Z'",
+                    "LastWeeklyReward TEXT DEFAULT '2000-01-01T00:00:00.0000000Z'",
+                    "LastMonthlyReward TEXT DEFAULT '2000-01-01T00:00:00.0000000Z'",
+                    "LastYearlyReward TEXT DEFAULT '2000-01-01T00:00:00.0000000Z'"
+                };
                         foreach (var column in columnsToAdd)
                         {
                             try
@@ -346,8 +349,6 @@ namespace bb.Data.Repositories
                         PRIMARY KEY (UserID, ChannelID)
                     );
                     CREATE INDEX IF NOT EXISTS idx_{channelCountsTable}_userid ON [{channelCountsTable}](UserID);";
-
-                        ExecuteNonQuery(createTableSql);
                         ExecuteNonQuery(createChannelCountsTable);
                     }
 
@@ -361,8 +362,8 @@ namespace bb.Data.Repositories
                 CREATE INDEX IF NOT EXISTS idx_username_mapping_platform ON UsernameMapping(Platform);
                 CREATE INDEX IF NOT EXISTS idx_username_mapping_userid ON UsernameMapping(UserID);
                 CREATE INDEX IF NOT EXISTS idx_username_mapping_username ON UsernameMapping(Username);";
-
                     ExecuteNonQuery(createMappingTableSql);
+
                     transaction.Commit();
                 }
                 catch

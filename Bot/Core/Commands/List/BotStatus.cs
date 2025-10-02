@@ -53,7 +53,7 @@ namespace bb.Core.Commands.List
 
                 string statusName = GetStatusName(data.Platform, generalStatus);
 
-                DirectoryInfo directoryInfo = new DirectoryInfo(bb.Bot.Paths.Main);
+                DirectoryInfo directoryInfo = new DirectoryInfo(bb.Program.BotInstance.Paths.General);
                 long folderSizeBytes = directoryInfo.EnumerateFiles("*.*", SearchOption.AllDirectories)
                     .Sum(fi => fi.Length);
                 long folderSizeMB = folderSizeBytes / (1024 * 1024);
@@ -69,7 +69,7 @@ namespace bb.Core.Commands.List
                 };
 
                 string diskName = driveLetter + ":";
-                string message = $"{prefix} 📡 Pshhh... I'm ButterBror v.{bb.Bot.Version} " +
+                string message = $"{prefix} 📡 Pshhh... I'm ButterBror v.{bb.Program.BotInstance.Version} " +
                                  $"💻 Status: {statusName} " +
                                  $"💾 Free disk space ({diskName}): {FormatSize(freeDiskBytes)}/{FormatSize(totalDiskBytes)} " +
                                  $"({Math.Round(percentFreeDisk)}% free) " +

@@ -36,8 +36,8 @@ namespace bb.Core.Commands.List
 
             try
             {
-                if (data.ChannelId == null || data.Channel == null || bb.Bot.Clients.TwitchAPI == null ||
-                    bb.Bot.TwitchName == null)
+                if (data.ChannelId == null || data.Channel == null || bb.Program.BotInstance.Clients.TwitchAPI == null ||
+                    bb.Program.BotInstance.TwitchName == null)
                 {
                     commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:unknown", string.Empty, data.Platform));
                     return commandReturn;
@@ -53,9 +53,9 @@ namespace bb.Core.Commands.List
                 {
                     do
                     {
-                        var response = await bb.Bot.Clients.TwitchAPI.Helix.Chat.GetChattersAsync(
+                        var response = await bb.Program.BotInstance.Clients.TwitchAPI.Helix.Chat.GetChattersAsync(
                             broadcasterId: UsernameResolver.GetUserID(targetChannel, PlatformsEnum.Twitch, true),
-                            moderatorId: UsernameResolver.GetUserID(bb.Bot.TwitchName, PlatformsEnum.Twitch, true),
+                            moderatorId: UsernameResolver.GetUserID(bb.Program.BotInstance.TwitchName, PlatformsEnum.Twitch, true),
                             first: 100,
                             after: cursor
                         );

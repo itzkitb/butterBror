@@ -1,13 +1,14 @@
 ﻿using bb.Core.Commands;
-using bb.Utils;
 using bb.Core.Configuration;
+using bb.Models.Platform;
+using bb.Utils;
 using System.Net.NetworkInformation;
 using Telegram.Bot;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
+using TwitchLib.EventSub.Core.SubscriptionTypes.Channel;
 using static bb.Core.Bot.Console;
-using bb.Models.Platform;
 using TelegramLib = Telegram;
 
 namespace bb.Services.Platform.Telegram
@@ -38,10 +39,10 @@ namespace bb.Services.Platform.Telegram
                 Message message = update.Message;
                 TelegramLib.Bot.Types.Chat chat = message.Chat;
                 User user = message.From;
-                User botData = Bot.Clients.Telegram.GetMe().Result;
+                User botData = bb.Program.BotInstance.Clients.Telegram.GetMe().Result;
                 string text = message.Text;
 
-                await MessageProcessor.ProcessMessageAsync(
+                await bb.Program.BotInstance.MessageProcessor.ProcessMessageAsync(
                     user.Id.ToString(),
                     chat.Id.ToString(),
                     user.Username.ToLower(),
@@ -54,7 +55,7 @@ namespace bb.Services.Platform.Telegram
                     null,
                     null);
 
-                string lang = (string)Bot.UsersBuffer.GetParameter(PlatformsEnum.Telegram, user.Id, Users.Language) ?? "en-US";
+                string lang = (string)bb.Program.BotInstance.UsersBuffer.GetParameter(PlatformsEnum.Telegram, user.Id, Users.Language) ?? "en-US";
 
                 if (MessageProcessor.IsEqualsSlashCommand("start", text, botData.Username))
                 {
@@ -63,25 +64,25 @@ namespace bb.Services.Platform.Telegram
                         "telegram:welcome",
                         chat.Id.ToString(),
                         PlatformsEnum.Telegram,
-                        Bot.Version,
+                        bb.Program.BotInstance.Version,
                         user.Id,
-                        TextSanitizer.FormatTimeSpan(DateTime.Now - Bot.StartTime, lang),
+                        TextSanitizer.FormatTimeSpan(DateTime.UtcNow - bb.Program.BotInstance.StartTime, lang),
                         new Ping().Send(URLs.telegram, 1000).RoundtripTime), replyParameters: message.MessageId, cancellationToken: cancellation_token);
                 }
                 else if (MessageProcessor.IsEqualsSlashCommand("ping", text, botData.Username))
                 {
-                    var workTime = DateTime.Now - Bot.StartTime;
+                    var workTime = DateTime.UtcNow - bb.Program.BotInstance.StartTime;
                     PingReply reply = new Ping().Send(URLs.telegram, 1000);
                     string returnMessage = LocalizationService.GetString(
                         lang,
                         "command:ping",
                         chat.Id.ToString(),
                         PlatformsEnum.Telegram,
-                        Bot.Version,
+                        bb.Program.BotInstance.Version,
                         TextSanitizer.FormatTimeSpan(workTime, lang),
-                        Bot.Clients.Twitch.JoinedChannels.Count + Bot.Clients.Discord.Guilds.Count + " (Twitch, Discord)",
+                        bb.Program.BotInstance.Clients.Twitch.JoinedChannels.Count + bb.Program.BotInstance.Clients.Discord.Guilds.Count + " (Twitch, Discord)",
                         Runner.commandInstances.Count.ToString(),
-                        Bot.CompletedCommands.ToString(),
+                        bb.Program.BotInstance.CompletedCommands.ToString(),
                         reply.RoundtripTime.ToString());
 
                     await client.SendMessage(
@@ -112,7 +113,7 @@ namespace bb.Services.Platform.Telegram
                     );
                 }
 
-                Executor.Telegram(message);
+                bb.Program.BotInstance.CommandExecutor.Telegram(message);
 
                 return;
             }

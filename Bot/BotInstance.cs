@@ -46,28 +46,24 @@ namespace bb
     {
         #region Variables
 
-        private readonly ClientService _clients;
-        private readonly Tokens _tokens;
-        private readonly SQLService _dataBase;
-        private readonly EmoteCacheService _emoteCacheService;
-        private readonly SettingsService _settingsService;
-        private readonly SevenTvService _sevenTvService;
-        private readonly AIService _aiService;
-        private readonly ImgurService _imgurService;
-        private readonly YouTubeService _youTubeService;
-        private readonly CooldownManager _cooldownManager;
-        private readonly CurrencyManager _currencyManager;
-        private readonly MessageProcessor _messageProcessor;
-        private readonly PlatformMessageSender _platformMessageSender;
-        private readonly CommandService _commandService;
-        private readonly Executor _commandExecutor;
-        private readonly Runner _commandRunner;
-        private readonly Sender _commandSender;
-        private readonly PathService _paths;
+        public readonly ClientService Clients;
+        public readonly PathService Paths;
+        public readonly SQLService DataBase;
+        public readonly CommandService DiscordCommandService;
+        public readonly Tokens Tokens;
+        public readonly SevenTvService SevenTv;
 
-        public ClientService Clients => _clients;
-        public PathService Paths => _paths;
-        public SQLService DataBase => _dataBase;
+        public readonly EmoteCacheService EmoteCache;
+        public readonly SettingsService Settings;
+        public readonly AIService AiService;
+        public readonly YouTubeService YouTube;
+        public readonly CooldownManager Cooldown;
+        public readonly CurrencyManager Currency;
+        public readonly MessageProcessor MessageProcessor;
+        public readonly PlatformMessageSender MessageSender;
+        public readonly Executor CommandExecutor;
+        public readonly Runner CommandRunner;
+        public readonly BlockedWordDetector MessageFilter;
 
         #region Core
         public Version Version = new Version("2.18.0.9");
@@ -76,7 +72,7 @@ namespace bb
         public DateTime StartTime = new();
         public string PreviousVersion = "";
         public bool Initialized = false;
-        public bool Connected => _clients.Twitch?.IsConnected == true && _clients.Discord?.ConnectionState == Discord.ConnectionState.Connected;
+        public bool Connected => Clients.Twitch?.IsConnected == true && Clients.Discord?.ConnectionState == Discord.ConnectionState.Connected;
         public string? TwitchName;
         public string DefaultCommandPrefix = "!";
         private bool SkipFetch = false;
@@ -141,7 +137,6 @@ namespace bb
         SettingsService settingsService,
         SevenTvService sevenTvService,
         AIService aiService,
-        ImgurService imgurService,
         YouTubeService youTubeService,
         CooldownManager cooldownManager,
         CurrencyManager currencyManager,
@@ -150,27 +145,26 @@ namespace bb
         CommandService commandService,
         Executor commandExecutor,
         Runner commandRunner,
-        Sender commandSender
+        BlockedWordDetector blockedWordDetector
     )
         {
-            _clients = clients;
-            _paths = paths;
-            _tokens = tokens;
-            _dataBase = dataBase;
-            _emoteCacheService = emoteCacheService;
-            _settingsService = settingsService;
-            _sevenTvService = sevenTvService;
-            _aiService = aiService;
-            _imgurService = imgurService;
-            _youTubeService = youTubeService;
-            _cooldownManager = cooldownManager;
-            _currencyManager = currencyManager;
-            _messageProcessor = messageProcessor;
-            _platformMessageSender = platformMessageSender;
-            _commandService = commandService;
-            _commandExecutor = commandExecutor;
-            _commandRunner = commandRunner;
-            _commandSender = commandSender;
+            Clients = clients;
+            Paths = paths;
+            Tokens = tokens;
+            DataBase = dataBase;
+            EmoteCache = emoteCacheService;
+            Settings = settingsService;
+            SevenTv = sevenTvService;
+            AiService = aiService;
+            YouTube = youTubeService;
+            Cooldown = cooldownManager;
+            Currency = currencyManager;
+            MessageProcessor = messageProcessor;
+            MessageSender = platformMessageSender;
+            DiscordCommandService = commandService;
+            CommandExecutor = commandExecutor;
+            CommandRunner = commandRunner;
+            MessageFilter = blockedWordDetector;
         }
 
         #region Core
@@ -186,6 +180,7 @@ namespace bb
         public void Start(string[] args)
         {
             AppDomain.CurrentDomain.UnhandledException += UnhandledException;
+            StartTime = DateTime.UtcNow;
 
             Initialize(args);
 
@@ -197,8 +192,7 @@ namespace bb
             {
                 SystemDataFetch();
             }
-
-            Setup();
+            
             StartBot();
 
             Task.Run(async () =>
@@ -248,7 +242,7 @@ namespace bb
                         if (now.Minute % 10 == 0 && (now - _lastTelemtry).Minutes > 0)
                         {
                             _lastTelemtry = now;
-                            _paths.UpdatePaths();
+                            Paths.UpdatePaths();
                             EmoteCacheService.Save();
                             _ = Telemetry.Send();
 
@@ -275,28 +269,28 @@ namespace bb
 
                         if (now.Hour == 0 && now.Minute == 0 && now.Second == 0)
                         {
-                            _ = Task.Run(() =>
+                            _ = Task.Run((Action)(() =>
                             {
                                 _ = Backup.BackupDataAsync();
-                                _ = CurrencyManager.GenerateRandomEventAsync();
-                                _ = CurrencyManager.CollectTaxesAsync();
+                                _ = Currency.GenerateRandomEventAsync();
+                                _ = Currency.CollectTaxesAsync();
 
-                                if (_dataBase == null)
+                                if (this.DataBase == null)
                                 {
                                     Write("Reinitialization of currency counters failed: Database is null", LogLevel.Error);
                                     return;
                                 }
 
                                 Write("Reinitializing currency counters...");
-                                Users = _dataBase.Users.GetTotalUsers();
-                                Coins = _dataBase.Users.GetTotalBalance();
-                            });
+                                Users = this.DataBase.Users.GetTotalUsers();
+                                Coins = this.DataBase.Users.GetTotalBalance();
+                            }));
                         }
 
                         //Write($"({now.Second == 0} && {(now - _lastSave).TotalSeconds > 2}); ({now.Second}; {(now - _lastSave).TotalSeconds}; {now}; {_lastSave})", "debug");
                         if (now.Second == 0 && (now - _lastSave).TotalSeconds > 2)
                         {
-                            if (MessagesBuffer == null || UsersBuffer == null || _dataBase == null)
+                            if (MessagesBuffer == null || UsersBuffer == null || DataBase == null)
                             {
                                 Write("Failed to save buffers and currency: MessagesBuffer, UsersBuffer, or DataBase are null", LogLevel.Error);
                             }
@@ -321,7 +315,7 @@ namespace bb
 
                                 if (allFirstMessages.Count > 0)
                                 {
-                                    _dataBase.Channels.SaveFirstMessages(allFirstMessages);
+                                    DataBase.Channels.SaveFirstMessages(allFirstMessages);
                                     allFirstMessages.Clear();
                                 }
                                 #endregion Buffer save 
@@ -331,14 +325,14 @@ namespace bb
                                     { "amount", Coins },
                                     { "users", Users },
                                     { "dollars", InBankDollars },
-                                    { "cost", InBankDollars / Coins },
-                                    { "middleBalance", Coins / Users }
+                                    { "cost", Coins == 0 ? 0 : InBankDollars / Coins },
+                                    { "middleBalance", Users == 0 ? 0 : Coins / Users }
                             };
 
-                                if (_paths.Currency is not null)
+                                if (Paths.Currency is not null)
                                 {
-                                    Manager.Save(_paths.Currency, "total", currencyData);
-                                    Manager.Save(_paths.Currency, $"{now.Day}.{now.Month}.{now.Year}", currencyData);
+                                    Manager.Save(Paths.Currency, "total", currencyData);
+                                    Manager.Save(Paths.Currency, $"{now.Day}.{now.Month}.{now.Year}", currencyData);
                                 }
                                 #endregion Currency save
 
@@ -644,30 +638,6 @@ namespace bb
         }
 
         /// <summary>
-        /// Configures core infrastructure before bot startup.
-        /// </summary>
-        /// <remarks>
-        /// <list type="bullet">
-        /// <item>Establishes working directories in ApplicationData</item>
-        /// <item>Launches background timer task (StartRepeater)</item>
-        /// <item>Records application start timestamp</item>
-        /// <item>Initializes message and user data buffers</item>
-        /// </list>
-        /// Executes once during application startup before platform connections.
-        /// Configures path structure for all persistent data storage.
-        /// </remarks>
-        private void Setup()
-        {
-            _paths.General = $"{Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)}/ItzKITb/";
-            _paths.Main = _paths.General + "butterBror/";
-
-            _repeater = Task.Run(() => StartRepeater());
-            Write($"TPS counter successfully started.");
-
-            StartTime = DateTime.Now;
-        }
-
-        /// <summary>
         /// Launches the main bot loop and initializes components.
         /// </summary>
         /// <remarks>
@@ -686,36 +656,42 @@ namespace bb
         {
             _startTime = DateTime.UtcNow;
 
-            if (FileUtil.FileExists(_paths.Currency))
+            if (FileUtil.FileExists(Paths.Currency))
             {
-                var data = Manager.Get<Dictionary<string, dynamic>>(_paths.Currency, "total");
+                if (FileUtil.GetFileContent(Paths.Currency) == string.Empty)
+                {
+                    FileUtil.SaveFileContent(Paths.Currency, "{\"total\":{\"amount\":0.0,\"users\":0,\"dollars\":0,\"cost\":0,\"middleBalance\":0}}");
+                }
+
+                var data = Manager.Get<Dictionary<string, dynamic>>(Paths.Currency, "total");
                 InBankDollars = data.ContainsKey("dollars") ? data["dollars"].GetInt32() : 0;
             }
 
             try
             {
                 Write("Creating directories...");
-                string[] directories = { _paths.General, _paths.Main, _paths.TranslateDefault, _paths.TranslateCustom };
+                string[] directories = { Paths.Root, Paths.General, Paths.TranslateDefault, Paths.TranslateCustom };
 
                 foreach (var dir in directories)
                 {
                     FileUtil.CreateDirectory(dir);
                 }
 
-                string[] directories_with_platforms = { _paths.TranslateDefault, _paths.TranslateCustom };
+                string[] directories_with_platforms = { Paths.TranslateDefault, Paths.TranslateCustom };
 
-                if (!FileUtil.FileExists(_paths.Settings))
+                if (!FileUtil.FileExists(Paths.Settings))
                 {
-                    SettingsService.InitializeFile(_paths.Settings);
-                    Write($"The settings file has been created! ({_paths.Settings})");
+                    Settings.Initialize();
+                    Write($"The settings file has been created! ({Paths.Settings})");
                     Thread.Sleep(-1);
                 }
 
                 string[] files = {
-                            _paths.BlacklistWords, _paths.BlacklistReplacements,
-                            _paths.Currency, _paths.Cache, _paths.Logs, _paths.APIUses,
-                            Path.Combine(_paths.TranslateDefault, "ru-RU.json"),
-                            Path.Combine(_paths.TranslateDefault, "en-US.json"), Path.Combine(_paths.Main, "VERSION.txt")
+                        Paths.Currency,
+                        Paths.Cache, Paths.Logs, Paths.APIUses,
+                        Path.Combine(Paths.TranslateDefault, "ru-RU.json"),
+                        Path.Combine(Paths.TranslateDefault, "en-US.json"),
+                        Path.Combine(Paths.General, "Version")
                     };
 
                 Write("Creating files...");
@@ -724,27 +700,48 @@ namespace bb
                     FileUtil.CreateFile(file);
                 }
 
-                PreviousVersion = File.ReadAllText(Path.Combine(_paths.Main, "VERSION.txt"));
-                File.WriteAllText(Path.Combine(_paths.Main, "VERSION.txt"), $"{Version}");
+                PreviousVersion = File.ReadAllText(Path.Combine(Paths.General, "Version"));
+                File.WriteAllText(Path.Combine(Paths.General, "Version"), $"{Version}");
 
                 Write("Loading settings...");
-                SettingsService.Load();
+                LoadSettings();
 
-                Write("Initializing databases...");
-                /*_dataBase = new()
+                Write("Initializing blocked words...");
+                if (!FileUtil.FileExists(Paths.BlacklistWords))
                 {
-                    Messages = new(Paths.MessagesDatabase),
-                    Users = new(Paths.UsersDatabase),
-                    Games = new(Paths.GamesDatabase),
-                    Channels = new(Paths.ChannelsDatabase),
-                    Roles = new(Paths.RolesDatabase)
-                };*/
-                MessagesBuffer = new(_dataBase.Messages);
-                UsersBuffer = new(_dataBase.Users);
+                    Manager.Save(Paths.BlacklistWords, "single_word", new List<string>());
+                    Manager.Save(Paths.BlacklistWords, "replacement_list", new Dictionary<string, string>());
+                    Manager.Save(Paths.BlacklistWords, "list", new List<string>());
 
-                Write("Loading currency counters...");
-                Users = _dataBase.Users.GetTotalUsers();
-                Coins = _dataBase.Users.GetTotalBalance();
+                    Write("The file with blocked words has been created!");
+                }
+
+                Write("[0/5] Initializing databases...");
+                DataBase.Messages = new(Paths.MessagesDatabase);
+                Write("[1/5] Initializing databases...");
+                DataBase.Users = new(Paths.UsersDatabase);
+                Write("[2/5] Initializing databases...");
+                DataBase.Games = new(Paths.GamesDatabase);
+                Write("[3/5] Initializing databases...");
+                DataBase.Channels = new(Paths.ChannelsDatabase);
+                Write("[4/5] Initializing databases...");
+                DataBase.Roles = new(Paths.RolesDatabase);
+                Write("[5/5] Initializing databases...");
+
+                Write("[0/2] Initializing buffers...");
+                MessagesBuffer = new(DataBase.Messages);
+                Write("[1/2] Initializing buffers...");
+                UsersBuffer = new(DataBase.Users);
+                Write("[2/2] Initializing buffers...");
+
+                Write("[0/2] Loading currency counters...");
+                Users = DataBase.Users.GetTotalUsers();
+                Write("[1/2] Loading currency counters...");
+                Coins = DataBase.Users.GetTotalBalance();
+                Write("[2/2] Loading currency counters...");
+
+                _repeater = Task.Run(() => StartRepeater());
+                Write($"TPS counter successfully started");
 
                 Write("Getting twitch token...");
 
@@ -753,17 +750,17 @@ namespace bb
                     throw new TwitchDataNullException("Twitch client id is null.");
                 }
 
-                if (_tokens.TwitchSecretToken == null)
+                if (Tokens.TwitchSecretToken == null)
                 {
                     throw new TwitchDataNullException("Twitch secret token is null.");
                 }
 
-                _tokens.TwitchGetter = new(TwitchClientId, _tokens.TwitchSecretToken, _paths.Main + "TWITCH_AUTH.json");
+                Tokens.TwitchGetter = new(TwitchClientId, Tokens.TwitchSecretToken, Paths.General + "TWITCH_AUTH.json");
                 var token = await TwitchToken.GetTokenAsync();
 
                 if (token != null)
                 {
-                    _tokens.Twitch = token;
+                    Tokens.Twitch = token;
                     await Connect();
                 }
                 else
@@ -778,7 +775,54 @@ namespace bb
                 await Shutdown();
             }
         }
+
+        /// <summary>
+        /// Loads and applies bot configuration from persistent storage to runtime memory.
+        /// </summary>
+        /// <remarks>
+        /// <list type="bullet">
+        /// <item>Reads all configuration parameters from the settings file</item>
+        /// <item>Maps stored values to corresponding bot properties and services</item>
+        /// <item>Handles multiple data types including strings, arrays, and dictionaries</item>
+        /// <item>Converts prefix character from string representation</item>
+        /// <item>Initializes token managers with loaded credentials</item>
+        /// </list>
+        /// Critical initialization step that must complete successfully before platform connections.
+        /// Throws exceptions on missing critical parameters (bot_name, tokens, etc.).
+        /// Automatically decodes Unicode escape sequences for special characters.
+        /// Maintains separation between sensitive credentials and public configuration.
+        /// </remarks>
+        public void LoadSettings()
+        {
+            LoadTokens();
+            LoadOtherData();
+            bb.Program.BotInstance.UsersSevenTVIDs = Manager.Get<Dictionary<string, string>>(Paths.SevenTVCache, "ids");
+        }
+
+        private void LoadTokens()
+        {
+            bb.Program.BotInstance.Tokens.Discord = Settings.Get<string>("discord_token");
+            bb.Program.BotInstance.Tokens.TwitchSecretToken = Settings.Get<string>("twitch_secret_token");
+            bb.Program.BotInstance.Tokens.Telegram = Settings.Get<string>("telegram_token");
+            bb.Program.BotInstance.Tokens.SevenTV = Settings.Get<string>("7tv_token");
+        }
+
+        private void LoadOtherData()
+        {
+            bb.Program.BotInstance.TwitchName = Settings.Get<string>("bot_name");
+            bb.Program.BotInstance.TwitchReconnectAnnounce = Settings.Get<string[]>("twitch_reconnect_message_channels");
+            bb.Program.BotInstance.TwitchConnectAnnounce = Settings.Get<string[]>("twitch_connect_message_channels");
+            bb.Program.BotInstance.TwitchClientId = Settings.Get<string>("twitch_client_id");
+            bb.Program.BotInstance.TwitchNewVersionAnnounce = Settings.Get<string[]>("twitch_version_message_channels");
+            bb.Program.BotInstance.TwitchCurrencyRandomEvent = Settings.Get<List<string>>("twitch_currency_random_event");
+            bb.Program.BotInstance.TwitchTaxesEvent = Settings.Get<List<string>>("twitch_taxes_event");
+            bb.Program.BotInstance.CurrencyMentioned = Settings.Get<int>("currency_mentioned_payment");
+            bb.Program.BotInstance.CurrencyMentioner = Settings.Get<int>("currency_mentioner_payment");
+            bb.Program.BotInstance.DefaultCommandPrefix = Settings.Get<string>("prefix");
+            bb.Program.BotInstance.TaxesCost = Settings.Get<double>("taxes_cost");
+        }
         #endregion Core
+
         #region Connects
         /// <summary>
         /// Establishes connections to all supported platforms.
@@ -821,13 +865,13 @@ namespace bb
                     {
                         foreach (string channel in TwitchNewVersionAnnounce)
                         {
-                            PlatformMessageSender.TwitchSend(UsernameResolver.GetUsername(channel, PlatformsEnum.Twitch, true), $"{TwitchName} v.{PreviousVersion} > v.{Version}", channel, "", "en-US", true);
+                            bb.Program.BotInstance.MessageSender.Send(PlatformsEnum.Twitch, $"{TwitchName} v.{PreviousVersion} > v.{Version}", channel, isSafe: true);
                         }
                     }
 
                     foreach (string channel in TwitchConnectAnnounce)
                     {
-                        PlatformMessageSender.TwitchSend(UsernameResolver.GetUsername(channel, PlatformsEnum.Twitch, true), $"{TwitchName} Started in {(long)(ConnectedIn).TotalMilliseconds} ms!", channel, "", "en-US", true);
+                        bb.Program.BotInstance.MessageSender.Send(PlatformsEnum.Twitch, $"{TwitchName} Started in {(long)(ConnectedIn).TotalMilliseconds} ms!", channel, isSafe: true);
                     }
                 });
 
@@ -858,7 +902,7 @@ namespace bb
         /// <exception cref="TwitchDataNullException">Twitch nickname cannot be null or empty.</exception>
         private void ConnectToTwitch()
         {
-            if (_tokens.Twitch == null)
+            if (Tokens.Twitch == null)
             {
                 throw new TwitchDataNullException("Twitch token cannot be null or empty.");
             }
@@ -868,7 +912,7 @@ namespace bb
                 throw new TwitchDataNullException("Twitch nickname cannot be null or empty.");
             }
 
-            ConnectionCredentials credentials = new ConnectionCredentials(TwitchName, "oauth:" + _tokens.Twitch.AccessToken);
+            ConnectionCredentials credentials = new ConnectionCredentials(TwitchName, "oauth:" + Tokens.Twitch.AccessToken);
             ClientOptions client_options = new ClientOptions
             {
                 MessagesAllowedInPeriod = 750,
@@ -876,45 +920,45 @@ namespace bb
                 ReconnectionPolicy = new ReconnectionPolicy(10)
             };
             WebSocketClient webSocket_client = new WebSocketClient(client_options);
-            _clients.Twitch = new TwitchClient(webSocket_client);
-            _clients.Twitch.Initialize(credentials, TwitchName);
-            _clients.TwitchAPI = new TwitchAPI();
-            _clients.TwitchAPI.Settings.AccessToken = _tokens.Twitch.AccessToken;
-            _clients.TwitchAPI.Settings.ClientId = TwitchClientId;
-            _clients.TwitchAPI.Settings.Scopes = [AuthScopes.Chat_Read, AuthScopes.Moderator_Read_Chatters, AuthScopes.Chat_Edit, AuthScopes.Moderator_Manage_Banned_Users];
+            Clients.Twitch = new TwitchClient(webSocket_client);
+            Clients.Twitch.Initialize(credentials, TwitchName);
+            Clients.TwitchAPI = new TwitchAPI();
+            Clients.TwitchAPI.Settings.AccessToken = Tokens.Twitch.AccessToken;
+            Clients.TwitchAPI.Settings.ClientId = TwitchClientId;
+            Clients.TwitchAPI.Settings.Scopes = [AuthScopes.Chat_Read, AuthScopes.Moderator_Read_Chatters, AuthScopes.Chat_Edit, AuthScopes.Moderator_Manage_Banned_Users];
 
             #region Events subscription
-            _clients.Twitch.OnJoinedChannel += TwitchEvents.OnJoin;
-            _clients.Twitch.OnMessageReceived += Core.Commands.Executor.Twitch;
-            _clients.Twitch.OnMessageReceived += TwitchEvents.OnMessageReceived;
-            _clients.Twitch.OnMessageThrottled += TwitchEvents.OnMessageThrottled;
-            _clients.Twitch.OnMessageSent += TwitchEvents.OnMessageSend;
-            _clients.Twitch.OnAnnouncement += TwitchEvents.OnAnnounce;
-            _clients.Twitch.OnBanned += TwitchEvents.OnBanned;
-            _clients.Twitch.OnConnectionError += TwitchEvents.OnConnectionError;
-            _clients.Twitch.OnContinuedGiftedSubscription += TwitchEvents.OnContinuedGiftedSubscription;
-            _clients.Twitch.OnChatCleared += TwitchEvents.OnChatCleared;
-            _clients.Twitch.OnDisconnected += TwitchEvents.OnTwitchDisconnected;
-            _clients.Twitch.OnReconnected += TwitchEvents.OnReconnected;
-            _clients.Twitch.OnError += TwitchEvents.OnError;
-            _clients.Twitch.OnIncorrectLogin += TwitchEvents.OnIncorrectLogin;
-            _clients.Twitch.OnLeftChannel += TwitchEvents.OnLeftChannel;
-            _clients.Twitch.OnRaidNotification += TwitchEvents.OnRaidNotification;
-            _clients.Twitch.OnNewSubscriber += TwitchEvents.OnNewSubscriber;
-            _clients.Twitch.OnGiftedSubscription += TwitchEvents.OnGiftedSubscription;
-            _clients.Twitch.OnCommunitySubscription += TwitchEvents.OnCommunitySubscription;
-            _clients.Twitch.OnReSubscriber += TwitchEvents.OnReSubscriber;
-            _clients.Twitch.OnSuspended += TwitchEvents.OnSuspended;
-            _clients.Twitch.OnConnected += TwitchEvents.OnConnected;
-            _clients.Twitch.OnLog += TwitchEvents.OnLog;
-            _clients.Twitch.OnChatCleared += TwitchEvents.OnChatCleared;
+            Clients.Twitch.OnJoinedChannel += TwitchEvents.OnJoin;
+            Clients.Twitch.OnMessageReceived += bb.Program.BotInstance.CommandExecutor.Twitch;
+            Clients.Twitch.OnMessageReceived += TwitchEvents.OnMessageReceived;
+            Clients.Twitch.OnMessageThrottled += TwitchEvents.OnMessageThrottled;
+            Clients.Twitch.OnMessageSent += TwitchEvents.OnMessageSend;
+            Clients.Twitch.OnAnnouncement += TwitchEvents.OnAnnounce;
+            Clients.Twitch.OnBanned += TwitchEvents.OnBanned;
+            Clients.Twitch.OnConnectionError += TwitchEvents.OnConnectionError;
+            Clients.Twitch.OnContinuedGiftedSubscription += TwitchEvents.OnContinuedGiftedSubscription;
+            Clients.Twitch.OnChatCleared += TwitchEvents.OnChatCleared;
+            Clients.Twitch.OnDisconnected += TwitchEvents.OnTwitchDisconnected;
+            Clients.Twitch.OnReconnected += TwitchEvents.OnReconnected;
+            Clients.Twitch.OnError += TwitchEvents.OnError;
+            Clients.Twitch.OnIncorrectLogin += TwitchEvents.OnIncorrectLogin;
+            Clients.Twitch.OnLeftChannel += TwitchEvents.OnLeftChannel;
+            Clients.Twitch.OnRaidNotification += TwitchEvents.OnRaidNotification;
+            Clients.Twitch.OnNewSubscriber += TwitchEvents.OnNewSubscriber;
+            Clients.Twitch.OnGiftedSubscription += TwitchEvents.OnGiftedSubscription;
+            Clients.Twitch.OnCommunitySubscription += TwitchEvents.OnCommunitySubscription;
+            Clients.Twitch.OnReSubscriber += TwitchEvents.OnReSubscriber;
+            Clients.Twitch.OnSuspended += TwitchEvents.OnSuspended;
+            Clients.Twitch.OnConnected += TwitchEvents.OnConnected;
+            Clients.Twitch.OnLog += TwitchEvents.OnLog;
+            Clients.Twitch.OnChatCleared += TwitchEvents.OnChatCleared;
             #endregion
 
-            _clients.Twitch.Connect();
+            Clients.Twitch.Connect();
 
             JoinTwitchChannels();
 
-            _clients.Twitch.SendMessage(TwitchName.ToLower(), "truckCrash Connecting to twitch...");
+            Clients.Twitch.SendMessage(TwitchName.ToLower(), "truckCrash Connecting to twitch...");
 
             Write("Twitch is ready.");
         }
@@ -932,23 +976,23 @@ namespace bb
         /// <exception cref="TwitchClientNullException">Twitch client is null.</exception>
         public void JoinTwitchChannels()
         {
-            if (_clients.Twitch == null)
+            if (Clients.Twitch == null)
             {
                 throw new TwitchClientNullException();
             }
 
             var notFoundedChannels = new List<string>();
 
-            foreach (var channel in Manager.Get<string[]>(_paths.Settings, "twitch_connect_channels"))
+            foreach (var channel in bb.Program.BotInstance.Settings.Get<string[]>("twitch_connect_channels"))
             {
                 var tempChannel = UsernameResolver.GetUsername(channel, PlatformsEnum.Twitch, true);
-                if (tempChannel != null) _clients.Twitch.JoinChannel(tempChannel);
+                if (tempChannel != null) Clients.Twitch.JoinChannel(tempChannel);
                 else notFoundedChannels.Add(channel);
             }
 
             if (notFoundedChannels.Count > 0)
             {
-                Write("Twitch - Can't find ID for " + string.Join(',', notFoundedChannels), LogLevel.Warning);
+                Write("Twitch: Can't find ID for " + string.Join(',', notFoundedChannels), LogLevel.Warning);
             }
         }
 
@@ -973,29 +1017,29 @@ namespace bb
                 MessageCacheSize = 1000,
                 GatewayIntents = GatewayIntents.Guilds | GatewayIntents.GuildMessages | GatewayIntents.DirectMessages | GatewayIntents.MessageContent
             };
-            _clients.Discord = new DiscordSocketClient(discordConfig);
+            Clients.Discord = new DiscordSocketClient(discordConfig);
             DiscordServiceProvider = new ServiceCollection()
-                .AddSingleton(_clients.Discord)
-                .AddSingleton(_commandService)
+                .AddSingleton(Clients.Discord)
+                .AddSingleton(DiscordCommandService)
                 .BuildServiceProvider();
 
-            _clients.Discord.Log += DiscordEvents.LogAsync;
-            _clients.Discord.JoinedGuild += DiscordEvents.ConnectToGuilt;
-            _clients.Discord.Ready += DiscordWorker.ReadyAsync;
-            _clients.Discord.MessageReceived += DiscordWorker.MessageReceivedAsync;
-            _clients.Discord.SlashCommandExecuted += DiscordEvents.SlashCommandHandler;
-            _clients.Discord.ApplicationCommandCreated += DiscordEvents.ApplicationCommandCreated;
-            _clients.Discord.ApplicationCommandDeleted += DiscordEvents.ApplicationCommandDeleted;
-            _clients.Discord.ApplicationCommandUpdated += DiscordEvents.ApplicationCommandUpdated;
-            _clients.Discord.ChannelCreated += DiscordEvents.ChannelCreated;
-            _clients.Discord.ChannelDestroyed += DiscordEvents.ChannelDeleted;
-            _clients.Discord.ChannelUpdated += DiscordEvents.ChannelUpdated;
-            _clients.Discord.Connected += DiscordEvents.Connected;
-            _clients.Discord.ButtonExecuted += DiscordEvents.ButtonTouched;
+            Clients.Discord.Log += DiscordEvents.LogAsync;
+            Clients.Discord.JoinedGuild += DiscordEvents.ConnectToGuilt;
+            Clients.Discord.Ready += DiscordWorker.ReadyAsync;
+            Clients.Discord.MessageReceived += DiscordWorker.MessageReceivedAsync;
+            Clients.Discord.SlashCommandExecuted += DiscordEvents.SlashCommandHandler;
+            Clients.Discord.ApplicationCommandCreated += DiscordEvents.ApplicationCommandCreated;
+            Clients.Discord.ApplicationCommandDeleted += DiscordEvents.ApplicationCommandDeleted;
+            Clients.Discord.ApplicationCommandUpdated += DiscordEvents.ApplicationCommandUpdated;
+            Clients.Discord.ChannelCreated += DiscordEvents.ChannelCreated;
+            Clients.Discord.ChannelDestroyed += DiscordEvents.ChannelDeleted;
+            Clients.Discord.ChannelUpdated += DiscordEvents.ChannelUpdated;
+            Clients.Discord.Connected += DiscordEvents.Connected;
+            Clients.Discord.ButtonExecuted += DiscordEvents.ButtonTouched;
 
             await DiscordWorker.RegisterCommandsAsync();
-            await _clients.Discord.LoginAsync(TokenType.Bot, _tokens.Discord);
-            await _clients.Discord.StartAsync();
+            await Clients.Discord.LoginAsync(TokenType.Bot, Tokens.Discord);
+            await Clients.Discord.StartAsync();
 
             Write("Discord is ready.");
         }
@@ -1017,22 +1061,23 @@ namespace bb
         /// <exception cref="ArgumentNullException">Telegram token is null.</exception>
         private void ConnectToTelegram()
         {
-            if (_tokens.Telegram == null)
+            if (Tokens.Telegram == null)
             {
                 throw new TelegramTokenNullException();
             }
 
-            _clients.Telegram = new TelegramBotClient(_tokens.Telegram);
+            Clients.Telegram = new TelegramBotClient(Tokens.Telegram);
             TelegramReceiverOptions = new ReceiverOptions
             {
                 AllowedUpdates = new[] { UpdateType.Message },
                 DropPendingUpdates = true,
             };
 
-            _clients.Telegram.StartReceiving(TelegramEvents.UpdateHandler, TelegramEvents.ErrorHandler, TelegramReceiverOptions, _clients.TelegramCancellationToken.Token);
+            Clients.Telegram.StartReceiving(TelegramEvents.UpdateHandler, TelegramEvents.ErrorHandler, TelegramReceiverOptions, Clients.TelegramCancellationToken.Token);
             Write("Telegram is ready.");
         }
         #endregion Connects
+
         #region Other
         /// <summary>
         /// Refreshes the Twitch authentication token and reestablishes connection to the Twitch platform.
@@ -1051,12 +1096,12 @@ namespace bb
         {
             try
             {
-                if (_clients.Twitch == null)
+                if (Clients.Twitch == null)
                 {
                     throw new TwitchClientNullException();
                 }
 
-                if (_tokens.Twitch == null)
+                if (Tokens.Twitch == null)
                 {
                     throw new TwitchDataNullException("Twitch token cannot be null or empty.");
                 }
@@ -1066,22 +1111,22 @@ namespace bb
                     throw new TwitchDataNullException("Twitch nickname cannot be null or empty.");
                 }
 
-                if (_clients.Twitch.IsConnected)
+                if (Clients.Twitch.IsConnected)
                 {
-                    _clients.Twitch.Disconnect();
+                    Clients.Twitch.Disconnect();
                     await Task.Delay(500);
                 }
 
-                _clients.Twitch.SetConnectionCredentials(
-                    new ConnectionCredentials(TwitchName, _tokens.Twitch.AccessToken)
+                Clients.Twitch.SetConnectionCredentials(
+                    new ConnectionCredentials(TwitchName, Tokens.Twitch.AccessToken)
                 );
 
                 try
                 {
-                    _clients.Twitch.Connect();
+                    Clients.Twitch.Connect();
                     JoinTwitchChannels();
                     Write("The token has been updated and the connection has been restored");
-                    PlatformMessageSender.TwitchSend(TwitchName, $"sillyCatThinks Token refreshed", "", "", "en-US", true);
+                    bb.Program.BotInstance.MessageSender.Send(PlatformsEnum.Twitch, $"sillyCatThinks Token refreshed", TwitchName, isSafe: true);
                 }
                 catch (Exception ex)
                 {
@@ -1175,12 +1220,12 @@ namespace bb
                     }
                 }
 
-                if (_clients?.TelegramCancellationToken != null)
+                if (Clients?.TelegramCancellationToken != null)
                 {
                     try
                     {
                         Write("Cancelling Telegram operations...");
-                        _clients.TelegramCancellationToken.Cancel();
+                        Clients.TelegramCancellationToken.Cancel();
                         Write("Telegram cancellation requested", LogLevel.Info);
                     }
                     catch (Exception ex)
@@ -1189,18 +1234,18 @@ namespace bb
                     }
                     finally
                     {
-                        _clients.TelegramCancellationToken.Dispose();
-                        _clients.TelegramCancellationToken = null;
+                        Clients.TelegramCancellationToken.Dispose();
+                        Clients.TelegramCancellationToken = null;
                     }
                 }
 
-                if (_clients?.Discord != null)
+                if (Clients?.Discord != null)
                 {
                     try
                     {
                         Write("Disconnecting from Discord...");
-                        await _clients.Discord.LogoutAsync();
-                        await _clients.Discord.StopAsync();
+                        await Clients.Discord.LogoutAsync();
+                        await Clients.Discord.StopAsync();
                         Write("Discord client disconnected", LogLevel.Info);
                     }
                     catch (Exception ex)
@@ -1209,21 +1254,21 @@ namespace bb
                     }
                     finally
                     {
-                        _clients.Discord.Dispose();
-                        _clients.Discord = null;
+                        Clients.Discord.Dispose();
+                        Clients.Discord = null;
                     }
                 }
 
-                if (_dataBase != null)
+                if (DataBase != null)
                 {
                     Write("Disposing SQL...");
                     try
                     {
-                        _dataBase.Channels.Dispose();
-                        _dataBase.Users.Dispose();
-                        _dataBase.Games.Dispose();
-                        _dataBase.Messages.Dispose();
-                        _dataBase.Roles.Dispose();
+                        DataBase.Channels.Dispose();
+                        DataBase.Users.Dispose();
+                        DataBase.Games.Dispose();
+                        DataBase.Messages.Dispose();
+                        DataBase.Roles.Dispose();
                     }
                     catch (Exception ex)
                     {
@@ -1242,10 +1287,10 @@ namespace bb
                                     { "middleBalance", Coins / Users }
                             };
 
-                    if (_paths.Currency is not null)
+                    if (Paths.Currency is not null)
                     {
-                        Manager.Save(_paths.Currency, "total", currencyData);
-                        Manager.Save(_paths.Currency, $"{DateTime.UtcNow.Day}.{DateTime.UtcNow.Month}.{DateTime.UtcNow.Year}", currencyData);
+                        Manager.Save(Paths.Currency, "total", currencyData);
+                        Manager.Save(Paths.Currency, $"{DateTime.UtcNow.Day}.{DateTime.UtcNow.Month}.{DateTime.UtcNow.Year}", currencyData);
                     }
                 }
                 catch (Exception ex)
@@ -1282,10 +1327,10 @@ namespace bb
 
         public async Task RefreshTwitchToken()
         {
-            var newToken = await TwitchToken.RefreshAccessToken(_tokens.Twitch);
+            var newToken = await TwitchToken.RefreshAccessToken(Tokens.Twitch);
             if (newToken != null)
             {
-                _tokens.Twitch = newToken;
+                Tokens.Twitch = newToken;
             }
         }
         #endregion Other

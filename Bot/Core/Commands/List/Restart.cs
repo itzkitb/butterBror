@@ -36,7 +36,7 @@ namespace bb.Core.Commands.List
             {
                 bool isForse = data.Arguments != null && data.Arguments.Contains("--force");
                 commandReturn.SetMessage(isForse ? "❄ Turning off..." : "❄ Restarting...");
-                _ = bb.Bot.Shutdown(isForse);
+                _ = bb.Program.BotInstance.Shutdown(isForse);
             }
             catch (Exception e)
             {

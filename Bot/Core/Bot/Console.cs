@@ -65,6 +65,10 @@ namespace bb.Core.Bot
             [CallerLineNumber] int lineNumber = 0,
             [CallerMemberName] string memberName = "")
         {
+            #if RELEASE
+            if (type == LogLevel.Debug) return;
+            #endif
+
             string logEntry = FormatLogEntry(filePath, lineNumber, memberName, type, message);
             string fileName = Path.GetFileName(filePath) ?? "Unknown";
 
@@ -78,7 +82,7 @@ namespace bb.Core.Bot
                 Debug.WriteLine($"Failed to write log to file: {ex.Message}\n{ex.StackTrace}");
             }
 
-            System.Console.WriteLine($"{DateTime.Now.ToString("HH:mm:ss.FF").PadRight(11).Pastel("#666666")} [ {$"{fileName}:{lineNumber}".Pastel("#ff7b42")} ] {message.Pastel("#bababa")}");
+            System.Console.WriteLine($"{"[".Pastel("#bababa")} {GetEmoji(type)} {DateTime.Now.ToString("HH:mm.ss").PadRight(8).Pastel("#888888")} {"]".Pastel("#bababa")} {$"{fileName}:{lineNumber}".Pastel("#b3ff7d")} {"-".Pastel("#bababa")} {message.Pastel("#bababa")}");
             DashboardServer.HandleLog(message, type);
         }
 
@@ -115,6 +119,7 @@ namespace bb.Core.Bot
         {
             string text = FormatException(exception);
             string logEntry = FormatLogEntry(filePath, lineNumber, memberName, LogLevel.Error, text);
+            string fileName = Path.GetFileName(filePath) ?? "Unknown";
 
             try
             {
@@ -126,7 +131,7 @@ namespace bb.Core.Bot
                 Debug.WriteLine($"Failed to write log to file: {ex.Message}\n{ex.StackTrace}");
             }
 
-            System.Console.WriteLine($"{DateTime.Now.ToString("HH:mm:ss.FF").PadRight(11).Pastel("#666666")} [ {"errors".Pastel("#ff4f4f")} ] {logEntry.Pastel("#bababa")}");
+            System.Console.WriteLine($"{"[".Pastel("#bababa")} {GetEmoji(LogLevel.Error)} {DateTime.Now.ToString("HH:mm.ss").PadRight(8).Pastel("#888888")} {"]".Pastel("#bababa")} {$"{fileName}:{lineNumber}".Pastel("#ff4f4f")} {"-".Pastel("#bababa")} {logEntry.Pastel("#bababa")}");
             DashboardServer.HandleLog(text, LogLevel.Error);
         }
 
@@ -139,32 +144,22 @@ namespace bb.Core.Bot
         /// <param name="level">Log severity level.</param>
         /// <param name="message">Message content to include.</param>
         /// <returns>A standardized log string in the format:
-        /// [yyyy-MM-dd HH:mm:ss.fffZ] LVL [file:line(method)] message</returns>
+        /// [ emoji HH:mm.ss.ff ] file:line(method) - message</returns>
         /// <remarks>
         /// <list type="bullet">
-        /// <item>Uses UTC timestamps with 'Z' suffix for timezone clarity</item>
         /// <item>Standardizes log level abbreviations (INF/WRN/ERR)</item>
         /// <item>Truncates file paths to just filename for readability</item>
         /// <item>Includes precise caller context for debugging</item>
         /// <item>Handles null/empty inputs gracefully</item>
         /// </list>
-        /// Example output: [2023-08-15 14:30:45.123Z] ERR [Engine.cs:42(Main)] Critical failure
+        /// Example output: [ ❌ 14:30:45.12 ] Engine.cs:42(Main) - Critical failure
         /// </remarks>
         private static string FormatLogEntry(string filePath, int lineNumber, string memberName, LogLevel level, string message)
         {
-            string timestamp = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff") + "Z";
-
-            string levelAbbr = level switch
-            {
-                LogLevel.Info => "INF",
-                LogLevel.Warning => "WRN",
-                LogLevel.Error => "ERR",
-                _ => new string(level.ToString().ToUpperInvariant().Take(3).ToArray())
-            };
-
+            string timestamp = DateTime.UtcNow.ToString("HH:mm.ss.ff");
             string fileName = Path.GetFileName(filePath) ?? "Unknown";
 
-            return $"[{timestamp}] {levelAbbr} [{fileName}:{lineNumber}({memberName})] {message}";
+            return $"[ {GetEmoji(level)} {timestamp} ] {fileName}:{lineNumber}({memberName}) - {message}";
         }
 
         /// <summary>
@@ -203,6 +198,8 @@ namespace bb.Core.Bot
         /// </remarks>
         private static void EnsureDirectoryExists()
         {
+            if (bb.Program.BotInstance == null || bb.Program.BotInstance.Paths == null) return;
+
             string logDirectory = Path.GetDirectoryName(bb.Program.BotInstance.Paths.Logs);
 
             if (!_directoryChecked && !Directory.Exists(logDirectory))
@@ -228,11 +225,22 @@ namespace bb.Core.Bot
         /// </remarks>
         private static void WriteToFile(string logEntry)
         {
+            if (bb.Program.BotInstance == null || bb.Program.BotInstance.Paths == null) return;
+
             lock (_fileLock) // Thread-safe writing
             {
                 using var writer = new StreamWriter(bb.Program.BotInstance.Paths.Logs, true);
                 writer.WriteLine(logEntry);
             }
+        }
+
+        private static string GetEmoji(LogLevel level)
+        {
+            if (emojis.TryGetValue(level, out string emoji))
+            {
+                return emoji;
+            }
+            return "👾";
         }
 
         /// <summary>
@@ -263,7 +271,17 @@ namespace bb.Core.Bot
             /// Error messages representing functional failures.
             /// </summary>
             Error,
-            Critical
+            Critical,
+            Debug
         }
+
+        private static Dictionary<LogLevel, string> emojis = new()
+        {
+            { LogLevel.Info, "ℹ️" },
+            { LogLevel.Warning, "⚠️" },
+            { LogLevel.Error, "❌" },
+            { LogLevel.Critical, "🚨" },
+            { LogLevel.Debug, "🐞" },
+        };
     }
 }

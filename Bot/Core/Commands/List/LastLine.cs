@@ -35,7 +35,7 @@ namespace bb.Core.Commands.List
 
             try
             {
-                if (bb.Bot.DataBase == null || data.ChannelId == null || bb.Bot.TwitchName == null)
+                if (bb.Program.BotInstance.DataBase == null || data.ChannelId == null || bb.Program.BotInstance.TwitchName == null)
                 {
                     commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:unknown", string.Empty, data.Platform));
                     return commandReturn;
@@ -45,9 +45,9 @@ namespace bb.Core.Commands.List
                 {
                     var name = TextSanitizer.UsernameFilter(data.Arguments.ElementAt(0).ToLower());
                     var userId = UsernameResolver.GetUserID(name, PlatformsEnum.Twitch, true);
-                    var message = userId is null ? null : bb.Bot.DataBase.Messages.GetMessage(data.Platform, data.ChannelId, DataConversion.ToLong(userId), 0);
+                    var message = userId is null ? null : bb.Program.BotInstance.DataBase.Messages.GetMessage(data.Platform, data.ChannelId, DataConversion.ToLong(userId), 0);
 
-                    if (message != null && userId != null && name != bb.Bot.TwitchName.ToLower())
+                    if (message != null && userId != null && name != bb.Program.BotInstance.TwitchName.ToLower())
                     {
                         if (name == data.User.Name.ToLower())
                         {
@@ -80,10 +80,10 @@ namespace bb.Core.Commands.List
                                 message_badges,
                                 UsernameResolver.Unmention(UsernameResolver.GetUsername(userId, data.Platform, true)),
                                 message.messageText,
-                                TextSanitizer.FormatTimeSpan(Utils.DataConversion.GetTimeTo(message.messageDate, DateTime.Now, false), data.User.Language)));
+                                TextSanitizer.FormatTimeSpan(Utils.DataConversion.GetTimeTo(message.messageDate, DateTime.UtcNow, false), data.User.Language)));
                         }
                     }
-                    else if (name == bb.Bot.TwitchName.ToLower())
+                    else if (name == bb.Program.BotInstance.TwitchName.ToLower())
                     {
                         commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:last_line:bot", data.ChannelId, data.Platform));
                     }

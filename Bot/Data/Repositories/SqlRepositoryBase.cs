@@ -374,7 +374,7 @@ namespace bb.Data.Repositories
                             // Special handling for DateTime
                             if (property.PropertyType == typeof(DateTime) && value is string stringValue)
                             {
-                                property.SetValue(item, DateTime.Parse(stringValue));
+                                property.SetValue(item, DateTime.Parse(stringValue, null, System.Globalization.DateTimeStyles.AdjustToUniversal));
                             }
                             // Special handling for bool (SQLite stores as INTEGER)
                             else if (property.PropertyType == typeof(bool) && value is long longValue)

@@ -77,12 +77,12 @@ namespace bb.Utils
         /// // Results in: 0 butters, 90 crumbs (borrows 1 butter to cover crumb deficit)
         /// </code>
         /// </example>
-        public static void Add(string userID, long buttersAdd, long crumbsAdd, PlatformsEnum platform)
+        public void Add(string userID, long buttersAdd, long crumbsAdd, PlatformsEnum platform)
         {
             long crumbs = GetSubbalance(userID, platform) + crumbsAdd;
             long butters = GetBalance(userID, platform) + buttersAdd;
 
-            Bot.Coins += buttersAdd + crumbsAdd / 100m;
+            bb.Program.BotInstance.Coins += buttersAdd + crumbsAdd / 100m;
             while (crumbs > 100)
             {
                 crumbs -= 100;
@@ -95,8 +95,8 @@ namespace bb.Utils
                 butters -= 1;
             }
 
-            Bot.UsersBuffer.SetParameter(platform, DataConversion.ToLong(userID), Users.AfterDotBalance, crumbs);
-            Bot.UsersBuffer.SetParameter(platform, DataConversion.ToLong(userID), Users.Balance, butters);
+            bb.Program.BotInstance.UsersBuffer.SetParameter(platform, DataConversion.ToLong(userID), Users.AfterDotBalance, crumbs);
+            bb.Program.BotInstance.UsersBuffer.SetParameter(platform, DataConversion.ToLong(userID), Users.Balance, butters);
         }
 
         /// <summary>
@@ -131,9 +131,9 @@ namespace bb.Utils
         /// long butters = Balance.GetBalance("12345", PlatformsEnum.Twitch); // Returns 5
         /// </code>
         /// </example>
-        public static long GetBalance(string userID, PlatformsEnum platform)
+        public long GetBalance(string userID, PlatformsEnum platform)
         {
-            return Convert.ToInt64(Bot.UsersBuffer.GetParameter(platform, DataConversion.ToLong(userID), Users.Balance));
+            return Convert.ToInt64(bb.Program.BotInstance.UsersBuffer.GetParameter(platform, DataConversion.ToLong(userID), Users.Balance));
         }
 
         /// <summary>
@@ -175,16 +175,16 @@ namespace bb.Utils
         /// long crumbs = Balance.GetSubbalance("67890", PlatformsEnum.Discord); // Returns 5
         /// </code>
         /// </example>
-        public static long GetSubbalance(string userID, PlatformsEnum platform)
+        public long GetSubbalance(string userID, PlatformsEnum platform)
         {
-            return Convert.ToInt64(Bot.UsersBuffer.GetParameter(platform, DataConversion.ToLong(userID), Users.AfterDotBalance));
+            return Convert.ToInt64(bb.Program.BotInstance.UsersBuffer.GetParameter(platform, DataConversion.ToLong(userID), Users.AfterDotBalance));
         }
 
-        public static async Task GenerateRandomEventAsync()
+        public async Task GenerateRandomEventAsync()
         {
             try
             {
-                if (Bot.TwitchCurrencyRandomEvent == null || Bot.TwitchCurrencyRandomEvent.Count == 0)
+                if (bb.Program.BotInstance.TwitchCurrencyRandomEvent == null || bb.Program.BotInstance.TwitchCurrencyRandomEvent.Count == 0)
                 {
                     Write("No channels configured for random events", LogLevel.Warning);
                     return;
@@ -202,7 +202,7 @@ namespace bb.Utils
             The ""added"" field must be a random integer between 100 and 1000.
             Only output the JSON object with no additional text or formatting.";
 
-                var aiResponse = await AIService.Request(
+                var aiResponse = await bb.Program.BotInstance.AiService.Request(
                     request: aiRequest,
                     model: "qwen",
                     platform: PlatformsEnum.Twitch,
@@ -242,7 +242,7 @@ namespace bb.Utils
                 }
 
                 await SendRandomEventMessagesAsync(randomEvent);
-                Bot.InBankDollars += randomEvent.Added;
+                bb.Program.BotInstance.InBankDollars += randomEvent.Added;
             }
             catch (Exception ex)
             {
@@ -251,16 +251,16 @@ namespace bb.Utils
             }
         }
 
-        private static async Task SendRandomEventMessagesAsync(RandomEvent randomEvent)
+        private async Task SendRandomEventMessagesAsync(RandomEvent randomEvent)
         {
             var tasks = new List<Task>();
 
-            foreach (string channelId in Bot.TwitchCurrencyRandomEvent)
+            foreach (string channelId in bb.Program.BotInstance.TwitchCurrencyRandomEvent)
             {
                 try
                 {
                     string channelName = UsernameResolver.GetUsername(channelId, PlatformsEnum.Twitch, true);
-                    string? channelLang = Bot.DataBase.Users.GetParameter(PlatformsEnum.Twitch, DataConversion.ToLong(channelId), Users.Language)?.ToString();
+                    string? channelLang = bb.Program.BotInstance.DataBase.Users.GetParameter(PlatformsEnum.Twitch, DataConversion.ToLong(channelId), Users.Language)?.ToString();
 
                     if (string.IsNullOrEmpty(channelLang))
                     {
@@ -278,7 +278,7 @@ namespace bb.Utils
                         channelName
                     );
 
-                    tasks.Add(PlatformMessageSender.TwitchSendAsync(channelName, message, channelId, null, channelLang, true, false));
+                    bb.Program.BotInstance.MessageSender.Send(PlatformsEnum.Twitch, message, channelName, channelId, channelLang, isSafe: true, isReply: false, addUsername: false);
                     await Task.Delay(100);
                 }
                 catch (Exception ex)
@@ -290,16 +290,16 @@ namespace bb.Utils
             await Task.WhenAll(tasks);
         }
 
-        private static async Task SendFallbackRandomEventMessage()
+        private async Task SendFallbackRandomEventMessage()
         {
             var tasks = new List<Task>();
 
-            foreach (string channelId in Bot.TwitchCurrencyRandomEvent)
+            foreach (string channelId in bb.Program.BotInstance.TwitchCurrencyRandomEvent)
             {
                 try
                 {
                     string channelName = UsernameResolver.GetUsername(channelId, PlatformsEnum.Twitch, true);
-                    string? channelLang = Bot.DataBase.Users.GetParameter(PlatformsEnum.Twitch, DataConversion.ToLong(channelId), Users.Language)?.ToString();
+                    string? channelLang = bb.Program.BotInstance.DataBase.Users.GetParameter(PlatformsEnum.Twitch, DataConversion.ToLong(channelId), Users.Language)?.ToString();
 
                     if (string.IsNullOrEmpty(channelLang))
                         continue;
@@ -314,7 +314,7 @@ namespace bb.Utils
                         channelName
                     );
 
-                    tasks.Add(PlatformMessageSender.TwitchSendAsync(channelName, message, channelId, null, channelLang, true, false));
+                    bb.Program.BotInstance.MessageSender.Send(PlatformsEnum.Twitch, message, channelName, channelId, channelLang, isSafe: true, isReply: false, addUsername: false);
                     await Task.Delay(100);
                 }
                 catch (Exception ex)
@@ -326,32 +326,32 @@ namespace bb.Utils
             await Task.WhenAll(tasks);
         }
 
-        public static async Task CollectTaxesAsync()
+        public async Task CollectTaxesAsync()
         {
             try
             {
-                if (Bot.TaxesCost <= 0)
+                if (bb.Program.BotInstance.TaxesCost <= 0)
                 {
-                    Write($"Invalid tax configuration: TaxesCost={Bot.TaxesCost}", LogLevel.Warning);
+                    Write($"Invalid tax configuration: TaxesCost={bb.Program.BotInstance.TaxesCost}", LogLevel.Warning);
                     return;
                 }
 
-                if (Bot.Users <= 0)
+                if (bb.Program.BotInstance.Users <= 0)
                 {
-                    Write($"Invalid user count for tax calculation: {Bot.Users}", LogLevel.Warning);
+                    Write($"Invalid user count for tax calculation: {bb.Program.BotInstance.Users}", LogLevel.Warning);
                     return;
                 }
 
-                int collectedTaxes = (int)Math.Ceiling(Bot.TaxesCost * Bot.Users);
+                int collectedTaxes = (int)Math.Ceiling(bb.Program.BotInstance.TaxesCost * bb.Program.BotInstance.Users);
 
-                if (Bot.TwitchTaxesEvent == null || Bot.TwitchTaxesEvent.Count == 0)
+                if (bb.Program.BotInstance.TwitchTaxesEvent == null || bb.Program.BotInstance.TwitchTaxesEvent.Count == 0)
                 {
                     Write("No channels configured for tax collection", LogLevel.Warning);
                     return;
                 }
 
                 await SendTaxMessagesAsync(collectedTaxes);
-                Bot.InBankDollars += collectedTaxes;
+                bb.Program.BotInstance.InBankDollars += collectedTaxes;
             }
             catch (Exception ex)
             {
@@ -359,16 +359,16 @@ namespace bb.Utils
             }
         }
 
-        private static async Task SendTaxMessagesAsync(int collectedTaxes)
+        private async Task SendTaxMessagesAsync(int collectedTaxes)
         {
             var tasks = new List<Task>();
 
-            foreach (string channelId in Bot.TwitchTaxesEvent)
+            foreach (string channelId in bb.Program.BotInstance.TwitchTaxesEvent)
             {
                 try
                 {
                     string channelName = UsernameResolver.GetUsername(channelId, PlatformsEnum.Twitch, true);
-                    string? channelLang = Bot.DataBase.Users.GetParameter(PlatformsEnum.Twitch, DataConversion.ToLong(channelId), Users.Language)?.ToString();
+                    string? channelLang = bb.Program.BotInstance.DataBase.Users.GetParameter(PlatformsEnum.Twitch, DataConversion.ToLong(channelId), Users.Language)?.ToString();
 
                     if (string.IsNullOrEmpty(channelLang))
                     {
@@ -385,7 +385,7 @@ namespace bb.Utils
                         channelName
                     );
 
-                    tasks.Add(PlatformMessageSender.TwitchSendAsync(channelName, message, channelId, null, channelLang, true, false));
+                    bb.Program.BotInstance.MessageSender.Send(PlatformsEnum.Twitch, message, channelName, channelId, channelLang, isSafe: true, isReply: false, addUsername: false);
                     await Task.Delay(100);
                 }
                 catch (Exception ex)

@@ -38,7 +38,7 @@ namespace bb.Services.Platform.Discord
 
         public static async Task ConnectToGuilt(SocketGuild g)
         {
-            Write($"Discord - Connected to a server: {g.Name}");
+            Write($"Discord: Connected to a server: {g.Name}");
         }
 
         /// <summary>
@@ -55,13 +55,13 @@ namespace bb.Services.Platform.Discord
                 if (message == null || message.Author.IsBot) return;
 
                 int argPos = 0;
-                if (message.Content.StartsWith(Bot.DefaultCommandPrefix))
+                if (message.Content.StartsWith(bb.Program.BotInstance.DefaultCommandPrefix))
                 {
-                    var context = new SocketCommandContext(Bot.Clients.Discord, message);
-                    var result = await Bot.DiscordCommandService.ExecuteAsync(context, argPos, Bot.DiscordServiceProvider);
+                    var context = new SocketCommandContext(bb.Program.BotInstance.Clients.Discord, message);
+                    var result = await bb.Program.BotInstance.DiscordCommandService.ExecuteAsync(context, argPos, bb.Program.BotInstance.DiscordServiceProvider);
                     if (!result.IsSuccess)
                     {
-                        Write($"Discord - {result.ErrorReason}", LogLevel.Warning);
+                        Write($"Discord: {result.ErrorReason}", LogLevel.Warning);
                     }
                 }
             }
@@ -79,7 +79,7 @@ namespace bb.Services.Platform.Discord
 
         public static async Task SlashCommandHandler(SocketSlashCommand command)
         {
-            Executor.Discord(command);
+            bb.Program.BotInstance.CommandExecutor.Discord(command);
         }
 
         /// <summary>
@@ -90,7 +90,7 @@ namespace bb.Services.Platform.Discord
 
         public static async Task ApplicationCommandCreated(SocketApplicationCommand e)
         {
-            Write("Discord - The command has been created: /" + e.Name + " (" + e.Description + ")");
+            Write("Discord: The command has been created: /" + e.Name + " (" + e.Description + ")");
         }
 
         /// <summary>
@@ -101,7 +101,7 @@ namespace bb.Services.Platform.Discord
 
         public static async Task ApplicationCommandDeleted(SocketApplicationCommand e)
         {
-            Write("Discord - Command deleted: /" + e.Name + " (" + e.Description + ")");
+            Write("Discord: Command deleted: /" + e.Name + " (" + e.Description + ")");
         }
 
         /// <summary>
@@ -112,7 +112,7 @@ namespace bb.Services.Platform.Discord
 
         public static async Task ApplicationCommandUpdated(SocketApplicationCommand e)
         {
-            Write($"Discord - Command updated: /{e.Name} ({e.Description})");
+            Write($"Discord: Command updated: /{e.Name} ({e.Description})");
         }
 
         /// <summary>
@@ -123,7 +123,7 @@ namespace bb.Services.Platform.Discord
 
         public static async Task ChannelCreated(SocketChannel e)
         {
-            Write("Discord - New channel created: " + e.Id);
+            Write("Discord: New channel created: " + e.Id);
         }
 
         /// <summary>
@@ -134,7 +134,7 @@ namespace bb.Services.Platform.Discord
 
         public static async Task ChannelDeleted(SocketChannel e)
         {
-            Write("Discord - The channel has been deleted: " + e.Id);
+            Write("Discord: The channel has been deleted: " + e.Id);
         }
 
         /// <summary>
@@ -146,7 +146,7 @@ namespace bb.Services.Platform.Discord
 
         public static async Task ChannelUpdated(SocketChannel e, SocketChannel a)
         {
-            Write("Discord - Channel updated: " + e.Id + "/" + a.Id);
+            Write("Discord: Channel updated: " + e.Id + "/" + a.Id);
         }
 
         /// <summary>
@@ -156,7 +156,7 @@ namespace bb.Services.Platform.Discord
 
         public static async Task Connected()
         {
-            //Write("Discord - Connected!", "info");
+            //Write("Discord: Connected!", "info");
         }
 
         /// <summary>
@@ -167,7 +167,7 @@ namespace bb.Services.Platform.Discord
 
         public static async Task ButtonTouched(SocketMessageComponent e)
         {
-            Write($"Discord - A button was pressed. User: {e.User}, Button ID: {e.Id}, Server: {((SocketGuildChannel)e.Channel).Guild.Name}");
+            Write($"Discord: A button was pressed. User: {e.User}, Button ID: {e.Id}, Server: {((SocketGuildChannel)e.Channel).Guild.Name}");
         }
     }
 }

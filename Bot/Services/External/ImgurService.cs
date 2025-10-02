@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using feels.Dank.Cache.LRU;
+using Newtonsoft.Json.Linq;
 using System.Net.Http.Headers;
 using static bb.Core.Bot.Console;
 
@@ -7,8 +8,16 @@ namespace bb.Services.External
     /// <summary>
     /// Provides functionality for interacting with the Imgur API to download and upload images.
     /// </summary>
+    [Obsolete]
     public class ImgurService
     {
+        private readonly HttpClient _httpClient;
+
+        public ImgurService(HttpClient httpClient)
+        {
+            _httpClient = httpClient;
+        }
+
         /// <summary>
         /// Asynchronously downloads an image from the specified URL.
         /// </summary>
@@ -16,10 +25,9 @@ namespace bb.Services.External
         /// <returns>A byte array representing the downloaded image.</returns>
         /// <exception cref="HttpRequestException">Thrown when the HTTP request fails.</exception>
 
-        public static async Task<byte[]> DownloadAsync(string imageUrl)
+        public async Task<byte[]> DownloadAsync(string imageUrl)
         {
-            using HttpClient client = new HttpClient();
-            return await client.GetByteArrayAsync(imageUrl);
+            return await _httpClient.GetByteArrayAsync(imageUrl);
         }
 
         /// <summary>
@@ -35,12 +43,11 @@ namespace bb.Services.External
         /// Uses multipart/form-data encoding and requires valid Imgur credentials.
         /// </remarks>
 
-        public static async Task<string> UploadAsync(byte[] imageBytes, string description, string title, string ImgurClientId, string ImgurUploadUrl)
+        public async Task<string> UploadAsync(byte[] imageBytes, string description, string title, string ImgurClientId, string ImgurUploadUrl)
         {
             try
             {
-                using HttpClient client = new HttpClient();
-                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Client-ID", ImgurClientId);
+                _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Client-ID", ImgurClientId);
 
                 using MultipartFormDataContent content = new();
                 ByteArrayContent byteContent = new(imageBytes);
@@ -50,7 +57,7 @@ namespace bb.Services.External
                 content.Add(new StringContent(description), "description");
                 content.Add(new StringContent(title), "title");
 
-                HttpResponseMessage response = await client.PostAsync(ImgurUploadUrl, content);
+                HttpResponseMessage response = await _httpClient.PostAsync(ImgurUploadUrl, content);
                 response.EnsureSuccessStatusCode();
 
                 string responseString = await response.Content.ReadAsStringAsync();
@@ -74,8 +81,7 @@ namespace bb.Services.External
         /// <remarks>
         /// Validates the "success" flag in the response before extracting the link.
         /// </remarks>
-
-        public static string GetLinkFromResponse(string response)
+        public string GetLinkFromResponse(string response)
         {
             try
             {

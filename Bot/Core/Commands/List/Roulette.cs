@@ -81,13 +81,13 @@ namespace bb.Core.Commands.List
                             commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:roulette_wrong_bid", data.ChannelId, data.Platform));
                         else if (bid < 0)
                             commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:roulette_steal", data.ChannelId, data.Platform));
-                        else if (Utils.CurrencyManager.GetBalance(data.User.Id, data.Platform) < bid)
+                        else if (bb.Program.BotInstance.Currency.GetBalance(data.User.Id, data.Platform) < bid)
                             commandReturn.SetMessage(LocalizationService.GetString(
                                 data.User.Language,
                                 "error:roulette_not_enough_coins",
                                 data.ChannelId,
                                 data.Platform,
-                                Utils.CurrencyManager.GetBalance(data.User.Id, data.Platform).ToString()));
+                                bb.Program.BotInstance.Currency.GetBalance(data.User.Id, data.Platform).ToString()));
                         else
                         {
                             int moves = new Random().Next(38, 380);
@@ -105,7 +105,7 @@ namespace bb.Core.Commands.List
                                 commandReturn.SetColor(ChatColorPresets.YellowGreen);
 
                                 int win = (int)(bid * multipliers[result_symbol]);
-                                Utils.CurrencyManager.Add(data.User.Id, win, 0, data.Platform);
+                                bb.Program.BotInstance.Currency.Add(data.User.Id, win, 0, data.Platform);
                                 commandReturn.SetMessage(LocalizationService.GetString(
                                     data.User.Language,
                                     "command:roulette:result:win",
@@ -118,7 +118,7 @@ namespace bb.Core.Commands.List
                             }
                             else
                             {
-                                Utils.CurrencyManager.Add(data.User.Id, -bid, 0, data.Platform);
+                                bb.Program.BotInstance.Currency.Add(data.User.Id, -bid, 0, data.Platform);
                                 commandReturn.SetMessage(LocalizationService.GetString(
                                     data.User.Language,
                                     "command:roulette:result:lose",
@@ -139,7 +139,7 @@ namespace bb.Core.Commands.List
                         "error:not_enough_arguments",
                         data.ChannelId,
                         data.Platform,
-                        $"{bb.Bot.DefaultCommandPrefix}roulette [red/green/black] [{LocalizationService.GetString(data.User.Language, "text:bid", data.ChannelId, data.Platform)}]"));
+                        $"{bb.Program.BotInstance.DefaultCommandPrefix}roulette [red/green/black] [{LocalizationService.GetString(data.User.Language, "text:bid", data.ChannelId, data.Platform)}]"));
             }
             catch (Exception e)
             {

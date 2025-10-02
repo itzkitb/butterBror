@@ -44,39 +44,36 @@ namespace bb.Core.Commands.List
                     return commandReturn;
                 }
 
-                if (new BlockedWordDetector().Check(data.ArgumentsString, data.ChannelId, data.Platform))
+                try
                 {
-                    try
-                    {
-                        var engine = new Jint.Engine(cfg => cfg
-        .LimitRecursion(100)
-        .LimitMemory(40 * 1024 * 1024)
-        .Strict()
-        .LocalTimeZone(TimeZoneInfo.Utc));
-                        var isSafe = true;
-                        engine.SetValue("navigator", new Action(() => isSafe = false));
-                        engine.SetValue("WebSocket", new Action(() => isSafe = false));
-                        engine.SetValue("XMLHttpRequest", new Action(() => isSafe = false));
-                        engine.SetValue("fetch", new Action(() => isSafe = false));
-                        string jsCode = data.ArgumentsString;
-                        var result = engine.Evaluate(jsCode);
+                    var engine = new Jint.Engine(cfg => cfg
+    .LimitRecursion(100)
+    .LimitMemory(40 * 1024 * 1024)
+    .Strict()
+    .LocalTimeZone(TimeZoneInfo.Utc));
+                    var isSafe = true;
+                    engine.SetValue("navigator", new Action(() => isSafe = false));
+                    engine.SetValue("WebSocket", new Action(() => isSafe = false));
+                    engine.SetValue("XMLHttpRequest", new Action(() => isSafe = false));
+                    engine.SetValue("fetch", new Action(() => isSafe = false));
+                    string jsCode = data.ArgumentsString;
+                    var result = engine.Evaluate(jsCode);
 
-                        if (isSafe)
-                        {
-                            commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:js", data.ChannelId, data.Platform, result.ToString()));
-                        }
-                        else
-                        {
-                            commandReturn.SetColor(ChatColorPresets.OrangeRed);
-                            commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:js", data.ChannelId, data.Platform, "Not allowed"));
-                        }
-                    }
-                    catch (Exception ex)
+                    if (isSafe)
                     {
-                        commandReturn.SetColor(ChatColorPresets.Firebrick);
-                        commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:js", data.ChannelId, data.Platform, ex.Message));
-                        Write(ex);
+                        commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:js", data.ChannelId, data.Platform, result.ToString()));
                     }
+                    else
+                    {
+                        commandReturn.SetColor(ChatColorPresets.OrangeRed);
+                        commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:js", data.ChannelId, data.Platform, "Not allowed"));
+                    }
+                }
+                catch (Exception ex)
+                {
+                    commandReturn.SetColor(ChatColorPresets.Firebrick);
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:js", data.ChannelId, data.Platform, ex.Message));
+                    Write(ex);
                 }
             }
             catch (Exception e)

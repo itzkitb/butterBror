@@ -59,9 +59,9 @@ namespace bb.Core.Commands.List
                             {
                                 num++;
                                 if (num < numWithoutComma)
-                                    aliasesList += $"{bb.Bot.DefaultCommandPrefix}{alias}, ";
+                                    aliasesList += $"{bb.Program.BotInstance.DefaultCommandPrefix}{alias}, ";
                                 else if (num == numWithoutComma)
-                                    aliasesList += $"{bb.Bot.DefaultCommandPrefix}{alias}";
+                                    aliasesList += $"{bb.Program.BotInstance.DefaultCommandPrefix}{alias}";
                             }
                             commandReturn.SetMessage(LocalizationService.GetString(
                                 data.User.Language,

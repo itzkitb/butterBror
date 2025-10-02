@@ -52,7 +52,7 @@ namespace bb.Core.Commands.List
                     };
                 foreach (var replacement in replacements)
                 {
-                    input.Replace(replacement.Key, replacement.Value);
+                    input = input.Replace(replacement.Key, replacement.Value);
                 }
 
                 try

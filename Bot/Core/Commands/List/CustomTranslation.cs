@@ -109,7 +109,7 @@ namespace bb.Core.Commands.List
                                         "error:not_enough_arguments",
                                         string.Empty,
                                         data.Platform,
-                                        $"{bb.Bot.DefaultCommandPrefix}ct set [paramName] [en/ru] [text]"));
+                                        $"{bb.Program.BotInstance.DefaultCommandPrefix}ct set [paramName] [en/ru] [text]"));
                                     commandReturn.SetColor(ChatColorPresets.Red);
                                 }
                             }
@@ -194,7 +194,7 @@ namespace bb.Core.Commands.List
                         "error:not_enough_arguments",
                         string.Empty,
                         data.Platform,
-                        $"{bb.Bot.DefaultCommandPrefix}ct set [paramName] [en/ru] [text]"));
+                        $"{bb.Program.BotInstance.DefaultCommandPrefix}ct set [paramName] [en/ru] [text]"));
                     commandReturn.SetColor(ChatColorPresets.Red);
                 }
             }

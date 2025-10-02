@@ -11,6 +11,5 @@ namespace bb.Services.Platform.Twitch
         public required string Language { get; set; }
         public required string Username { get; set; }
         public required bool SafeExecute { get; set; }
-        public required ChatColorPresets UsernameColor { get; set; }
     }
 }

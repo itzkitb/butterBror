@@ -54,7 +54,7 @@ namespace bb.Services.External
 
             /*if (!string.IsNullOrEmpty(result))    
                 _cache.Set($"user_{nickname}", result, _cacheOptions);*/
-            Write($"SevenTV - Loaded data for @{nickname} ({result is null}): {TextSanitizer.CheckNull(result)}");
+            Write($"SevenTV: Loaded data for @{nickname} ({result is null}): {TextSanitizer.CheckNull(result)}");
             return result;
         }
 
@@ -82,7 +82,7 @@ namespace bb.Services.External
 
             /*if (!string.IsNullOrEmpty(result))
                 _cache.Set($"emote_{emoteName}", result, _cacheOptions);*/
-            Write($"SevenTV - Loaded emote {emoteName} ({result is null})");
+            Write($"SevenTV: Loaded emote {emoteName} ({result is null})");
             return result;
         }
 
@@ -290,7 +290,7 @@ namespace bb.Services.External
                 var userResponse = JsonSerializer.Deserialize<List<UserResponse>>(responseContent);
                 var firstUser = userResponse?.FirstOrDefault()?.Data?.Users.FirstOrDefault();
 
-                Write($"SevenTV - PerformSearchUser> USER ID ({userId}): {TextSanitizer.CheckNull(firstUser?.Id)}");
+                Write($"SevenTV: PerformSearchUser - USER ID ({userId}): {TextSanitizer.CheckNull(firstUser?.Id)}");
                 return firstUser?.Id;
             }
             catch (Exception ex)

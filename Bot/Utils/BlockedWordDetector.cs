@@ -71,26 +71,25 @@ namespace bb.Utils
         /// The method automatically combines global banned words with channel-specific filters for comprehensive coverage.
         /// Returns false immediately upon first detection to optimize performance.
         /// </remarks>
-        public bool Check(string message, string channelId, PlatformsEnum platform)
+        public (bool, double, string, string) Check(string message, string channelId, PlatformsEnum platform, bool log = true)
         {
+            DateTime start_time = DateTime.UtcNow;
             try
             {
                 bool failed = false;
                 string sector = "";
-                DateTime start_time = DateTime.UtcNow;
 
                 string clearedMessage = TextSanitizer.CleanAsciiWithoutSpaces(message.ToLower());
                 string clearedMessageWithoutRepeats = TextSanitizer.RemoveDuplicates(clearedMessage);
                 string clearedMessageWithoutRepeatsChangedLayout = TextSanitizer.ChangeLayout(clearedMessageWithoutRepeats);
                 string clearedMessageChangedLayout = TextSanitizer.ChangeLayout(clearedMessage);
 
-                string bannedWordsPath = Bot.Paths.BlacklistWords;
-                string replacementPath = Bot.Paths.BlacklistReplacements;
+                string bannedWordsPath = bb.Program.BotInstance.Paths.BlacklistWords;
 
                 List<string> singleBanwords = Manager.Get<List<string>>(bannedWordsPath, "single_word");
-                Dictionary<string, string> replacements = Manager.Get<Dictionary<string, string>>(replacementPath, "list") ?? new Dictionary<string, string>();
+                Dictionary<string, string> replacements = Manager.Get<Dictionary<string, string>>(bannedWordsPath, "replacement_list") ?? new Dictionary<string, string>();
                 List<string> bannedWords = Manager.Get<List<string>>(bannedWordsPath, "list");
-                bannedWords.AddRange(Bot.DataBase.Channels.GetBanWords(platform, channelId));
+                bannedWords.AddRange(bb.Program.BotInstance.DataBase.Channels.GetBanWords(platform, channelId));
 
                 _replacementPattern = string.Join("|", replacements.Keys.Select(Regex.Escape));
                 _replacementRegex = new Regex(_replacementPattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);
@@ -107,15 +106,18 @@ namespace bb.Utils
                 failed = !check_result.Item1;
                 sector = check_result.Item2;
 
-                if (failed) Write($"Blocked words detected! Word: {_founded}; Sector: {sector} (in {(DateTime.UtcNow - start_time).TotalMilliseconds}ms)");
-                else Write($"No blocked words found! (in {(DateTime.UtcNow - start_time).TotalMilliseconds}ms)");
+                if (log)
+                {
+                    if (failed) Write($"Blocked words detected! Word: {_founded}; Sector: {sector} (in {(DateTime.UtcNow - start_time).TotalMilliseconds}ms)");
+                    else Write($"No blocked words found! (in {(DateTime.UtcNow - start_time).TotalMilliseconds}ms)");
+                }
 
-                return !failed;
+                return (!failed, (DateTime.UtcNow - start_time).TotalMilliseconds, !failed ? "NotFound" : sector, !failed ? "Empty" : _founded);
             }
             catch (Exception ex)
             {
                 Write(ex);
-                return false;
+                return (false, (DateTime.UtcNow - start_time).TotalMilliseconds, "ERR", ex.Message);
             }
         }
 
@@ -305,6 +307,8 @@ namespace bb.Utils
         {
             try
             {
+                if (replacements.Count == 0) return true;
+
                 string maskedWord = _replacementRegex.Replace(message, match =>
                     replacements[match.Value.ToLower()]);
 

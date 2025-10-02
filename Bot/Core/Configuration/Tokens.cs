@@ -29,11 +29,6 @@ namespace bb.Core.Configuration
         public string? TwitchSecretToken;
 
         /// <summary>
-        /// Gets or sets the Imgur API client token used for image upload operations.
-        /// </summary>
-        public string? Imgur;
-
-        /// <summary>
         /// Gets or sets the 7TV authentication token used for 7TV API interactions.
         /// </summary>
         public string? SevenTV;

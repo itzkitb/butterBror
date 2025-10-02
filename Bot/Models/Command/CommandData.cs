@@ -23,5 +23,6 @@ namespace bb.Models.Command
         public Message? TelegramMessage { get; set; }
         public string ServerID { get; set; }
         public string Server { get; set; }
+        public string ChatID { get; set; }
     }
 }

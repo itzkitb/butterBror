@@ -5,25 +5,23 @@
     /// </summary>
     public class PathService
     {
+        public PathService(string root)
+        {
+            Root = root;
+            General = Path.Combine(root, "ButterBror/");
+
+            UpdatePaths();
+        }
+
         /// <summary>
         /// Gets or sets the general root directory path used for shared resources.
         /// </summary>
-        public string General { get; set; } = string.Empty;
-
-        private string _main_path;
+        public string Root { get; }
 
         /// <summary>
         /// Gets or sets the main working directory path (triggers path updates when changed).
         /// </summary>
-        public string Main
-        {
-            get => _main_path;
-            set
-            {
-                _main_path = Format(value);
-                UpdatePaths();
-            }
-        }
+        public string General { get; }
 
         /// <summary>
         /// Gets the path to the settings configuration file.
@@ -49,11 +47,6 @@
         /// Gets the path to the blacklist words file.
         /// </summary>
         public string BlacklistWords { get; private set; } = string.Empty;
-
-        /// <summary>
-        /// Gets the path to the blacklist replacements file.
-        /// </summary>
-        public string BlacklistReplacements { get; private set; } = string.Empty;
 
         /// <summary>
         /// Gets the path to the API usage statistics file.
@@ -116,23 +109,22 @@
         public void UpdatePaths()
         {
             string timestamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
-            ChannelsDatabase = Path.Combine(Main, "Channels.db");
-            GamesDatabase = Path.Combine(Main, "Games.db");
-            UsersDatabase = Path.Combine(Main, "Users.db");
-            MessagesDatabase = Path.Combine(Main, "Messages.db");
-            RolesDatabase = Path.Combine(Main, "Roles.db");
-            Settings = Path.Combine(Main, "SETTINGS.json");
-            Translations = Path.Combine(Main, "TRNSLT/");
-            TranslateDefault = Path.Combine(Translations, "DEFAULT");
-            TranslateCustom = Path.Combine(Translations, "CUSTOM");
-            BlacklistWords = Path.Combine(Main, "BNWORDS.txt");
-            BlacklistReplacements = Path.Combine(Main, "BNWORDSREP.txt");
-            APIUses = Path.Combine(Main, "API.json");
-            Logs = Path.Combine(Main, "LOGS", $"{timestamp}.log");
-            Cache = Path.Combine(Main, "LOC.cache");
-            Currency = Path.Combine(Main, "CURR.json");
-            SevenTVCache = Path.Combine(Main, "7TV.json");
-            Reserve = Path.Combine(General, "bbReserves/");
+            ChannelsDatabase = Format(Path.Combine(General, "Channels.db"));
+            GamesDatabase = Format(Path.Combine(General, "Games.db"));
+            UsersDatabase = Format(Path.Combine(General, "Users.db"));
+            MessagesDatabase = Format(Path.Combine(General, "Messages.db"));
+            RolesDatabase = Format(Path.Combine(General, "Roles.db"));
+            Settings = Format(Path.Combine(General, "Settings.json"));
+            Translations = Format(Path.Combine(General, "Localization/"));
+            TranslateDefault = Format(Path.Combine(Translations, "Default"));
+            TranslateCustom = Format(Path.Combine(Translations, "Custom"));
+            BlacklistWords = Format(Path.Combine(General, "BlockedWords.json"));
+            APIUses = Format(Path.Combine(General, "API.json"));
+            Logs = Format(Path.Combine(General, "Logs", $"{timestamp}.log"));
+            Cache = Format(Path.Combine(General, "Location.cache"));
+            Currency = Format(Path.Combine(General, "Currency.json"));
+            SevenTVCache = Format(Path.Combine(General, "SevenTvCache.json"));
+            Reserve = Format(Path.Combine(Root, "ButterBrorReserves/"));
         }
 
         /// <summary>
@@ -140,7 +132,7 @@
         /// </summary>
         /// <param name="input">The raw path string to format.</param>
         /// <returns>A path with normalized Windows-style slashes.</returns>
-        public string Format(string input)
+        public static string Format(string input)
         {
             return Path.GetFullPath(input)
                 .Replace("/", Path.DirectorySeparatorChar.ToString())

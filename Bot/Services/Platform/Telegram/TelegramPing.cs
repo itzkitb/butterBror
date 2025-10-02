@@ -12,7 +12,7 @@ namespace bb.Services.External
             try
             {
                 stopwatch.Start();
-                var response = Bot.Clients.Telegram.GetMe().Result;
+                var response = bb.Program.BotInstance.Clients.Telegram.GetMe().Result;
                 stopwatch.Stop();
 
                 return stopwatch.ElapsedMilliseconds;

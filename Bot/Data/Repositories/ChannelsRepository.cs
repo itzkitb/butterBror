@@ -716,7 +716,7 @@ namespace bb.Data.Repositories
                 new SQLiteParameter("@ChannelId", channelId)
             });
 
-            string defaultPrefix = Bot.DefaultCommandPrefix.ToString();
+            string defaultPrefix = bb.Program.BotInstance.DefaultCommandPrefix.ToString();
             if (string.IsNullOrEmpty(prefixFromDb))
             {
                 prefixFromDb = defaultPrefix;

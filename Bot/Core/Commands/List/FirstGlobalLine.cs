@@ -36,7 +36,7 @@ namespace bb.Core.Commands.List
 
             try
             {
-                if (bb.Bot.UsersBuffer == null || data.ChannelId == null || bb.Bot.TwitchName == null)
+                if (bb.Program.BotInstance.UsersBuffer == null || data.ChannelId == null || bb.Program.BotInstance.TwitchName == null)
                 {
                     commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:unknown", string.Empty, data.Platform));
                     return commandReturn;
@@ -62,15 +62,15 @@ namespace bb.Core.Commands.List
                 }
                 else
                 {
-                    if (name == bb.Bot.TwitchName.ToLower())
+                    if (name == bb.Program.BotInstance.TwitchName.ToLower())
                     {
                         commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:first_global_line:bot", data.ChannelId, data.Platform));
                     }
                     else
                     {
-                        var firstLine = (string)bb.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(userID), Users.FirstMessage);
-                        var firstChannel = (string)bb.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(userID), Users.FirstChannel);
-                        var firstLineDate = DateTime.Parse((string)bb.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(userID), Users.FirstSeen), null, DateTimeStyles.AdjustToUniversal);
+                        var firstLine = (string)bb.Program.BotInstance.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(userID), Users.FirstMessage);
+                        var firstChannel = (string)bb.Program.BotInstance.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(userID), Users.FirstChannel);
+                        var firstLineDate = DateTime.Parse((string)bb.Program.BotInstance.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(userID), Users.FirstSeen), null, DateTimeStyles.AdjustToUniversal);
 
                         commandReturn.SetMessage(LocalizationService.GetString(
                             data.User.Language,

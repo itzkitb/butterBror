@@ -27,7 +27,7 @@ namespace bb.Services.Platform.Discord
         {
             try
             {
-                Write($"Discord - Connected as {Bot.Clients.Discord.CurrentUser}!");
+                Write($"Discord: Connected as {bb.Program.BotInstance.Clients.Discord.CurrentUser}!");
             }
             catch (Exception ex)
             {
@@ -53,7 +53,7 @@ namespace bb.Services.Platform.Discord
             {
                 if (!(message is SocketUserMessage msg) || message.Author.IsBot) return;
 
-                await MessageProcessor.ProcessMessageAsync(
+                await bb.Program.BotInstance.MessageProcessor.ProcessMessageAsync(
                     message.Author.Id.ToString(),
                     message.Channel.Id.ToString(),
                     message.Author.Username.ToLower(),
@@ -66,7 +66,7 @@ namespace bb.Services.Platform.Discord
                     ((SocketGuildChannel)message.Channel).Guild.Name,
                     ((SocketGuildChannel)message.Channel).Guild.Id.ToString());
 
-                Executor.Discord(message);
+                bb.Program.BotInstance.CommandExecutor.Discord(message);
             }
             catch (Exception ex)
             {
@@ -89,9 +89,9 @@ namespace bb.Services.Platform.Discord
         {
             try
             {
-                Bot.Clients.Discord.Ready += RegisterSlashCommands;
-                Bot.Clients.Discord.MessageReceived += DiscordEvents.HandleCommandAsync;
-                await Bot.DiscordCommandService.AddModulesAsync(assembly: Assembly.GetEntryAssembly(), services: Bot.DiscordServiceProvider);
+                bb.Program.BotInstance.Clients.Discord.Ready += RegisterSlashCommands;
+                bb.Program.BotInstance.Clients.Discord.MessageReceived += DiscordEvents.HandleCommandAsync;
+                await bb.Program.BotInstance.DiscordCommandService.AddModulesAsync(assembly: Assembly.GetEntryAssembly(), services: bb.Program.BotInstance.DiscordServiceProvider);
             }
             catch (Exception ex)
             {
@@ -114,20 +114,20 @@ namespace bb.Services.Platform.Discord
 
         private static async Task RegisterSlashCommands()
         {
-            Write("Discord - Updating commands...");
+            Write("Discord: Updating commands...");
 
-            await Bot.Clients.Discord.Rest.DeleteAllGlobalCommandsAsync();
+            await bb.Program.BotInstance.Clients.Discord.Rest.DeleteAllGlobalCommandsAsync();
 
-            await Bot.Clients.Discord.Rest.CreateGlobalCommand(new SlashCommandBuilder()
+            await bb.Program.BotInstance.Clients.Discord.Rest.CreateGlobalCommand(new SlashCommandBuilder()
                 .WithName("ping")
                 .WithDescription("Check bot status")
                 .Build());
-            await Bot.Clients.Discord.Rest.CreateGlobalCommand(new SlashCommandBuilder()
+            await bb.Program.BotInstance.Clients.Discord.Rest.CreateGlobalCommand(new SlashCommandBuilder()
                 .WithName("status")
                 .WithDescription("View the bot's status. (Bot administrators only)")
                 .Build());
 
-            Write("Discord - Commands updated!");
+            Write("Discord: Commands updated!");
         }
     }
 }

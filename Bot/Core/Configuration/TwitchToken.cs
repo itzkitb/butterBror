@@ -180,12 +180,12 @@ namespace bb.Core.Configuration
                     token.AccessToken = tokenResponse.access_token;
                     token.ExpiresAt = DateTime.Now.AddSeconds(tokenResponse.expires_in);
                     SaveTokenData(token);
-                    Write("Twitch oauth - Token refreshed!");
+                    Write("Twitch OAuth: Token refreshed!");
                     return token;
                 }
                 else
                 {
-                    Write($"Twitch oauth - Error updating token: {responseContent}", LogLevel.Error);
+                    Write($"Twitch OAuth: Error updating token: {responseContent}", LogLevel.Error);
                     return null;
                 }
             }
@@ -214,7 +214,7 @@ namespace bb.Core.Configuration
         {
             try
             {
-                Write("Twitch oauth - Getting auth data...");
+                Write("Twitch OAuth: Getting auth data...");
                 var url = $"https://id.twitch.tv/oauth2/authorize?client_id={_clientId}&redirect_uri={_redirectURL}&response_type=code&scope=user:manage:chat_color+chat:edit+chat:read+moderator:read:chatters+user:manage:blocked_users";
                 var psi = new ProcessStartInfo
                 {
@@ -226,7 +226,7 @@ namespace bb.Core.Configuration
                 var context = await listener.GetContextAsync();
                 var request = context.Request;
                 var code = GetCodeFromResponse(request.Url.Query);
-                Write("Twitch oauth - Auth data getted");
+                Write("Twitch OAuth: Auth data getted.");
 
                 return code;
             }
@@ -257,7 +257,7 @@ namespace bb.Core.Configuration
         {
             try
             {
-                Write("Twitch oauth - Getting exchange code...");
+                Write("Twitch OAuth: Getting exchange code...");
                 using var httpClient = new HttpClient();
                 var request = new HttpRequestMessage(HttpMethod.Post, "https://id.twitch.tv/oauth2/token")
                 {
@@ -270,12 +270,12 @@ namespace bb.Core.Configuration
                 if (response.IsSuccessStatusCode)
                 {
                     var tokenResponse = JsonConvert.DeserializeObject<TokenResponse>(responseContent);
-                    Write("Twitch oauth - Getted exchange code!");
+                    Write("Twitch OAuth: Getted exchange code!");
                     return new TokenData { AccessToken = tokenResponse.access_token, ExpiresAt = DateTime.Now.AddSeconds(tokenResponse.expires_in), RefreshToken = tokenResponse.refresh_token };
                 }
                 else
                 {
-                    Write($"Twitch oauth - Error receiving exchange token: {responseContent}");
+                    Write($"Twitch OAuth: Error receiving exchange token: {responseContent}");
                     return null;
                 }
             }
@@ -326,7 +326,7 @@ namespace bb.Core.Configuration
                     var json = FileUtil.GetFileContent(_databasePath);
                     if (string.IsNullOrEmpty(json)) return null;
                     var tokenData = JsonConvert.DeserializeObject<TokenData>(json);
-                    Write("Twitch oauth - Token data loaded!");
+                    Write("Twitch OAuth: Token data loaded!");
                     return tokenData?.ExpiresAt > DateTime.Now ? tokenData : null;
                 }
                 return null;
