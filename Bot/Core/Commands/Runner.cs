@@ -26,14 +26,14 @@ namespace bb.Core.Commands
     /// </remarks>
     public class Runner
     {
-        private static readonly ConcurrentDictionary<string, SemaphoreSlim> _userLocks =
+        private readonly ConcurrentDictionary<string, SemaphoreSlim> _userLocks =
             new ConcurrentDictionary<string, SemaphoreSlim>();
 
-        public static readonly ConcurrentBag<ICommand> commandInstances =
+        public readonly ConcurrentBag<ICommand> commandInstances =
             new ConcurrentBag<ICommand>();
 
-        private static bool _commandsInitialized;
-        private static readonly object _initLock = new object();
+        private bool _commandsInitialized;
+        private readonly object _initLock = new object();
 
         /// <summary>
         /// Initializes command instances through assembly scanning.
@@ -249,21 +249,33 @@ namespace bb.Core.Commands
                     start.Stop();
                     if (!test)
                     {
-                        Write(@$"🚀 Executed command ""{data.Name}"":
-- User: {data.Platform.ToString()}/{data.User.Id}
-- Arguments: ""{data.ArgumentsString}""
-- Location: ""{data.Channel}/{data.ChannelId}"" (ChatID: {data.ChatID})
-- Balance: {data.User.Balance}.{data.User.BalanceFloat}
-- Completed in: {start.ElapsedMilliseconds}ms
-- Blocked words detected: {BoolToString(blockedWordDetected)} in {blockedWordExecutionTime}ms
-- Blocked word: {blockedWordSector}/""{blockedWordWord}""");
+                        Write($"🚀 Executed command \"{data.Name}\":" +
+$"\n- User: {data.Platform.ToString()}/{data.User.Id}" +
+$"\n- Arguments: \"{data.ArgumentsString}\"" +
+$"\n- Location: \"{data.Channel}/{data.ChannelId}\" (ChatID: {data.ChatID})" +
+$"\n- Balance: {data.User.Balance}.{data.User.BalanceFloat}" +
+$"\n- Completed in: {start.ElapsedMilliseconds}ms" +
+$"\n- Blocked words detected: {BoolToString(blockedWordDetected)} in {blockedWordExecutionTime}ms"+
+$"\n- Blocked word: {blockedWordSector}/\"{blockedWordWord}\"");
                         bb.Program.BotInstance.CompletedCommands++;
                     }
                 }
             });
         }
 
-        private string BoolToString(bool value)
+        /// <summary>
+        /// Converts a boolean value to a visual checkmark or cross emoji for user interface representation.
+        /// </summary>
+        /// <param name="value">Boolean value where true returns ✅ and false returns ❎</param>
+        /// <returns>Emoji string representing the boolean state (✅ for true, ❎ for false)</returns>
+        /// <remarks>
+        /// <list type="bullet">
+        /// <item>Provides visual feedback for boolean states using standardized emoji symbols</item>
+        /// <item>Ensures consistent representation of true/false states across user interfaces</item>
+        /// <item>Used for status indicators in command responses and UI elements</item>
+        /// </list>
+        /// </remarks>
+        private static string BoolToString(bool value)
         {
             return value ? "✅" : "❎";
         }

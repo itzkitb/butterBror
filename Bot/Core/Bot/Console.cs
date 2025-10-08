@@ -1,6 +1,11 @@
 ﻿using Pastel;
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Runtime.CompilerServices;
+using System.Timers;
+using Telegram.Bot.Types;
 
 namespace bb.Core.Bot
 {
@@ -29,6 +34,44 @@ namespace bb.Core.Bot
     {
         private static readonly object _fileLock = new object();
         private static bool _directoryChecked = false;
+        private static System.Timers.Timer _animationTimer;
+        private static List<AnimationState> _activeAnimations = new List<AnimationState>();
+        private static int currentLine = 0;
+        private static readonly string[] _brailleAnimation = new[]
+        {
+            "⣾", "⣽", "⣻", "⢿", "⡿", "⣟", "⣯", "⣷"
+        };
+
+        static Console()
+        {
+            System.Console.CursorVisible = false;
+            // Initialize the timer to update animations
+            _animationTimer = new System.Timers.Timer(100);
+            _animationTimer.Elapsed += UpdateAnimations;
+            _animationTimer.Start();
+        }
+
+        /// <summary>
+        /// Updates all active animations in the console.
+        /// </summary>
+        private static void UpdateAnimations(object sender, ElapsedEventArgs e)
+        {
+            int startedHeightPosition = System.Console.CursorTop;
+            lock (_activeAnimations)
+            {
+                foreach (var animation in _activeAnimations)
+                {
+                    if (animation.IsComplete) continue;
+
+                    // Update the current animation frame
+                    animation.CurrentFrame = (animation.CurrentFrame + 1) % _brailleAnimation.Length;
+
+                    // Redraw the animation on the same line
+                    WriteLine(FormatAnimationLine(animation), animation.LineNumber);
+                }
+            }
+            System.Console.SetCursorPosition(0, startedHeightPosition);
+        }
 
         /// <summary>
         /// Writes a formatted log message to both console and persistent storage.
@@ -65,9 +108,9 @@ namespace bb.Core.Bot
             [CallerLineNumber] int lineNumber = 0,
             [CallerMemberName] string memberName = "")
         {
-            #if RELEASE
+#if RELEASE
             if (type == LogLevel.Debug) return;
-            #endif
+#endif
 
             string logEntry = FormatLogEntry(filePath, lineNumber, memberName, type, message);
             string fileName = Path.GetFileName(filePath) ?? "Unknown";
@@ -82,7 +125,7 @@ namespace bb.Core.Bot
                 Debug.WriteLine($"Failed to write log to file: {ex.Message}\n{ex.StackTrace}");
             }
 
-            System.Console.WriteLine($"{"[".Pastel("#bababa")} {GetEmoji(type)} {DateTime.Now.ToString("HH:mm.ss").PadRight(8).Pastel("#888888")} {"]".Pastel("#bababa")} {$"{fileName}:{lineNumber}".Pastel("#b3ff7d")} {"-".Pastel("#bababa")} {message.Pastel("#bababa")}");
+            WriteLine($"{"[".Pastel("#bababa")} {GetEmoji(type)} {DateTime.Now.ToString("HH:mm.ss").PadRight(8).Pastel("#888888")} {"]".Pastel("#bababa")} {$"{fileName}:{lineNumber}".Pastel("#b3ff7d")} {"-".Pastel("#bababa")} {message.Pastel("#bababa")}");
             DashboardServer.HandleLog(message, type);
         }
 
@@ -131,8 +174,114 @@ namespace bb.Core.Bot
                 Debug.WriteLine($"Failed to write log to file: {ex.Message}\n{ex.StackTrace}");
             }
 
-            System.Console.WriteLine($"{"[".Pastel("#bababa")} {GetEmoji(LogLevel.Error)} {DateTime.Now.ToString("HH:mm.ss").PadRight(8).Pastel("#888888")} {"]".Pastel("#bababa")} {$"{fileName}:{lineNumber}".Pastel("#ff4f4f")} {"-".Pastel("#bababa")} {logEntry.Pastel("#bababa")}");
+            WriteLine($"{"[".Pastel("#bababa")} {GetEmoji(LogLevel.Error)} {DateTime.Now.ToString("HH:mm.ss").PadRight(8).Pastel("#888888")} {"]".Pastel("#bababa")} {$"{fileName}:{lineNumber}".Pastel("#ff4f4f")} {"-".Pastel("#bababa")} {logEntry.Pastel("#bababa")}");
+
             DashboardServer.HandleLog(text, LogLevel.Error);
+        }
+
+        /// <summary>
+        /// Creates a new progress animation and returns its unique ID
+        /// </summary>
+        /// <param name="message">Progress description text</param>
+        /// <param name="current">Current progress value</param>
+        /// <param name="total">Total progress value</param>
+        /// <param name="filePath">[CallerFilePath] Automatically populated source file path</param>
+        /// <param name="lineNumber">[CallerLineNumber] Automatically populated source line number</param>
+        /// <param name="memberName">[CallerMemberName] Automatically populated calling method name</param>
+        /// <returns>Unique identifier for this progress animation</returns>
+        /// <remarks>
+        /// <list type="bullet">
+        /// <item>Uses Braille animation symbols: ⣾, ⣽, ⣻, ⢿, ⡿, ⣟, ⣯, ⣷</item>
+        /// <item>Writes only start to log file (no animation frames)</item>
+        /// <item>Creates new animation that can be updated later</item>
+        /// </list>
+        /// Example usage:
+        /// var id = Console.Progress("Loading assets", 0, 10);
+        /// Console.UpdateProgress(id, 5, 10);
+        /// Console.CompleteProgress(id);
+        /// </remarks>
+        public static Guid Progress(
+            string message,
+            int current,
+            int total,
+            [CallerFilePath] string filePath = "",
+            [CallerLineNumber] int lineNumber = 0,
+            [CallerMemberName] string memberName = "")
+        {
+            string logEntry = FormatLogEntry(filePath, lineNumber, memberName, LogLevel.Progress, message);
+            WriteToFile(logEntry);
+
+            var animationState = new AnimationState
+            {
+                Id = Guid.NewGuid(),
+                LineNumber = currentLine,
+                Message = message,
+                CurrentFrame = 0,
+                IsComplete = false,
+                Total = total,
+                Current = current,
+                FilePath = filePath,
+                Member = memberName,
+                FileLine = lineNumber
+            };
+
+            lock (_activeAnimations)
+            {
+                _activeAnimations.Add(animationState);
+            }
+
+            WriteLine(FormatAnimationLine(animationState));
+
+            return animationState.Id;
+        }
+
+        /// <summary>
+        /// Updates an existing progress animation by ID
+        /// </summary>
+        /// <param name="id">Unique identifier of the animation to update</param>
+        /// <param name="current">New current progress value</param>
+        /// <param name="total">New total progress value</param>
+        /// <param name="message">Optional new message text</param>
+        /// <remarks>
+        /// <list type="bullet">
+        /// <item>Updates progress values without creating new animation</item>
+        /// <item>Changes the displayed message if provided</item>
+        /// <item>Automatically refreshes the animation on the same console line</item>
+        /// </list>
+        /// </remarks>
+        public static void UpdateProgress(Guid id, int current, int total, string message = null)
+        {
+            lock (_activeAnimations)
+            {
+                var animation = _activeAnimations.FirstOrDefault(a => a.Id == id);
+                if (animation == null)
+                {
+                    return;
+                }
+
+                animation.Current = current;
+                animation.Total = total;
+
+                if (!string.IsNullOrEmpty(message))
+                {
+                    animation.Message = message;
+                }
+
+                if (animation.Current >= animation.Total)
+                {
+                    animation.IsComplete = true;
+                    string logEntry = FormatLogEntry(animation.FilePath, animation.LineNumber, "", LogLevel.Progress, $"{animation.Message} (completed)");
+                    WriteToFile(logEntry);
+                    _activeAnimations.Remove(animation);
+
+                    WriteLine(new string(' ', System.Console.BufferWidth), animation.LineNumber);
+                    WriteLine($"{"[".Pastel("#bababa")} {GetEmoji(LogLevel.Progress)} {DateTime.Now.ToString("HH:mm.ss").PadRight(8).Pastel("#888888")} {"]".Pastel("#bababa")} {$"{Path.GetFileName(animation.FilePath)}:{animation.FileLine}".Pastel("#b3ff7d")} {"-".Pastel("#bababa")} {animation.Message.Pastel("#bababa")}", animation.LineNumber);
+                }
+                else
+                {
+                    WriteLine(FormatAnimationLine(animation), animation.LineNumber);
+                }
+            }
         }
 
         /// <summary>
@@ -163,6 +312,26 @@ namespace bb.Core.Bot
         }
 
         /// <summary>
+        /// Formats animation line for console output
+        /// </summary>
+        private static string FormatAnimationLine(AnimationState animation)
+        {
+            string fileName = Path.GetFileName(animation.FilePath) ?? "Unknown";
+            string timestamp = DateTime.Now.ToString("HH:mm.ss").PadRight(8).Pastel("#888888");
+            string brailleSymbol = _brailleAnimation[animation.CurrentFrame].Pastel("#888888");
+            string fileNameLine = $"{fileName}:{animation.FileLine}".Pastel("#b3ff7d");
+            string progressPart = $"[{animation.Current}/{animation.Total}] {animation.Message}".Pastel("#bababa");
+
+            return $"{"[".Pastel("#bababa")} {brailleSymbol} {timestamp} {"]".Pastel("#bababa")} {fileNameLine} {"-".Pastel("#bababa")} {progressPart}";
+        }
+
+        public static void Clear()
+        {
+            System.Console.Clear();
+            currentLine = 0;
+        }
+
+        /// <summary>
         /// Converts exception details into a comprehensive diagnostic string.
         /// </summary>
         /// <param name="ex">The exception to format. Must not be null.</param>
@@ -182,6 +351,36 @@ namespace bb.Core.Bot
         private static string FormatException(Exception ex)
         {
             return $"Error: {ex.Message}\nSource: {ex.Source}\nStack: {ex.StackTrace}\nTarget: {ex.TargetSite?.Name ?? "N/A"}";
+        }
+
+        public static void WriteLine(string message, int line = -1)
+        {
+            int bufferHeight = System.Console.BufferHeight;
+
+            if (bufferHeight <= 0)
+                return;
+
+            int lineNum = (line >= 0) ? line : currentLine;
+
+            if (lineNum < 0)
+                lineNum = 0;
+            if (lineNum >= bufferHeight)
+                lineNum = bufferHeight - 1;
+
+            string output = message.ReplaceLineEndings("\n");
+
+            System.Console.SetCursorPosition(0, lineNum);
+            System.Console.Write(output + "\n");
+
+            if (line < 0)
+            {
+                int linesCount = message.Split('\n').Length;
+                if (message.EndsWith("\n")) linesCount--;
+                currentLine += linesCount;
+
+                if (currentLine >= bufferHeight)
+                    currentLine = bufferHeight - 1;
+            }
         }
 
         /// <summary>
@@ -272,7 +471,8 @@ namespace bb.Core.Bot
             /// </summary>
             Error,
             Critical,
-            Debug
+            Debug,
+            Progress
         }
 
         private static Dictionary<LogLevel, string> emojis = new()
@@ -282,6 +482,21 @@ namespace bb.Core.Bot
             { LogLevel.Error, "❌" },
             { LogLevel.Critical, "🚨" },
             { LogLevel.Debug, "🐞" },
+            { LogLevel.Progress, "🔄" }
         };
+
+        private class AnimationState
+        {
+            public Guid Id { get; set; }
+            public int LineNumber { get; set; }
+            public string Message { get; set; }
+            public string FilePath { get; set; }
+            public int FileLine { get; set; }
+            public string Member { get; set; }
+            public int CurrentFrame { get; set; }
+            public bool IsComplete { get; set; }
+            public int Current { get; set; }
+            public int Total { get; set; }
+        }
     }
 }

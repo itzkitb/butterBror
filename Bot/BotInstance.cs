@@ -33,6 +33,7 @@ using bb.Services.Platform.Twitch;
 using bb.Services.Platform.Telegram;
 using bb.Models.Platform;
 using bb.Core.Commands;
+using System.Threading.Tasks;
 
 
 // Task: Add a DI container for all this crap
@@ -177,7 +178,7 @@ namespace bb
         /// <item><term>--core-version [version]</term><description> Specifies the host version</description></item>
         /// </list>
         /// </param>
-        public void Start(string[] args)
+        public async Task Start(string[] args)
         {
             AppDomain.CurrentDomain.UnhandledException += UnhandledException;
             StartTime = DateTime.UtcNow;
@@ -195,7 +196,7 @@ namespace bb
             
             StartBot();
 
-            Task.Run(async () =>
+            _= Task.Run(async () =>
             {
                 try
                 {
@@ -207,7 +208,10 @@ namespace bb
                 }
             });
 
-            System.Console.ReadLine();
+            while (true)
+            {
+                System.Console.ReadLine();
+            }
         }
 
         /// <summary>
@@ -607,7 +611,7 @@ namespace bb
         private void Initialize(string[] args)
         {
             System.Console.Title = $"butterBror | v.{Version}";
-            System.Console.Clear();
+            Clear();
 
             for (int i = 0; i < args.Length; i++)
             {
@@ -716,29 +720,33 @@ namespace bb
                     Write("The file with blocked words has been created!");
                 }
 
-                Write("[0/5] Initializing databases...");
+
+                var dbInitialize = Progress("Initializing databases...", 0, 5);
+
                 DataBase.Messages = new(Paths.MessagesDatabase);
-                Write("[1/5] Initializing databases...");
+                UpdateProgress(dbInitialize, 1, 5);
                 DataBase.Users = new(Paths.UsersDatabase);
-                Write("[2/5] Initializing databases...");
+                UpdateProgress(dbInitialize, 2, 5);
                 DataBase.Games = new(Paths.GamesDatabase);
-                Write("[3/5] Initializing databases...");
+                UpdateProgress(dbInitialize, 3, 5);
                 DataBase.Channels = new(Paths.ChannelsDatabase);
-                Write("[4/5] Initializing databases...");
+                UpdateProgress(dbInitialize, 4, 5);
                 DataBase.Roles = new(Paths.RolesDatabase);
-                Write("[5/5] Initializing databases...");
+                UpdateProgress(dbInitialize, 5, 5);
 
-                Write("[0/2] Initializing buffers...");
+                var buffersInitialize = Progress("Initializing buffers...", 0, 2);
+
                 MessagesBuffer = new(DataBase.Messages);
-                Write("[1/2] Initializing buffers...");
+                UpdateProgress(buffersInitialize, 1, 2);
                 UsersBuffer = new(DataBase.Users);
-                Write("[2/2] Initializing buffers...");
+                UpdateProgress(buffersInitialize, 2, 2);
 
-                Write("[0/2] Loading currency counters...");
+                var currencyCountersInitialize = Progress("Loading currency counters...", 0, 2);
+
                 Users = DataBase.Users.GetTotalUsers();
-                Write("[1/2] Loading currency counters...");
+                UpdateProgress(currencyCountersInitialize, 1, 2);
                 Coins = DataBase.Users.GetTotalBalance();
-                Write("[2/2] Loading currency counters...");
+                UpdateProgress(currencyCountersInitialize, 2, 2);
 
                 _repeater = Task.Run(() => StartRepeater());
                 Write($"TPS counter successfully started");

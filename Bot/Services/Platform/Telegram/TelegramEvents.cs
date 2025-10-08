@@ -81,7 +81,7 @@ namespace bb.Services.Platform.Telegram
                         bb.Program.BotInstance.Version,
                         TextSanitizer.FormatTimeSpan(workTime, lang),
                         bb.Program.BotInstance.Clients.Twitch.JoinedChannels.Count + bb.Program.BotInstance.Clients.Discord.Guilds.Count + " (Twitch, Discord)",
-                        Runner.commandInstances.Count.ToString(),
+                        Program.BotInstance.CommandRunner.commandInstances.Count.ToString(),
                         bb.Program.BotInstance.CompletedCommands.ToString(),
                         reply.RoundtripTime.ToString());
 

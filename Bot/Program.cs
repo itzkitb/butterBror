@@ -2,6 +2,7 @@
 using bb.Core.Commands;
 using bb.Core.Configuration;
 using bb.Core.Services;
+using bb.Models.SevenTVLib;
 using bb.Services.External;
 using bb.Utils;
 using Discord.Commands;
@@ -21,71 +22,97 @@ namespace bb
         {
             System.Console.OutputEncoding = System.Text.Encoding.UTF8;
             System.Console.Title = "Loading...";
-            System.Console.WriteLine(":alienPls: Loading...");
+            Core.Bot.Console.Write(":alienPls: Loading...");
+
+            Core.Bot.Console.Write(@$"🚀 Executed command ""test"":
+- User: TestPlatform/1234567890
+- Arguments: """"
+- Location: ""Test/1234567890"" (ChatID: 1234567890)
+- Balance: 12345.67
+- Completed in: 10ms
+- Blocked words detected: ❎ in 15,8946ms
+- Blocked word: Blocked word: NotFound/""Empty""");
 
             // Set up DI container
             var services = new ServiceCollection();
 
             HttpClient client = new HttpClient();
 
+            var initialize = Core.Bot.Console.Progress("Initializing clients...", 0, 19);
+
             // Register all services
-            Core.Bot.Console.Write("Initializing client...", Core.Bot.Console.LogLevel.Debug);
             services.AddSingleton<ClientService>();
-            Core.Bot.Console.Write("Initializing paths...", Core.Bot.Console.LogLevel.Debug);
+
+            Core.Bot.Console.UpdateProgress(initialize, 1, 19, "Initializing paths...");
             services.AddSingleton<PathService>(provider => {
                 string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "SillyApps/");
                 Core.Bot.Console.Write($"Root path: {path}", Core.Bot.Console.LogLevel.Debug);
                 return new PathService(path);
             });
-            Core.Bot.Console.Write("Initializing tokens...", Core.Bot.Console.LogLevel.Debug);
+
+            Core.Bot.Console.UpdateProgress(initialize, 2, 19, "Initializing tokens...");
             services.AddSingleton<Tokens>();
-            Core.Bot.Console.Write("Initializing SQL...", Core.Bot.Console.LogLevel.Debug);
+
+            Core.Bot.Console.UpdateProgress(initialize, 3, 19, "Initializing SQL...");
             services.AddSingleton<SQLService>();
-            Core.Bot.Console.Write("Initializing emote cache...", Core.Bot.Console.LogLevel.Debug);
+
+            Core.Bot.Console.UpdateProgress(initialize, 4, 19, "Initializing emote cache...");
             services.AddSingleton<EmoteCacheService>();
-            Core.Bot.Console.Write("Initializing settings...", Core.Bot.Console.LogLevel.Debug);
+
+            Core.Bot.Console.UpdateProgress(initialize, 5, 19, "Initializing settings...");
             services.AddSingleton<SettingsService>(provider => {
                 string path = provider.GetRequiredService<PathService>().Settings;
                 Core.Bot.Console.Write($"Settings path: {path}", Core.Bot.Console.LogLevel.Debug);
                 return new SettingsService(path);
             });
-            Core.Bot.Console.Write("Initializing 7tv...", Core.Bot.Console.LogLevel.Debug);
+
+            Core.Bot.Console.UpdateProgress(initialize, 6, 19, "Initializing 7tv...");
             services.AddSingleton<SevenTvService>(provider => {
                 return new SevenTvService(client);
             });
-            Core.Bot.Console.Write("Initializing AI...", Core.Bot.Console.LogLevel.Debug);
+
+            Core.Bot.Console.UpdateProgress(initialize, 7, 19, "Initializing AI...");
             services.AddSingleton<AIService>();
-            Core.Bot.Console.Write("Initializing YT...", Core.Bot.Console.LogLevel.Debug);
+
+            Core.Bot.Console.UpdateProgress(initialize, 8, 19, "Initializing YouTube...");
             services.AddSingleton<YouTubeService>(provider => {
                 return new YouTubeService(client);
             });
-            Core.Bot.Console.Write("Initializing cooldown...", Core.Bot.Console.LogLevel.Debug);
+
+            Core.Bot.Console.UpdateProgress(initialize, 9, 19, "Initializing cooldown...");
             services.AddSingleton<CooldownManager>();
-            Core.Bot.Console.Write("Initializing currency...", Core.Bot.Console.LogLevel.Debug);
+
+            Core.Bot.Console.UpdateProgress(initialize, 10, 19, "Initializing currency...");
             services.AddSingleton<CurrencyManager>();
-            Core.Bot.Console.Write("Initializing message processor...", Core.Bot.Console.LogLevel.Debug);
+
+            Core.Bot.Console.UpdateProgress(initialize, 11, 19, "Initializing message processor...");
             services.AddSingleton<MessageProcessor>();
-            Core.Bot.Console.Write("Initializing sender...", Core.Bot.Console.LogLevel.Debug);
+
+            Core.Bot.Console.UpdateProgress(initialize, 12, 19, "Initializing sender...");
             services.AddSingleton<PlatformMessageSender>();
-            Core.Bot.Console.Write("Initializing command service...", Core.Bot.Console.LogLevel.Debug);
+
+            Core.Bot.Console.UpdateProgress(initialize, 13, 19, "Initializing command service...");
             services.AddSingleton<CommandService>();
-            Core.Bot.Console.Write("Initializing command executor...", Core.Bot.Console.LogLevel.Debug);
+
+            Core.Bot.Console.UpdateProgress(initialize, 14, 19, "Initializing command executor...");
             services.AddSingleton<Executor>();
-            Core.Bot.Console.Write("Initializing command runner...", Core.Bot.Console.LogLevel.Debug);
+
+            Core.Bot.Console.UpdateProgress(initialize, 15, 19, "Initializing command runner...");
             services.AddSingleton<Runner>();
-            Core.Bot.Console.Write("Initializing blocked word detector...", Core.Bot.Console.LogLevel.Debug);
+
+            Core.Bot.Console.UpdateProgress(initialize, 16, 19, "Initializing blocked word detector...");
             services.AddSingleton<BlockedWordDetector>();
 
             // Register Bot itself
-            Core.Bot.Console.Write("Initializing bot...", Core.Bot.Console.LogLevel.Debug);
+            Core.Bot.Console.UpdateProgress(initialize, 17, 19, "Initializing bot...");
             services.AddSingleton<BotInstance>();
 
             // Build the service provider
-            Core.Bot.Console.Write("Building the service provider...", Core.Bot.Console.LogLevel.Debug);
+            Core.Bot.Console.UpdateProgress(initialize, 18, 19, "Building the service provider...");
             var serviceProvider = services.BuildServiceProvider();
 
             // Resolve and start the bot
-            Core.Bot.Console.Write("Starting...", Core.Bot.Console.LogLevel.Debug);
+            Core.Bot.Console.UpdateProgress(initialize, 19, 19, "Starting...");
             BotInstance = serviceProvider.GetRequiredService<BotInstance>();
             BotInstance.Start(args);
         }

@@ -74,7 +74,7 @@ namespace bb.Core.Commands.List
                         bb.Program.BotInstance.Version,
                         TextSanitizer.FormatTimeSpan(workTime, data.User.Language),
                         LocalizationService.GetPluralString(data.User.Language, "text:tab", data.ChannelId, data.Platform, joinedTabs, joinedTabs),
-                        LocalizationService.GetPluralString(data.User.Language, "text:commands", data.ChannelId, data.Platform, Runner.commandInstances.Count, Runner.commandInstances.Count),
+                        LocalizationService.GetPluralString(data.User.Language, "text:commands", data.ChannelId, data.Platform, Program.BotInstance.CommandRunner.commandInstances.Count, Program.BotInstance.CommandRunner.commandInstances.Count),
                         bb.Program.BotInstance.CompletedCommands,
                         pingSpeed.ToString()));
                 }
