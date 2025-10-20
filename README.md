@@ -1,3 +1,5 @@
+[![.NET CI](https://github.com/itzkitb/butterBror/actions/workflows/ci.yml/badge.svg)](https://github.com/itzkitb/butterBror/actions/workflows/ci.yml)
+
 <img 
     src="https://images.itzkitb.lol/butterbror/github_logo.png" 
     alt="logo"
