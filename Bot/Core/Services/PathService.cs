@@ -114,7 +114,7 @@
             UsersDatabase = Format(Path.Combine(General, "Users.db"));
             MessagesDatabase = Format(Path.Combine(General, "Messages.db"));
             RolesDatabase = Format(Path.Combine(General, "Roles.db"));
-            Settings = Format(Path.Combine(General, "Settings.json"));
+            Settings = Format(Path.Combine(General, "Settings.xml"));
             Translations = Format(Path.Combine(General, "Localization/"));
             TranslateDefault = Format(Path.Combine(Translations, "Default"));
             TranslateCustom = Format(Path.Combine(Translations, "Custom"));

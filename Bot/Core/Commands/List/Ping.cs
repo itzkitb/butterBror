@@ -43,7 +43,9 @@ namespace bb.Core.Commands.List
 
                 string argument = "";
                 if (data.Arguments != null && data.Arguments.Count > 0)
+                {
                     argument = data.Arguments[0].ToLower();
+                }
 
                 if (data.Arguments != null && data.Arguments.Count == 0)
                 {
@@ -71,7 +73,7 @@ namespace bb.Core.Commands.List
                         "command:ping",
                         data.ChannelId,
                         data.Platform,
-                        bb.Program.BotInstance.Version,
+                        bb.Program.BotInstance.Version + $" ({Program.BotInstance.Branch}/{Program.BotInstance.Commit})",
                         TextSanitizer.FormatTimeSpan(workTime, data.User.Language),
                         LocalizationService.GetPluralString(data.User.Language, "text:tab", data.ChannelId, data.Platform, joinedTabs, joinedTabs),
                         LocalizationService.GetPluralString(data.User.Language, "text:commands", data.ChannelId, data.Platform, Program.BotInstance.CommandRunner.commandInstances.Count, Program.BotInstance.CommandRunner.commandInstances.Count),

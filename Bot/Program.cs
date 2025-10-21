@@ -107,6 +107,16 @@ namespace bb
             Core.Bot.Console.UpdateProgress(initialize, 17, 19, "Initializing bot...");
             services.AddSingleton<BotInstance>();
 
+            services.AddSingleton<IGitHubActionsNotifier>(provider =>
+            {
+                return new GitHubActionsNotifier(
+                    repo: "itzkitb/butterBror",
+                    token: provider.GetRequiredService<SettingsService>().Get<string>("github_token"),
+                    pollingInterval: TimeSpan.FromMinutes(1)
+                );
+            });
+            services.AddHostedService(provider => provider.GetRequiredService<IGitHubActionsNotifier>());
+
             // Build the service provider
             Core.Bot.Console.UpdateProgress(initialize, 18, 19, "Building the service provider...");
             var serviceProvider = services.BuildServiceProvider();

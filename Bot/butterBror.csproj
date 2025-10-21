@@ -30,6 +30,7 @@
     </PackageReference>
     <PackageReference Include="Jint" Version="4.4.1" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.14.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.10" />
     <PackageReference Include="Pastel" Version="7.0.0" />
     <PackageReference Include="SevenTV-lib" Version="1.2.0" />
     <PackageReference Include="System.Data.SQLite.Core" Version="1.0.119" />

@@ -65,11 +65,12 @@ namespace bb
         public readonly Executor CommandExecutor;
         public readonly Runner CommandRunner;
         public readonly BlockedWordDetector MessageFilter;
+        public readonly GitHubActionsNotifier GitHubActions;
 
         #region Core
         public Version Version = new Version("2.18.0.9");
-        public string Branch = Environment.GetEnvironmentVariable("BRANCH") ?? "master";
-        public string Commit = Environment.GetEnvironmentVariable("COMMIT") ?? "";
+        public string Branch = "master";
+        public string Commit = "";
         public DateTime StartTime = new();
         public string PreviousVersion = "";
         public bool Initialized = false;
@@ -77,6 +78,7 @@ namespace bb
         public string? TwitchName;
         public string DefaultCommandPrefix = "!";
         private bool SkipFetch = false;
+        public TimeSpan ConnectedIn;
         #endregion Core
 
         #region Currency
@@ -105,6 +107,7 @@ namespace bb
         public string[] TwitchNewVersionAnnounce = [];
         public string[] TwitchReconnectAnnounce = [];
         public string[] TwitchConnectAnnounce = [];
+        public string[] TwitchDevAnnounce = [];
         public List<string> TwitchCurrencyRandomEvent = [];
         public List<string> TwitchTaxesEvent = [];
         #endregion Twitch
@@ -146,7 +149,8 @@ namespace bb
         CommandService commandService,
         Executor commandExecutor,
         Runner commandRunner,
-        BlockedWordDetector blockedWordDetector
+        BlockedWordDetector blockedWordDetector,
+        IGitHubActionsNotifier gitHubActions
     )
         {
             Clients = clients;
@@ -166,6 +170,7 @@ namespace bb
             CommandExecutor = commandExecutor;
             CommandRunner = commandRunner;
             MessageFilter = blockedWordDetector;
+            GitHubActions = (GitHubActionsNotifier?)gitHubActions;
         }
 
         #region Core
@@ -659,6 +664,21 @@ namespace bb
         public async void StartBot()
         {
             _startTime = DateTime.UtcNow;
+            GitHubActions.RunStatusChanged += GitHubActionsStatusChanged;
+
+            Write("Reading release data...");
+            var releaseData = ReleaseManager.GetReleaseInfo();
+            if (releaseData == null)
+            {
+                Write("Try deleting the release folder (Versions) and restarting the host. Press enter to exit.");
+                System.Console.ReadLine();
+                return;
+            }
+
+            Commit = releaseData.Commit;
+            Branch = releaseData.Branch;
+
+            //
 
             if (FileUtil.FileExists(Paths.Currency))
             {
@@ -784,6 +804,21 @@ namespace bb
             }
         }
 
+        private void GitHubActionsStatusChanged(object? sender, RunStatusChangedEventArgs e)
+        {
+            string notify = $"forsenPls | Github: {e.Repository}/{e.Branch} ({e.RunId}) by {e.Actor}: {e.Status}; {e.Conclusion}; {e.Event}";
+
+            Write(notify);
+
+            /*
+            foreach (string channel in Program.BotInstance.TwitchConnectAnnounce)
+            {
+                Write($"Twitch: {Program.BotInstance.TwitchConnectAnnounce.Count()}", LogLevel.Debug);
+                bb.Program.BotInstance.MessageSender.Send(PlatformsEnum.Twitch, $"{Program.BotInstance.TwitchName} Started in {(long)(Program.BotInstance.ConnectedIn).TotalMilliseconds} ms!", UsernameResolver.GetUsername(channel, PlatformsEnum.Twitch, true), isSafe: true);
+            }
+            */
+        }
+
         /// <summary>
         /// Loads and applies bot configuration from persistent storage to runtime memory.
         /// </summary>
@@ -812,7 +847,7 @@ namespace bb
             bb.Program.BotInstance.Tokens.Discord = Settings.Get<string>("discord_token");
             bb.Program.BotInstance.Tokens.TwitchSecretToken = Settings.Get<string>("twitch_secret_token");
             bb.Program.BotInstance.Tokens.Telegram = Settings.Get<string>("telegram_token");
-            bb.Program.BotInstance.Tokens.SevenTV = Settings.Get<string>("7tv_token");
+            bb.Program.BotInstance.Tokens.SevenTV = Settings.Get<string>("seventv_token");
         }
 
         private void LoadOtherData()
@@ -862,26 +897,8 @@ namespace bb
 
                 await Task.WhenAll(tasks);
 
-                TimeSpan ConnectedIn = DateTime.UtcNow - _startTime;
+                ConnectedIn = DateTime.UtcNow - _startTime;
                 Initialized = true;
-
-                _ = Task.Run(async () =>
-                {
-                    await Task.Delay(1000);
-
-                    if (PreviousVersion != Version.ToString() && PreviousVersion != string.Empty)
-                    {
-                        foreach (string channel in TwitchNewVersionAnnounce)
-                        {
-                            bb.Program.BotInstance.MessageSender.Send(PlatformsEnum.Twitch, $"{TwitchName} v.{PreviousVersion} > v.{Version}", channel, isSafe: true);
-                        }
-                    }
-
-                    foreach (string channel in TwitchConnectAnnounce)
-                    {
-                        bb.Program.BotInstance.MessageSender.Send(PlatformsEnum.Twitch, $"{TwitchName} Started in {(long)(ConnectedIn).TotalMilliseconds} ms!", channel, isSafe: true);
-                    }
-                });
 
                 Write($"Well done! ({(long)(ConnectedIn).TotalMilliseconds} ms)");
             }

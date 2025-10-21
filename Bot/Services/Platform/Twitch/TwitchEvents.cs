@@ -2,6 +2,7 @@
 using bb.Utils;
 using DankDB;
 using Newtonsoft.Json.Linq;
+using SevenTV.Types.Rest;
 using TwitchLib.Client;
 using TwitchLib.Client.Events;
 using TwitchLib.Client.Models;
@@ -25,6 +26,24 @@ namespace bb.Services.Platform.Twitch
         public static void OnConnected(object? sender, OnConnectedArgs e)
         {
             Write("Twitch: Connected");
+
+            _ = Task.Run(async () =>
+            {
+                if (Program.BotInstance.PreviousVersion != Program.BotInstance.Version.ToString() && Program.BotInstance.PreviousVersion != string.Empty)
+                {
+                    Write($"Twitch: {Program.BotInstance.TwitchNewVersionAnnounce.Count()}", LogLevel.Debug);
+                    foreach (string channel in Program.BotInstance.TwitchNewVersionAnnounce)
+                    {
+                        bb.Program.BotInstance.MessageSender.Send(PlatformsEnum.Twitch, $"{Program.BotInstance.TwitchName} v.{Program.BotInstance.PreviousVersion} > v.{Program.BotInstance.Version}", UsernameResolver.GetUsername(channel, PlatformsEnum.Twitch, true), isSafe: true);
+                    }
+                }
+
+                foreach (string channel in Program.BotInstance.TwitchConnectAnnounce)
+                {
+                    Write($"Twitch: {Program.BotInstance.TwitchConnectAnnounce.Count()}", LogLevel.Debug);
+                    bb.Program.BotInstance.MessageSender.Send(PlatformsEnum.Twitch, $"{Program.BotInstance.TwitchName} Started in {(long)(Program.BotInstance.ConnectedIn).TotalMilliseconds} ms!", UsernameResolver.GetUsername(channel, PlatformsEnum.Twitch, true), isSafe: true);
+                }
+            });
         }
 
         /// <summary>
