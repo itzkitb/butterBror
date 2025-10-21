@@ -24,15 +24,6 @@ namespace bb
             System.Console.Title = "Loading...";
             Core.Bot.Logger.Write(":alienPls: Loading...");
 
-            Core.Bot.Logger.Write(@$"🚀 Executed command ""test"":
-- User: TestPlatform/1234567890
-- Arguments: """"
-- Location: ""Test/1234567890"" (ChatID: 1234567890)
-- Balance: 12345.67
-- Completed in: 10ms
-- Blocked words detected: ❎ in 15,8946ms
-- Blocked word: Blocked word: NotFound/""Empty""");
-
             // Set up DI container
             var services = new ServiceCollection();
 

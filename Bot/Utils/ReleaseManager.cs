@@ -11,11 +11,11 @@ namespace bb.Utils
         {
             try
             {
-                string releaseXmlPath = "release.xml";
+                string releaseXmlPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "release.xml");
 
                 if (!File.Exists(releaseXmlPath))
                 {
-                    Core.Bot.Logger.Write("release.xml not found");
+                    Core.Bot.Logger.Write($"{releaseXmlPath} not found!", Core.Bot.Logger.LogLevel.Warning);
                     return null;
                 }
 
