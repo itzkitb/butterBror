@@ -17,6 +17,7 @@ namespace bb
     public static class Program
     {
         public static BotInstance BotInstance;
+        public static string MainColor = "b3ff7d";
 
         public static void Main(string[] args)
         {

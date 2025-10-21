@@ -69,8 +69,6 @@ namespace bb
 
         public CancellationTokenSource GithubCT;
 
-        public readonly string MainColor = "b3ff7d";
-
         #region Core
         public Version Version = new Version("2.18.0.9");
         public string Branch = "master";
@@ -584,15 +582,15 @@ namespace bb
             :::::::::                  
         :::::::::::::::::              
       ::i:::::::::::::::::::           
-  :::::::::::::::::::::::::::::        Butter{"Bror".Pastel(MainColor)}
- ::::::::::::::::::::::::::::::::      Host: {HostName.Pastel(MainColor)} v.{HostVersion}
- {{~:::::::::::::::::::::::::::::::     Framework: {RuntimeInformation.FrameworkDescription.Pastel(MainColor)}
- 0000XI::::::::::::::::::::::tC00:     v.{Version.ToString().Pastel(MainColor)}
- ::c0000nI::::::::::::::::(v1::<l      {OSName.Pastel(MainColor)}
- ((((:n0000f-::::::::}}x00(::n000(:     {processor.Pastel(MainColor)}
- n0((::::c0000f(:::>}}X(l!00QQ0((::     RAM: {memory.ToString().Pastel(MainColor)} GB
-  :():::::::C000000000000:::::+l:      Total disks space: {Math.Round(Memory.BytesToGB(totalDiskSpace)).ToString().Pastel(MainColor)} GB
-     Ix:(((((((:-}}-:((:::100_:         Available disks space: {Math.Round(Memory.BytesToGB(totalFreeDiskSpace)).ToString().Pastel(MainColor)} GB
+  :::::::::::::::::::::::::::::        Butter{"Bror".Pastel(Program.MainColor)}
+ ::::::::::::::::::::::::::::::::      Host: {HostName.Pastel(Program.MainColor)} v.{HostVersion}
+ {{~:::::::::::::::::::::::::::::::     Framework: {RuntimeInformation.FrameworkDescription.Pastel(Program.MainColor)}
+ 0000XI::::::::::::::::::::::tC00:     v.{Version.ToString().Pastel(Program.MainColor)}
+ ::c0000nI::::::::::::::::(v1::<l      {OSName.Pastel(Program.MainColor)}
+ ((((:n0000f-::::::::}}x00(::n000(:     {processor.Pastel(Program.MainColor)}
+ n0((::::c0000f(:::>}}X(l!00QQ0((::     RAM: {memory.ToString().Pastel(Program.MainColor)} GB
+  :():::::::C000000000000:::::+l:      Total disks space: {Math.Round(Memory.BytesToGB(totalDiskSpace)).ToString().Pastel(Program.MainColor)} GB
+     Ix:(((((((:-}}-:((:::100_:         Available disks space: {Math.Round(Memory.BytesToGB(totalFreeDiskSpace)).ToString().Pastel(Program.MainColor)} GB
         :X00:((:::::]000x;:            
             :x0000000n:                
               :::::::
