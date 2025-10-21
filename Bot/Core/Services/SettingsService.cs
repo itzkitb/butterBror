@@ -26,7 +26,8 @@ namespace bb.Core.Services
                     new XElement("currency_mentioned_payment", "8"),
                     new XElement("dashboard_password", "6FF8E2CF58249F757ECEE669C6CB015A1C1F44552442B364C8A388B0BDB1322A7AF6B67678D9206378D8969FFEC48263C9AB3167D222C80486FC848099535568"), // Pass: bbAdmin
                     new XElement("bot_name", "Your bot's Twitch nickname"),
-                    new XElement("github_token", "Your discord's token"),
+                    new XElement("github_token", "Your github token (https://github.com/settings/tokens - Create with public_repo)"),
+                    new XElement("telegram_token", "Your telegram bot token (https://t.me/BotFather)"),
                     new XElement("twitch_user_id", "Your Twitch account ID. You can find it here: https://twitch.tv/butterbror. Enter _id <bot nickname> in the chat."),
                     new XElement("twitch_client_id", "ClientId of your twitch app (https://dev.twitch.tv/console/apps)"),
                     new XElement("twitch_secret_token", "Secret token of your twitch app (https://dev.twitch.tv/console/apps)"),
@@ -51,6 +52,10 @@ namespace bb.Core.Services
                         new XElement("item", "second_twitch_channel_id")
                     ),
                     new XElement("twitch_connect_channels",
+                        new XElement("item", "first_twitch_channel_id"),
+                        new XElement("item", "second_twitch_channel_id")
+                    ),
+                    new XElement("twitch_dev_channels",
                         new XElement("item", "first_twitch_channel_id"),
                         new XElement("item", "second_twitch_channel_id")
                     )

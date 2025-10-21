@@ -78,8 +78,7 @@ namespace bb
             {
                 return new GitHubActionsNotifier(
                     repo: "itzkitb/butterBror",
-                    token: provider.GetRequiredService<SettingsService>().Get<string>("github_token"),
-                    pollingInterval: TimeSpan.FromMinutes(1)
+                    token: provider.GetRequiredService<SettingsService>().Get<string>("github_token")
                 );
             });
             services.AddHostedService(provider => provider.GetRequiredService<IGitHubActionsNotifier>());

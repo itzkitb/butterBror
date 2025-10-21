@@ -106,10 +106,10 @@ namespace bb
 
         #region Twitch
         public string? TwitchClientId;
-        public string[] TwitchNewVersionAnnounce = [];
-        public string[] TwitchReconnectAnnounce = [];
-        public string[] TwitchConnectAnnounce = [];
-        public string[] TwitchDevAnnounce = [];
+        public List<string> TwitchNewVersionAnnounce = [];
+        public List<string> TwitchReconnectAnnounce = [];
+        public List<string> TwitchConnectAnnounce = [];
+        public List<string> TwitchDevAnnounce = [];
         public List<string> TwitchCurrencyRandomEvent = [];
         public List<string> TwitchTaxesEvent = [];
         #endregion Twitch
@@ -806,13 +806,10 @@ namespace bb
 
             Write(notify);
 
-            /*
-            foreach (string channel in Program.BotInstance.TwitchConnectAnnounce)
+            foreach (string channel in Program.BotInstance.TwitchDevAnnounce)
             {
-                Write($"Twitch: {Program.BotInstance.TwitchConnectAnnounce.Count()}", LogLevel.Debug);
-                bb.Program.BotInstance.MessageSender.Send(PlatformsEnum.Twitch, $"{Program.BotInstance.TwitchName} Started in {(long)(Program.BotInstance.ConnectedIn).TotalMilliseconds} ms!", UsernameResolver.GetUsername(channel, PlatformsEnum.Twitch, true), isSafe: true);
+                bb.Program.BotInstance.MessageSender.Send(PlatformsEnum.Twitch, notify, UsernameResolver.GetUsername(channel, PlatformsEnum.Twitch, true), isSafe: true);
             }
-            */
         }
 
         /// <summary>
@@ -849,12 +846,13 @@ namespace bb
         private void LoadOtherData()
         {
             bb.Program.BotInstance.TwitchName = Settings.Get<string>("bot_name");
-            bb.Program.BotInstance.TwitchReconnectAnnounce = Settings.Get<string[]>("twitch_reconnect_message_channels");
-            bb.Program.BotInstance.TwitchConnectAnnounce = Settings.Get<string[]>("twitch_connect_message_channels");
+            bb.Program.BotInstance.TwitchReconnectAnnounce = Settings.Get<List<string>>("twitch_reconnect_message_channels");
+            bb.Program.BotInstance.TwitchConnectAnnounce = Settings.Get<List<string>>("twitch_connect_message_channels");
             bb.Program.BotInstance.TwitchClientId = Settings.Get<string>("twitch_client_id");
-            bb.Program.BotInstance.TwitchNewVersionAnnounce = Settings.Get<string[]>("twitch_version_message_channels");
+            bb.Program.BotInstance.TwitchNewVersionAnnounce = Settings.Get<List<string>>("twitch_version_message_channels");
             bb.Program.BotInstance.TwitchCurrencyRandomEvent = Settings.Get<List<string>>("twitch_currency_random_event");
             bb.Program.BotInstance.TwitchTaxesEvent = Settings.Get<List<string>>("twitch_taxes_event");
+            bb.Program.BotInstance.TwitchDevAnnounce = Settings.Get<List<string>>("twitch_dev_channels");
             bb.Program.BotInstance.CurrencyMentioned = Settings.Get<int>("currency_mentioned_payment");
             bb.Program.BotInstance.CurrencyMentioner = Settings.Get<int>("currency_mentioner_payment");
             bb.Program.BotInstance.DefaultCommandPrefix = Settings.Get<string>("prefix");
@@ -1193,7 +1191,7 @@ namespace bb
         /// </para>
         /// </remarks>
         /// <returns>Task representing the asynchronous shutdown operation</returns>
-        public async Task Shutdown(bool force = false)
+        public async Task Shutdown(bool force = false, bool update = false)
         {
             Write("Initiating shutdown sequence...");
 
@@ -1334,7 +1332,7 @@ namespace bb
             finally
             {
                 Write("Restart sequence completed - terminating process");
-                Environment.Exit(force ? 5001 : 0);
+                Environment.Exit(update ? 5051 : force ? 5001 : 0);
             }
         }
 

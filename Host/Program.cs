@@ -102,6 +102,10 @@ namespace hostBror
                     CompileFromRepo();
                     StartBotProcess();
                 }
+                else if (_botProcess?.ExitCode == 5001)
+                {
+                    Environment.Exit(0);
+                }
                 else
                 {
                     _restartCount++;

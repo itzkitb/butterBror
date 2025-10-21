@@ -36,6 +36,7 @@ namespace bb.Utils
         private string _lastRunId;
         private string _lastStatus;
         private string _lastConclusion;
+        private bool _initialized = false;
 
         public GitHubActionsNotifier(string repo, string token = null, TimeSpan pollingInterval = default)
         {
@@ -97,17 +98,23 @@ namespace bb.Utils
                         _lastRunId = runId;
                         _lastStatus = status;
                         _lastConclusion = conclusion;
-                        RunStatusChanged?.Invoke(this, new RunStatusChangedEventArgs
+
+                        if (_initialized)
                         {
-                            RunId = runId,
-                            Status = status,
-                            Conclusion = conclusion,
-                            HtmlUrl = htmlUrl,
-                            Repository = _repo,
-                            Branch = branch,
-                            Event = @event,
-                            Actor = actor
-                        });
+                            RunStatusChanged?.Invoke(this, new RunStatusChangedEventArgs
+                            {
+                                RunId = runId,
+                                Status = status,
+                                Conclusion = conclusion,
+                                HtmlUrl = htmlUrl,
+                                Repository = _repo,
+                                Branch = branch,
+                                Event = @event,
+                                Actor = actor
+                            });
+                        }
+
+                        _initialized = true;
                     }
                 }
             }
