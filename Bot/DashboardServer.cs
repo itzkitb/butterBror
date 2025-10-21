@@ -11,7 +11,7 @@ using System.Security.Principal;
 using System.Text;
 using System.Runtime.InteropServices;
 using System.IO;
-using static bb.Core.Bot.Console;
+using static bb.Core.Bot.Logger;
 using bb.Utils;
 
 namespace bb

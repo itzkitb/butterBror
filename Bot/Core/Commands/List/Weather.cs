@@ -8,7 +8,7 @@ using Microsoft.CodeAnalysis;
 using System.Globalization;
 using System.Text.RegularExpressions;
 using TwitchLib.Client.Enums;
-using static bb.Core.Bot.Console;
+using static bb.Core.Bot.Logger;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 using bb.Models.Command;
 using bb.Models.Platform;

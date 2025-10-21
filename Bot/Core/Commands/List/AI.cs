@@ -48,8 +48,8 @@ namespace bb.Core.Commands.List
                 {
                     decimal currency = bb.Program.BotInstance.Coins == 0 ? 1 : bb.Program.BotInstance.InBankDollars / bb.Program.BotInstance.Coins;
                     decimal cost = currency == 0 ? 0.5m : 0.5m / currency;
-                    Core.Bot.Console.Write($"Currency: {currency}", Core.Bot.Console.LogLevel.Debug);
-                    Core.Bot.Console.Write($"Cost: {cost}", Core.Bot.Console.LogLevel.Debug);
+                    Core.Bot.Logger.Write($"Currency: {currency}", Core.Bot.Logger.LogLevel.Debug);
+                    Core.Bot.Logger.Write($"Cost: {cost}", Core.Bot.Logger.LogLevel.Debug);
 
                     int coins = -(int)cost;
                     int subcoins = -(int)((cost - coins) * 100);

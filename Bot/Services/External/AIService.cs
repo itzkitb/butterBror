@@ -12,7 +12,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.RegularExpressions;
-using static bb.Core.Bot.Console;
+using static bb.Core.Bot.Logger;
 
 namespace bb.Services.External
 {

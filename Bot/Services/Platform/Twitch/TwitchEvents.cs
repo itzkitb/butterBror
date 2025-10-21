@@ -8,7 +8,7 @@ using TwitchLib.Client.Events;
 using TwitchLib.Client.Models;
 using TwitchLib.Communication.Events;
 using TwitchLib.Communication.Interfaces;
-using static bb.Core.Bot.Console;
+using static bb.Core.Bot.Logger;
 using TelegramLib = Telegram;
 
 namespace bb.Services.Platform.Twitch

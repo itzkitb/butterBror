@@ -6,7 +6,7 @@ using System.Globalization;
 using System.Text.RegularExpressions;
 using Telegram.Bot.Types;
 using TwitchLib.Client.Models;
-using static bb.Core.Bot.Console;
+using static bb.Core.Bot.Logger;
 
 namespace bb.Utils
 {

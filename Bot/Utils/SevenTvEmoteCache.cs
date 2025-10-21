@@ -1,4 +1,4 @@
-﻿using static bb.Core.Bot.Console;
+﻿using static bb.Core.Bot.Logger;
 
 namespace bb.Utils
 {

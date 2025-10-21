@@ -1,6 +1,6 @@
 ﻿using bb.Data.Entities;
 using bb.Models.Platform;
-using static bb.Core.Bot.Console;
+using static bb.Core.Bot.Logger;
 
 namespace bb.Data.Repositories
 {
@@ -125,7 +125,7 @@ namespace bb.Data.Repositories
         /// <para>
         /// Error handling:
         /// <list type="bullet">
-        /// <item>Exceptions are logged via <see cref="Core.Bot.Console.Write(Exception)"/></item>
+        /// <item>Exceptions are logged via <see cref="Core.Bot.Logger.Write(Exception)"/></item>
         /// <item>Original exception is rethrown after logging</item>
         /// <item>Buffer state remains unchanged if persistence fails</item>
         /// </list>

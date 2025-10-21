@@ -6,7 +6,7 @@ using bb.Core.Configuration;
 using DankDB;
 using System.Diagnostics;
 using System.Net.NetworkInformation;
-using static bb.Core.Bot.Console;
+using static bb.Core.Bot.Logger;
 using bb.Core.Configuration;
 using bb.Models.Command;
 using bb.Models.Platform;

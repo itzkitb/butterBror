@@ -4,7 +4,7 @@ using bb.Core.Configuration;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
-using static bb.Core.Bot.Console;
+using static bb.Core.Bot.Logger;
 using bb.Models.Platform;
 
 namespace bb.Services.External

@@ -1,7 +1,7 @@
 ﻿using bb.Utils;
 using bb.Core.Configuration;
 using TwitchLib.Client.Enums;
-using static bb.Core.Bot.Console;
+using static bb.Core.Bot.Logger;
 using bb.Models.Command;
 using bb.Models.Platform;
 

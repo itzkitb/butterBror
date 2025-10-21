@@ -2,7 +2,7 @@
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
-using static bb.Core.Bot.Console;
+using static bb.Core.Bot.Logger;
 
 namespace bb.Services.Platform.Discord
 {

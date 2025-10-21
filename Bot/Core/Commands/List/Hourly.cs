@@ -3,7 +3,7 @@ using bb.Core.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using static bb.Core.Bot.Console;
+using static bb.Core.Bot.Logger;
 using bb.Models.Command;
 using bb.Models.Platform;
 

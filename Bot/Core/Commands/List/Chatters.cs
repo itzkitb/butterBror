@@ -68,7 +68,7 @@ namespace bb.Core.Commands.List
                 }
                 catch (Exception ex)
                 {
-                    Core.Bot.Console.Write(ex);
+                    Core.Bot.Logger.Write(ex);
                     commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, string.Empty, data.ChannelId, data.Platform));
                 }
 

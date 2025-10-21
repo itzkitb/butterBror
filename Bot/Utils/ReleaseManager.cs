@@ -15,7 +15,7 @@ namespace bb.Utils
 
                 if (!File.Exists(releaseXmlPath))
                 {
-                    Core.Bot.Console.Write("release.xml not found");
+                    Core.Bot.Logger.Write("release.xml not found");
                     return null;
                 }
 
@@ -32,7 +32,7 @@ namespace bb.Utils
             }
             catch (Exception ex)
             {
-                Core.Bot.Console.Write(ex);
+                Core.Bot.Logger.Write(ex);
                 return null;
             }
         }

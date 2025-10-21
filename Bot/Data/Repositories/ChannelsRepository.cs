@@ -259,7 +259,7 @@ namespace bb.Data.Repositories
             catch (Exception ex)
             {
                 RollbackTransaction();
-                Core.Bot.Console.Write(ex);
+                Core.Bot.Logger.Write(ex);
                 throw;
             }
         }

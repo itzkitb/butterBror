@@ -39,7 +39,7 @@ namespace bb.Utils
         {
             _repo = repo;
             _token = token;
-            _pollingInterval = pollingInterval == default ? TimeSpan.FromMinutes(1) : pollingInterval;
+            _pollingInterval = pollingInterval == default ? TimeSpan.FromSeconds(10) : pollingInterval;
             _httpClient = new HttpClient();
 
             if (!string.IsNullOrEmpty(_token))
@@ -59,7 +59,7 @@ namespace bb.Utils
                 }
                 catch (Exception ex)
                 {
-                    Core.Bot.Console.Write(ex);
+                    Core.Bot.Logger.Write(ex);
                 }
 
                 await Task.Delay(_pollingInterval, stoppingToken);
@@ -82,7 +82,7 @@ namespace bb.Utils
                 if (runs.GetArrayLength() > 0)
                 {
                     JsonElement latestRun = runs[0];
-                    string runId = latestRun.GetProperty("id").GetString();
+                    string runId = latestRun.GetProperty("id").GetInt64().ToString();
                     string status = latestRun.GetProperty("status").GetString();
                     string conclusion = latestRun.GetProperty("conclusion").GetString();
                     string htmlUrl = latestRun.GetProperty("html_url").GetString();

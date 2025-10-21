@@ -7,7 +7,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Reflection;
 using TwitchLib.Client.Enums;
-using static bb.Core.Bot.Console;
+using static bb.Core.Bot.Logger;
 
 namespace bb.Core.Commands
 {

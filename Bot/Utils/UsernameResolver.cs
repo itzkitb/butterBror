@@ -2,7 +2,7 @@
 using Newtonsoft.Json.Linq;
 using System.Net.Http.Headers;
 using System.Text.RegularExpressions;
-using static bb.Core.Bot.Console;
+using static bb.Core.Bot.Logger;
 
 namespace bb.Utils
 {

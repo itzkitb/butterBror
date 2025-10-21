@@ -4,7 +4,7 @@ using bb.Models.Platform;
 using bb.Utils;
 using System.Diagnostics;
 using System.IO.Compression;
-using static bb.Core.Bot.Console;
+using static bb.Core.Bot.Logger;
 
 namespace bb.Core.Bot
 {

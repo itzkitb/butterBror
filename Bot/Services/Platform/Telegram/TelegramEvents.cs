@@ -8,7 +8,7 @@ using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using TwitchLib.EventSub.Core.SubscriptionTypes.Channel;
-using static bb.Core.Bot.Console;
+using static bb.Core.Bot.Logger;
 using TelegramLib = Telegram;
 
 namespace bb.Services.Platform.Telegram

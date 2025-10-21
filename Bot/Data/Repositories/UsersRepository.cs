@@ -221,7 +221,7 @@ namespace bb.Data.Repositories
                 }
                 catch (Exception ex)
                 {
-                    Core.Bot.Console.Write(ex);
+                    Core.Bot.Logger.Write(ex);
                 }
             }
 

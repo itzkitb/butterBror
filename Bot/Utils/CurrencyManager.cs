@@ -1,7 +1,7 @@
 ﻿using bb.Services.External;
 using bb.Models.Currency;
 using Newtonsoft.Json;
-using static bb.Core.Bot.Console;
+using static bb.Core.Bot.Logger;
 using bb.Core.Configuration;
 using bb.Models.Platform;
 

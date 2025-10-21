@@ -5,7 +5,7 @@ using DankDB;
 using Jint.Runtime;
 using Newtonsoft.Json.Linq;
 using SevenTV.Types.Rest;
-using static bb.Core.Bot.Console;
+using static bb.Core.Bot.Logger;
 using static bb.Utils.MessageProcessor;
 using bb.Models.Command;
 using bb.Models.Platform;

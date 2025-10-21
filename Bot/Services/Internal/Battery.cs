@@ -1,5 +1,5 @@
 ﻿using System.Management;
-using static bb.Core.Bot.Console;
+using static bb.Core.Bot.Logger;
 
 namespace bb.Services.Internal
 {

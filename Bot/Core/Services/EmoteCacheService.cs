@@ -1,6 +1,6 @@
 ﻿using bb.Data;
 using System.Collections.Concurrent;
-using static bb.Core.Bot.Console;
+using static bb.Core.Bot.Logger;
 
 namespace bb.Core.Services
 {

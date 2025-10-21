@@ -2,7 +2,7 @@
 using bb.Models.Platform;
 using DankDB;
 using Newtonsoft.Json;
-using static bb.Core.Bot.Console;
+using static bb.Core.Bot.Logger;
 
 namespace bb.Utils
 {
@@ -121,7 +121,7 @@ namespace bb.Utils
                     return string.Format(remoteValue, args);
                 }
 
-                Write($"Plural translate \"{pluralKey}\" in lang \"{userLang}\" was not found!", Core.Bot.Console.LogLevel.Warning);
+                Write($"Plural translate \"{pluralKey}\" in lang \"{userLang}\" was not found!", Core.Bot.Logger.LogLevel.Warning);
                 return key;
             }
             catch (Exception ex)
@@ -231,11 +231,11 @@ namespace bb.Utils
                 {
                     _translations[userLang][key] = remoteValue;
                     SaveTranslationFile(userLang);
-                    Write($"Added missing translation key \"{key}\" for language \"{userLang}\" from remote source.", Core.Bot.Console.LogLevel.Info);
+                    Write($"Added missing translation key \"{key}\" for language \"{userLang}\" from remote source.", Core.Bot.Logger.LogLevel.Info);
                     return remoteValue;
                 }
 
-                Write($"Translate \"{key}\" in lang \"{userLang}\" was not found!", Core.Bot.Console.LogLevel.Warning);
+                Write($"Translate \"{key}\" in lang \"{userLang}\" was not found!", Core.Bot.Logger.LogLevel.Warning);
                 return key;
             }
             catch (Exception ex)
@@ -315,12 +315,12 @@ namespace bb.Utils
                 {
                     _translations[userLang][key] = remoteValue;
                     SaveTranslationFile(userLang);
-                    Write($"Added missing translation key \"{key}\" for language \"{userLang}\" from remote source.", Core.Bot.Console.LogLevel.Info);
+                    Write($"Added missing translation key \"{key}\" for language \"{userLang}\" from remote source.", Core.Bot.Logger.LogLevel.Info);
                     return args is not null ? string.Format(remoteValue, args) : remoteValue;
                 }
 
 
-                Write($"Translate \"{key}\" in lang \"{userLang}\" was not found!", Core.Bot.Console.LogLevel.Warning);
+                Write($"Translate \"{key}\" in lang \"{userLang}\" was not found!", Core.Bot.Logger.LogLevel.Warning);
                 return key;
             }
             catch (Exception ex)
@@ -511,10 +511,10 @@ namespace bb.Utils
 
             if (!File.Exists(localPath))
             {
-                Write($"Translation file for {userLang} not found locally. Attempting to download...", Core.Bot.Console.LogLevel.Info);
+                Write($"Translation file for {userLang} not found locally. Attempting to download...", Core.Bot.Logger.LogLevel.Info);
                 if (!DownloadTranslationFile(userLang, localPath))
                 {
-                    Write($"Failed to download translation file for {userLang}. Using empty dictionary.", Core.Bot.Console.LogLevel.Warning);
+                    Write($"Failed to download translation file for {userLang}. Using empty dictionary.", Core.Bot.Logger.LogLevel.Warning);
                     return new Dictionary<string, string>();
                 }
             }
@@ -538,14 +538,14 @@ namespace bb.Utils
                 {
                     string content = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
                     File.WriteAllText(localPath, content);
-                    Write($"Successfully downloaded translation file for {language}", Core.Bot.Console.LogLevel.Info);
+                    Write($"Successfully downloaded translation file for {language}", Core.Bot.Logger.LogLevel.Info);
                     return true;
                 }
-                Write($"Failed to download {language}.json. Status code: {response.StatusCode}", Core.Bot.Console.LogLevel.Error);
+                Write($"Failed to download {language}.json. Status code: {response.StatusCode}", Core.Bot.Logger.LogLevel.Error);
             }
             catch (Exception ex)
             {
-                Write($"Error downloading {language}.json: {ex.Message}", Core.Bot.Console.LogLevel.Error);
+                Write($"Error downloading {language}.json: {ex.Message}", Core.Bot.Logger.LogLevel.Error);
             }
             return false;
         }
@@ -578,7 +578,7 @@ namespace bb.Utils
             }
             catch (Exception ex)
             {
-                Write($"Error fetching remote translation for {language}/{key}: {ex.Message}", Core.Bot.Console.LogLevel.Error);
+                Write($"Error fetching remote translation for {language}/{key}: {ex.Message}", Core.Bot.Logger.LogLevel.Error);
             }
             return null;
         }

@@ -6,7 +6,7 @@ using DankDB;
 using SevenTV.Types.Rest;
 using TwitchLib.Client.Enums;
 using TwitchLib.Client.Models;
-using static bb.Core.Bot.Console;
+using static bb.Core.Bot.Logger;
 
 namespace bb.Core.Commands.List
 {

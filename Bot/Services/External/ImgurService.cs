@@ -1,7 +1,7 @@
 ﻿using feels.Dank.Cache.LRU;
 using Newtonsoft.Json.Linq;
 using System.Net.Http.Headers;
-using static bb.Core.Bot.Console;
+using static bb.Core.Bot.Logger;
 
 namespace bb.Services.External
 {

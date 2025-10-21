@@ -4,7 +4,7 @@ using bb.Utils;
 using Discord;
 using Discord.WebSocket;
 using System.Reflection;
-using static bb.Core.Bot.Console;
+using static bb.Core.Bot.Logger;
 
 namespace bb.Services.Platform.Discord
 {

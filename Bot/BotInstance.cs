@@ -25,7 +25,7 @@ using TwitchLib.Client;
 using TwitchLib.Client.Models;
 using TwitchLib.Communication.Clients;
 using TwitchLib.Communication.Models;
-using static bb.Core.Bot.Console;
+using static bb.Core.Bot.Logger;
 using bb.Data.Repositories;
 using bb.Data.Entities;
 using bb.Services.Platform.Discord;
@@ -66,6 +66,8 @@ namespace bb
         public readonly Runner CommandRunner;
         public readonly BlockedWordDetector MessageFilter;
         public readonly GitHubActionsNotifier GitHubActions;
+
+        public CancellationTokenSource GithubCT;
 
         #region Core
         public Version Version = new Version("2.18.0.9");
@@ -678,6 +680,9 @@ namespace bb
             Commit = releaseData.Commit;
             Branch = releaseData.Branch;
 
+            GithubCT = new CancellationTokenSource();
+            _ = GitHubActions.StartAsync(GithubCT.Token);
+
             //
 
             if (FileUtil.FileExists(Paths.Currency))
@@ -741,32 +746,23 @@ namespace bb
                 }
 
 
-                var dbInitialize = Progress("Initializing databases...", 0, 5);
+                Write("Initializing databases...");
 
                 DataBase.Messages = new(Paths.MessagesDatabase);
-                UpdateProgress(dbInitialize, 1, 5);
                 DataBase.Users = new(Paths.UsersDatabase);
-                UpdateProgress(dbInitialize, 2, 5);
                 DataBase.Games = new(Paths.GamesDatabase);
-                UpdateProgress(dbInitialize, 3, 5);
                 DataBase.Channels = new(Paths.ChannelsDatabase);
-                UpdateProgress(dbInitialize, 4, 5);
                 DataBase.Roles = new(Paths.RolesDatabase);
-                UpdateProgress(dbInitialize, 5, 5);
 
-                var buffersInitialize = Progress("Initializing buffers...", 0, 2);
+                Write("Initializing buffers...");
 
                 MessagesBuffer = new(DataBase.Messages);
-                UpdateProgress(buffersInitialize, 1, 2);
                 UsersBuffer = new(DataBase.Users);
-                UpdateProgress(buffersInitialize, 2, 2);
 
-                var currencyCountersInitialize = Progress("Loading currency counters...", 0, 2);
+                Write("Loading currency counters...");
 
                 Users = DataBase.Users.GetTotalUsers();
-                UpdateProgress(currencyCountersInitialize, 1, 2);
                 Coins = DataBase.Users.GetTotalBalance();
-                UpdateProgress(currencyCountersInitialize, 2, 2);
 
                 _repeater = Task.Run(() => StartRepeater());
                 Write($"TPS counter successfully started");
@@ -806,7 +802,7 @@ namespace bb
 
         private void GitHubActionsStatusChanged(object? sender, RunStatusChangedEventArgs e)
         {
-            string notify = $"forsenPls | Github: {e.Repository}/{e.Branch} ({e.RunId}) by {e.Actor}: {e.Status}; {e.Conclusion}; {e.Event}";
+            string notify = $"forsenPls | Github: {e.Event} in {e.Repository}#{e.Branch} by {e.Actor}: {e.Status} → {e.Conclusion}";
 
             Write(notify);
 
@@ -1299,6 +1295,11 @@ namespace bb
                     {
                         Write($"SQL dispose failed: {ex.Message}", LogLevel.Warning);
                     }
+                }
+
+                if (GithubCT != null)
+                {
+                    GithubCT.Dispose();
                 }
 
                 try

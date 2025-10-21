@@ -1,6 +1,6 @@
 ﻿using bb.Data.Entities;
 using bb.Models.Platform;
-using static bb.Core.Bot.Console;
+using static bb.Core.Bot.Logger;
 
 namespace bb.Data.Repositories
 {

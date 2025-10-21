@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.Net;
 using System.Text;
 using System.Web;
-using static bb.Core.Bot.Console;
+using static bb.Core.Bot.Logger;
 
 namespace bb.Core.Configuration
 {

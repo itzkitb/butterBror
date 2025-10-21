@@ -13,7 +13,7 @@ using Telegram.Bot.Types;
 using TwitchLib.Client;
 using TwitchLib.Client.Enums;
 using TwitchLib.Client.Models;
-using static bb.Core.Bot.Console;
+using static bb.Core.Bot.Logger;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace bb.Utils
