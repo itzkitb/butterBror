@@ -5,23 +5,23 @@ using bb.Models.Platform;
 
 namespace bb.Core.Commands.List
 {
-    public class Restart : CommandBase
+    public class Update : CommandBase
     {
-        public override string Name => "Restart";
+        public override string Name => "Update";
         public override string Author => "ItzKITb";
         public override string AuthorsGithub => "https://github.com/itzkitb";
-        public override string GithubSource => $"{URLs.githubSource}blob/master/butterBror/Core/Commands/List/Restart.cs";
-        public override Version Version => new("1.0.2");
+        public override string GithubSource => $"{URLs.githubSource}blob/master/butterBror/Core/Commands/List/Update.cs";
+        public override Version Version => new("1.0.0");
         public override Dictionary<string, string> Description => new() {
             { "ru-RU", "Этот маленький манёвр будет стоить нам 51 год." },
             { "en-US", "This Little Maneuver's Gonna Cost Us 51 Years." }
         };
-        public override string WikiLink => "https://itzkitb.lol/bot/command?q=restart";
+        public override string WikiLink => "https://itzkitb.lol/bot/command?q=update";
         public override int CooldownPerUser => 1;
         public override int CooldownPerChannel => 1;
-        public override string[] Aliases => ["restart", "перезагрузка"];
+        public override string[] Aliases => ["update", "обновить"];
         public override string HelpArguments => string.Empty;
-        public override DateTime CreationDate => DateTime.Parse("2024-07-04T00:00:00.0000000Z");
+        public override DateTime CreationDate => DateTime.Parse("2025-10-21T00:00:00.0000000Z");
         public override bool OnlyBotModerator => true;
         public override bool OnlyBotDeveloper => true;
         public override bool OnlyChannelModerator => false;
@@ -34,10 +34,10 @@ namespace bb.Core.Commands.List
 
             try
             {
-                commandReturn.SetMessage("❄ | Restarting in 3 seconds...");
+                commandReturn.SetMessage("🔃 | Updating from repository in 3 seconds...");
                 _ = Task.Run(async () => {
                     await Task.Delay(3000);
-                    await bb.Program.BotInstance.Shutdown();
+                    await bb.Program.BotInstance.Shutdown(update: true);
                 });
             }
             catch (Exception e)
