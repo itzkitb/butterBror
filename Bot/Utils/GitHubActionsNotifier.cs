@@ -34,6 +34,8 @@ namespace bb.Utils
         private readonly TimeSpan _pollingInterval;
         private readonly HttpClient _httpClient;
         private string _lastRunId;
+        private string _lastStatus;
+        private string _lastConclusion;
 
         public GitHubActionsNotifier(string repo, string token = null, TimeSpan pollingInterval = default)
         {
@@ -90,9 +92,11 @@ namespace bb.Utils
                     string @event = latestRun.GetProperty("event").GetString();
                     string actor = latestRun.GetProperty("actor").GetProperty("login").GetString() ?? "unknown";
 
-                    if (_lastRunId != runId)
+                    if (_lastRunId != runId && _lastStatus != status && _lastConclusion != conclusion)
                     {
                         _lastRunId = runId;
+                        _lastStatus = status;
+                        _lastConclusion = conclusion;
                         RunStatusChanged?.Invoke(this, new RunStatusChangedEventArgs
                         {
                             RunId = runId,
