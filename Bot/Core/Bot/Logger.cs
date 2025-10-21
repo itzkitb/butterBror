@@ -93,7 +93,7 @@ namespace bb.Core.Bot
                 Debug.WriteLine($"Failed to write log to file: {ex.Message}\n{ex.StackTrace}");
             }
 
-            System.Console.WriteLine($"{"[".Pastel("#bababa")} {GetEmoji(type)} {DateTime.Now.ToString("HH:mm.ss").PadRight(8).Pastel("#888888")} {"]".Pastel("#bababa")} {$"{fileName}:{lineNumber}".Pastel("#b3ff7d")} {"-".Pastel("#bababa")} {message.Pastel("#bababa")}");
+            System.Console.WriteLine($"{"[".Pastel("#bababa")} {GetEmoji(type)} {DateTime.Now.ToString("HH:mm.ss").PadRight(8).Pastel("#888888")} {"]".Pastel("#bababa")} {$"{fileName}:{lineNumber}".Pastel(Program.BotInstance.MainColor)} {"-".Pastel("#bababa")} {message.Pastel("#bababa")}");
             DashboardServer.HandleLog(message, type);
         }
 
