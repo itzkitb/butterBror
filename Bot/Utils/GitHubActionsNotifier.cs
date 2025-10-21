@@ -92,7 +92,7 @@ namespace bb.Utils
                     string @event = latestRun.GetProperty("event").GetString();
                     string actor = latestRun.GetProperty("actor").GetProperty("login").GetString() ?? "unknown";
 
-                    if (_lastRunId != runId && _lastStatus != status && _lastConclusion != conclusion)
+                    if (_lastRunId != runId || _lastStatus != status || _lastConclusion != conclusion)
                     {
                         _lastRunId = runId;
                         _lastStatus = status;
