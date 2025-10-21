@@ -104,6 +104,7 @@ namespace hostBror
                 }
                 else if (_botProcess?.ExitCode == 5001)
                 {
+                    Console.WriteLine($"{"│".Pastel("#ff7b42")} {GetTime()} Bot exited with code 5001. Exiting...");
                     Environment.Exit(0);
                 }
                 else
@@ -193,6 +194,12 @@ namespace hostBror
                 string tempDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Temp");
                 string zipPath = Path.Combine(tempDir, "source.zip");
 
+                if (Directory.Exists(tempDir))
+                {
+                    Console.WriteLine($"{"│".Pastel("#ff7b42")} {GetTime()} Deleting old temp dir...");
+                    Directory.Delete(tempDir, true);
+                }
+
                 Directory.CreateDirectory(tempDir);
 
                 DownloadFile(zipUrl, zipPath);
@@ -240,6 +247,8 @@ namespace hostBror
                 releaseDoc.Save(currentXmlPath);
 
                 CreateCurrentXml(_branch, commitId);
+                Console.WriteLine($"{"│".Pastel("#ff7b42")} {GetTime()} Deleting temp dir...");
+                Directory.Delete(tempDir, true);
             }
             catch (Exception ex)
             {
