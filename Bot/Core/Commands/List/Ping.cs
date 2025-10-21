@@ -1,7 +1,8 @@
-﻿using bb.Core.Bot;
-using bb.Models;
-using bb.Utils;
+﻿using bb.Utils;
+using bb.Core.Configuration;
 using System.Net.NetworkInformation;
+using bb.Models.Command;
+using bb.Models.Platform;
 
 namespace bb.Core.Commands.List
 {
@@ -34,7 +35,7 @@ namespace bb.Core.Commands.List
 
             try
             {
-                if (data.ChannelId == null || bb.Bot.Clients.Twitch == null || bb.Bot.Clients.Discord == null)
+                if (data.ChannelId == null || bb.Program.BotInstance.Clients.Twitch == null || bb.Program.BotInstance.Clients.Discord == null)
                 {
                     commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:unknown", string.Empty, data.Platform));
                     return commandReturn;
@@ -42,16 +43,18 @@ namespace bb.Core.Commands.List
 
                 string argument = "";
                 if (data.Arguments != null && data.Arguments.Count > 0)
+                {
                     argument = data.Arguments[0].ToLower();
+                }
 
                 if (data.Arguments != null && data.Arguments.Count == 0)
                 {
-                    var workTime = DateTime.Now - bb.Bot.StartTime;
+                    var workTime = DateTime.UtcNow - bb.Program.BotInstance.StartTime;
                     string host = "";
                     long pingSpeed = 0;
                     if (data.Platform == PlatformsEnum.Telegram)
                     {
-                        pingSpeed = bb.Services.External.TelegramService.Ping().Result;
+                        pingSpeed = bb.Services.External.TelegramPing.Ping().Result;
                     }
                     else
                     {
@@ -63,23 +66,23 @@ namespace bb.Core.Commands.List
                         pingSpeed = reply.Status == IPStatus.Success ? reply.RoundtripTime : -1;
                     }
 
-                    long joinedTabs = data.Platform == PlatformsEnum.Twitch ? bb.Bot.Clients.Twitch.JoinedChannels.Count : (data.Platform == PlatformsEnum.Discord ? bb.Bot.Clients.Discord.Guilds.Count : (bb.Bot.Clients.Twitch.JoinedChannels.Count + bb.Bot.Clients.Discord.Guilds.Count));
+                    long joinedTabs = data.Platform == PlatformsEnum.Twitch ? bb.Program.BotInstance.Clients.Twitch.JoinedChannels.Count : (data.Platform == PlatformsEnum.Discord ? bb.Program.BotInstance.Clients.Discord.Guilds.Count : (bb.Program.BotInstance.Clients.Twitch.JoinedChannels.Count + bb.Program.BotInstance.Clients.Discord.Guilds.Count));
 
                     commandReturn.SetMessage(LocalizationService.GetString(
                         data.User.Language,
                         "command:ping",
                         data.ChannelId,
                         data.Platform,
-                        bb.Bot.Version,
+                        bb.Program.BotInstance.Version + $" ({Program.BotInstance.Branch}/{Program.BotInstance.Commit})",
                         TextSanitizer.FormatTimeSpan(workTime, data.User.Language),
                         LocalizationService.GetPluralString(data.User.Language, "text:tab", data.ChannelId, data.Platform, joinedTabs, joinedTabs),
-                        LocalizationService.GetPluralString(data.User.Language, "text:commands", data.ChannelId, data.Platform, Runner.commandInstances.Count, Runner.commandInstances.Count),
-                        bb.Bot.CompletedCommands,
+                        LocalizationService.GetPluralString(data.User.Language, "text:commands", data.ChannelId, data.Platform, Program.BotInstance.CommandRunner.commandInstances.Count, Program.BotInstance.CommandRunner.commandInstances.Count),
+                        bb.Program.BotInstance.CompletedCommands,
                         pingSpeed.ToString()));
                 }
                 else if (argument.Equals("isp"))
                 {
-                    var workTime = DateTime.Now - bb.Bot.StartTime;
+                    var workTime = DateTime.UtcNow - bb.Program.BotInstance.StartTime;
                     PingReply reply = new Ping().Send("192.168.1.1", 1000);
                     long pingSpeed = -1;
                     if (reply.Status == IPStatus.Success) pingSpeed = reply.RoundtripTime;

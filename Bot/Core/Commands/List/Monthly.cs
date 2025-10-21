@@ -1,9 +1,10 @@
-﻿using bb.Core.Bot;
-using bb.Models;
-using bb.Utils;
+﻿using bb.Utils;
+using bb.Core.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using bb.Models.Command;
+using bb.Models.Platform;
 
 namespace bb.Core.Commands.List
 {
@@ -36,14 +37,14 @@ namespace bb.Core.Commands.List
             CommandReturn commandReturn = new CommandReturn();
             try
             {
-                if (bb.Bot.UsersBuffer == null || data.ChannelId == null)
+                if (bb.Program.BotInstance.UsersBuffer == null || data.ChannelId == null)
                 {
                     commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:unknown", string.Empty, data.Platform));
                     return commandReturn;
                 }
 
                 DateTime currentTime = DateTime.UtcNow;
-                string? lastRewardStr = bb.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(data.User.Id), "LastMonthlyReward").ToString();
+                string? lastRewardStr = bb.Program.BotInstance.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(data.User.Id), "LastMonthlyReward").ToString();
                 DateTime lastTime = DateTime.MinValue;
                 if (!string.IsNullOrEmpty(lastRewardStr))
                 {
@@ -53,7 +54,7 @@ namespace bb.Core.Commands.List
 
                 TimeSpan timeSinceLast = currentTime - lastTime;
                 double hourPriceUSD = 0.69;
-                double BTRCurrency = bb.Bot.Coins == 0 ? 0 : (double)(bb.Bot.InBankDollars / bb.Bot.Coins);
+                double BTRCurrency = bb.Program.BotInstance.Coins == 0 ? 0 : (double)(bb.Program.BotInstance.InBankDollars / bb.Program.BotInstance.Coins);
                 double hourPriceBTR = BTRCurrency == 0 ? 0 : hourPriceUSD / BTRCurrency;
                 double monthlyPriceBTR = hourPriceBTR * (30 * 24);
                 double periodSeconds = 2592000;
@@ -62,8 +63,8 @@ namespace bb.Core.Commands.List
                 {
                     long plusBalance = (long)monthlyPriceBTR;
                     long plusSubbalance = (long)((monthlyPriceBTR - plusBalance) * 100);
-                    CurrencyManager.Add(data.User.Id, plusBalance, plusSubbalance, data.Platform);
-                    bb.Bot.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.Id), "LastMonthlyReward", currentTime.ToString("o"));
+                    bb.Program.BotInstance.Currency.Add(data.User.Id, plusBalance, plusSubbalance, data.Platform);
+                    bb.Program.BotInstance.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.Id), "LastMonthlyReward", currentTime.ToString("o"));
                     string message = LocalizationService.GetString(data.User.Language, "command:monthly:get", data.ChannelId, data.Platform, plusBalance, plusSubbalance);
                     commandReturn.SetMessage(message);
                 }

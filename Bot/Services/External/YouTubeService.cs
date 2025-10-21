@@ -6,7 +6,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using feels.Dank.Cache.LRU;
-using static bb.Core.Bot.Console;
+using static bb.Core.Bot.Logger;
 
 namespace bb.Services.External
 {
@@ -24,7 +24,6 @@ namespace bb.Services.External
         {
             _httpClient = httpClient;
 
-            // Инициализация кэша для плейлистов
             _playlistCache = new LruCache<string, string[]>(
                 capacity: 200,
                 defaultTtl: TimeSpan.FromMinutes(CacheDurationMinutes),
@@ -41,12 +40,11 @@ namespace bb.Services.External
         /// <exception cref="Exception">Thrown when extraction fails after multiple attempts.</exception>
         public async Task<string[]> GetPlaylistVideosAsync(string playlistUrl)
         {
-            // Создаем ключ кэша на основе нормализованного URL плейлиста
             string cacheKey = NormalizePlaylistUrl(playlistUrl);
 
             return await _playlistCache.GetOrAddAsync(
                 cacheKey,
-                async (key, ct) => // valueFactory с поддержкой cancellation
+                async (key, ct) =>
                 {
                     for (int i = 0; i < MaxRetries; i++)
                     {
@@ -57,21 +55,20 @@ namespace bb.Services.External
                         }
                         catch (HttpRequestException ex)
                         {
-                            Write($"YouTube API request failed (attempt {i + 1}/{MaxRetries}): {ex.Message}", LogLevel.Warning);
+                            Write($"YouTube: API request failed (attempt {i + 1}/{MaxRetries}): {ex.Message}", LogLevel.Warning);
 
                             if (i == MaxRetries - 1)
                             {
                                 throw new Exception("Failed to get playlist after multiple attempts", ex);
                             }
 
-                            // Задержка с экспоненциальным увеличением
                             await Task.Delay(500 * (int)Math.Pow(2, i), ct);
                         }
                     }
 
                     throw new InvalidOperationException("Unexpected error in playlist extraction");
                 },
-                timeout: TimeSpan.FromSeconds(10) // Защита от зависаний
+                timeout: TimeSpan.FromSeconds(10)
             );
         }
 
@@ -96,13 +93,12 @@ namespace bb.Services.External
         /// </summary>
         private string[] ExtractVideoUrls(string html)
         {
-            // Улучшенный регулярное выражение для поиска видео
             var matches = new Regex(@"watch\?v=[^""&\?]{11}").Matches(html);
 
             return matches
                 .Cast<Match>()
                 .Select(m => "https://www.youtube.com/" + m.Value)
-                .Distinct() // Убираем дубликаты
+                .Distinct()
                 .ToArray();
         }
     }

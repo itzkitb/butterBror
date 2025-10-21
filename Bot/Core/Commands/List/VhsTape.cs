@@ -1,8 +1,9 @@
-﻿using bb.Core.Bot;
-using bb.Models;
-using bb.Services.External;
+﻿using bb.Services.External;
 using bb.Utils;
-using static bb.Core.Bot.Console;
+using bb.Core.Configuration;
+using static bb.Core.Bot.Logger;
+using bb.Models.Command;
+using bb.Models.Platform;
 
 namespace bb.Core.Commands.List
 {
@@ -42,7 +43,7 @@ namespace bb.Core.Commands.List
                     return commandReturn;
                 }
 
-                if (CooldownManager.CheckCooldown(3600, 1, "VhsReset", data.User.Id, data.ChannelId, data.Platform, false, true))
+                if (bb.Program.BotInstance.Cooldown.CheckCooldown(3600, 1, "VhsReset", data.User.Id, data.ChannelId, data.Platform, false, true))
                 {
                     var platform = data.Platform;
                     var channelId = data.ChannelId;
@@ -70,9 +71,10 @@ namespace bb.Core.Commands.List
                             var videos = new YouTubeService(new HttpClient()).GetPlaylistVideosAsync("https://www.youtube.com/playlist?list=PLAZUCud8HyO-9Ni4BSFkuBTOK8e3S5OLL").Result;
                             int index = rand.Next(videos.Length);
                             string randomUrl = videos[index];
+                            string message = LocalizationService.GetString(language, "command:vhs", channelId, platform, randomUrl);
 
-                            PlatformMessageSender.SendReply(platform, channel, channelId, LocalizationService.GetString(language, "command:vhs", channelId, platform, randomUrl),
-                                language, username, userId, server, serverId, messageId, telegramMessage, true);
+                            bb.Program.BotInstance.MessageSender.Send(platform, message, channel, channelId,
+                                language, username, userId, server, serverId, messageId, telegramMessage, true, isReply: false, addUsername: true);
                         }
                         catch (Exception ex)
                         {

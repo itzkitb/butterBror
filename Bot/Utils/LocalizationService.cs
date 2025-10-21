@@ -1,8 +1,8 @@
 ﻿using bb.Data;
-using bb.Models;
+using bb.Models.Platform;
 using DankDB;
 using Newtonsoft.Json;
-using static bb.Core.Bot.Console;
+using static bb.Core.Bot.Logger;
 
 namespace bb.Utils
 {
@@ -42,6 +42,7 @@ namespace bb.Utils
                 n % 10 == 1 && n % 100 != 11 ? "one" :
                 n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? "few" : "many" }
         };
+        private static readonly HttpClient _httpClient = new HttpClient();
 
         /// <summary>
         /// Retrieves a pluralized translation string based on numerical value and language rules.
@@ -112,7 +113,15 @@ namespace bb.Utils
                     return string.Format(pluralDefaultValue, args);
                 }
 
-                Write($"Plural translate \"{pluralKey}\" in lang \"{userLang}\" was not found!", Core.Bot.Console.LogLevel.Warning);
+                string remoteValue = GetRemoteTranslation(userLang, pluralKey);
+                if (remoteValue != null)
+                {
+                    _translations[userLang][pluralKey] = remoteValue;
+                    SaveTranslationFile(userLang);
+                    return string.Format(remoteValue, args);
+                }
+
+                Write($"Plural translate \"{pluralKey}\" in lang \"{userLang}\" was not found!", Core.Bot.Logger.LogLevel.Warning);
                 return key;
             }
             catch (Exception ex)
@@ -217,7 +226,16 @@ namespace bb.Utils
                     return defaultVal;
                 }
 
-                Write($"Translate \"{key}\" in lang \"{userLang}\" was not found!", Core.Bot.Console.LogLevel.Warning);
+                string remoteValue = GetRemoteTranslation(userLang, key);
+                if (remoteValue != null)
+                {
+                    _translations[userLang][key] = remoteValue;
+                    SaveTranslationFile(userLang);
+                    Write($"Added missing translation key \"{key}\" for language \"{userLang}\" from remote source.", Core.Bot.Logger.LogLevel.Info);
+                    return remoteValue;
+                }
+
+                Write($"Translate \"{key}\" in lang \"{userLang}\" was not found!", Core.Bot.Logger.LogLevel.Warning);
                 return key;
             }
             catch (Exception ex)
@@ -292,7 +310,17 @@ namespace bb.Utils
                     return defaultVal;
                 }
 
-                Write($"Translate \"{key}\" in lang \"{userLang}\" was not found!", Core.Bot.Console.LogLevel.Warning);
+                string remoteValue = GetRemoteTranslation(userLang, key);
+                if (remoteValue != null)
+                {
+                    _translations[userLang][key] = remoteValue;
+                    SaveTranslationFile(userLang);
+                    Write($"Added missing translation key \"{key}\" for language \"{userLang}\" from remote source.", Core.Bot.Logger.LogLevel.Info);
+                    return args is not null ? string.Format(remoteValue, args) : remoteValue;
+                }
+
+
+                Write($"Translate \"{key}\" in lang \"{userLang}\" was not found!", Core.Bot.Logger.LogLevel.Warning);
                 return key;
             }
             catch (Exception ex)
@@ -351,7 +379,7 @@ namespace bb.Utils
         {
             try
             {
-                string dirPath = Path.Combine(Bot.Paths.TranslateCustom, PlatformsPathName.strings[(int)platform].ToUpper(), channel);
+                string dirPath = Path.Combine(bb.Program.BotInstance.Paths.TranslateCustom, PlatformsPathName.strings[(int)platform].ToUpper(), channel);
                 Directory.CreateDirectory(dirPath);
                 string path = Path.Combine(dirPath, $"{lang}.json");
 
@@ -419,7 +447,7 @@ namespace bb.Utils
         {
             try
             {
-                string dirPath = Path.Combine(Bot.Paths.TranslateCustom, PlatformsPathName.strings[(int)platform].ToUpper(), channel);
+                string dirPath = Path.Combine(bb.Program.BotInstance.Paths.TranslateCustom, PlatformsPathName.strings[(int)platform].ToUpper(), channel);
                 if (!Directory.Exists(dirPath)) return false;
                 string path = Path.Combine(dirPath, $"{lang}.json");
 
@@ -479,10 +507,92 @@ namespace bb.Utils
         /// </remarks>
         private static Dictionary<string, string> LoadTranslations(string userLang)
         {
-            return Manager.Get<Dictionary<string, string>>(
-                $"{Path.Combine(Bot.Paths.TranslateDefault, $"{userLang}.json")}",
-                "translations"
-            ) ?? new Dictionary<string, string>();
+            string localPath = Path.Combine(bb.Program.BotInstance.Paths.TranslateDefault, $"{userLang}.json");
+
+            if (!File.Exists(localPath))
+            {
+                Write($"Translation file for {userLang} not found locally. Attempting to download...", Core.Bot.Logger.LogLevel.Info);
+                if (!DownloadTranslationFile(userLang, localPath))
+                {
+                    Write($"Failed to download translation file for {userLang}. Using empty dictionary.", Core.Bot.Logger.LogLevel.Warning);
+                    return new Dictionary<string, string>();
+                }
+            }
+
+            return Manager.Get<Dictionary<string, string>>(localPath, "translations") ?? new Dictionary<string, string>();
+        }
+
+        /// <summary>
+        /// Downloads translation file from remote repository to local storage.
+        /// </summary>
+        /// <param name="language">Language code to download</param>
+        /// <param name="localPath">Local path to save the file</param>
+        /// <returns>True if download and save were successful</returns>
+        private static bool DownloadTranslationFile(string language, string localPath)
+        {
+            string url = $"https://raw.githubusercontent.com/itzkitb/butterBror/refs/heads/master/DefaultTranslate/{language}.json";
+            try
+            {
+                var response = _httpClient.GetAsync(url).GetAwaiter().GetResult();
+                if (response.IsSuccessStatusCode)
+                {
+                    string content = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+                    File.WriteAllText(localPath, content);
+                    Write($"Successfully downloaded translation file for {language}", Core.Bot.Logger.LogLevel.Info);
+                    return true;
+                }
+                Write($"Failed to download {language}.json. Status code: {response.StatusCode}", Core.Bot.Logger.LogLevel.Error);
+            }
+            catch (Exception ex)
+            {
+                Write($"Error downloading {language}.json: {ex.Message}", Core.Bot.Logger.LogLevel.Error);
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Retrieves a single translation key from remote repository.
+        /// </summary>
+        /// <param name="language">Language code</param>
+        /// <param name="key">Translation key to find</param>
+        /// <returns>Translation value if found, null otherwise</returns>
+        private static string GetRemoteTranslation(string language, string key)
+        {
+            string url = $"https://raw.githubusercontent.com/itzkitb/butterBror/refs/heads/master/DefaultTranslate/{language}.json";
+            try
+            {
+                var response = _httpClient.GetAsync(url).GetAwaiter().GetResult();
+                if (response.IsSuccessStatusCode)
+                {
+                    string json = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+                    var root = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, string>>>(json);
+
+                    if (root != null &&
+                        root.TryGetValue("translations", out var translations) &&
+                        translations != null &&
+                        translations.TryGetValue(key, out var value))
+                    {
+                        return value;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Write($"Error fetching remote translation for {language}/{key}: {ex.Message}", Core.Bot.Logger.LogLevel.Error);
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Saves updated translations back to local file.
+        /// </summary>
+        /// <param name="language">Language code to save</param>
+        private static void SaveTranslationFile(string language)
+        {
+            string localPath = Path.Combine(bb.Program.BotInstance.Paths.TranslateDefault, $"{language}.json");
+            var translations = _translations[language];
+            var jsonStructure = new { translations };
+            File.WriteAllText(localPath, JsonConvert.SerializeObject(jsonStructure, Formatting.Indented));
         }
 
         /// <summary>
@@ -526,7 +636,7 @@ namespace bb.Utils
         private static Dictionary<string, string> LoadCustomTranslations(string userLang, string channel, PlatformsEnum platform)
         {
             return Manager.Get<Dictionary<string, string>>(
-                Path.Combine(Bot.Paths.TranslateCustom, PlatformsPathName.strings[(int)platform].ToUpper(), channel, $"{userLang}.json"),
+                Path.Combine(bb.Program.BotInstance.Paths.TranslateCustom, PlatformsPathName.strings[(int)platform].ToUpper(), channel, $"{userLang}.json"),
                 "translations"
             ) ?? new Dictionary<string, string>();
         }

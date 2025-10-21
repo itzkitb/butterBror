@@ -9,9 +9,9 @@ using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Security.Principal;
 using System.Text;
-using System.Runtime.InteropServices; // Добавлен для кросс-платформенной проверки ОС
-using System.IO; // Для работы с файловой системой
-using static bb.Core.Bot.Console;
+using System.Runtime.InteropServices;
+using System.IO;
+using static bb.Core.Bot.Logger;
 using bb.Utils;
 
 namespace bb
@@ -412,7 +412,7 @@ namespace bb
             {
                 try
                 {
-                    if (!Bot.Initialized) return;
+                    if (!bb.Program.BotInstance.Initialized) return;
 
                     (double networkReceived, double networkSent) = GetNetworkStats();
                     (long diskReadBytes, long diskWriteBytes) = GetDiskStats();
@@ -422,40 +422,40 @@ namespace bb
 
                     var stats = new
                     {
-                        CompletedCommands = Bot.CompletedCommands,
-                        Users = Bot.Users,
-                        Version = $"{Bot.Version}",
-                        Coins = Bot.Coins,
-                        IsInitialized = Bot.Initialized,
-                        IsConnected = Bot.Connected,
-                        Name = Bot.TwitchName,
-                        MessagesProcessed = MessageProcessor.Proccessed,
+                        CompletedCommands = bb.Program.BotInstance.CompletedCommands,
+                        Users = bb.Program.BotInstance.Users,
+                        Version = $"{bb.Program.BotInstance.Version}",
+                        Coins = bb.Program.BotInstance.Coins,
+                        IsInitialized = bb.Program.BotInstance.Initialized,
+                        IsConnected = bb.Program.BotInstance.Connected,
+                        Name = bb.Program.BotInstance.TwitchName,
+                        MessagesProcessed = bb.Program.BotInstance.MessageProcessor.Proccessed,
                         Battery = GetBatteryInfo(),
                         Memory = $"{Process.GetCurrentProcess().PrivateMemorySize64 / (1024 * 1024)} Mbyte",
-                        WorkTime = $"{DateTime.Now - Bot.StartTime:dd\\:hh\\:mm\\.ss}",
+                        WorkTime = $"{DateTime.Now - bb.Program.BotInstance.StartTime:dd\\:hh\\:mm\\.ss}",
                         CacheItems = Worker.cache.count,
-                        Emotes = Bot.EmotesCache.Count,
-                        SevenTV = Bot.ChannelsSevenTVEmotes.Count,
-                        EmoteSets = Bot.EmoteSetsCache.Count,
-                        SevenTVUSC = Bot.UsersSearchCache.Count,
-                        Currency = Bot.Coins == 0 ? 0 : Bot.InBankDollars / Bot.Coins,
+                        Emotes = bb.Program.BotInstance.EmotesCache.Count,
+                        SevenTV = bb.Program.BotInstance.ChannelsSevenTVEmotes.Count,
+                        EmoteSets = bb.Program.BotInstance.EmoteSetsCache.Count,
+                        SevenTVUSC = bb.Program.BotInstance.UsersSearchCache.Count,
+                        Currency = bb.Program.BotInstance.Coins == 0 ? 0 : bb.Program.BotInstance.InBankDollars / bb.Program.BotInstance.Coins,
                         NetworkReceived = networkReceived,
                         NetworkSend = networkSent,
                         DiskRead = diskRead,
                         DiskWrite = diskWrite,
-                        MessagesBufferCount = Bot.MessagesBuffer?.Count() ?? 0,
-                        UsersBufferCount = Bot.UsersBuffer?.Count() ?? 0,
-                        FirstMessagesCount = Bot.allFirstMessages?.Count ?? 0,
-                        Host = $"{Bot.HostName} v.{Bot.HostVersion}",
-                        DiscordGuilds = Bot.Clients.Discord.Guilds.Count,
-                        TwitchChannels = Bot.Clients.Twitch.JoinedChannels.Count,
-                        SQLChannelsOPS = Bot.DataBase.Channels.GetAndResetSqlOperationCount(),
-                        SQLGamesOPS = Bot.DataBase.Games.GetAndResetSqlOperationCount(),
-                        SQLMessagesOPS = Bot.DataBase.Messages.GetAndResetSqlOperationCount(),
-                        SQLUsersOPS = Bot.DataBase.Users.GetAndResetSqlOperationCount(),
-                        SQLRolesOPS = Bot.DataBase.Roles.GetAndResetSqlOperationCount(),
-                        IsTwitchConnected = Bot.Clients.Twitch.IsConnected,
-                        IsDiscordConnected = Bot.Clients.Discord.ConnectionState == Discord.ConnectionState.Connected
+                        MessagesBufferCount = bb.Program.BotInstance.MessagesBuffer?.Count() ?? 0,
+                        UsersBufferCount = bb.Program.BotInstance.UsersBuffer?.Count() ?? 0,
+                        FirstMessagesCount = bb.Program.BotInstance.allFirstMessages?.Count ?? 0,
+                        Host = $"{bb.Program.BotInstance.HostName} v.{bb.Program.BotInstance.HostVersion}",
+                        DiscordGuilds = bb.Program.BotInstance.Clients.Discord.Guilds.Count,
+                        TwitchChannels = bb.Program.BotInstance.Clients.Twitch.JoinedChannels.Count,
+                        SQLChannelsOPS = bb.Program.BotInstance.DataBase.Channels.GetAndResetSqlOperationCount(),
+                        SQLGamesOPS = bb.Program.BotInstance.DataBase.Games.GetAndResetSqlOperationCount(),
+                        SQLMessagesOPS = bb.Program.BotInstance.DataBase.Messages.GetAndResetSqlOperationCount(),
+                        SQLUsersOPS = bb.Program.BotInstance.DataBase.Users.GetAndResetSqlOperationCount(),
+                        SQLRolesOPS = bb.Program.BotInstance.DataBase.Roles.GetAndResetSqlOperationCount(),
+                        IsTwitchConnected = bb.Program.BotInstance.Clients.Twitch.IsConnected,
+                        IsDiscordConnected = bb.Program.BotInstance.Clients.Discord.ConnectionState == Discord.ConnectionState.Connected
                     };
                     BroadcastEvent("stats", stats);
                 }
@@ -591,7 +591,7 @@ namespace bb
                     hashedInputStringBuilder.Append(b.ToString("X2"));
                 result = hashedInputStringBuilder.ToString();
             }
-            return result == Manager.Get<string>(Bot.Paths.Settings, "dashboard_password");
+            return result == bb.Program.BotInstance.Settings.Get<string>("dashboard_password");
         }
 
         /// <summary>
@@ -622,7 +622,7 @@ namespace bb
 <html>
 <head>
     <meta charset=""UTF-8"">
-    <title>{Bot.TwitchName} Dashboard</title>
+    <title>{bb.Program.BotInstance.TwitchName} Dashboard</title>
     <link rel=""icon"" href=""https://cdn.7tv.app/emote/01H16FA16G0005EZED5J0EY7KN/4x.webp"" type=""image/webp"">
     <style>
         :root {{
@@ -787,7 +787,7 @@ namespace bb
 </head>
 <body>
     <header>
-        <h1>Bot Dashboard - {Bot.TwitchName} v.{Bot.Version}</h1>
+        <h1>Bot Dashboard - {bb.Program.BotInstance.TwitchName} v.{bb.Program.BotInstance.Version}</h1>
         <div id=""connection-status"" class=""status-connecting"">Connecting...</div>
     </header>
     <main>

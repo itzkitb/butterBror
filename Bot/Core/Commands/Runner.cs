@@ -1,12 +1,13 @@
-﻿using bb.Core.Bot.SQLColumnNames;
-using bb.Models;
+﻿using bb.Core.Configuration;
+using bb.Models.Command;
+using bb.Models.Platform;
 using bb.Utils;
 using Microsoft.CodeAnalysis;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Reflection;
 using TwitchLib.Client.Enums;
-using static bb.Core.Bot.Console;
+using static bb.Core.Bot.Logger;
 
 namespace bb.Core.Commands
 {
@@ -25,14 +26,14 @@ namespace bb.Core.Commands
     /// </remarks>
     public class Runner
     {
-        private static readonly ConcurrentDictionary<string, SemaphoreSlim> _userLocks =
+        private readonly ConcurrentDictionary<string, SemaphoreSlim> _userLocks =
             new ConcurrentDictionary<string, SemaphoreSlim>();
 
-        public static readonly ConcurrentBag<ICommand> commandInstances =
+        public readonly ConcurrentBag<ICommand> commandInstances =
             new ConcurrentBag<ICommand>();
 
-        private static bool _commandsInitialized;
-        private static readonly object _initLock = new object();
+        private bool _commandsInitialized;
+        private readonly object _initLock = new object();
 
         /// <summary>
         /// Initializes command instances through assembly scanning.
@@ -48,7 +49,7 @@ namespace bb.Core.Commands
         /// Initialization occurs only once during first command execution (lazy initialization).
         /// Uses Assembly.GetExecutingAssembly() to find commands in current module.
         /// </remarks>
-        private static void InitializeCommands()
+        private void InitializeCommands()
         {
             if (_commandsInitialized) return;
 
@@ -87,7 +88,7 @@ namespace bb.Core.Commands
         /// <item><term>TwitchArguments</term><description>Twitch-specific message context</description></item>
         /// </list>
         /// </param>
-        /// <param name="isATest">Indicates if execution is for testing purposes (skips cooldown tracking and some validation)</param>
+        /// <param name="test">Indicates if execution is for testing purposes (skips cooldown tracking and some validation)</param>
         /// <returns>Asynchronous task representing command execution</returns>
         /// <remarks>
         /// <list type="bullet">
@@ -110,29 +111,34 @@ namespace bb.Core.Commands
         /// Command execution is canceled if user fails permission checks or cooldowns apply.
         /// </remarks>
         /// <exception cref="Exception">Thrown when command execution fails with detailed error context</exception>
-        public static async Task Run(CommandData data, bool isATest = false)
+        public async Task Execute(CommandData data, bool test = false)
         {
-            if (!bb.Bot.Initialized) return;
+            if (!bb.Program.BotInstance.Initialized) return;
 
             await Task.Run(async () =>
             {
                 InitializeCommands();
                 var start = Stopwatch.StartNew();
 
+                bool blockedWordDetected = false;
+                double blockedWordExecutionTime = 0;
+                string blockedWordSector = "";
+                string blockedWordWord = "";
+
                 try
                 {
                     // User data initialization
-                    data.User.IsBanned = bb.Bot.DataBase.Roles.IsBanned(data.Platform, DataConversion.ToLong(data.User.Id));
-                    data.User.Ignored = bb.Bot.DataBase.Roles.IsIgnored(data.Platform, DataConversion.ToLong(data.User.Id));
+                    data.User.IsBanned = bb.Program.BotInstance.DataBase.Roles.IsBanned(data.Platform, DataConversion.ToLong(data.User.Id));
+                    data.User.Ignored = bb.Program.BotInstance.DataBase.Roles.IsIgnored(data.Platform, DataConversion.ToLong(data.User.Id));
 
                     if ((bool)data.User.IsBanned || (bool)data.User.Ignored ||
                         (data.Platform is PlatformsEnum.Twitch && data.TwitchMessage.ChatMessage.IsMe))
                         return;
 
-                    string language = (string)bb.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(data.User.Id), Users.Language);
+                    string language = (string)bb.Program.BotInstance.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(data.User.Id), Users.Language);
                     data.User.Language = language;
-                    data.User.IsBotModerator = bb.Bot.DataBase.Roles.IsModerator(data.Platform, DataConversion.ToLong(data.User.Id));
-                    data.User.IsBotDeveloper = bb.Bot.DataBase.Roles.IsDeveloper(data.Platform, DataConversion.ToLong(data.User.Id));
+                    data.User.IsBotModerator = bb.Program.BotInstance.DataBase.Roles.IsModerator(data.Platform, DataConversion.ToLong(data.User.Id));
+                    data.User.IsBotDeveloper = bb.Program.BotInstance.DataBase.Roles.IsDeveloper(data.Platform, DataConversion.ToLong(data.User.Id));
 
                     string commandName = data.Name.Replace("ё", "е");
                     bool commandFounded = false;
@@ -155,25 +161,21 @@ namespace bb.Core.Commands
                             bool isOnlyBotDeveloper = cmd.OnlyBotDeveloper && !(bool)data.User.IsBotDeveloper;
                             bool isOnlyBotModerator = cmd.OnlyBotModerator && !((bool)data.User.IsBotModerator || (bool)data.User.IsBotDeveloper);
                             bool isOnlyChannelModerator = data.Platform == PlatformsEnum.Twitch && cmd.OnlyChannelModerator && !((bool)data.User.IsModerator || (bool)data.User.IsBotModerator || (bool)data.User.IsBotDeveloper);
-                            bool cooldown = !CooldownManager.CheckCooldown(cmd.CooldownPerUser, cmd.CooldownPerChannel, cmd.Name, data.User.Id, data.ChannelId, data.Platform, true);
+                            bool cooldown = !bb.Program.BotInstance.Cooldown.CheckCooldown(cmd.CooldownPerUser, cmd.CooldownPerChannel, cmd.Name, data.User.Id, data.ChannelId, data.Platform, true);
 
                             // Permission and cooldown checks
                             if (isOnlyBotDeveloper || isOnlyBotModerator || isOnlyChannelModerator || cooldown)
                             {
                                 if (!cooldown)
                                 {
-                                    PlatformMessageSender.SendReply(data.Platform, data.Channel, data.ChannelId,
-                                        LocalizationService.GetString(data.User.Language, "error:not_enough_rights", data.ChannelId, data.Platform),
-                                        data.User.Language, data.User.Name, data.User.Id, data.Server,
-                                        data.ServerID, data.MessageID, data.TelegramMessage,
-                                        true, ChatColorPresets.Red);
+                                    string message = LocalizationService.GetString(data.User.Language, "error:not_enough_rights", data.ChannelId, data.Platform);
+                                    bb.Program.BotInstance.MessageSender.Send(data.Platform, message, data.Channel, data.ChannelId, data.User.Language, data.User.Name,
+                                        data.User.Id, data.Server, data.ServerID, data.MessageID, data.TelegramMessage, true, true, false);
                                 }
 
-                                Write($"Command failed: OBD check: {isOnlyBotDeveloper}; OBM check: {isOnlyBotModerator}; OCM check: {isOnlyChannelModerator}; Cooldown check: {cooldown};", LogLevel.Warning);
+                                Write($"Command failed:\n - OBD check: {BoolToString(isOnlyBotDeveloper)}\n - OBM check: {BoolToString(isOnlyBotModerator)}\n - OCM check: {BoolToString(isOnlyChannelModerator)}\n - Cooldown check: {BoolToString(cooldown)}", LogLevel.Warning);
                                 return;
                             }
-
-                            if (!isATest) MessageProcessor.ExecutedCommand(data);
 
                             // Execute command asynchronously
                             if (cmd.TechWorks)
@@ -200,13 +202,26 @@ namespace bb.Core.Commands
                                 if (result.Exception is not null && result.IsError)
                                     throw new Exception($"Error in command: {cmd.Name}\n#MESSAGE\n{result.Exception.Message}\n#STACK\n{result.Exception.StackTrace}", result.Exception);
 
-                                if (!isATest)
+                                if (!test)
                                 {
-                                    PlatformMessageSender.SendReply(data.Platform, data.Channel, data.ChannelId,
-                                        result.Message, data.User.Language,
-                                        data.User.Name, data.User.Id, data.Server,
-                                        data.ServerID, data.MessageID, data.TelegramMessage,
-                                        result.IsSafe, result.BotNameColor);
+                                    (bool, double, string, string) bwddata = bb.Program.BotInstance.MessageFilter.Check(result.Message, data.ChatID, data.Platform, false);
+
+                                    blockedWordDetected = !bwddata.Item1;
+                                    blockedWordExecutionTime = bwddata.Item2;
+                                    blockedWordSector = bwddata.Item3;
+                                    blockedWordWord = bwddata.Item4;
+
+                                    if (result.IsSafe || bwddata.Item1)
+                                    {
+                                        bb.Program.BotInstance.MessageSender.Send(data.Platform, result.Message, data.Channel, data.ChannelId, data.User.Language, data.User.Name,
+                                        data.User.Id, data.Server, data.ServerID, data.MessageID, data.TelegramMessage, true, true, false);
+                                    }
+                                    else
+                                    {
+                                        bb.Program.BotInstance.MessageSender.Send(data.Platform, LocalizationService.GetString(data.User.Language, "error:message_could_not_be_sent", data.ChatID, PlatformsEnum.Twitch), data.Channel,
+                            data.ChannelId, data.User.Language, data.User.Name, data.User.Id, data.Server, data.ServerID, data.MessageID, data.TelegramMessage, true, true, false);
+                                    }
+                                    
                                 }
                             }
                             else
@@ -219,30 +234,50 @@ namespace bb.Core.Commands
                             userLock.Release();
                         }
                     });
-
-                    if (!commandFounded)
-                    {
-                        Write($"@{data.User.Name} (id: {data.User.Id}; message: {data.MessageID}; channel: {data.Channel} (id {data.ChannelId}); server: {TextSanitizer.CheckNull(data.Server)} (id {TextSanitizer.CheckNull(data.ServerID)})) tried unknown command: {commandName}", LogLevel.Warning);
-                    }
                 }
                 catch (Exception ex)
                 {
                     Write(ex);
-                    if (!isATest)
+                    if (!test)
                     {
-                        PlatformMessageSender.SendReply(data.Platform, data.Channel, data.ChannelId,
-                            LocalizationService.GetString("en-US", "error:unknown", data.ChannelId, data.Platform),
-                            data.User.Language, data.User.Name, data.User.Id, data.Server,
-                            data.ServerID, data.MessageID, data.TelegramMessage,
-                            true, ChatColorPresets.Red);
+                        bb.Program.BotInstance.MessageSender.Send(data.Platform, LocalizationService.GetString("en-US", "error:unknown", data.ChannelId, data.Platform), data.Channel,
+                            data.ChannelId, data.User.Language, data.User.Name, data.User.Id, data.Server, data.ServerID, data.MessageID, data.TelegramMessage, true, true, false);
                     }
                 }
                 finally
                 {
                     start.Stop();
-                    Write($"Command completed in {start.ElapsedMilliseconds}ms");
+                    if (!test)
+                    {
+                        Write($"🚀 Executed command \"{data.Name}\":" +
+$"\n- User: {data.Platform.ToString()}/{data.User.Id}" +
+$"\n- Arguments: \"{data.ArgumentsString}\"" +
+$"\n- Location: \"{data.Channel}/{data.ChannelId}\" (ChatID: {data.ChatID})" +
+$"\n- Balance: {data.User.Balance}.{data.User.BalanceFloat}" +
+$"\n- Completed in: {start.ElapsedMilliseconds}ms" +
+$"\n- Blocked words detected: {BoolToString(blockedWordDetected)} in {blockedWordExecutionTime}ms"+
+$"\n- Blocked word: {blockedWordSector}/\"{blockedWordWord}\"");
+                        bb.Program.BotInstance.CompletedCommands++;
+                    }
                 }
             });
+        }
+
+        /// <summary>
+        /// Converts a boolean value to a visual checkmark or cross emoji for user interface representation.
+        /// </summary>
+        /// <param name="value">Boolean value where true returns ✅ and false returns ❎</param>
+        /// <returns>Emoji string representing the boolean state (✅ for true, ❎ for false)</returns>
+        /// <remarks>
+        /// <list type="bullet">
+        /// <item>Provides visual feedback for boolean states using standardized emoji symbols</item>
+        /// <item>Ensures consistent representation of true/false states across user interfaces</item>
+        /// <item>Used for status indicators in command responses and UI elements</item>
+        /// </list>
+        /// </remarks>
+        private static string BoolToString(bool value)
+        {
+            return value ? "✅" : "❎";
         }
     }
 }

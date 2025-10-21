@@ -1,8 +1,8 @@
-﻿using bb.Models;
+﻿using bb.Models.Platform;
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
-using static bb.Core.Bot.Console;
+using static bb.Core.Bot.Logger;
 
 namespace bb.Utils
 {

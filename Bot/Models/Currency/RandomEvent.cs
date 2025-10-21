@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace butterBror.Models.Currency
+namespace bb.Models.Currency
 {
     internal class RandomEvent
     {

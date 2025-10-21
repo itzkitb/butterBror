@@ -1,6 +1,7 @@
-﻿using bb.Core.Bot;
-using bb.Models;
-using bb.Utils;
+﻿using bb.Utils;
+using bb.Core.Configuration;
+using bb.Models.Command;
+using bb.Models.Platform;
 
 namespace bb.Core.Commands.List
 {
@@ -44,7 +45,7 @@ namespace bb.Core.Commands.List
                     string classToFind = data.Arguments[0];
                     commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:help:not_found", data.ChannelId, data.Platform));
 
-                    foreach (var command in Runner.commandInstances)
+                    foreach (var command in Program.BotInstance.CommandRunner.commandInstances)
                     {
                         if (command.Aliases.Contains(classToFind))
                         {
@@ -58,9 +59,9 @@ namespace bb.Core.Commands.List
                             {
                                 num++;
                                 if (num < numWithoutComma)
-                                    aliasesList += $"{bb.Bot.DefaultCommandPrefix}{alias}, ";
+                                    aliasesList += $"{bb.Program.BotInstance.DefaultCommandPrefix}{alias}, ";
                                 else if (num == numWithoutComma)
-                                    aliasesList += $"{bb.Bot.DefaultCommandPrefix}{alias}";
+                                    aliasesList += $"{bb.Program.BotInstance.DefaultCommandPrefix}{alias}";
                             }
                             commandReturn.SetMessage(LocalizationService.GetString(
                                 data.User.Language,

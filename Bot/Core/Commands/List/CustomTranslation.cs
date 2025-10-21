@@ -1,7 +1,8 @@
-﻿using bb.Core.Bot;
-using bb.Models;
-using bb.Utils;
+﻿using bb.Utils;
+using bb.Core.Configuration;
 using TwitchLib.Client.Enums;
+using bb.Models.Command;
+using bb.Models.Platform;
 
 namespace bb.Core.Commands.List
 {
@@ -108,7 +109,7 @@ namespace bb.Core.Commands.List
                                         "error:not_enough_arguments",
                                         string.Empty,
                                         data.Platform,
-                                        $"{bb.Bot.DefaultCommandPrefix}ct set [paramName] [en/ru] [text]"));
+                                        $"{bb.Program.BotInstance.DefaultCommandPrefix}ct set [paramName] [en/ru] [text]"));
                                     commandReturn.SetColor(ChatColorPresets.Red);
                                 }
                             }
@@ -193,7 +194,7 @@ namespace bb.Core.Commands.List
                         "error:not_enough_arguments",
                         string.Empty,
                         data.Platform,
-                        $"{bb.Bot.DefaultCommandPrefix}ct set [paramName] [en/ru] [text]"));
+                        $"{bb.Program.BotInstance.DefaultCommandPrefix}ct set [paramName] [en/ru] [text]"));
                     commandReturn.SetColor(ChatColorPresets.Red);
                 }
             }

@@ -1,8 +1,8 @@
-﻿using bb.Models;
+﻿using bb.Models.Platform;
 using Newtonsoft.Json.Linq;
 using System.Net.Http.Headers;
 using System.Text.RegularExpressions;
-using static bb.Core.Bot.Console;
+using static bb.Core.Bot.Logger;
 
 namespace bb.Utils
 {
@@ -132,19 +132,19 @@ namespace bb.Utils
 
             try
             {
-                if (Bot.DataBase.Users.GetUserIdByUsername(platform, key) is not null)
-                    return Bot.DataBase.Users.GetUserIdByUsername(platform, key).ToString();
+                if (bb.Program.BotInstance.DataBase.Users.GetUserIdByUsername(platform, key) is not null)
+                    return bb.Program.BotInstance.DataBase.Users.GetUserIdByUsername(platform, key).ToString();
 
                 // Twitch API
                 if (platform is PlatformsEnum.Twitch && requestAPI)
                 {
-                    if (string.IsNullOrEmpty(Bot.TwitchClientId) || string.IsNullOrEmpty(Bot.Tokens.Twitch.AccessToken))
+                    if (string.IsNullOrEmpty(bb.Program.BotInstance.TwitchClientId) || string.IsNullOrEmpty(bb.Program.BotInstance.Tokens.Twitch.AccessToken))
                         return null;
 
                     using var client = new HttpClient();
-                    client.DefaultRequestHeaders.Add("Client-ID", Bot.TwitchClientId);
+                    client.DefaultRequestHeaders.Add("Client-ID", bb.Program.BotInstance.TwitchClientId);
                     client.DefaultRequestHeaders.Authorization =
-                        new AuthenticationHeaderValue("Bearer", Bot.Tokens.Twitch.AccessToken);
+                        new AuthenticationHeaderValue("Bearer", bb.Program.BotInstance.Tokens.Twitch.AccessToken);
 
                     var uri = new Uri($"https://api.twitch.tv/helix/users?login={Uri.EscapeDataString(user)}");
                     using var response = client.GetAsync(uri).Result;
@@ -159,7 +159,7 @@ namespace bb.Utils
                         string id = data[0]["id"]?.ToString();
                         if (!string.IsNullOrEmpty(id))
                         {
-                            Bot.DataBase.Users.AddUsernameMapping(platform, DataConversion.ToLong(id), key);
+                            bb.Program.BotInstance.DataBase.Users.AddUsernameMapping(platform, DataConversion.ToLong(id), key);
                             return id;
                         }
                     }
@@ -219,22 +219,22 @@ namespace bb.Utils
         {
             try
             {
-                if (Bot.DataBase.Users.GetUsernameByUserId(platform, DataConversion.ToLong(ID)) is not null)
-                    return Bot.DataBase.Users.GetUsernameByUserId(platform, DataConversion.ToLong(ID));
+                if (bb.Program.BotInstance.DataBase.Users.GetUsernameByUserId(platform, DataConversion.ToLong(ID)) is not null)
+                    return bb.Program.BotInstance.DataBase.Users.GetUsernameByUserId(platform, DataConversion.ToLong(ID));
 
                 // API
                 if (platform is PlatformsEnum.Twitch && requestAPI)
                 {
-                    if (string.IsNullOrEmpty(Bot.TwitchClientId) ||
-                        string.IsNullOrEmpty(Bot.Tokens.Twitch.AccessToken))
+                    if (string.IsNullOrEmpty(bb.Program.BotInstance.TwitchClientId) ||
+                        string.IsNullOrEmpty(bb.Program.BotInstance.Tokens.Twitch.AccessToken))
                     {
                         return null;
                     }
 
                     using var client = new HttpClient();
-                    client.DefaultRequestHeaders.Add("Client-ID", Bot.TwitchClientId);
+                    client.DefaultRequestHeaders.Add("Client-ID", bb.Program.BotInstance.TwitchClientId);
                     client.DefaultRequestHeaders.Authorization =
-                        new AuthenticationHeaderValue("Bearer", Bot.Tokens.Twitch.AccessToken);
+                        new AuthenticationHeaderValue("Bearer", bb.Program.BotInstance.Tokens.Twitch.AccessToken);
 
                     var uri = new Uri($"https://api.twitch.tv/helix/users?id={Uri.EscapeDataString(ID)}");
                     using var response = client.GetAsync(uri).Result;
@@ -249,7 +249,7 @@ namespace bb.Utils
                         string login = data[0]["login"]?.ToString();
                         if (!string.IsNullOrEmpty(login))
                         {
-                            Bot.DataBase.Users.AddUsernameMapping(platform, DataConversion.ToLong(ID), login);
+                            bb.Program.BotInstance.DataBase.Users.AddUsernameMapping(platform, DataConversion.ToLong(ID), login);
                             return login;
                         }
                     }

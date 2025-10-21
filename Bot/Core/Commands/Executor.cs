@@ -1,9 +1,11 @@
-﻿using bb.Models;
+﻿using bb.Models.Command;
+using bb.Models.Platform;
+using bb.Models.Users;
 using Discord.WebSocket;
 using System;
 using Telegram.Bot.Types;
 using TwitchLib.Client.Events;
-using static bb.Core.Bot.Console;
+using static bb.Core.Bot.Logger;
 
 namespace bb.Core.Commands
 {
@@ -31,22 +33,22 @@ namespace bb.Core.Commands
         /// </list>
         /// All exceptions are logged through the Console.Write system but don't interrupt bot operation.
         /// </remarks>
-        public static async void Twitch(object? sender, OnMessageReceivedArgs message)
+        public async void Twitch(object? sender, OnMessageReceivedArgs message)
         {
             try
             {
-                if (bb.Bot.DataBase == null)
+                if (bb.Program.BotInstance.DataBase == null)
                 {
                     Write("The database is null.", LogLevel.Critical);
                     return;
                 }
 
-                if (!message.ChatMessage.Message.StartsWith(bb.Bot.DataBase.Channels.GetCommandPrefix(PlatformsEnum.Twitch, message.ChatMessage.RoomId)))
+                if (!message.ChatMessage.Message.StartsWith(bb.Program.BotInstance.DataBase.Channels.GetCommandPrefix(PlatformsEnum.Twitch, message.ChatMessage.RoomId)))
                 {
                     return;
                 }
 
-                string trimmedMessage = message.ChatMessage.Message.Replace("\u2063", "").Substring(bb.Bot.DataBase.Channels.GetCommandPrefix(PlatformsEnum.Twitch, message.ChatMessage.RoomId).Length);
+                string trimmedMessage = message.ChatMessage.Message.Replace("\u2063", "").Substring(bb.Program.BotInstance.DataBase.Channels.GetCommandPrefix(PlatformsEnum.Twitch, message.ChatMessage.RoomId).Length);
                 string[] parts = trimmedMessage.Split(' ', StringSplitOptions.RemoveEmptyEntries);
                 string commandName = parts.Length > 0 ? parts[0] : string.Empty;
                 List<string> commandArguments = parts.Length > 1 ? parts.Skip(1).ToList() : new List<string>();
@@ -68,8 +70,10 @@ namespace bb.Core.Commands
                     Id = message.ChatMessage.UserId,
                     Language = "en-US",
                     Name = message.ChatMessage.Username,
-                    IsModerator = message.ChatMessage.IsModerator,
-                    IsBroadcaster = message.ChatMessage.IsBroadcaster
+                    IsModerator = message.ChatMessage.IsModerator || message.ChatMessage.IsBroadcaster,
+                    IsBroadcaster = message.ChatMessage.IsBroadcaster,
+                    Balance = bb.Program.BotInstance.Currency.GetBalance(message.ChatMessage.UserId, PlatformsEnum.Twitch),
+                    BalanceFloat = bb.Program.BotInstance.Currency.GetSubbalance(message.ChatMessage.UserId, PlatformsEnum.Twitch)
                 };
 
                 CommandData data = new()
@@ -83,7 +87,8 @@ namespace bb.Core.Commands
                     Platform = PlatformsEnum.Twitch,
                     User = user,
                     TwitchMessage = message,
-                    CommandInstanceID = Guid.NewGuid().ToString()
+                    CommandInstanceID = Guid.NewGuid().ToString(),
+                    ChatID = message.ChatMessage.RoomId
                 };
 
                 if (message.ChatMessage.ChatReply != null)
@@ -93,7 +98,7 @@ namespace bb.Core.Commands
                     data.ArgumentsString += " " + message.ChatMessage.ChatReply.ParentMsgBody;
                 }
 
-                await Runner.Run(data);
+                await bb.Program.BotInstance.CommandRunner.Execute(data);
             }
             catch (Exception ex)
             {
@@ -128,7 +133,7 @@ namespace bb.Core.Commands
         /// </list>
         /// Automatically processes all command options regardless of nesting depth.
         /// </remarks>
-        public static async void Discord(SocketSlashCommand command)
+        public async void Discord(SocketSlashCommand command)
         {
             try
             {
@@ -136,7 +141,9 @@ namespace bb.Core.Commands
                 {
                     Id = command.User.Id.ToString(),
                     Language = "en-US",
-                    Name = command.User.Username
+                    Name = command.User.Username,
+                    Balance = bb.Program.BotInstance.Currency.GetBalance(command.User.Id.ToString(), PlatformsEnum.Discord),
+                    BalanceFloat = bb.Program.BotInstance.Currency.GetSubbalance(command.User.Id.ToString(), PlatformsEnum.Discord)
                 };
                 Guid RequestUuid = Guid.NewGuid();
                 Guid CommandExecutionUuid = Guid.NewGuid();
@@ -164,9 +171,10 @@ namespace bb.Core.Commands
                     User = user,
                     ArgumentsString = ArgsAsString,
                     Arguments = args,
-                    CommandInstanceID = CommandExecutionUuid.ToString()
+                    CommandInstanceID = CommandExecutionUuid.ToString(),
+                    ChatID = ((SocketGuildChannel)command.Channel).Guild.Id.ToString()
                 };
-                await Runner.Run(data);
+                await bb.Program.BotInstance.CommandRunner.Execute(data);
             }
             catch (Exception ex)
             {
@@ -196,22 +204,22 @@ namespace bb.Core.Commands
         /// Command format: [prefix][command] [arguments] (e.g., "!help moderation")
         /// Throws are caught and logged without disrupting message processing flow.
         /// </remarks>
-        public static async void Discord(SocketMessage message)
+        public async void Discord(SocketMessage message)
         {
             try
             {
-                if (bb.Bot.DataBase == null)
+                if (bb.Program.BotInstance.DataBase == null)
                 {
                     Write("The database is null.", LogLevel.Critical);
                     return;
                 }
 
-                if (!message.Content.StartsWith(bb.Bot.DataBase.Channels.GetCommandPrefix(PlatformsEnum.Discord, ((SocketGuildChannel)message.Channel).Guild.Id.ToString())))
+                if (!message.Content.StartsWith(bb.Program.BotInstance.DataBase.Channels.GetCommandPrefix(PlatformsEnum.Discord, ((SocketGuildChannel)message.Channel).Guild.Id.ToString())))
                 {
                     return;
                 }
 
-                string CommandName = message.Content.Split(' ')[0].Substring(bb.Bot.DataBase.Channels.GetCommandPrefix(PlatformsEnum.Discord, ((SocketGuildChannel)message.Channel).Guild.Id.ToString()).Length);
+                string CommandName = message.Content.Split(' ')[0].Substring(bb.Program.BotInstance.DataBase.Channels.GetCommandPrefix(PlatformsEnum.Discord, ((SocketGuildChannel)message.Channel).Guild.Id.ToString()).Length);
                 List<string> CommandArguments = message.Content.Split(' ').Skip(1).ToList();
                 string CommandArgumentsAsString = string.Join(' ', CommandArguments);
 
@@ -230,7 +238,9 @@ namespace bb.Core.Commands
                 {
                     Id = message.Author.Id.ToString(),
                     Language = "en-US",
-                    Name = message.Author.Username
+                    Name = message.Author.Username,
+                    Balance = bb.Program.BotInstance.Currency.GetBalance(message.Author.Id.ToString(), PlatformsEnum.Discord),
+                    BalanceFloat = bb.Program.BotInstance.Currency.GetSubbalance(message.Author.Id.ToString(), PlatformsEnum.Discord)
                 };
 
                 CommandData data = new()
@@ -244,9 +254,10 @@ namespace bb.Core.Commands
                     User = user,
                     ArgumentsString = CommandArgumentsAsString,
                     Arguments = CommandArguments,
-                    CommandInstanceID = Guid.NewGuid().ToString()
+                    CommandInstanceID = Guid.NewGuid().ToString(),
+                    ChatID = ((SocketGuildChannel)message.Channel).Guild.Id.ToString()
                 };
-                await Runner.Run(data);
+                await bb.Program.BotInstance.CommandRunner.Execute(data);
             }
             catch (Exception ex)
             {
@@ -274,11 +285,11 @@ namespace bb.Core.Commands
         /// Command structure: First word is command name, remaining words are arguments.
         /// All exceptions are logged through the Console.Write system but don't interrupt processing.
         /// </remarks>
-        public static async void Telegram(Message message)
+        public async void Telegram(Message message)
         {
             try
             {
-                if (bb.Bot.DataBase == null)
+                if (bb.Program.BotInstance.DataBase == null)
                 {
                     Write("The database is null.", LogLevel.Critical);
                     return;
@@ -290,7 +301,7 @@ namespace bb.Core.Commands
                     return;
                 }
 
-                if (message.Text == null || !message.Text.StartsWith(bb.Bot.DataBase.Channels.GetCommandPrefix(PlatformsEnum.Telegram, message.Chat.Id.ToString())))
+                if (message.Text == null || !message.Text.StartsWith(bb.Program.BotInstance.DataBase.Channels.GetCommandPrefix(PlatformsEnum.Telegram, message.Chat.Id.ToString())))
                 {
                     return;
                 }
@@ -300,14 +311,16 @@ namespace bb.Core.Commands
                     Id = message.From.Id.ToString(),
                     Language = "en-US",
                     Name = message.From.Username ?? message.From.FirstName,
-                    IsModerator = false,
-                    IsBroadcaster = message.From.Id == message.Chat.Id
+                    IsModerator = false || message.From.Id == message.Chat.Id,
+                    IsBroadcaster = message.From.Id == message.Chat.Id,
+                    Balance = bb.Program.BotInstance.Currency.GetBalance(message.From.Id.ToString(), PlatformsEnum.Telegram),
+                    BalanceFloat = bb.Program.BotInstance.Currency.GetSubbalance(message.From.Id.ToString(), PlatformsEnum.Telegram)
                 };
 
                 Guid command_execution_uid = Guid.NewGuid();
                 CommandData data = new()
                 {
-                    Name = message.Text.ToLower().Split(' ')[0].Substring(bb.Bot.DataBase.Channels.GetCommandPrefix(PlatformsEnum.Telegram, message.Chat.Id.ToString()).Length),
+                    Name = message.Text.ToLower().Split(' ')[0].Substring(bb.Program.BotInstance.DataBase.Channels.GetCommandPrefix(PlatformsEnum.Telegram, message.Chat.Id.ToString()).Length),
                     Arguments = message.Text.Split(' ').Skip(1).ToList(),
                     ArgumentsString = string.Join(" ", message.Text.Split(' ').Skip(1)),
                     Channel = message.Chat.Title ?? message.Chat.Username ?? message.Chat.Id.ToString(),
@@ -316,7 +329,8 @@ namespace bb.Core.Commands
                     User = user,
                     CommandInstanceID = command_execution_uid.ToString(),
                     TelegramMessage = message,
-                    MessageID = message.Id.ToString()
+                    MessageID = message.Id.ToString(),
+                    ChatID = message.Chat.Id.ToString()
                 };
 
                 if (message.ReplyToMessage != null)
@@ -326,7 +340,7 @@ namespace bb.Core.Commands
                     data.ArgumentsString += " " + string.Join(" ", trimmedReplyText);
                 }
 
-                await Runner.Run(data);
+                await bb.Program.BotInstance.CommandRunner.Execute(data);
             }
             catch (Exception ex)
             {

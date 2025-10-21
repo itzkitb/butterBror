@@ -3,18 +3,24 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFrameworks>net8.0</TargetFrameworks>
-	<RootNamespace>butterBror</RootNamespace>
+	<RootNamespace>bb</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <ApplicationIcon>logo.ico</ApplicationIcon>
     <Platforms>AnyCPU;x86</Platforms>
-    <Version>2.18.0.7</Version>
+    <Version>2.18.0.9</Version>
     <Title>butterbror</Title>
-    <Company>ItzKITb</Company>
+    <Company>SillyApps</Company>
     <Copyright>https://github.com/itzkitb</Copyright>
 	<BranchName Condition="'$(BranchName)' == ''">$(BranchNameDefault)</BranchName>
     <CommitHash Condition="'$(CommitHash)' == ''">local</CommitHash>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Core\Новая папка\**" />
+    <EmbeddedResource Remove="Core\Новая папка\**" />
+    <None Remove="Core\Новая папка\**" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="DankDB" Version="14.1.0" />
@@ -24,6 +30,7 @@
     </PackageReference>
     <PackageReference Include="Jint" Version="4.4.1" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.14.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.10" />
     <PackageReference Include="Pastel" Version="7.0.0" />
     <PackageReference Include="SevenTV-lib" Version="1.2.0" />
     <PackageReference Include="System.Data.SQLite.Core" Version="1.0.119" />

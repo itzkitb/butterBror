@@ -1,7 +1,7 @@
-﻿using bb.Core.Bot;
-using bb.Core.Bot.SQLColumnNames;
-using bb.Models;
-using bb.Utils;
+﻿using bb.Utils;
+using bb.Core.Configuration;
+using bb.Models.Command;
+using bb.Models.Platform;
 
 namespace bb.Core.Commands.List
 {
@@ -85,7 +85,7 @@ namespace bb.Core.Commands.List
 
             try
             {
-                if (bb.Bot.UsersBuffer == null || data.ChannelId == null)
+                if (bb.Program.BotInstance.UsersBuffer == null || data.ChannelId == null)
                 {
                     commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:unknown", string.Empty, data.Platform));
                     return commandReturn;
@@ -94,12 +94,12 @@ namespace bb.Core.Commands.List
                 string result = LocalizationService.GetString(data.User.Language, $"command:afk:{afkType}:start", data.ChannelId, data.Platform, data.User.Name);
                 string text = data.ArgumentsString;
 
-                bb.Bot.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.Id), Users.IsAFK, 1);
-                bb.Bot.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.Id), Users.AFKText, text);
-                bb.Bot.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.Id), Users.AFKType, afkType);
-                bb.Bot.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.Id), Users.AFKStart, DateTime.UtcNow.ToString("o"));
-                bb.Bot.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.Id), Users.AFKResume, DateTime.UtcNow.ToString("o"));
-                bb.Bot.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.Id), Users.AFKResumeTimes, 0);
+                bb.Program.BotInstance.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.Id), Users.IsAFK, 1);
+                bb.Program.BotInstance.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.Id), Users.AFKText, text);
+                bb.Program.BotInstance.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.Id), Users.AFKType, afkType);
+                bb.Program.BotInstance.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.Id), Users.AFKStart, DateTime.UtcNow.ToString("o"));
+                bb.Program.BotInstance.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.Id), Users.AFKResume, DateTime.UtcNow.ToString("o"));
+                bb.Program.BotInstance.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.Id), Users.AFKResumeTimes, 0);
 
                 if (TextSanitizer.CleanAsciiWithoutSpaces(text) == "")
                     commandReturn.SetMessage(result);

@@ -1,9 +1,9 @@
-﻿using bb.Core.Bot;
-using bb.Core.Bot.SQLColumnNames;
-using bb.Models;
-using bb.Utils;
+﻿using bb.Utils;
+using bb.Core.Configuration;
 using System.Globalization;
 using TwitchLib.Client.Enums;
+using bb.Models.Command;
+using bb.Models.Platform;
 
 namespace bb.Core.Commands.List
 {
@@ -36,22 +36,22 @@ namespace bb.Core.Commands.List
 
             try
             {
-                if (bb.Bot.UsersBuffer == null || data.ChannelId == null)
+                if (bb.Program.BotInstance.UsersBuffer == null || data.ChannelId == null)
                 {
                     commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:unknown", string.Empty, data.Platform));
                     return commandReturn;
                 }
 
-                long AFKResumeTimes = Convert.ToInt64(bb.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(data.User.Id), Users.AFKResumeTimes));
-                DateTime AFKResume = DateTime.Parse((string)bb.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(data.User.Id), Users.AFKResume), null, DateTimeStyles.AdjustToUniversal);
+                long AFKResumeTimes = Convert.ToInt64(bb.Program.BotInstance.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(data.User.Id), Users.AFKResumeTimes));
+                DateTime AFKResume = DateTime.Parse((string)bb.Program.BotInstance.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(data.User.Id), Users.AFKResume), null, DateTimeStyles.AdjustToUniversal);
 
                 if (AFKResumeTimes <= 5)
                 {
                     TimeSpan cache = DateTime.UtcNow - AFKResume;
                     if (cache.TotalMinutes <= 5)
                     {
-                        bb.Bot.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.Id), Users.IsAFK, 1);
-                        bb.Bot.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.Id), Users.AFKResumeTimes, AFKResumeTimes + 1);
+                        bb.Program.BotInstance.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.Id), Users.IsAFK, 1);
+                        bb.Program.BotInstance.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.Id), Users.AFKResumeTimes, AFKResumeTimes + 1);
                         commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:rafk", data.ChannelId, data.Platform));
                         commandReturn.SetColor(ChatColorPresets.YellowGreen);
                     }

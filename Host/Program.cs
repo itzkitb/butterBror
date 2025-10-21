@@ -1,23 +1,27 @@
 ﻿using Pastel;
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
+using System.IO.Compression;
+using System.Linq;
+using System.Net.Http;
 using System.Security.Principal;
+using System.Text;
 using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace hostBror
 {
     public class Host
     {
         private static Process _botProcess;
-        private static bool _isRestarting = false;
         private static int _restartCount = 0;
-        private static string _version = "2.0.3";
-        private static readonly string _botExecutablePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Process", "butterBror.exe");
-
-        private static Timer _updateTimer;
-        private static bool _updateRequired = false;
-        private static bool _isCheckingForUpdate = false;
-        private static readonly string _updateZipPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Updater", "HostUpdate.zip");
-        private static string _botVersion = GetBotVersion();
+        private static string _version = "2.0.4";
+        private static string _repo = "itzkitb/butterBror";
+        private static string _branch = "master";
 
         public static bool IsElevated
         {
@@ -66,48 +70,48 @@ namespace hostBror
                 return;
             }
 
-            _updateTimer = new Timer(CheckForUpdates, null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(5));
+            foreach (var arg in args)
+            {
+                if (arg.StartsWith("--repo="))
+                    _repo = arg.Split('=')[1];
+                else if (arg.StartsWith("--branch="))
+                    _branch = arg.Split('=')[1];
+            }
+
+            string currentXmlPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Current.xml");
+            if (!File.Exists(currentXmlPath))
+            {
+                Console.WriteLine($"{"│".Pastel("#ff7b42")} {GetTime()} Current.xml not found. Compiling from repo...");
+                CompileFromRepo();
+            }
 
             StartBotMonitor();
-
-            if (_updateRequired)
-            {
-                StartUpdate();
-            }
         }
 
         #region Bot monitor
         private static void StartBotMonitor()
         {
-            while (!_updateRequired)
+            while (true)
             {
-                if (_isRestarting)
-                {
-                    Console.WriteLine($"{"│".Pastel("#ff7b42")} {GetTime()} Bot is (re)starting...");
-                }
-
                 StartBotProcess();
                 _botProcess.WaitForExit();
 
-                if (_botProcess == null || _botProcess.HasExited)
+                if (_botProcess?.ExitCode == 5051)
                 {
-                    if (!_isRestarting)
-                    {
-                        _restartCount++;
-                        Console.WriteLine($"{"│".Pastel("#ff4f4f")} {GetTime()} Bot process exited with code {_botProcess?.ExitCode ?? -1}. Restarting... (Attempt {_restartCount})");
-                        if (_botProcess?.ExitCode == 5001)
-                        {
-                            _updateRequired = true;
-                            Environment.Exit(0);
-                        }
-                        
-                        _isRestarting = true;
-                        Thread.Sleep(5000);
-                    }
-                    else
-                    {
-                        _isRestarting = false;
-                    }
+                    Console.WriteLine($"{"│".Pastel("#ff7b42")} {GetTime()} Bot exited with code 5051. Updating...");
+                    CompileFromRepo();
+                    StartBotProcess();
+                }
+                else if (_botProcess?.ExitCode == 5001)
+                {
+                    Console.WriteLine($"{"│".Pastel("#ff7b42")} {GetTime()} Bot exited with code 5001. Exiting...");
+                    Environment.Exit(0);
+                }
+                else
+                {
+                    _restartCount++;
+                    Console.WriteLine($"{"│".Pastel("#ff4f4f")} {GetTime()} Bot process exited with code {_botProcess?.ExitCode ?? -1}. Restarting... (Attempt {_restartCount})");
+                    Thread.Sleep(5000);
                 }
             }
         }
@@ -116,6 +120,30 @@ namespace hostBror
         {
             try
             {
+                string currentXmlPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Current.xml");
+                if (!File.Exists(currentXmlPath))
+                {
+                    Console.WriteLine($"{"│".Pastel("#ff4f4f")} {GetTime()} Current.xml not found. Cannot start bot.");
+                    return;
+                }
+
+                XDocument doc = XDocument.Load(currentXmlPath);
+                string branch = doc.Root.Element("branch")?.Value;
+                string commitId = doc.Root.Element("commit")?.Value;
+
+                if (string.IsNullOrEmpty(branch) || string.IsNullOrEmpty(commitId))
+                {
+                    Console.WriteLine($"{"│".Pastel("#ff4f4f")} {GetTime()} Invalid Current.xml. Cannot start bot.");
+                    return;
+                }
+
+                string botPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Versions", branch, commitId, "butterBror.exe");
+                if (!File.Exists(botPath))
+                {
+                    Console.WriteLine($"{"│".Pastel("#ff4f4f")} {GetTime()} Bot executable not found at {botPath}. Cannot start.");
+                    return;
+                }
+
                 if (_botProcess != null && !_botProcess.HasExited)
                 {
                     _botProcess.Kill();
@@ -126,7 +154,7 @@ namespace hostBror
                 {
                     StartInfo = new ProcessStartInfo
                     {
-                        FileName = _botExecutablePath,
+                        FileName = botPath,
                         Arguments = $"--core-version {_version} --core-name hostBror",
                         RedirectStandardOutput = false,
                         UseShellExecute = true,
@@ -149,154 +177,194 @@ namespace hostBror
             return DateTime.Now.ToString("dd.MM HH:mm.ss").Pastel("#696969");
         }
         #endregion
-        #region Update
-        private static string GetBotVersion()
+
+        #region Compilation
+        private static void CompileFromRepo()
         {
             try
             {
-                string versionFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Process", "version.json");
-                if (File.Exists(versionFilePath))
+                string commitId = GetCommitId(_repo, _branch);
+                if (string.IsNullOrEmpty(commitId))
                 {
-                    var json = File.ReadAllText(versionFilePath);
+                    Console.WriteLine($"{"│".Pastel("#ff4f4f")} {GetTime()} Failed to get commit ID for {_branch} in {_repo}");
+                    return;
+                }
+
+                string zipUrl = $"https://github.com/{_repo}/archive/refs/heads/{_branch}.zip";
+                string tempDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Temp");
+                string zipPath = Path.Combine(tempDir, "source.zip");
+
+                if (Directory.Exists(tempDir))
+                {
+                    Console.WriteLine($"{"│".Pastel("#ff7b42")} {GetTime()} Deleting old temp dir...");
+                    Directory.Delete(tempDir, true);
+                }
+
+                Directory.CreateDirectory(tempDir);
+
+                DownloadFile(zipUrl, zipPath);
+                ExtractZip(zipPath, tempDir);
+
+                string sourceDir = FindSourceDirectory(tempDir);
+                if (string.IsNullOrEmpty(sourceDir))
+                {
+                    Console.WriteLine($"{"│".Pastel("#ff4f4f")} {GetTime()} Source directory not found");
+                    return;
+                }
+
+                if (!RunDotNetBuild(sourceDir))
+                {
+                    Console.WriteLine($"{"│".Pastel("#ff4f4f")} {GetTime()} Build failed");
+                    return;
+                }
+
+                string outputDir = Path.Combine(sourceDir, "Bot", "bin", "Release", "net8.0");
+                string targetDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Versions", _branch, commitId);
+
+                Directory.CreateDirectory(targetDir);
+
+                var files = Directory.GetFiles(outputDir, "*.*", SearchOption.AllDirectories);
+
+                foreach (var file in files)
+                {
+                    string relativePath = file.Substring(outputDir.Length + 1);
+                    string destinationFilePath = Path.Combine(targetDir, relativePath);
+
+                    Directory.CreateDirectory(Path.GetDirectoryName(destinationFilePath));
+
+                    File.Copy(file, destinationFilePath, true);
+                }
+
+                string releaseXmlPath = Path.Combine(targetDir, "release.xml");
+                string currentXmlPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Current.xml");
+                XDocument releaseDoc = new XDocument(
+                    new XElement("release",
+                        new XElement("branch", _branch),
+                        new XElement("commit", commitId)
+                    )
+                );
+                releaseDoc.Save(releaseXmlPath);
+                releaseDoc.Save(currentXmlPath);
+
+                CreateCurrentXml(_branch, commitId);
+                Console.WriteLine($"{"│".Pastel("#ff7b42")} {GetTime()} Deleting temp dir...");
+                Directory.Delete(tempDir, true);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"{"│".Pastel("#ff4f4f")} {GetTime()} Compilation failed: {ex.Message}");
+            }
+        }
+
+        private static string GetCommitId(string repo, string branch)
+        {
+            string owner = repo.Split('/')[0];
+            string repoName = repo.Split('/')[1];
+
+            using (HttpClient client = new HttpClient())
+            {
+                client.DefaultRequestHeaders.UserAgent.ParseAdd("hostBror");
+                string url = $"https://api.github.com/repos/{owner}/{repoName}/branches/{branch}";
+                try
+                {
+                    var response = client.GetAsync(url).Result;
+                    response.EnsureSuccessStatusCode();
+                    string json = response.Content.ReadAsStringAsync().Result;
                     var doc = JsonDocument.Parse(json);
-                    return doc.RootElement.GetProperty("Version").GetString();
+                    var commit = doc.RootElement.GetProperty("commit");
+                    return commit.GetProperty("sha").GetString().Substring(0, 7);
                 }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"{"│".Pastel("#ff4f4f")} {GetTime()} Error reading version.json: {ex.Message}");
-            }
-            return "0.0.0";
-        }
-
-        private static async void CheckForUpdates(object state)
-        {
-            if (_updateRequired || _isCheckingForUpdate)
-                return;
-
-            _isCheckingForUpdate = true;
-
-            try
-            {
-                var latestRelease = await GetLatestReleaseInfo();
-                if (latestRelease != null && IsNewVersionAvailable(latestRelease.Version))
+                catch (Exception ex)
                 {
-                    Console.WriteLine($"{"│".Pastel("#ff4f4f")} {GetTime()} New version available: {latestRelease.Version}. Current: {_version}. Downloading update...");
-
-                    if (File.Exists(_updateZipPath))
-                        File.Delete(_updateZipPath);
-
-                    await DownloadFileAsync(latestRelease.ZipUrl, _updateZipPath);
-
-                    if (File.Exists(_updateZipPath))
-                    {
-                        _updateRequired = true;
-                        if (_botProcess != null && !_botProcess.HasExited)
-                        {
-                            _botProcess.Kill();
-                            _botProcess.WaitForExit();
-                        }
-
-                        _updateTimer.Change(Timeout.Infinite, Timeout.Infinite);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"{"│".Pastel("#ff4f4f")} {GetTime()} Error checking for updates: {ex.Message}");
-            }
-            finally
-            {
-                _isCheckingForUpdate = false;
-            }
-        }
-
-        private static async Task<ReleaseInfo> GetLatestReleaseInfo()
-        {
-            using (var client = new HttpClient())
-            {
-                client.DefaultRequestHeaders.UserAgent.ParseAdd("hostBror-Updater");
-                var response = await client.GetAsync("https://api.github.com/repos/itzkitb/butterBror/releases/latest ");
-                response.EnsureSuccessStatusCode();
-
-                var jsonContent = await response.Content.ReadAsStringAsync();
-                var doc = JsonDocument.Parse(jsonContent);
-
-                var tagName = doc.RootElement.GetProperty("tag_name").GetString().TrimStart('v').TrimStart('.');
-
-                var assets = doc.RootElement.GetProperty("assets");
-                foreach (var asset in assets.EnumerateArray())
-                {
-                    var name = asset.GetProperty("name").GetString();
-                    var url = asset.GetProperty("browser_download_url").GetString();
-
-                    if (name.EndsWith(".zip"))
-                    {
-                        return new ReleaseInfo { Version = tagName, ZipUrl = url };
-                    }
+                    Console.WriteLine($"{"│".Pastel("#ff4f4f")} {GetTime()} Error getting commit ID: {ex.Message}");
                 }
             }
             return null;
         }
 
-        private static bool IsNewVersionAvailable(string latestVersion)
+        private static void DownloadFile(string url, string outputPath)
+        {
+            using (HttpClient client = new HttpClient())
+            {
+                client.DefaultRequestHeaders.UserAgent.ParseAdd("hostBror");
+                var response = client.GetAsync(url).Result;
+                response.EnsureSuccessStatusCode();
+                var content = response.Content.ReadAsByteArrayAsync().Result;
+                File.WriteAllBytes(outputPath, content);
+            }
+        }
+
+        private static void ExtractZip(string zipPath, string extractPath)
         {
             try
             {
-                var currentVer = new Version(_botVersion);
-                var latestVer = new Version(latestVersion);
-                return latestVer > currentVer;
+                ZipFile.ExtractToDirectory(zipPath, extractPath);
             }
-            catch
+            catch (Exception ex)
             {
+                Console.WriteLine($"{"│".Pastel("#ff4f4f")} {GetTime()} Error extracting ZIP: {ex.Message}");
+            }
+        }
+
+        private static string FindSourceDirectory(string tempDir)
+        {
+            string[] dirs = Directory.GetDirectories(tempDir);
+            foreach (string dir in dirs)
+            {
+                if (Directory.GetFiles(dir, "*.sln").Length > 0 || Directory.GetFiles(dir, "*.csproj").Length > 0)
+                {
+                    return dir;
+                }
+            }
+            return null;
+        }
+
+        private static bool RunDotNetBuild(string sourceDir)
+        {
+            try
+            {
+                Process process = new Process();
+                process.StartInfo.FileName = "dotnet";
+                process.StartInfo.Arguments = $"build \"{sourceDir}\" --property:WarningLevel=0 --configuration Release";
+                process.StartInfo.UseShellExecute = false;
+                process.StartInfo.RedirectStandardOutput = true;
+                process.StartInfo.RedirectStandardError = true;
+                process.StartInfo.CreateNoWindow = true;
+                process.StartInfo.StandardOutputEncoding = Encoding.UTF8;
+
+                process.Start();
+
+                string output = process.StandardOutput.ReadToEnd();
+                string error = process.StandardError.ReadToEnd();
+                process.WaitForExit();
+
+                Console.WriteLine($"{"│".Pastel("#ff7b42")} {GetTime()} Build output:");
+                Console.WriteLine(output);
+                if (!string.IsNullOrEmpty(error))
+                {
+                    Console.WriteLine($"{"│".Pastel("#ff4f4f")} {GetTime()} Build errors:");
+                    Console.WriteLine(error);
+                }
+
+                return process.ExitCode == 0;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"{"│".Pastel("#ff4f4f")} {GetTime()} Error running dotnet build: {ex.Message}");
                 return false;
             }
         }
 
-        private static async Task DownloadFileAsync(string url, string outputPath)
+        private static void CreateCurrentXml(string branch, string commitId)
         {
-            using (var client = new HttpClient())
-            {
-                client.DefaultRequestHeaders.UserAgent.ParseAdd("hostBror-Updater");
-                var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
-                response.EnsureSuccessStatusCode();
-
-                using (var contentStream = await response.Content.ReadAsStreamAsync())
-                using (var fileStream = File.Create(outputPath))
-                {
-                    await contentStream.CopyToAsync(fileStream);
-                }
-            }
-        }
-
-        private static void StartUpdate()
-        {
-            string updaterPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Updater", "Updater.exe");
-            string hostExePath = Process.GetCurrentProcess().MainModule.FileName;
-
-            if (!File.Exists(updaterPath))
-            {
-                Console.WriteLine($"{"│".Pastel("#ff4f4f")} {GetTime()} Updater.exe not found. Cannot proceed with update.");
-                return;
-            }
-
-            try
-            {
-                Process.Start(updaterPath, $"\"{_updateZipPath}\" \"{hostExePath}\"");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"{"│".Pastel("#ff4f4f")} {GetTime()} Failed to start Updater.exe: {ex.Message}");
-            }
-
-            Console.WriteLine($"{"│".Pastel("#ff4f4f")} {GetTime()} Shutting down for update...");
-            Environment.Exit(0);
-        }
-
-        private class ReleaseInfo
-        {
-            public string Version { get; set; }
-            public string ZipUrl { get; set; }
+            string currentXmlPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Current.xml");
+            XDocument doc = new XDocument(
+                new XElement("current",
+                    new XElement("branch", branch),
+                    new XElement("commit", commitId)
+                )
+            );
+            doc.Save(currentXmlPath);
         }
         #endregion
     }

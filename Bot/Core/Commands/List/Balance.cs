@@ -1,7 +1,8 @@
-﻿using bb.Core.Bot;
-using bb.Models;
-using bb.Utils;
+﻿using bb.Utils;
+using bb.Core.Configuration;
 using TwitchLib.Client.Enums;
+using bb.Models.Command;
+using bb.Models.Platform;
 
 namespace bb.Core.Commands.List
 {
@@ -47,7 +48,7 @@ namespace bb.Core.Commands.List
                         "command:balance",
                         data.ChannelId,
                         data.Platform,
-                        Utils.CurrencyManager.GetBalance(data.User.Id, data.Platform) + "." + Utils.CurrencyManager.GetSubbalance(data.User.Id, data.Platform)));
+                        bb.Program.BotInstance.Currency.GetBalance(data.User.Id, data.Platform) + "." + bb.Program.BotInstance.Currency.GetSubbalance(data.User.Id, data.Platform)));
                     commandReturn.SetSafe(true);
                 }
                 else
@@ -61,7 +62,7 @@ namespace bb.Core.Commands.List
                             data.ChannelId,
                             data.Platform,
                             UsernameResolver.Unmention(TextSanitizer.UsernameFilter(data.ArgumentsString)),
-                            Utils.CurrencyManager.GetBalance(userID, data.Platform) + "." + Utils.CurrencyManager.GetSubbalance(userID, data.Platform)));
+                            bb.Program.BotInstance.Currency.GetBalance(userID, data.Platform) + "." + bb.Program.BotInstance.Currency.GetSubbalance(userID, data.Platform)));
                         commandReturn.SetSafe(true);
                     }
                     else

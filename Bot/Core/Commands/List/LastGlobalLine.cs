@@ -1,9 +1,9 @@
-﻿using bb.Core.Bot;
-using bb.Core.Bot.SQLColumnNames;
-using bb.Models;
-using bb.Utils;
+﻿using bb.Utils;
+using bb.Core.Configuration;
 using System.Globalization;
 using TwitchLib.Client.Enums;
+using bb.Models.Command;
+using bb.Models.Platform;
 
 namespace bb.Core.Commands.List
 {
@@ -36,7 +36,7 @@ namespace bb.Core.Commands.List
 
             try
             {
-                if (bb.Bot.UsersBuffer == null || bb.Bot.TwitchName == null || data.ChannelId == null)
+                if (bb.Program.BotInstance.UsersBuffer == null || bb.Program.BotInstance.TwitchName == null || data.ChannelId == null)
                 {
                     commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:unknown", string.Empty, data.Platform));
                     return commandReturn;
@@ -47,18 +47,18 @@ namespace bb.Core.Commands.List
                     string name = TextSanitizer.UsernameFilter(data.Arguments.ElementAt(0).ToLower());
                     string userID = UsernameResolver.GetUserID(name, PlatformsEnum.Twitch, true);
 
-                    if (userID == null || bb.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(userID), Users.LastSeen) == null)
+                    if (userID == null || bb.Program.BotInstance.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(userID), Users.LastSeen) == null)
                     {
                         commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:user_not_found", data.ChannelId, data.Platform, UsernameResolver.Unmention(name)));
                         commandReturn.SetColor(ChatColorPresets.Red);
                     }
                     else
                     {
-                        string lastLine = (string)bb.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(userID), Users.LastMessage);
-                        string lastChannel = (string)bb.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(userID), Users.LastChannel);
-                        DateTime lastLineDate = DateTime.Parse((string)bb.Bot.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(userID), Users.LastSeen), null, DateTimeStyles.AdjustToUniversal);
+                        string lastLine = (string)bb.Program.BotInstance.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(userID), Users.LastMessage);
+                        string lastChannel = (string)bb.Program.BotInstance.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(userID), Users.LastChannel);
+                        DateTime lastLineDate = DateTime.Parse((string)bb.Program.BotInstance.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(userID), Users.LastSeen), null, DateTimeStyles.AdjustToUniversal);
 
-                        if (name == bb.Bot.TwitchName.ToLower())
+                        if (name == bb.Program.BotInstance.TwitchName.ToLower())
                         {
                             commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:last_global_line:bot", data.ChannelId, data.Platform));
                         }

@@ -1,7 +1,8 @@
-﻿using bb.Core.Bot;
-using bb.Models;
-using bb.Utils;
+﻿using bb.Utils;
+using bb.Core.Configuration;
 using TwitchLib.Client.Enums;
+using bb.Models.Command;
+using bb.Models.Platform;
 
 namespace bb.Core.Commands.List
 {
@@ -34,7 +35,7 @@ namespace bb.Core.Commands.List
 
             try
             {
-                if (data.ChannelId == null || bb.Bot.DataBase == null)
+                if (data.ChannelId == null || bb.Program.BotInstance.DataBase == null)
                 {
                     commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:unknown", string.Empty, data.Platform));
                     return commandReturn;
@@ -60,8 +61,8 @@ namespace bb.Core.Commands.List
                 }
                 else
                 {
-                    var message = bb.Bot.DataBase.Channels.GetFirstMessage(data.Platform, data.ChannelId, DataConversion.ToLong(userId));
-                    var message_badges = string.Empty;
+                    var message = bb.Program.BotInstance.DataBase.Channels.GetFirstMessage(data.Platform, data.ChannelId, DataConversion.ToLong(userId));
+                    var messageBadges = string.Empty;
                     if (message != null)
                     {
                         var badges = new (bool flag, string symbol)[]
@@ -77,17 +78,17 @@ namespace bb.Core.Commands.List
 
                         foreach (var (flag, symbol) in badges)
                         {
-                            if (flag) message_badges += LocalizationService.GetString(data.User.Language, symbol, data.ChannelId, data.Platform);
+                            if (flag) messageBadges += LocalizationService.GetString(data.User.Language, symbol, data.ChannelId, data.Platform);
                         }
 
-                        if (!name.Equals(bb.Bot.TwitchName, StringComparison.CurrentCultureIgnoreCase))
+                        if (!name.Equals(bb.Program.BotInstance.TwitchName, StringComparison.CurrentCultureIgnoreCase))
                         {
                             commandReturn.SetMessage(LocalizationService.GetString(
                                 data.User.Language,
                                 "command:first_message",
                                 data.ChannelId,
                                 data.Platform,
-                                message_badges,
+                                messageBadges,
                                 name ?? UsernameResolver.Unmention(UsernameResolver.GetUsername(userId, data.Platform, true)),
                                 message.messageText,
                                 TextSanitizer.FormatTimeSpan(Utils.DataConversion.GetTimeTo(message.messageDate, DateTime.UtcNow, false), data.User.Language))); // Fix AA8

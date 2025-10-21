@@ -1,11 +1,12 @@
-﻿using bb.Core.Bot.SQLColumnNames;
-using bb.Models;
+﻿using bb.Core.Configuration;
+using bb.Models.Command;
+using bb.Models.Platform;
 using System.Collections.Concurrent;
 using System.Globalization;
 using System.Text.RegularExpressions;
 using Telegram.Bot.Types;
 using TwitchLib.Client.Models;
-using static bb.Core.Bot.Console;
+using static bb.Core.Bot.Logger;
 
 namespace bb.Utils
 {
@@ -38,10 +39,9 @@ namespace bb.Utils
     /// </remarks>
     public class MessageProcessor
     {
-        public static ulong Proccessed = 0;
-        public static readonly ConcurrentDictionary<string, (SemaphoreSlim Semaphore, DateTime LastUsed)> messagesSemaphores = new(StringComparer.Ordinal);
-        private static readonly RegexOptions regexOptions = RegexOptions.Compiled;
-        private static readonly Regex MentionRegex = new(@"@(\w+)", regexOptions);
+        public ulong Proccessed = 0;
+        public readonly ConcurrentDictionary<string, (SemaphoreSlim Semaphore, DateTime LastUsed)> messagesSemaphores = new(StringComparer.Ordinal);
+        private readonly Regex MentionRegex = new(@"@(\w+)", RegexOptions.Compiled);
 
         /// <summary>
         /// Retrieves a positional command argument from the provided list.
@@ -121,51 +121,6 @@ namespace bb.Utils
                 if (arg.StartsWith(name + ":")) return arg.Replace(name + ":", "");
             }
             return null;
-        }
-
-        /// <summary>
-        /// Records successful command execution and updates system statistics.
-        /// </summary>
-        /// <param name="data">Command execution context containing all relevant details</param>
-        /// <remarks>
-        /// <para>
-        /// The method performs:
-        /// <list type="bullet">
-        /// <item>Detailed logging of command execution parameters</item>
-        /// <item>Incrementing of global command counter (<see cref="Bot.CompletedCommands"/>)</item>
-        /// <item>Error handling for logging failures</item>
-        /// </list>
-        /// </para>
-        /// <para>
-        /// Logged information includes:
-        /// <list type="bullet">
-        /// <item>Command name</item>
-        /// <item>User identifier and display name</item>
-        /// <item>Full command message text</item>
-        /// <item>Separate arguments string</item>
-        /// </list>
-        /// </para>
-        /// <para>
-        /// Error handling:
-        /// <list type="bullet">
-        /// <item>Catches and logs all exceptions without disrupting command flow</item>
-        /// <item>Ensures statistics are updated even if logging fails</item>
-        /// <item>Prevents command execution from failing due to logging issues</item>
-        /// </list>
-        /// </para>
-        /// This method should be called after successful command execution but before sending response.
-        /// </remarks>
-        public static void ExecutedCommand(CommandData data)
-        {
-            try
-            {
-                Write($"Executed command {data.Name} (User: {data.User.Name}, full message: \"{data.Name} {data.ArgumentsString}\", arguments: \"{data.ArgumentsString}\", command: \"{data.Name}\")");
-                Bot.CompletedCommands++;
-            }
-            catch (Exception ex)
-            {
-                Write(ex);
-            }
         }
 
         /// <summary>
@@ -258,7 +213,7 @@ namespace bb.Utils
         /// This method is the central processing point for all chat messages across all platforms.
         /// All exceptions are caught and logged without disrupting message flow.
         /// </remarks>
-        public static async Task ProcessMessageAsync(
+        public async Task ProcessMessageAsync(
             string userId,
             string channelId,
             string username,
@@ -272,7 +227,7 @@ namespace bb.Utils
             string serverId = ""
         )
         {
-            if (!Bot.Initialized) return;
+            if (!bb.Program.BotInstance.Initialized) return;
 
             var now = DateTime.UtcNow;
             var semaphore = messagesSemaphores.GetOrAdd(userId, id => (new SemaphoreSlim(1, 1), now));
@@ -282,34 +237,34 @@ namespace bb.Utils
                 messagesSemaphores.TryUpdate(userId, (semaphore.Semaphore, now), semaphore);
 
                 // Skip banned or ignored users
-                if (Bot.DataBase.Roles.IsBanned(platform, DataConversion.ToLong(userId)) ||
-                    Bot.DataBase.Roles.IsIgnored(platform, DataConversion.ToLong(userId)))
+                if (bb.Program.BotInstance.DataBase.Roles.IsBanned(platform, DataConversion.ToLong(userId)) ||
+                    bb.Program.BotInstance.DataBase.Roles.IsIgnored(platform, DataConversion.ToLong(userId)))
                     return;
 
                 DateTime now_utc = DateTime.UtcNow;
                 Proccessed++;
 
-                if (!Bot.DataBase.Users.CheckUserExists(platform, DataConversion.ToLong(userId)))
+                if (!bb.Program.BotInstance.DataBase.Users.CheckUserExists(platform, DataConversion.ToLong(userId)))
                 {
-                    Bot.DataBase.Users.RegisterNewUser(platform, DataConversion.ToLong(userId), LanguageDetector.DetectLanguage(message), message, channel);
-                    Bot.DataBase.Users.AddUsernameMapping(platform, DataConversion.ToLong(userId), username.ToLower());
-                    Bot.Users++;
+                    bb.Program.BotInstance.DataBase.Users.RegisterNewUser(platform, DataConversion.ToLong(userId), LanguageDetector.DetectLanguage(message), message, channel);
+                    bb.Program.BotInstance.DataBase.Users.AddUsernameMapping(platform, DataConversion.ToLong(userId), username.ToLower());
+                    bb.Program.BotInstance.Users++;
                 }
                 else
                 {
                     // Handle AFK return
-                    if ((int)Bot.UsersBuffer.GetParameter(platform, DataConversion.ToLong(userId), Users.IsAFK) == 1)
+                    if (DataConversion.ToLong(bb.Program.BotInstance.UsersBuffer.GetParameter(platform, DataConversion.ToLong(userId), Users.IsAFK).ToString()) == 1)
                     {
                         ReturnFromAFK(userId, channelId, channel, username, messageId, telegramMessageContext, platform, message, server, serverId);
                     }
 
                     // Award coins
-                    int add_coins = message.Length / 6 + 1;
-                    CurrencyManager.Add(userId, 0, add_coins, platform);
+                    int addCoins = message.Length / 6 + 1;
+                    bb.Program.BotInstance.Currency.Add(userId, 0, addCoins, platform);
                 }
 
-                Bot.UsersBuffer.IncrementGlobalMessageCountAndLenght(platform, DataConversion.ToLong(userId), message.Length);
-                Bot.UsersBuffer.IncrementMessageCountInChannel(platform, DataConversion.ToLong(userId), platform == PlatformsEnum.Discord ? serverId : channelId);
+                bb.Program.BotInstance.UsersBuffer.IncrementGlobalMessageCountAndLenght(platform, DataConversion.ToLong(userId), message.Length);
+                bb.Program.BotInstance.UsersBuffer.IncrementMessageCountInChannel(platform, DataConversion.ToLong(userId), platform == PlatformsEnum.Discord ? serverId : channelId);
 
                 // Mentions handling
                 List<string> mentionedList = new List<string>();
@@ -324,23 +279,23 @@ namespace bb.Utils
                         && mentionedId != null && !mentionedList.Contains(mentionedId))
                     {
                         mentionedList.Add(mentionedId);
-                        CurrencyManager.Add(mentionedId, 0, Bot.CurrencyMentioned, platform);
-                        addToUser += Bot.CurrencyMentioner;
+                        bb.Program.BotInstance.Currency.Add(mentionedId, 0, bb.Program.BotInstance.CurrencyMentioned, platform);
+                        addToUser += bb.Program.BotInstance.CurrencyMentioner;
                     }
                 }
 
                 if (addToUser > 0)
                 {
-                    CurrencyManager.Add(userId, 0, addToUser, platform);
+                    bb.Program.BotInstance.Currency.Add(userId, 0, addToUser, platform);
                 }
 
                 // Save user state
-                Bot.UsersBuffer.SetParameter(platform, DataConversion.ToLong(userId), Users.LastMessage, message);
-                Bot.UsersBuffer.SetParameter(platform, DataConversion.ToLong(userId), Users.LastChannel, channel);
-                Bot.UsersBuffer.SetParameter(platform, DataConversion.ToLong(userId), Users.LastSeen, now_utc.ToString("o"));
+                bb.Program.BotInstance.UsersBuffer.SetParameter(platform, DataConversion.ToLong(userId), Users.LastMessage, message);
+                bb.Program.BotInstance.UsersBuffer.SetParameter(platform, DataConversion.ToLong(userId), Users.LastChannel, channel);
+                bb.Program.BotInstance.UsersBuffer.SetParameter(platform, DataConversion.ToLong(userId), Users.LastSeen, now_utc.ToString("o"));
 
                 // Persist message history
-                var msg = new Models.DataBase.Message
+                var msg = new Data.Entities.Message
                 {
                     messageDate = now_utc,
                     messageText = message,
@@ -353,11 +308,11 @@ namespace bb.Utils
                     isSubscriber = platform == PlatformsEnum.Twitch && twitchMessageContext.IsSubscriber,
                 };
 
-                if (Bot.DataBase.Channels.GetFirstMessage(platform, channelId, DataConversion.ToLong(userId)) is null && !Bot.allFirstMessages.Contains((platform, channelId, DataConversion.ToLong(userId), msg)))
+                if (bb.Program.BotInstance.DataBase.Channels.GetFirstMessage(platform, channelId, DataConversion.ToLong(userId)) is null && !bb.Program.BotInstance.allFirstMessages.Contains((platform, channelId, DataConversion.ToLong(userId), msg)))
                 {
-                    Bot.allFirstMessages.Add((platform, channelId, DataConversion.ToLong(userId), msg));
+                    bb.Program.BotInstance.allFirstMessages.Add((platform, channelId, DataConversion.ToLong(userId), msg));
                 }
-                Bot.MessagesBuffer.Add(platform, channelId, DataConversion.ToLong(userId), msg);
+                bb.Program.BotInstance.MessagesBuffer.Add(platform, channelId, DataConversion.ToLong(userId), msg);
             }
             catch (Exception ex)
             {
@@ -405,28 +360,28 @@ namespace bb.Utils
         /// </para>
         /// This method is automatically triggered when a user sends their first message after setting AFK status.
         /// </remarks>
-        public static void ReturnFromAFK(string userId, string channelId, string channel, string username, string messageId, Telegram.Bot.Types.Message messageReply, PlatformsEnum platform, string messageContent, string server, string serverId)
+        public void ReturnFromAFK(string userId, string channelId, string channel, string username, string messageId, Telegram.Bot.Types.Message messageReply, PlatformsEnum platform, string messageContent, string server, string serverId)
         {
             var language = "en-US";
-            string dbLanguage = (string)Bot.UsersBuffer.GetParameter(platform, DataConversion.ToLong(userId), Users.Language);
+            string dbLanguage = (string)bb.Program.BotInstance.UsersBuffer.GetParameter(platform, DataConversion.ToLong(userId), Users.Language);
 
             if (dbLanguage == string.Empty)
             {
-                Bot.UsersBuffer.SetParameter(platform, DataConversion.ToLong(userId), Users.Language, LanguageDetector.DetectLanguage(messageContent));
+                bb.Program.BotInstance.UsersBuffer.SetParameter(platform, DataConversion.ToLong(userId), Users.Language, LanguageDetector.DetectLanguage(messageContent));
             }
             else
             {
                 language = dbLanguage;
             }
 
-            string? message = (string)Bot.UsersBuffer.GetParameter(platform, DataConversion.ToLong(userId), Users.AFKText);
-            if (!new BlockedWordDetector().Check(message, platform == PlatformsEnum.Discord ? serverId : channelId, platform))
+            string? message = (string)bb.Program.BotInstance.UsersBuffer.GetParameter(platform, DataConversion.ToLong(userId), Users.AFKText);
+            if (!bb.Program.BotInstance.MessageFilter.Check(message, platform == PlatformsEnum.Discord ? serverId : channelId, platform).Item1)
                 return;
 
             string send = (TextSanitizer.CleanAsciiWithoutSpaces(message) == "" ? "" : ": " + message);
 
-            TimeSpan timeElapsed = DateTime.UtcNow - DateTime.Parse((string)Bot.UsersBuffer.GetParameter(platform, DataConversion.ToLong(userId), Users.AFKStart), null, DateTimeStyles.AdjustToUniversal);
-            var afkType = (string)Bot.UsersBuffer.GetParameter(platform, DataConversion.ToLong(userId), Users.AFKType);
+            TimeSpan timeElapsed = DateTime.UtcNow - DateTime.Parse((string)bb.Program.BotInstance.UsersBuffer.GetParameter(platform, DataConversion.ToLong(userId), Users.AFKStart), null, DateTimeStyles.AdjustToUniversal);
+            var afkType = (string)bb.Program.BotInstance.UsersBuffer.GetParameter(platform, DataConversion.ToLong(userId), Users.AFKType);
             string translateKey = "";
 
             if (afkType == "draw")
@@ -501,11 +456,11 @@ namespace bb.Utils
                 else translateKey = "shower:default";
             }
             string text = LocalizationService.GetString(language, "afk:" + translateKey, platform == PlatformsEnum.Discord ? serverId : channelId, platform, username); // FIX AA0
-            Bot.UsersBuffer.SetParameter(platform, DataConversion.ToLong(userId), Users.AFKResume, DateTime.UtcNow.ToString("o"));
-            Bot.UsersBuffer.SetParameter(platform, DataConversion.ToLong(userId), Users.IsAFK, 0);
+            bb.Program.BotInstance.UsersBuffer.SetParameter(platform, DataConversion.ToLong(userId), Users.AFKResume, DateTime.UtcNow.ToString("o"));
+            bb.Program.BotInstance.UsersBuffer.SetParameter(platform, DataConversion.ToLong(userId), Users.IsAFK, 0);
 
             string reply = text + send + " (" + TextSanitizer.FormatTimeSpan(timeElapsed, language) + ")";
-            PlatformMessageSender.SendReply(platform, channel, channelId, reply, language, username, userId, server, serverId, messageId, messageReply, true, TwitchLib.Client.Enums.ChatColorPresets.YellowGreen, false, false);
+            bb.Program.BotInstance.MessageSender.Send(platform, reply, channel, channelId, language, username, userId, server, serverId, messageId, messageReply, false, false, false);
         }
     }
 }

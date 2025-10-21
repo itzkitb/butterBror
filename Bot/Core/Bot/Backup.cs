@@ -1,9 +1,10 @@
 ﻿using bb.Core.Services;
-using bb.Data;
+using bb.Data.Repositories;
+using bb.Models.Platform;
 using bb.Utils;
 using System.Diagnostics;
 using System.IO.Compression;
-using static bb.Core.Bot.Console;
+using static bb.Core.Bot.Logger;
 
 namespace bb.Core.Bot
 {
@@ -44,10 +45,10 @@ namespace bb.Core.Bot
         {
             try
             {
-                PlatformMessageSender.TwitchSend(bb.Bot.TwitchName.ToLower(), "🗃️ Backup started...", "", "", "", true, false);
+                bb.Program.BotInstance.MessageSender.Send(PlatformsEnum.Twitch, "🗃️ Backup started...", bb.Program.BotInstance.TwitchName, isSafe: true);
                 Write("Backup started...");
 
-                string reservePath = bb.Bot.Paths.Reserve;
+                string reservePath = bb.Program.BotInstance.Paths.Reserve;
                 Directory.CreateDirectory(reservePath);
 
                 string archiveName = $"backup_{DateTime.UtcNow:yyyyMMdd}.zip";
@@ -67,7 +68,7 @@ namespace bb.Core.Bot
                 {
                     // Use EnumerateFiles instead of GetFiles for line-by-line reading
                     var allFiles = Directory.EnumerateFiles(
-                        bb.Bot.Paths.Main,
+                        bb.Program.BotInstance.Paths.General,
                         "*",
                         SearchOption.AllDirectories
                     );
@@ -76,7 +77,7 @@ namespace bb.Core.Bot
                     {
                         if (!file.EndsWith(".db", StringComparison.OrdinalIgnoreCase))
                         {
-                            string relativePath = Path.GetRelativePath(bb.Bot.Paths.Main, file);
+                            string relativePath = Path.GetRelativePath(bb.Program.BotInstance.Paths.General, file);
                             string destFile = Path.Combine(tempBackupDir, relativePath);
 
                             Directory.CreateDirectory(Path.GetDirectoryName(destFile));
@@ -123,9 +124,8 @@ namespace bb.Core.Bot
                 double archiveSizeMB = archiveSize / (1024.0 * 1024.0);
 
                 Write($"Backup completed in {stopwatch.Elapsed.TotalSeconds:0} seconds (Archive size: {archiveSizeMB:0.00} MB)!");
-                PlatformMessageSender.TwitchSend(bb.Bot.TwitchName.ToLower(),
-                    $"🗃️ Backup completed in {stopwatch.Elapsed.TotalSeconds:0} seconds (Archive size: {archiveSizeMB:0.00} MB)",
-                    "", "", "", true, false);
+
+                bb.Program.BotInstance.MessageSender.Send(PlatformsEnum.Twitch, $"🗃️ Backup completed in {stopwatch.Elapsed.TotalSeconds:0} seconds (Archive size: {archiveSizeMB:0.00} MB)", bb.Program.BotInstance.TwitchName, isSafe: true);
             }
             catch (Exception ex)
             {
@@ -157,13 +157,13 @@ namespace bb.Core.Bot
         /// Each manager implements CreateBackup() method for consistent snapshot creation.
         /// Database files require special handling compared to regular configuration files.
         /// </remarks>
-        private static IEnumerable<SqlDatabaseBase> GetDatabaseManagers()
+        private static IEnumerable<SqlRepositoryBase> GetDatabaseManagers()
         {
-            yield return bb.Bot.DataBase.Games;
-            yield return bb.Bot.DataBase.Channels;
-            yield return bb.Bot.DataBase.Messages;
-            yield return bb.Bot.DataBase.Roles;
-            yield return bb.Bot.DataBase.Users;
+            yield return bb.Program.BotInstance.DataBase.Games;
+            yield return bb.Program.BotInstance.DataBase.Channels;
+            yield return bb.Program.BotInstance.DataBase.Messages;
+            yield return bb.Program.BotInstance.DataBase.Roles;
+            yield return bb.Program.BotInstance.DataBase.Users;
         }
     }
 }

@@ -1,6 +1,6 @@
 ﻿using bb.Data;
 using System.Collections.Concurrent;
-using static bb.Core.Bot.Console;
+using static bb.Core.Bot.Logger;
 
 namespace bb.Core.Services
 {
@@ -46,15 +46,15 @@ namespace bb.Core.Services
             {
                 var data = new
                 {
-                    Channels7tvEmotes = bb.Bot.ChannelsSevenTVEmotes.ToDictionary(kv => kv.Key, kv => kv.Value),
-                    EmoteSetCache = bb.Bot.EmoteSetsCache.ToDictionary(kv => kv.Key, kv => kv.Value),
-                    UserSearchCache = bb.Bot.UsersSearchCache.ToDictionary(kv => kv.Key, kv => kv.Value),
-                    EmoteCache = bb.Bot.EmotesCache.ToDictionary(kv => kv.Key, kv => kv.Value)
+                    Channels7tvEmotes = bb.Program.BotInstance.ChannelsSevenTVEmotes.ToDictionary(kv => kv.Key, kv => kv.Value),
+                    EmoteSetCache = bb.Program.BotInstance.EmoteSetsCache.ToDictionary(kv => kv.Key, kv => kv.Value),
+                    UserSearchCache = bb.Program.BotInstance.UsersSearchCache.ToDictionary(kv => kv.Key, kv => kv.Value),
+                    EmoteCache = bb.Program.BotInstance.EmotesCache.ToDictionary(kv => kv.Key, kv => kv.Value)
                 };
 
                 string json = Newtonsoft.Json.JsonConvert.SerializeObject(data, Newtonsoft.Json.Formatting.Indented);
-                Directory.CreateDirectory(Path.GetDirectoryName(bb.Bot.Paths.SevenTVCache));
-                FileUtil.SaveFileContent(bb.Bot.Paths.SevenTVCache, json);
+                Directory.CreateDirectory(Path.GetDirectoryName(bb.Program.BotInstance.Paths.SevenTVCache));
+                FileUtil.SaveFileContent(bb.Program.BotInstance.Paths.SevenTVCache, json);
             }
             catch (Exception ex)
             {
@@ -82,9 +82,9 @@ namespace bb.Core.Services
         {
             try
             {
-                if (!FileUtil.FileExists(bb.Bot.Paths.SevenTVCache)) return;
+                if (!FileUtil.FileExists(bb.Program.BotInstance.Paths.SevenTVCache)) return;
 
-                string json = FileUtil.GetFileContent(bb.Bot.Paths.SevenTVCache);
+                string json = FileUtil.GetFileContent(bb.Program.BotInstance.Paths.SevenTVCache);
                 var template = new
                 {
                     Channels7tvEmotes = new Dictionary<string, (List<string> emotes, DateTime expiration)>(),
@@ -95,10 +95,10 @@ namespace bb.Core.Services
 
                 var data = Newtonsoft.Json.JsonConvert.DeserializeAnonymousType(json, template);
 
-                bb.Bot.ChannelsSevenTVEmotes = new ConcurrentDictionary<string, (List<string>, DateTime)>(data.Channels7tvEmotes);
-                bb.Bot.EmoteSetsCache = new ConcurrentDictionary<string, (string, DateTime)>(data.EmoteSetCache);
-                bb.Bot.UsersSearchCache = new ConcurrentDictionary<string, (string, DateTime)>(data.UserSearchCache);
-                bb.Bot.EmotesCache = new ConcurrentDictionary<string, (SevenTV.Types.Rest.Emote, DateTime)>(data.EmoteCache);
+                bb.Program.BotInstance.ChannelsSevenTVEmotes = new ConcurrentDictionary<string, (List<string>, DateTime)>(data.Channels7tvEmotes);
+                bb.Program.BotInstance.EmoteSetsCache = new ConcurrentDictionary<string, (string, DateTime)>(data.EmoteSetCache);
+                bb.Program.BotInstance.UsersSearchCache = new ConcurrentDictionary<string, (string, DateTime)>(data.UserSearchCache);
+                bb.Program.BotInstance.EmotesCache = new ConcurrentDictionary<string, (SevenTV.Types.Rest.Emote, DateTime)>(data.EmoteCache);
             }
             catch (Exception ex)
             {

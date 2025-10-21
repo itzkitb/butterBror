@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace butterBror.Models.Exceptions
+namespace bb.Models.Exceptions
 {
     public class TwitchClientNullException : Exception
     {
