@@ -8,9 +8,9 @@
     <Nullable>enable</Nullable>
     <ApplicationIcon>logo.ico</ApplicationIcon>
     <Platforms>AnyCPU;x86</Platforms>
-    <Version>2.18.0.7</Version>
+    <Version>2.18.0.9</Version>
     <Title>butterbror</Title>
-    <Company>ItzKITb</Company>
+    <Company>SillyApps</Company>
     <Copyright>https://github.com/itzkitb</Copyright>
 	<BranchName Condition="'$(BranchName)' == ''">$(BranchNameDefault)</BranchName>
     <CommitHash Condition="'$(CommitHash)' == ''">local</CommitHash>
