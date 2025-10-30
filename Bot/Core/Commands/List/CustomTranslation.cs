@@ -3,6 +3,7 @@ using bb.Core.Configuration;
 using TwitchLib.Client.Enums;
 using bb.Models.Command;
 using bb.Models.Platform;
+using bb.Models.Users;
 
 namespace bb.Core.Commands.List
 {
@@ -13,10 +14,10 @@ namespace bb.Core.Commands.List
         public override string AuthorsGithub => "https://github.com/itzkitb";
         public override string GithubSource => $"{URLs.githubSource}blob/master/butterBror/Core/Commands/List/CustomTranslation.cs";
         public override Version Version => new("1.0.1");
-        public override Dictionary<string, string> Description => new()
+        public override Dictionary<Language, string> Description => new()
         {
-            { "ru-RU", "Заменить стандартные сообщения собственными." },
-            { "en-US", "Replace the default messages with your own." }
+            { Language.RuRu, "Заменить стандартные сообщения собственными." },
+            { Language.EnUs, "Replace the default messages with your own." }
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=customtranslation";
         public override int CooldownPerUser => 10;
@@ -27,7 +28,7 @@ namespace bb.Core.Commands.List
         public override bool OnlyBotModerator => true;
         public override bool OnlyBotDeveloper => true;
         public override bool OnlyChannelModerator => true;
-        public override PlatformsEnum[] Platforms => [PlatformsEnum.Twitch, PlatformsEnum.Telegram, PlatformsEnum.Discord];
+        public override Platform[] Platforms => [Platform.Twitch, Platform.Telegram, Platform.Discord];
         public override bool IsAsync => false;
 
         public override CommandReturn Execute(CommandData data)
@@ -36,21 +37,23 @@ namespace bb.Core.Commands.List
 
             try
             {
-                if (data.Channel == null || data.ChannelId == null || data.User.IsModerator == null ||
-                    data.User.IsBroadcaster == null || data.User.IsBotModerator == null)
+                if (data.Channel == null || data.ChannelId == null)
                 {
                     commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:API_error", string.Empty, data.Platform));
                     return commandReturn;
                 }
 
-                string[] setAliases = ["set", "s", "установить", "сет", "с", "у"];
-                string[] getAliases = ["get", "g", "гет", "получить", "п", "г"];
-                string[] originalAliases = ["original", "оригинал", "о", "o"];
-                string[] deleteAliases = ["delete", "del", "d", "remove", "reset", "сбросить", "удалить", "с"];
+                string[] setAlias = ["set", "s", "установить", "сет", "с", "у"];
+                string[] getAlias = ["get", "g", "гет", "получить", "п", "г"];
+                string[] origAlias = ["original", "оригинал", "о", "o"];
+                string[] delAlias = ["delete", "del", "d", "remove", "reset", "сбросить", "удалить", "с"];
 
-                string[] langs = ["ru-RU", "en"];
+                Dictionary<Language, string[]> languagesDictionary = new(){
+                    { Language.EnUs, ["en", "en-us", "us"] },
+                    { Language.RuRu, ["ru", "ru-ru"] }
+                };
 
-                string[] uneditableitems = ["text:bot_info", "cantSend", "lowArgs", "lang", "wrongArgs", "changedLang", "commandDoesntWork", "noneExistUser", "noAccess", "userBanned",
+                string[] uneditableItems = ["text:bot_info", "cantSend", "lowArgs", "lang", "wrongArgs", "changedLang", "commandDoesntWork", "noneExistUser", "noAccess", "userBanned",
                     "userPardon", "rejoinedChannel", "joinedChannel", "leavedChannel", "modAdded", "modDel", "addedChannel", "delChannel", "welcomeChannel", "error", "botVerified",
                     "unhandledError", "Err"];
 
@@ -58,28 +61,41 @@ namespace bb.Core.Commands.List
                 {
                     try
                     {
-                        string arg1 = data.Arguments[0];
-                        string paramName = data.Arguments[1];
-                        string lang = data.Arguments[2];
-                        if (langs.Contains(lang))
+                        string argumentOne = data.Arguments[0];
+                        string languageParameterName = data.Arguments[1];
+                        string stringLanguage = data.Arguments[2];
+
+                        Language? prepLang = null;
+
+                        foreach (KeyValuePair<Language, string[]> l in languagesDictionary)
                         {
-                            if (setAliases.Contains(arg1))
+                            if (l.Value.Contains(stringLanguage))
+                            {
+                                prepLang = l.Key;
+                            }
+                        }
+
+                        if (prepLang != null)
+                        {
+                            Language lang = (Language)prepLang;
+                            if (setAlias.Contains(argumentOne))
                             {
                                 if (data.Arguments.Count > 3)
                                 {
-                                    List<string> textArgs = data.Arguments;
-                                    textArgs = textArgs.Skip(3).ToList();
-                                    string text = string.Join(' ', textArgs);
-                                    if (uneditableitems.Contains(paramName))
+                                    List<string> argumentsList = data.Arguments;
+                                    argumentsList = argumentsList.Skip(3).ToList();
+                                    string translate = string.Join(' ', argumentsList);
+
+                                    if (uneditableItems.Contains(languageParameterName))
                                     {
                                         commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:translation_secured", "", data.Platform));
                                         commandReturn.SetColor(ChatColorPresets.Red);
                                     }
                                     else
                                     {
-                                        if (LocalizationService.TranslateContains(paramName))
+                                        if (LocalizationService.TranslateContains(languageParameterName))
                                         {
-                                            if (LocalizationService.SetCustomTranslation(paramName, text, data.ChannelId, lang, data.Platform))
+                                            if (LocalizationService.SetCustomTranslation(languageParameterName, translate, data.ChannelId, lang, data.Platform))
                                             {
                                                 LocalizationService.UpdateTranslation(lang, data.ChannelId, data.Platform);
                                                 commandReturn.SetMessage(LocalizationService.GetString(
@@ -87,7 +103,7 @@ namespace bb.Core.Commands.List
                                                     "command:custom_translation:set",
                                                     string.Empty,
                                                     data.Platform,
-                                                    paramName));
+                                                    languageParameterName));
                                             }
                                             else
                                             {
@@ -113,17 +129,17 @@ namespace bb.Core.Commands.List
                                     commandReturn.SetColor(ChatColorPresets.Red);
                                 }
                             }
-                            else if (getAliases.Contains(arg1))
+                            else if (getAlias.Contains(argumentOne))
                             {
-                                if (LocalizationService.TranslateContains(paramName))
+                                if (LocalizationService.TranslateContains(languageParameterName))
                                 {
                                     commandReturn.SetMessage(LocalizationService.GetString(
                                         data.User.Language,
                                         "command:custom_translation:get",
                                         string.Empty,
                                         data.Platform,
-                                        paramName,
-                                        LocalizationService.GetString(lang, paramName, data.ChannelId, data.Platform)));
+                                        languageParameterName,
+                                        LocalizationService.GetString(lang, languageParameterName, data.ChannelId, data.Platform)));
                                 }
                                 else
                                 {
@@ -131,28 +147,28 @@ namespace bb.Core.Commands.List
                                     commandReturn.SetColor(ChatColorPresets.GoldenRod);
                                 }
                             }
-                            else if (originalAliases.Contains(arg1))
+                            else if (origAlias.Contains(argumentOne))
                             {
                                 commandReturn.SetMessage(LocalizationService.GetString(
                                     data.User.Language,
                                     "command:custom_translation:original",
                                     string.Empty,
                                     data.Platform,
-                                    paramName,
-                                    LocalizationService.GetString(lang, paramName, string.Empty, data.Platform)));
+                                    languageParameterName,
+                                    LocalizationService.GetString(lang, languageParameterName, string.Empty, data.Platform)));
                             }
-                            else if (deleteAliases.Contains(arg1) && ((bool)data.User.IsModerator || (bool)data.User.IsBroadcaster || (bool)data.User.IsBotModerator))
+                            else if (delAlias.Contains(argumentOne) && data.User.Roles >= Roles.ChatMod)
                             {
-                                if (LocalizationService.TranslateContains(paramName))
+                                if (LocalizationService.TranslateContains(languageParameterName))
                                 {
-                                    if (LocalizationService.DeleteCustomTranslation(paramName, data.ChannelId, lang, data.Platform))
+                                    if (LocalizationService.DeleteCustomTranslation(languageParameterName, data.ChannelId, lang, data.Platform))
                                     {
                                         commandReturn.SetMessage(LocalizationService.GetString(
                                             data.User.Language,
                                             "command:custom_translation:delete",
                                             string.Empty,
                                             data.Platform,
-                                            paramName));
+                                            languageParameterName));
                                         LocalizationService.UpdateTranslation(lang, data.ChannelId, data.Platform);
                                     }
                                     else
@@ -175,8 +191,8 @@ namespace bb.Core.Commands.List
                                 "error:translation_lang_is_not_exist",
                                 string.Empty,
                                 data.Platform,
-                                lang,
-                                string.Join(", ", langs)));
+                                stringLanguage,
+                                string.Join(", ", languagesDictionary)));
 
                             commandReturn.SetColor(ChatColorPresets.Red);
                         }

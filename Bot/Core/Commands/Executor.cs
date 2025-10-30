@@ -1,6 +1,7 @@
 ﻿using bb.Models.Command;
 using bb.Models.Platform;
 using bb.Models.Users;
+using bb.Utils;
 using Discord.WebSocket;
 using System;
 using Telegram.Bot.Types;
@@ -37,18 +38,20 @@ namespace bb.Core.Commands
         {
             try
             {
+                var cMessage = message.ChatMessage;
+
                 if (bb.Program.BotInstance.DataBase == null)
                 {
                     Write("The database is null.", LogLevel.Critical);
                     return;
                 }
 
-                if (!message.ChatMessage.Message.StartsWith(bb.Program.BotInstance.DataBase.Channels.GetCommandPrefix(PlatformsEnum.Twitch, message.ChatMessage.RoomId)))
+                if (!cMessage.Message.StartsWith(bb.Program.BotInstance.DataBase.Channels.GetCommandPrefix(Platform.Twitch, cMessage.RoomId)))
                 {
                     return;
                 }
 
-                string trimmedMessage = message.ChatMessage.Message.Replace("\u2063", "").Substring(bb.Program.BotInstance.DataBase.Channels.GetCommandPrefix(PlatformsEnum.Twitch, message.ChatMessage.RoomId).Length);
+                string trimmedMessage = cMessage.Message.Replace("\u2063", "").Substring(bb.Program.BotInstance.DataBase.Channels.GetCommandPrefix(Platform.Twitch, cMessage.RoomId).Length);
                 string[] parts = trimmedMessage.Split(' ', StringSplitOptions.RemoveEmptyEntries);
                 string commandName = parts.Length > 0 ? parts[0] : string.Empty;
                 List<string> commandArguments = parts.Length > 1 ? parts.Skip(1).ToList() : new List<string>();
@@ -67,13 +70,11 @@ namespace bb.Core.Commands
 
                 UserData user = new()
                 {
-                    Id = message.ChatMessage.UserId,
-                    Language = "en-US",
-                    Name = message.ChatMessage.Username,
-                    IsModerator = message.ChatMessage.IsModerator || message.ChatMessage.IsBroadcaster,
-                    IsBroadcaster = message.ChatMessage.IsBroadcaster,
-                    Balance = bb.Program.BotInstance.Currency.GetBalance(message.ChatMessage.UserId, PlatformsEnum.Twitch),
-                    BalanceFloat = bb.Program.BotInstance.Currency.GetSubbalance(message.ChatMessage.UserId, PlatformsEnum.Twitch)
+                    Id = cMessage.UserId,
+                    Language = (Language)DataConversion.ToInt(bb.Program.BotInstance.UsersBuffer.GetParameter(Platform.Twitch, DataConversion.ToLong(cMessage.UserId), Configuration.Users.Language)),
+                    Name = cMessage.Username,
+                    Balance = bb.Program.BotInstance.Currency.GetBalance(cMessage.UserId, Platform.Twitch),
+                    Roles = (Roles)DataConversion.ToInt(bb.Program.BotInstance.UsersBuffer.GetParameter(Platform.Twitch, DataConversion.ToLong(cMessage.UserId), Configuration.Users.Role)),
                 };
 
                 CommandData data = new()
@@ -81,21 +82,21 @@ namespace bb.Core.Commands
                     Name = commandName.ToLower(),
                     Arguments = commandArguments,
                     ArgumentsString = commandArgumentsAsString,
-                    Channel = message.ChatMessage.Channel,
-                    ChannelId = message.ChatMessage.RoomId,
-                    MessageID = message.ChatMessage.Id,
-                    Platform = PlatformsEnum.Twitch,
+                    Channel = cMessage.Channel,
+                    ChannelId = cMessage.RoomId,
+                    MessageID = cMessage.Id,
+                    Platform = Platform.Twitch,
                     User = user,
                     TwitchMessage = message,
                     CommandInstanceID = Guid.NewGuid().ToString(),
-                    ChatID = message.ChatMessage.RoomId
+                    ChatID = cMessage.RoomId
                 };
 
-                if (message.ChatMessage.ChatReply != null)
+                if (cMessage.ChatReply != null)
                 {
-                    string[] replyParts = message.ChatMessage.ChatReply.ParentMsgBody.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                    string[] replyParts = cMessage.ChatReply.ParentMsgBody.Split(' ', StringSplitOptions.RemoveEmptyEntries);
                     data.Arguments.AddRange(replyParts);
-                    data.ArgumentsString += " " + message.ChatMessage.ChatReply.ParentMsgBody;
+                    data.ArgumentsString += " " + cMessage.ChatReply.ParentMsgBody;
                 }
 
                 await bb.Program.BotInstance.CommandRunner.Execute(data);
@@ -140,33 +141,31 @@ namespace bb.Core.Commands
                 UserData user = new()
                 {
                     Id = command.User.Id.ToString(),
-                    Language = "en-US",
+                    Language = (Language)DataConversion.ToInt(bb.Program.BotInstance.UsersBuffer.GetParameter(Platform.Discord, Convert.ToInt64(command.User.Id), Configuration.Users.Language)),
                     Name = command.User.Username,
-                    Balance = bb.Program.BotInstance.Currency.GetBalance(command.User.Id.ToString(), PlatformsEnum.Discord),
-                    BalanceFloat = bb.Program.BotInstance.Currency.GetSubbalance(command.User.Id.ToString(), PlatformsEnum.Discord)
+                    Balance = bb.Program.BotInstance.Currency.GetBalance(command.User.Id.ToString(), Platform.Discord),
+                    Roles = (Roles)DataConversion.ToInt(bb.Program.BotInstance.UsersBuffer.GetParameter(Platform.Discord, Convert.ToInt64(command.User.Id), Configuration.Users.Role)),
                 };
+                
                 Guid RequestUuid = Guid.NewGuid();
                 Guid CommandExecutionUuid = Guid.NewGuid();
                 string RequestUuidString = RequestUuid.ToString();
                 string ArgsAsString = "";
-                Dictionary<string, dynamic> argsDS = new();
-                List<string> args = new();
+                List<string> args = [];
                 foreach (var info in command.Data.Options)
                 {
                     ArgsAsString += info.Value.ToString();
-                    argsDS.Add(info.Name, info.Value);
                     args.Add(info.Value.ToString() ?? "");
                 }
 
                 CommandData data = new()
                 {
                     Name = command.CommandName.ToLower(),
-                    DiscordArguments = argsDS,
                     Channel = command.Channel.Name,
                     ChannelId = command.Channel.Id.ToString(),
                     Server = ((SocketGuildChannel)command.Channel).Guild.Name,
                     ServerID = ((SocketGuildChannel)command.Channel).Guild.Id.ToString(),
-                    Platform = PlatformsEnum.Discord,
+                    Platform = Platform.Discord,
                     DiscordCommandBase = command,
                     User = user,
                     ArgumentsString = ArgsAsString,
@@ -214,12 +213,12 @@ namespace bb.Core.Commands
                     return;
                 }
 
-                if (!message.Content.StartsWith(bb.Program.BotInstance.DataBase.Channels.GetCommandPrefix(PlatformsEnum.Discord, ((SocketGuildChannel)message.Channel).Guild.Id.ToString())))
+                if (!message.Content.StartsWith(bb.Program.BotInstance.DataBase.Channels.GetCommandPrefix(Platform.Discord, ((SocketGuildChannel)message.Channel).Guild.Id.ToString())))
                 {
                     return;
                 }
 
-                string CommandName = message.Content.Split(' ')[0].Substring(bb.Program.BotInstance.DataBase.Channels.GetCommandPrefix(PlatformsEnum.Discord, ((SocketGuildChannel)message.Channel).Guild.Id.ToString()).Length);
+                string CommandName = message.Content.Split(' ')[0].Substring(bb.Program.BotInstance.DataBase.Channels.GetCommandPrefix(Platform.Discord, ((SocketGuildChannel)message.Channel).Guild.Id.ToString()).Length);
                 List<string> CommandArguments = message.Content.Split(' ').Skip(1).ToList();
                 string CommandArgumentsAsString = string.Join(' ', CommandArguments);
 
@@ -237,10 +236,10 @@ namespace bb.Core.Commands
                 UserData user = new()
                 {
                     Id = message.Author.Id.ToString(),
-                    Language = "en-US",
+                    Language = (Language)DataConversion.ToInt(bb.Program.BotInstance.UsersBuffer.GetParameter(Platform.Discord, Convert.ToInt64(message.Author.Id.ToString()), Configuration.Users.Language)),
                     Name = message.Author.Username,
-                    Balance = bb.Program.BotInstance.Currency.GetBalance(message.Author.Id.ToString(), PlatformsEnum.Discord),
-                    BalanceFloat = bb.Program.BotInstance.Currency.GetSubbalance(message.Author.Id.ToString(), PlatformsEnum.Discord)
+                    Balance = bb.Program.BotInstance.Currency.GetBalance(message.Author.Id.ToString(), Platform.Discord),
+                    Roles = (Roles)DataConversion.ToInt(bb.Program.BotInstance.UsersBuffer.GetParameter(Platform.Discord, Convert.ToInt64(message.Author.Id.ToString()), Configuration.Users.Role)),
                 };
 
                 CommandData data = new()
@@ -250,7 +249,7 @@ namespace bb.Core.Commands
                     ChannelId = message.Channel.Id.ToString(),
                     Server = ((SocketGuildChannel)message.Channel).Guild.Name,
                     ServerID = ((SocketGuildChannel)message.Channel).Guild.Id.ToString(),
-                    Platform = PlatformsEnum.Discord,
+                    Platform = Platform.Discord,
                     User = user,
                     ArgumentsString = CommandArgumentsAsString,
                     Arguments = CommandArguments,
@@ -301,7 +300,7 @@ namespace bb.Core.Commands
                     return;
                 }
 
-                if (message.Text == null || !message.Text.StartsWith(bb.Program.BotInstance.DataBase.Channels.GetCommandPrefix(PlatformsEnum.Telegram, message.Chat.Id.ToString())))
+                if (message.Text == null || !message.Text.StartsWith(bb.Program.BotInstance.DataBase.Channels.GetCommandPrefix(Platform.Telegram, message.Chat.Id.ToString())))
                 {
                     return;
                 }
@@ -309,23 +308,21 @@ namespace bb.Core.Commands
                 UserData user = new()
                 {
                     Id = message.From.Id.ToString(),
-                    Language = "en-US",
+                    Language = (Language)DataConversion.ToInt(bb.Program.BotInstance.UsersBuffer.GetParameter(Platform.Telegram, Convert.ToInt64(message.From.Id.ToString()), Configuration.Users.Language)),
                     Name = message.From.Username ?? message.From.FirstName,
-                    IsModerator = false || message.From.Id == message.Chat.Id,
-                    IsBroadcaster = message.From.Id == message.Chat.Id,
-                    Balance = bb.Program.BotInstance.Currency.GetBalance(message.From.Id.ToString(), PlatformsEnum.Telegram),
-                    BalanceFloat = bb.Program.BotInstance.Currency.GetSubbalance(message.From.Id.ToString(), PlatformsEnum.Telegram)
+                    Balance = bb.Program.BotInstance.Currency.GetBalance(message.From.Id.ToString(), Platform.Telegram),
+                    Roles = (Roles)DataConversion.ToInt(bb.Program.BotInstance.UsersBuffer.GetParameter(Platform.Telegram, Convert.ToInt64(message.From.Id.ToString()), Configuration.Users.Role)),
                 };
 
                 Guid command_execution_uid = Guid.NewGuid();
                 CommandData data = new()
                 {
-                    Name = message.Text.ToLower().Split(' ')[0].Substring(bb.Program.BotInstance.DataBase.Channels.GetCommandPrefix(PlatformsEnum.Telegram, message.Chat.Id.ToString()).Length),
+                    Name = message.Text.ToLower().Split(' ')[0].Substring(bb.Program.BotInstance.DataBase.Channels.GetCommandPrefix(Platform.Telegram, message.Chat.Id.ToString()).Length),
                     Arguments = message.Text.Split(' ').Skip(1).ToList(),
                     ArgumentsString = string.Join(" ", message.Text.Split(' ').Skip(1)),
                     Channel = message.Chat.Title ?? message.Chat.Username ?? message.Chat.Id.ToString(),
                     ChannelId = message.Chat.Id.ToString(),
-                    Platform = PlatformsEnum.Telegram,
+                    Platform = Platform.Telegram,
                     User = user,
                     CommandInstanceID = command_execution_uid.ToString(),
                     TelegramMessage = message,

@@ -1,6 +1,7 @@
 ﻿using bb.Core.Commands;
 using bb.Core.Configuration;
 using bb.Models.Platform;
+using bb.Models.Users;
 using bb.Utils;
 using System.Net.NetworkInformation;
 using Telegram.Bot;
@@ -49,13 +50,13 @@ namespace bb.Services.Platform.Telegram
                     text == null ? "[ No text ]" : text,
                     null,
                     chat.Title == null ? botData.Username : chat.Title,
-                    PlatformsEnum.Telegram,
+                    Models.Platform.Platform.Telegram,
                     message,
                     message.Id.ToString(),
                     null,
                     null);
 
-                string lang = (string)bb.Program.BotInstance.UsersBuffer.GetParameter(PlatformsEnum.Telegram, user.Id, Users.Language) ?? "en-US";
+                Language lang = (Language?)bb.Program.BotInstance.UsersBuffer.GetParameter(Models.Platform.Platform.Telegram, user.Id, Users.Language) ?? Language.EnUs;
 
                 if (MessageProcessor.IsEqualsSlashCommand("start", text, botData.Username))
                 {
@@ -63,7 +64,7 @@ namespace bb.Services.Platform.Telegram
                         lang,
                         "telegram:welcome",
                         chat.Id.ToString(),
-                        PlatformsEnum.Telegram,
+                        Models.Platform.Platform.Telegram,
                         bb.Program.BotInstance.Version,
                         user.Id,
                         TextSanitizer.FormatTimeSpan(DateTime.UtcNow - bb.Program.BotInstance.StartTime, lang),
@@ -77,7 +78,7 @@ namespace bb.Services.Platform.Telegram
                         lang,
                         "command:ping",
                         chat.Id.ToString(),
-                        PlatformsEnum.Telegram,
+                        Models.Platform.Platform.Telegram,
                         bb.Program.BotInstance.Version,
                         TextSanitizer.FormatTimeSpan(workTime, lang),
                         bb.Program.BotInstance.Clients.Twitch.JoinedChannels.Count + bb.Program.BotInstance.Clients.Discord.Guilds.Count + " (Twitch, Discord)",
@@ -94,7 +95,7 @@ namespace bb.Services.Platform.Telegram
                 }
                 else if (MessageProcessor.IsEqualsSlashCommand("help", text, botData.Username))
                 {
-                    string returnMessage = LocalizationService.GetString(lang, "text:bot_info", chat.Id.ToString(), PlatformsEnum.Telegram);
+                    string returnMessage = LocalizationService.GetString(lang, "text:bot_info", chat.Id.ToString(), Models.Platform.Platform.Telegram);
                     await client.SendMessage(
                         chat.Id,
                         returnMessage,
@@ -104,7 +105,7 @@ namespace bb.Services.Platform.Telegram
                 }
                 else if (MessageProcessor.IsEqualsSlashCommand("commands", text, botData.Username))
                 {
-                    string returnMessage = LocalizationService.GetString(lang, "command:help", chat.Id.ToString(), PlatformsEnum.Telegram);
+                    string returnMessage = LocalizationService.GetString(lang, "command:help", chat.Id.ToString(), Models.Platform.Platform.Telegram);
                     await client.SendMessage(
                         chat.Id,
                         returnMessage,

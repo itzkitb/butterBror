@@ -1,5 +1,6 @@
 ﻿using bb.Models.Command;
 using bb.Models.Platform;
+using bb.Models.Users;
 
 namespace bb.Core.Commands
 {
@@ -10,7 +11,7 @@ namespace bb.Core.Commands
         string AuthorsGithub { get; }
         string GithubSource { get; }
         Version Version { get; }
-        Dictionary<string, string> Description { get; }
+        Dictionary<Language, string> Description { get; }
         string WikiLink { get; }
         int CooldownPerUser { get; }
         int CooldownPerChannel { get; }
@@ -20,7 +21,7 @@ namespace bb.Core.Commands
         bool OnlyBotModerator { get; }
         bool OnlyBotDeveloper { get; }
         bool OnlyChannelModerator { get; }
-        PlatformsEnum[] Platforms { get; }
+        Platform[] Platforms { get; }
         bool IsAsync { get; }
         bool TechWorks { get; }
 

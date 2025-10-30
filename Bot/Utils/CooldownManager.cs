@@ -1,5 +1,6 @@
 ﻿using bb.Core.Configuration;
 using bb.Models.Platform;
+using bb.Models.Users;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -61,16 +62,15 @@ namespace bb.Utils
             string cooldownName,
             string userID,
             string roomID,
-            PlatformsEnum platform,
+            Platform platform,
             bool ignoreUserVIP = false,
             bool ignoreGlobalCooldown = false
         )
         {
             try
             {
-                // VIP or dev/mod bypass
-                bool isVipOrStaff = bb.Program.BotInstance.DataBase.Roles.IsModerator(platform, DataConversion.ToLong(userID))
-                                    || bb.Program.BotInstance.DataBase.Roles.IsDeveloper(platform, DataConversion.ToLong(userID));
+                // Dev or mod bypass
+                bool isVipOrStaff = (Roles)DataConversion.ToInt(bb.Program.BotInstance.UsersBuffer.GetParameter(platform, DataConversion.ToLong(userID), Users.Role)) >= Roles.ChatMod;
 
                 if (isVipOrStaff && ignoreUserVIP)
                 {
@@ -171,7 +171,7 @@ namespace bb.Utils
             string userID,
             string cooldownName,
             int userSecondsCooldown,
-            PlatformsEnum platform
+            Platform platform
         )
         {
             try

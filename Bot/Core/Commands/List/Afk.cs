@@ -2,6 +2,7 @@
 using bb.Core.Configuration;
 using bb.Models.Command;
 using bb.Models.Platform;
+using bb.Models.Users;
 
 namespace bb.Core.Commands.List
 {
@@ -12,9 +13,9 @@ namespace bb.Core.Commands.List
         public override string AuthorsGithub => "https://github.com/itzkitb";
         public override string GithubSource => $"{URLs.githubSource}blob/master/butterBror/Core/Commands/List/Afk.cs";
         public override Version Version => new Version("1.0.1");
-        public override Dictionary<string, string> Description => new() {
-            { "ru-RU", "Эта команда поможет вам уйти из чата в афк." },
-            { "en-US", "This command will help you leave the chat and go afk." }
+        public override Dictionary<Language, string> Description => new() {
+            { Language.RuRu, "Эта команда поможет вам уйти из чата в афк." },
+            { Language.EnUs, "This command will help you leave the chat and go afk." }
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=afk";
         public override int CooldownPerUser => 5;
@@ -25,7 +26,7 @@ namespace bb.Core.Commands.List
         public override bool OnlyBotDeveloper => false;
         public override bool OnlyBotModerator => false;
         public override bool OnlyChannelModerator => false;
-        public override PlatformsEnum[] Platforms => [PlatformsEnum.Twitch, PlatformsEnum.Telegram];
+        public override Platform[] Platforms => [Platform.Twitch, Platform.Telegram];
         public override bool IsAsync => false;
 
         // AFK
@@ -94,12 +95,12 @@ namespace bb.Core.Commands.List
                 string result = LocalizationService.GetString(data.User.Language, $"command:afk:{afkType}:start", data.ChannelId, data.Platform, data.User.Name);
                 string text = data.ArgumentsString;
 
-                bb.Program.BotInstance.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.Id), Users.IsAFK, 1);
-                bb.Program.BotInstance.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.Id), Users.AFKText, text);
-                bb.Program.BotInstance.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.Id), Users.AFKType, afkType);
-                bb.Program.BotInstance.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.Id), Users.AFKStart, DateTime.UtcNow.ToString("o"));
-                bb.Program.BotInstance.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.Id), Users.AFKResume, DateTime.UtcNow.ToString("o"));
-                bb.Program.BotInstance.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.Id), Users.AFKResumeTimes, 0);
+                bb.Program.BotInstance.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.Id), Users.IsAfk, 1);
+                bb.Program.BotInstance.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.Id), Users.AfkMessage, text);
+                bb.Program.BotInstance.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.Id), Users.AfkType, afkType);
+                bb.Program.BotInstance.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.Id), Users.AfkStartTime, DateTime.UtcNow.ToString("o"));
+                bb.Program.BotInstance.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.Id), Users.AfkResume, DateTime.UtcNow.ToString("o"));
+                bb.Program.BotInstance.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.Id), Users.AfkResumeCount, 0);
 
                 if (TextSanitizer.CleanAsciiWithoutSpaces(text) == "")
                     commandReturn.SetMessage(result);

@@ -34,7 +34,7 @@ namespace bb.Data.Repositories
         private readonly object _lock = new();
         private int _changeCount;
         private const int MAX_CHANGES = 5000;
-        private readonly Dictionary<(PlatformsEnum, long), UserChange> _changes = new();
+        private readonly Dictionary<(Platform, long), UserChange> _changes = new();
         public readonly AutoResetEvent FlushSignal = new(false);
         private Thread _flushThread;
 
@@ -90,7 +90,7 @@ namespace bb.Data.Repositories
         /// </para>
         /// This method ensures consistent reads even during high-write scenarios.
         /// </remarks>
-        public object GetParameter(PlatformsEnum platform, long userId, string columnName)
+        public object GetParameter(Platform platform, long userId, string columnName)
         {
             lock (_lock)
             {
@@ -133,7 +133,7 @@ namespace bb.Data.Repositories
         /// </para>
         /// This method is optimized for frequent access patterns typical in chat statistics tracking.
         /// </remarks>
-        public int GetGlobalMessageCount(PlatformsEnum platform, long userId)
+        public int GetGlobalMessageCount(Platform platform, long userId)
         {
             lock (_lock)
             {
@@ -176,7 +176,7 @@ namespace bb.Data.Repositories
         /// </para>
         /// The method efficiently combines persistent and volatile data sources without additional database queries when possible.
         /// </remarks>
-        public long GetGlobalMessagesLenght(PlatformsEnum platform, long userId)
+        public long GetGlobalMessagesLenght(Platform platform, long userId)
         {
             lock (_lock)
             {
@@ -222,7 +222,7 @@ namespace bb.Data.Repositories
         /// </para>
         /// This is essential for channel-specific statistics and moderation features.
         /// </remarks>
-        public int GetMessageCountInChannel(PlatformsEnum platform, long userId, string channelId)
+        public int GetMessageCountInChannel(Platform platform, long userId, string channelId)
         {
             lock (_lock)
             {
@@ -268,7 +268,7 @@ namespace bb.Data.Repositories
         /// </para>
         /// This method is optimized for high-frequency message counting with minimal database impact.
         /// </remarks>
-        public void IncrementMessageCountInChannel(PlatformsEnum platform, long userId, string channelId, int increment = 1)
+        public void IncrementMessageCountInChannel(Platform platform, long userId, string channelId, int increment = 1)
         {
             lock (_lock)
             {
@@ -311,7 +311,7 @@ namespace bb.Data.Repositories
         /// </para>
         /// The method automatically aggregates multiple calls before flushing to database.
         /// </remarks>
-        public void IncrementGlobalMessageCountAndLenght(PlatformsEnum platform, long userId, int messageLength, int increment = 1)
+        public void IncrementGlobalMessageCountAndLenght(Platform platform, long userId, int messageLength, int increment = 1)
         {
             lock (_lock)
             {
@@ -358,7 +358,7 @@ namespace bb.Data.Repositories
         /// </para>
         /// Multiple calls for the same parameter will only result in one database update with the final value.
         /// </remarks>
-        public void SetParameter(PlatformsEnum platform, long userId, string columnName, object value)
+        public void SetParameter(Platform platform, long userId, string columnName, object value)
         {
             lock (_lock)
             {

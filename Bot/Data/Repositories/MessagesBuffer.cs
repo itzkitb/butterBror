@@ -30,7 +30,7 @@ namespace bb.Data.Repositories
     /// </remarks>
     public class MessagesBuffer : IDisposable
     {
-        private readonly List<(PlatformsEnum platform, string channelId, long userId, Message message)> _buffer = new();
+        private readonly List<(Platform platform, string channelId, long userId, Message message)> _buffer = new();
         private readonly object _lock = new();
         private long _messagesCount;
         private const long MAX_MESSAGES_COUNT = 5000;
@@ -95,7 +95,7 @@ namespace bb.Data.Repositories
         /// </para>
         /// Designed for high-frequency calls with minimal performance impact on message processing.
         /// </remarks>
-        public void Add(PlatformsEnum platform, string channelId, long userId, Message message)
+        public void Add(Platform platform, string channelId, long userId, Message message)
         {
             lock (_lock)
             {

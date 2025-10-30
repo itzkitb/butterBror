@@ -1,7 +1,8 @@
 ﻿using bb.Core.Configuration;
-using System.Diagnostics;
 using bb.Models.Command;
 using bb.Models.Platform;
+using bb.Models.Users;
+using System.Diagnostics;
 
 namespace bb.Core.Commands.List
 {
@@ -12,9 +13,9 @@ namespace bb.Core.Commands.List
         public override string AuthorsGithub => "https://github.com/itzkitb";
         public override string GithubSource => $"{URLs.githubSource}blob/master/butterBror/Core/Commands/List/BotStatus.cs";
         public override Version Version => new("1.0.1");
-        public override Dictionary<string, string> Description => new() {
-            { "ru-RU", "MrDestructoid БО-Т НЕ РАБ-ОТАЕТ... НЕТ, Я СЕР-ЬЕЗНО!" },
-            { "en-US", "MrDestructoid THE BO-T DOES-N'T WORK... NO, I'M SER-IOUS!" }
+        public override Dictionary<Language, string> Description => new() {
+            { Language.RuRu, "MrDestructoid БО-Т НЕ РАБ-ОТАЕТ... НЕТ, Я СЕР-ЬЕЗНО!" },
+            { Language.EnUs, "MrDestructoid THE BO-T DOES-N'T WORK... NO, I'M SER-IOUS!" }
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=botstatus";
         public override int CooldownPerUser => 10;
@@ -25,7 +26,7 @@ namespace bb.Core.Commands.List
         public override bool OnlyBotModerator => true;
         public override bool OnlyBotDeveloper => true;
         public override bool OnlyChannelModerator => false;
-        public override PlatformsEnum[] Platforms => [PlatformsEnum.Twitch, PlatformsEnum.Telegram, PlatformsEnum.Discord];
+        public override Platform[] Platforms => [Platform.Twitch, Platform.Telegram, Platform.Discord];
         public override bool IsAsync => false;
 
         public override CommandReturn Execute(CommandData data)
@@ -63,8 +64,8 @@ namespace bb.Core.Commands.List
 
                 string prefix = data.Platform switch
                 {
-                    PlatformsEnum.Twitch => "glorp",
-                    PlatformsEnum.Discord => "<:OFFLINECHAT:1248250625754398730>",
+                    Platform.Twitch => "glorp",
+                    Platform.Discord => "<:OFFLINECHAT:1248250625754398730>",
                     _ => ""
                 };
 
@@ -104,11 +105,11 @@ namespace bb.Core.Commands.List
             return 1;
         }
 
-        private string GetStatusName(PlatformsEnum platform, int status)
+        private string GetStatusName(Platform platform, int status)
         {
             return platform switch
             {
-                PlatformsEnum.Twitch => status switch
+                Platform.Twitch => status switch
                 {
                     5 => "catWOW Perfect",
                     4 => "Klass Great",
@@ -117,7 +118,7 @@ namespace bb.Core.Commands.List
                     1 => "forsenAgony Very bad",
                     _ => "AINTNOWAY"
                 },
-                PlatformsEnum.Discord => status switch
+                Platform.Discord => status switch
                 {
                     5 => "<:peepoLove:1248250622889951346> Perfect",
                     4 => "<:ApuScience:1248250603906535454> Great",

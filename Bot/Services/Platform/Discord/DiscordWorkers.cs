@@ -60,7 +60,7 @@ namespace bb.Services.Platform.Discord
                     message.Content,
                     null,
                     message.Channel.Name,
-                    PlatformsEnum.Discord,
+                    Models.Platform.Platform.Discord,
                     null,
                     message.Id.ToString(),
                     ((SocketGuildChannel)message.Channel).Guild.Name,

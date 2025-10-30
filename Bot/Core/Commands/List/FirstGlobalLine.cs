@@ -1,9 +1,10 @@
-﻿using bb.Utils;
-using bb.Core.Configuration;
-using System.Globalization;
-using TwitchLib.Client.Enums;
+﻿using bb.Core.Configuration;
 using bb.Models.Command;
 using bb.Models.Platform;
+using bb.Models.Users;
+using bb.Utils;
+using System.Globalization;
+using TwitchLib.Client.Enums;
 
 namespace bb.Core.Commands.List
 {
@@ -14,9 +15,9 @@ namespace bb.Core.Commands.List
         public override string AuthorsGithub => "https://github.com/itzkitb";
         public override string GithubSource => $"{URLs.githubSource}blob/master/butterBror/Core/Commands/List/FirstGlobalLine.cs";
         public override Version Version => new("1.0.1");
-        public override Dictionary<string, string> Description => new() {
-            {"ru-RU", "Ваше первое сообщение на текущей платформе." },
-            {"en-US", "Your first message on the current platform." }
+        public override Dictionary<Language, string> Description => new() {
+            { Language.RuRu, "Ваше первое сообщение на текущей платформе." },
+            { Language.EnUs, "Your first message on the current platform." }
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=fgl";
         public override int CooldownPerUser => 10;
@@ -27,7 +28,7 @@ namespace bb.Core.Commands.List
         public override bool OnlyBotModerator => false;
         public override bool OnlyBotDeveloper => false;
         public override bool OnlyChannelModerator => false;
-        public override PlatformsEnum[] Platforms => [PlatformsEnum.Twitch, PlatformsEnum.Telegram, PlatformsEnum.Discord];
+        public override Platform[] Platforms => [Platform.Twitch, Platform.Telegram, Platform.Discord];
         public override bool IsAsync => false;
 
         public override CommandReturn Execute(CommandData data)

@@ -1,6 +1,7 @@
 ﻿using bb.Core.Configuration;
 using bb.Models.Command;
 using bb.Models.Platform;
+using bb.Models.Users;
 
 namespace bb.Core.Commands.List
 {
@@ -11,9 +12,9 @@ namespace bb.Core.Commands.List
         public override string AuthorsGithub => "https://github.com/itzkitb";
         public override string GithubSource => $"{URLs.githubSource}blob/master/butterBror/Core/Commands/List/SetLocation.cs";
         public override Version Version => new Version("1.0.0");
-        public override Dictionary<string, string> Description => new() {
-            { "ru-RU", "Установить местоположение, для получения информации о погоде." },
-            { "en-US", "Set your location to get weather information." }
+        public override Dictionary<Language, string> Description => new() {
+            { Language.RuRu, "Установить местоположение, для получения информации о погоде." },
+            { Language.EnUs, "Set your location to get weather information." }
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=setlocation";
         public override int CooldownPerUser => 15;
@@ -24,7 +25,7 @@ namespace bb.Core.Commands.List
         public override bool OnlyBotDeveloper => false;
         public override bool OnlyBotModerator => false;
         public override bool OnlyChannelModerator => false;
-        public override PlatformsEnum[] Platforms => [PlatformsEnum.Twitch, PlatformsEnum.Telegram, PlatformsEnum.Discord];
+        public override Platform[] Platforms => [Platform.Twitch, Platform.Telegram, Platform.Discord];
         public override bool IsAsync => true;
 
         public override async Task<CommandReturn> ExecuteAsync(CommandData data)

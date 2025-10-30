@@ -1,5 +1,6 @@
 ﻿using bb.Data;
 using bb.Models.Platform;
+using bb.Models.Users;
 using DankDB;
 using Newtonsoft.Json;
 using static bb.Core.Bot.Logger;
@@ -33,12 +34,12 @@ namespace bb.Utils
     /// </remarks>
     public class LocalizationService
     {
-        private static Dictionary<string, Dictionary<string, string>> _translations = new();
-        private static Dictionary<string, Dictionary<string, Dictionary<string, string>>> _customTranslations = new();
-        private static readonly Dictionary<string, Func<long, string>> _pluralRules = new Dictionary<string, Func<long, string>>
+        private static Dictionary<Language, Dictionary<string, string>> _translations = new();
+        private static Dictionary<string, Dictionary<Language, Dictionary<string, string>>> _customTranslations = new();
+        private static readonly Dictionary<Language, Func<long, string>> _pluralRules = new Dictionary<Language, Func<long, string>>
         {
-            { "en-US", n => n == 1 ? "one" : "other" },
-            { "ru-RU", n =>
+            { Language.EnUs, n => n == 1 ? "one" : "other" },
+            { Language.RuRu, n =>
                 n % 10 == 1 && n % 100 != 11 ? "one" :
                 n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? "few" : "many" }
         };
@@ -47,7 +48,7 @@ namespace bb.Utils
         /// <summary>
         /// Retrieves a pluralized translation string based on numerical value and language rules.
         /// </summary>
-        /// <param name="userLang">Language code for translation (e.g., "en-US", "ru-RU")</param>
+        /// <param name="lang">Language code for translation (e.g., "en-US", "ru-RU")</param>
         /// <param name="key">Base translation key (e.g., "messages.count")</param>
         /// <param name="channelId">Channel identifier for custom translations</param>
         /// <param name="platform">Platform context (Twitch, Discord, etc.)</param>
@@ -86,42 +87,42 @@ namespace bb.Utils
         /// </para>
         /// This method automatically loads and caches translations on first access.
         /// </remarks>
-        public static string GetPluralString(string userLang, string key, string channelId, PlatformsEnum platform, long number, params object[] args)
+        public static string GetPluralString(Language lang, string key, string channelId, Platform platform, long number, params object[] args)
         {
             try
             {
-                if (!_translations.ContainsKey(userLang))
-                    _translations[userLang] = LoadTranslations(userLang);
+                if (!_translations.ContainsKey(lang))
+                    _translations[lang] = LoadTranslations(lang);
 
                 if (!_customTranslations.ContainsKey(channelId))
                     _customTranslations[channelId] = new();
 
-                if (!_customTranslations[channelId].ContainsKey(userLang))
-                    _customTranslations[channelId][userLang] = LoadCustomTranslations(userLang, channelId, platform);
+                if (!_customTranslations[channelId].ContainsKey(lang))
+                    _customTranslations[channelId][lang] = LoadCustomTranslations(lang, channelId, platform);
 
-                string pluralForm = GetPluralForm(userLang, number);
+                string pluralForm = GetPluralForm(lang, number);
                 string pluralKey = $"{key}:{pluralForm}";
 
-                var custom = _customTranslations[channelId][userLang];
+                var custom = _customTranslations[channelId][lang];
                 if (custom.TryGetValue(pluralKey, out var pluralCustomValue))
                 {
                     return string.Format(pluralCustomValue, args);
                 }
 
-                if (_translations[userLang].TryGetValue(pluralKey, out var pluralDefaultValue))
+                if (_translations[lang].TryGetValue(pluralKey, out var pluralDefaultValue))
                 {
                     return string.Format(pluralDefaultValue, args);
                 }
 
-                string remoteValue = GetRemoteTranslation(userLang, pluralKey);
+                string remoteValue = GetRemoteTranslation(lang, pluralKey);
                 if (remoteValue != null)
                 {
-                    _translations[userLang][pluralKey] = remoteValue;
-                    SaveTranslationFile(userLang);
+                    _translations[lang][pluralKey] = remoteValue;
+                    SaveTranslationFile(lang);
                     return string.Format(remoteValue, args);
                 }
 
-                Write($"Plural translate \"{pluralKey}\" in lang \"{userLang}\" was not found!", Core.Bot.Logger.LogLevel.Warning);
+                Write($"Plural translate \"{pluralKey}\" in lang \"{lang}\" was not found!", Core.Bot.Logger.LogLevel.Warning);
                 return key;
             }
             catch (Exception ex)
@@ -134,7 +135,7 @@ namespace bb.Utils
         /// <summary>
         /// Determines the appropriate plural form category for a given number in a specific language.
         /// </summary>
-        /// <param name="fullLanguage">Language code (e.g., "en-US", "ru-RU")</param>
+        /// <param name="lang">Language code (e.g., "en-US", "ru-RU")</param>
         /// <param name="number">The numerical value to evaluate</param>
         /// <returns>
         /// Plural form category ("one", "few", "many", "other", etc.)
@@ -158,9 +159,9 @@ namespace bb.Utils
         /// </para>
         /// This method is used internally by <see cref="GetPluralString"/> to select the correct translation variant.
         /// </remarks>
-        private static string GetPluralForm(string fullLanguage, long number)
+        private static string GetPluralForm(Language lang, long number)
         {
-            if (_pluralRules.TryGetValue(fullLanguage, out var rule))
+            if (_pluralRules.TryGetValue(lang, out var rule))
             {
                 return rule(number);
             }
@@ -170,7 +171,7 @@ namespace bb.Utils
         /// <summary>
         /// Retrieves a basic translation string without pluralization.
         /// </summary>
-        /// <param name="userLang">Language code for translation (e.g., "en-US", "ru-RU")</param>
+        /// <param name="lang">Language code for translation (e.g., "en-US", "ru-RU")</param>
         /// <param name="key">Translation key path (e.g., "command:ping:description")</param>
         /// <param name="channelId">Channel identifier for custom translations</param>
         /// <param name="platform">Platform context (Twitch, Discord, etc.)</param>
@@ -199,43 +200,43 @@ namespace bb.Utils
         /// </para>
         /// This is the simplest translation method for static strings without parameters.
         /// </remarks>
-        public static string GetString(string userLang, string key, string channelId, PlatformsEnum platform)
+        public static string GetString(Language lang, string key, string channelId, Platform platform)
         {
             try
             {
-                if (userLang == null || key == null || channelId == null || platform == null)
+                if (lang == null || key == null || channelId == null || platform == null)
                     return "🚨 Something went wrong...";
 
-                if (!_translations.ContainsKey(userLang))
-                    _translations[userLang] = LoadTranslations(userLang);
+                if (!_translations.ContainsKey(lang))
+                    _translations[lang] = LoadTranslations(lang);
 
                 if (!_customTranslations.ContainsKey(channelId))
                     _customTranslations[channelId] = new();
 
-                if (!_customTranslations[channelId].ContainsKey(userLang))
-                    _customTranslations[channelId][userLang] = LoadCustomTranslations(userLang, channelId, platform);
+                if (!_customTranslations[channelId].ContainsKey(lang))
+                    _customTranslations[channelId][lang] = LoadCustomTranslations(lang, channelId, platform);
 
-                var custom = _customTranslations[channelId][userLang];
+                var custom = _customTranslations[channelId][lang];
                 if (custom.TryGetValue(key, out var customValue))
                 {
                     return customValue;
                 }
 
-                if (_translations[userLang].TryGetValue(key, out var defaultVal))
+                if (_translations[lang].TryGetValue(key, out var defaultVal))
                 {
                     return defaultVal;
                 }
 
-                string remoteValue = GetRemoteTranslation(userLang, key);
+                string remoteValue = GetRemoteTranslation(lang, key);
                 if (remoteValue != null)
                 {
-                    _translations[userLang][key] = remoteValue;
-                    SaveTranslationFile(userLang);
-                    Write($"Added missing translation key \"{key}\" for language \"{userLang}\" from remote source.", Core.Bot.Logger.LogLevel.Info);
+                    _translations[lang][key] = remoteValue;
+                    SaveTranslationFile(lang);
+                    Write($"Added missing translation key \"{key}\" for language \"{lang}\" from remote source.", Core.Bot.Logger.LogLevel.Info);
                     return remoteValue;
                 }
 
-                Write($"Translate \"{key}\" in lang \"{userLang}\" was not found!", Core.Bot.Logger.LogLevel.Warning);
+                Write($"Translate \"{key}\" in lang \"{lang}\" was not found!", Core.Bot.Logger.LogLevel.Warning);
                 return key;
             }
             catch (Exception ex)
@@ -248,7 +249,7 @@ namespace bb.Utils
         /// <summary>
         /// Retrieves a parameterized translation string with optional formatting.
         /// </summary>
-        /// <param name="userLang">Language code for translation (e.g., "en-US", "ru-RU")</param>
+        /// <param name="lang">Language code for translation (e.g., "en-US", "ru-RU")</param>
         /// <param name="key">Translation key path (e.g., "command:ping:response")</param>
         /// <param name="channelId">Channel identifier for custom translations</param>
         /// <param name="platform">Platform context (Twitch, Discord, etc.)</param>
@@ -259,7 +260,7 @@ namespace bb.Utils
         /// </returns>
         /// <remarks>
         /// <para>
-        /// The method extends <see cref="GetString(string, string, string, PlatformsEnum)"/> with:
+        /// The method extends <see cref="GetString(string, string, string, Platform)"/> with:
         /// <list type="bullet">
         /// <item>Parameter substitution using <c>string.Format()</c></item>
         /// <item>Null-safe handling of formatting parameters</item>
@@ -284,43 +285,43 @@ namespace bb.Utils
         /// </para>
         /// This is the primary method for retrieving dynamic translation strings with variable content.
         /// </remarks>
-        public static string GetString(string userLang, string key, string channelId, PlatformsEnum platform, params object[] args)
+        public static string GetString(Language lang, string key, string channelId, Platform platform, params object[] args)
         {
             try
             {
-                if (!_translations.ContainsKey(userLang))
-                    _translations[userLang] = LoadTranslations(userLang);
+                if (!_translations.ContainsKey(lang))
+                    _translations[lang] = LoadTranslations(lang);
 
                 if (!_customTranslations.ContainsKey(channelId))
                     _customTranslations[channelId] = new();
 
-                if (!_customTranslations[channelId].ContainsKey(userLang))
-                    _customTranslations[channelId][userLang] = LoadCustomTranslations(userLang, channelId, platform);
+                if (!_customTranslations[channelId].ContainsKey(lang))
+                    _customTranslations[channelId][lang] = LoadCustomTranslations(lang, channelId, platform);
 
-                var custom = _customTranslations[channelId][userLang];
+                var custom = _customTranslations[channelId][lang];
                 if (custom.TryGetValue(key, out var customValue))
                 {
                     if (args is not null) customValue = string.Format(customValue, args);
                     return customValue;
                 }
 
-                if (_translations[userLang].TryGetValue(key, out var defaultVal))
+                if (_translations[lang].TryGetValue(key, out var defaultVal))
                 {
                     if (args is not null) defaultVal = string.Format(defaultVal, args);
                     return defaultVal;
                 }
 
-                string remoteValue = GetRemoteTranslation(userLang, key);
+                string remoteValue = GetRemoteTranslation(lang, key);
                 if (remoteValue != null)
                 {
-                    _translations[userLang][key] = remoteValue;
-                    SaveTranslationFile(userLang);
-                    Write($"Added missing translation key \"{key}\" for language \"{userLang}\" from remote source.", Core.Bot.Logger.LogLevel.Info);
+                    _translations[lang][key] = remoteValue;
+                    SaveTranslationFile(lang);
+                    Write($"Added missing translation key \"{key}\" for language \"{lang}\" from remote source.", Core.Bot.Logger.LogLevel.Info);
                     return args is not null ? string.Format(remoteValue, args) : remoteValue;
                 }
 
 
-                Write($"Translate \"{key}\" in lang \"{userLang}\" was not found!", Core.Bot.Logger.LogLevel.Warning);
+                Write($"Translate \"{key}\" in lang \"{lang}\" was not found!", Core.Bot.Logger.LogLevel.Warning);
                 return key;
             }
             catch (Exception ex)
@@ -375,13 +376,13 @@ namespace bb.Utils
         /// </para>
         /// Custom translations take immediate effect for subsequent <see cref="GetString"/> calls.
         /// </remarks>
-        public static bool SetCustomTranslation(string key, string value, string channel, string lang, PlatformsEnum platform)
+        public static bool SetCustomTranslation(string key, string value, string channel, Language lang, Platform platform)
         {
             try
             {
                 string dirPath = Path.Combine(bb.Program.BotInstance.Paths.TranslateCustom, PlatformsPathName.strings[(int)platform].ToUpper(), channel);
                 Directory.CreateDirectory(dirPath);
-                string path = Path.Combine(dirPath, $"{lang}.json");
+                string path = Path.Combine(dirPath, $"{lang.ToStringFormat()}.json");
 
                 var content = FileUtil.FileExists(path)
                     ? Manager.Get<Dictionary<string, string>>(path, "translations")
@@ -443,13 +444,13 @@ namespace bb.Utils
         /// </para>
         /// This operation is the inverse of <see cref="SetCustomTranslation"/>.
         /// </remarks>
-        public static bool DeleteCustomTranslation(string key, string channel, string lang, PlatformsEnum platform)
+        public static bool DeleteCustomTranslation(string key, string channel, Language lang, Platform platform)
         {
             try
             {
                 string dirPath = Path.Combine(bb.Program.BotInstance.Paths.TranslateCustom, PlatformsPathName.strings[(int)platform].ToUpper(), channel);
                 if (!Directory.Exists(dirPath)) return false;
-                string path = Path.Combine(dirPath, $"{lang}.json");
+                string path = Path.Combine(dirPath, $"{lang.ToStringFormat()}.json");
 
                 var content = Manager.Get<Dictionary<string, string>>(path, "translations");
                 if (content == null || !content.ContainsKey(key)) return false;
@@ -471,7 +472,7 @@ namespace bb.Utils
         /// <summary>
         /// Loads default translations for a specific language from disk.
         /// </summary>
-        /// <param name="userLang">Language code to load (e.g., "en-US")</param>
+        /// <param name="lang">Language code to load (e.g., "en-US")</param>
         /// <returns>
         /// Dictionary of translation keys and values,
         /// or empty dictionary if file is missing or invalid
@@ -505,16 +506,16 @@ namespace bb.Utils
         /// </para>
         /// This method is called automatically during translation lookups.
         /// </remarks>
-        private static Dictionary<string, string> LoadTranslations(string userLang)
+        private static Dictionary<string, string> LoadTranslations(Language lang)
         {
-            string localPath = Path.Combine(bb.Program.BotInstance.Paths.TranslateDefault, $"{userLang}.json");
+            string localPath = Path.Combine(bb.Program.BotInstance.Paths.TranslateDefault, $"{lang.ToStringFormat()}.json");
 
             if (!File.Exists(localPath))
             {
-                Write($"Translation file for {userLang} not found locally. Attempting to download...", Core.Bot.Logger.LogLevel.Info);
-                if (!DownloadTranslationFile(userLang, localPath))
+                Write($"Translation file for {lang} not found locally. Attempting to download...", Core.Bot.Logger.LogLevel.Info);
+                if (!DownloadTranslationFile(lang, localPath))
                 {
-                    Write($"Failed to download translation file for {userLang}. Using empty dictionary.", Core.Bot.Logger.LogLevel.Warning);
+                    Write($"Failed to download translation file for {lang}. Using empty dictionary.", Core.Bot.Logger.LogLevel.Warning);
                     return new Dictionary<string, string>();
                 }
             }
@@ -525,12 +526,12 @@ namespace bb.Utils
         /// <summary>
         /// Downloads translation file from remote repository to local storage.
         /// </summary>
-        /// <param name="language">Language code to download</param>
+        /// <param name="lang">Language code to download</param>
         /// <param name="localPath">Local path to save the file</param>
         /// <returns>True if download and save were successful</returns>
-        private static bool DownloadTranslationFile(string language, string localPath)
+        private static bool DownloadTranslationFile(Language lang, string localPath)
         {
-            string url = $"https://raw.githubusercontent.com/itzkitb/butterBror/refs/heads/master/DefaultTranslate/{language}.json";
+            string url = $"https://raw.githubusercontent.com/itzkitb/butterBror/refs/heads/master/DefaultTranslate/{lang.ToStringFormat()}.json";
             try
             {
                 var response = _httpClient.GetAsync(url).GetAwaiter().GetResult();
@@ -538,14 +539,14 @@ namespace bb.Utils
                 {
                     string content = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
                     File.WriteAllText(localPath, content);
-                    Write($"Successfully downloaded translation file for {language}", Core.Bot.Logger.LogLevel.Info);
+                    Write($"Successfully downloaded translation file for {lang.ToStringFormat()}", Core.Bot.Logger.LogLevel.Info);
                     return true;
                 }
-                Write($"Failed to download {language}.json. Status code: {response.StatusCode}", Core.Bot.Logger.LogLevel.Error);
+                Write($"Failed to download {lang.ToStringFormat()}.json. Status code: {response.StatusCode}", Core.Bot.Logger.LogLevel.Error);
             }
             catch (Exception ex)
             {
-                Write($"Error downloading {language}.json: {ex.Message}", Core.Bot.Logger.LogLevel.Error);
+                Write($"Error downloading {lang.ToStringFormat()}.json: {ex.Message}", Core.Bot.Logger.LogLevel.Error);
             }
             return false;
         }
@@ -553,12 +554,12 @@ namespace bb.Utils
         /// <summary>
         /// Retrieves a single translation key from remote repository.
         /// </summary>
-        /// <param name="language">Language code</param>
+        /// <param name="lang">Language code</param>
         /// <param name="key">Translation key to find</param>
         /// <returns>Translation value if found, null otherwise</returns>
-        private static string GetRemoteTranslation(string language, string key)
+        private static string GetRemoteTranslation(Language lang, string key)
         {
-            string url = $"https://raw.githubusercontent.com/itzkitb/butterBror/refs/heads/master/DefaultTranslate/{language}.json";
+            string url = $"https://raw.githubusercontent.com/itzkitb/butterBror/refs/heads/master/DefaultTranslate/{lang.ToStringFormat()}.json";
             try
             {
                 var response = _httpClient.GetAsync(url).GetAwaiter().GetResult();
@@ -578,7 +579,7 @@ namespace bb.Utils
             }
             catch (Exception ex)
             {
-                Write($"Error fetching remote translation for {language}/{key}: {ex.Message}", Core.Bot.Logger.LogLevel.Error);
+                Write($"Error fetching remote translation for {lang.ToStringFormat()}/{key}: {ex.Message}", Core.Bot.Logger.LogLevel.Error);
             }
             return null;
         }
@@ -586,11 +587,11 @@ namespace bb.Utils
         /// <summary>
         /// Saves updated translations back to local file.
         /// </summary>
-        /// <param name="language">Language code to save</param>
-        private static void SaveTranslationFile(string language)
+        /// <param name="lang">Language code to save</param>
+        private static void SaveTranslationFile(Language lang)
         {
-            string localPath = Path.Combine(bb.Program.BotInstance.Paths.TranslateDefault, $"{language}.json");
-            var translations = _translations[language];
+            string localPath = Path.Combine(bb.Program.BotInstance.Paths.TranslateDefault, $"{lang.ToStringFormat()}.json");
+            var translations = _translations[lang];
             var jsonStructure = new { translations };
             File.WriteAllText(localPath, JsonConvert.SerializeObject(jsonStructure, Formatting.Indented));
         }
@@ -598,7 +599,7 @@ namespace bb.Utils
         /// <summary>
         /// Loads custom translations for a specific channel and language from disk.
         /// </summary>
-        /// <param name="userLang">Language code to load (e.g., "en-US")</param>
+        /// <param name="lang">Language code to load (e.g., "en-US")</param>
         /// <param name="channel">Channel identifier</param>
         /// <param name="platform">Target platform</param>
         /// <returns>
@@ -633,10 +634,10 @@ namespace bb.Utils
         /// </para>
         /// This method is called automatically during translation lookups.
         /// </remarks>
-        private static Dictionary<string, string> LoadCustomTranslations(string userLang, string channel, PlatformsEnum platform)
+        private static Dictionary<string, string> LoadCustomTranslations(Language lang, string channel, Platform platform)
         {
             return Manager.Get<Dictionary<string, string>>(
-                Path.Combine(bb.Program.BotInstance.Paths.TranslateCustom, PlatformsPathName.strings[(int)platform].ToUpper(), channel, $"{userLang}.json"),
+                Path.Combine(bb.Program.BotInstance.Paths.TranslateCustom, PlatformsPathName.strings[(int)platform].ToUpper(), channel, $"{lang.ToStringFormat()}.json"),
                 "translations"
             ) ?? new Dictionary<string, string>();
         }
@@ -671,18 +672,18 @@ namespace bb.Utils
         /// </remarks>
         public static bool TranslateContains(string key)
         {
-            if (!_translations.ContainsKey("en-US"))
+            if (!_translations.ContainsKey(Language.EnUs))
             {
-                _translations["en-US"] = LoadTranslations("en-US");
+                _translations[Language.EnUs] = LoadTranslations(Language.EnUs);
             }
 
-            return _translations["en-US"].ContainsKey(key);
+            return _translations[Language.EnUs].ContainsKey(key);
         }
 
         /// <summary>
         /// Forces a refresh of translation dictionaries for a specific language and channel.
         /// </summary>
-        /// <param name="userLang">Language code to refresh (e.g., "en-US")</param>
+        /// <param name="lang">Language code to refresh (e.g., "en-US")</param>
         /// <param name="channel">Channel identifier</param>
         /// <param name="platform">Target platform</param>
         /// <returns>
@@ -717,26 +718,26 @@ namespace bb.Utils
         /// </para>
         /// This method is thread-safe and can be called during normal operation.
         /// </remarks>
-        public static bool UpdateTranslation(string userLang, string channel, PlatformsEnum platform)
+        public static bool UpdateTranslation(Language lang, string channel, Platform platform)
         {
             try
             {
-                if (_translations.ContainsKey(userLang))
+                if (_translations.ContainsKey(lang))
                 {
-                    _translations[userLang].Clear();
+                    _translations[lang].Clear();
                 }
                 if (_customTranslations.ContainsKey(channel))
                 {
-                    if (_customTranslations[channel].ContainsKey(userLang))
+                    if (_customTranslations[channel].ContainsKey(lang))
                     {
-                        _customTranslations[channel][userLang].Clear();
+                        _customTranslations[channel][lang].Clear();
                     }
                 }
 
-                _translations[userLang] = LoadTranslations(userLang);
-                _customTranslations[channel][userLang] = LoadCustomTranslations(userLang, channel, platform);
+                _translations[lang] = LoadTranslations(lang);
+                _customTranslations[channel][lang] = LoadCustomTranslations(lang, channel, platform);
 
-                if (_translations[userLang].Count > 0)
+                if (_translations[lang].Count > 0)
                 {
                     return true;
                 }

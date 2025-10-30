@@ -4,6 +4,7 @@ using System.Globalization;
 using TwitchLib.Client.Enums;
 using bb.Models.Command;
 using bb.Models.Platform;
+using bb.Models.Users;
 
 namespace bb.Core.Commands.List
 {
@@ -14,9 +15,9 @@ namespace bb.Core.Commands.List
         public override string AuthorsGithub => "https://github.com/itzkitb";
         public override string GithubSource => $"{URLs.githubSource}blob/master/butterBror/Core/Commands/List/ResumeAfk.cs";
         public override Version Version => new("1.0.1");
-        public override Dictionary<string, string> Description => new() {
-            { "ru-RU", "Вернуться в АФК, если вы вышли из него." },
-            { "en-US", "Return to AFK if you left it." }
+        public override Dictionary<Language, string> Description => new() {
+            { Language.RuRu, "Вернуться в АФК, если вы вышли из него." },
+            { Language.EnUs, "Return to AFK if you left it." }
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=rafk";
         public override int CooldownPerUser => 10;
@@ -27,7 +28,7 @@ namespace bb.Core.Commands.List
         public override bool OnlyBotModerator => false;
         public override bool OnlyBotDeveloper => false;
         public override bool OnlyChannelModerator => false;
-        public override PlatformsEnum[] Platforms => [PlatformsEnum.Twitch, PlatformsEnum.Telegram];
+        public override Platform[] Platforms => [Platform.Twitch, Platform.Telegram];
         public override bool IsAsync => false;
 
         public override CommandReturn Execute(CommandData data)
@@ -42,16 +43,16 @@ namespace bb.Core.Commands.List
                     return commandReturn;
                 }
 
-                long AFKResumeTimes = Convert.ToInt64(bb.Program.BotInstance.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(data.User.Id), Users.AFKResumeTimes));
-                DateTime AFKResume = DateTime.Parse((string)bb.Program.BotInstance.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(data.User.Id), Users.AFKResume), null, DateTimeStyles.AdjustToUniversal);
+                long AFKResumeTimes = Convert.ToInt64(bb.Program.BotInstance.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(data.User.Id), Users.AfkResumeCount));
+                DateTime AFKResume = DateTime.Parse((string)bb.Program.BotInstance.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(data.User.Id), Users.AfkResume), null, DateTimeStyles.AdjustToUniversal);
 
                 if (AFKResumeTimes <= 5)
                 {
                     TimeSpan cache = DateTime.UtcNow - AFKResume;
                     if (cache.TotalMinutes <= 5)
                     {
-                        bb.Program.BotInstance.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.Id), Users.IsAFK, 1);
-                        bb.Program.BotInstance.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.Id), Users.AFKResumeTimes, AFKResumeTimes + 1);
+                        bb.Program.BotInstance.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.Id), Users.IsAfk, 1);
+                        bb.Program.BotInstance.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.Id), Users.AfkResumeCount, AFKResumeTimes + 1);
                         commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:rafk", data.ChannelId, data.Platform));
                         commandReturn.SetColor(ChatColorPresets.YellowGreen);
                     }

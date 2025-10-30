@@ -1,6 +1,6 @@
 ﻿namespace bb.Models.Platform
 {
-    public enum PlatformsEnum
+    public enum Platform
     {
         Twitch,
         Discord,

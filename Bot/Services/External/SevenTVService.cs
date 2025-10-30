@@ -260,7 +260,7 @@ namespace bb.Services.External
 
         public async Task<string> PerformSearchUser(string nickname)
         {
-            var userId = UsernameResolver.GetUserID(nickname, PlatformsEnum.Twitch);
+            var userId = UsernameResolver.GetUserID(nickname, Models.Platform.Platform.Twitch);
             var requestUrl = "https://7tv.io/v3/gql";
 
             var requestBody = new

@@ -34,14 +34,14 @@ namespace bb.Services.Platform.Twitch
                     Write($"Twitch: {Program.BotInstance.TwitchNewVersionAnnounce.Count()}", LogLevel.Debug);
                     foreach (string channel in Program.BotInstance.TwitchNewVersionAnnounce)
                     {
-                        bb.Program.BotInstance.MessageSender.Send(PlatformsEnum.Twitch, $"{Program.BotInstance.TwitchName} v.{Program.BotInstance.PreviousVersion} > v.{Program.BotInstance.Version}", UsernameResolver.GetUsername(channel, PlatformsEnum.Twitch, true), isSafe: true);
+                        bb.Program.BotInstance.MessageSender.Send(Models.Platform.Platform.Twitch, $"{Program.BotInstance.TwitchName} v.{Program.BotInstance.PreviousVersion} > v.{Program.BotInstance.Version}", UsernameResolver.GetUsername(channel, Models.Platform.Platform.Twitch, true), isSafe: true);
                     }
                 }
 
                 foreach (string channel in Program.BotInstance.TwitchConnectAnnounce)
                 {
                     Write($"Twitch: {Program.BotInstance.TwitchConnectAnnounce.Count()}", LogLevel.Debug);
-                    bb.Program.BotInstance.MessageSender.Send(PlatformsEnum.Twitch, $"{Program.BotInstance.TwitchName} Started in {(long)(Program.BotInstance.ConnectedIn).TotalMilliseconds} ms!", UsernameResolver.GetUsername(channel, PlatformsEnum.Twitch, true), isSafe: true);
+                    bb.Program.BotInstance.MessageSender.Send(Models.Platform.Platform.Twitch, $"{Program.BotInstance.TwitchName} Started in {(long)(Program.BotInstance.ConnectedIn).TotalMilliseconds} ms!", UsernameResolver.GetUsername(channel, Models.Platform.Platform.Twitch, true), isSafe: true);
                 }
             });
         }
@@ -100,7 +100,7 @@ namespace bb.Services.Platform.Twitch
                 return;
             }
 
-            bb.Program.BotInstance.MessageSender.Send(PlatformsEnum.Twitch, $"What #{e.Channel} suspended.", bb.Program.BotInstance.TwitchName);
+            bb.Program.BotInstance.MessageSender.Send(Models.Platform.Platform.Twitch, $"What #{e.Channel} suspended.", bb.Program.BotInstance.TwitchName);
         }
 
         /// <summary>
@@ -196,7 +196,7 @@ namespace bb.Services.Platform.Twitch
                 Write("The bot nickname is null.", LogLevel.Error);
                 return;
             }
-            bb.Program.BotInstance.MessageSender.Send(PlatformsEnum.Twitch, $"DeadAss TwitchLib error: {e.Exception.Message}", bb.Program.BotInstance.TwitchName);
+            bb.Program.BotInstance.MessageSender.Send(Models.Platform.Platform.Twitch, $"DeadAss TwitchLib error: {e.Exception.Message}", bb.Program.BotInstance.TwitchName);
         }
 
         /// <summary>
@@ -230,12 +230,12 @@ namespace bb.Services.Platform.Twitch
                 }
                 else
                 {
-                    bb.Program.BotInstance.MessageSender.Send(PlatformsEnum.Twitch, $"BREAKDANCECAT Reconnected", bb.Program.BotInstance.TwitchName);
+                    bb.Program.BotInstance.MessageSender.Send(Models.Platform.Platform.Twitch, $"BREAKDANCECAT Reconnected", bb.Program.BotInstance.TwitchName);
                 }
 
                 foreach (string channel in bb.Program.BotInstance.TwitchReconnectAnnounce)
                 {
-                    bb.Program.BotInstance.MessageSender.Send(PlatformsEnum.Twitch, $"{bb.Program.BotInstance.TwitchName} Reconnected!", UsernameResolver.GetUsername(channel, PlatformsEnum.Twitch, true));
+                    bb.Program.BotInstance.MessageSender.Send(Models.Platform.Platform.Twitch, $"{bb.Program.BotInstance.TwitchName} Reconnected!", UsernameResolver.GetUsername(channel, Models.Platform.Platform.Twitch, true));
                 }
             });
         }
@@ -303,14 +303,14 @@ namespace bb.Services.Platform.Twitch
                 }
                 else
                 {
-                    bb.Program.BotInstance.MessageSender.Send(PlatformsEnum.Twitch, $"DeadAss Bot was banned in #{e.Channel}", bb.Program.BotInstance.TwitchName);
+                    bb.Program.BotInstance.MessageSender.Send(Models.Platform.Platform.Twitch, $"DeadAss Bot was banned in #{e.Channel}", bb.Program.BotInstance.TwitchName);
                 }
 
                 string[] channels = bb.Program.BotInstance.Settings.Get<string[]>("twitch_connect_channels");
                 List<string> list = new();
                 foreach (var channel in channels)
                 {
-                    if (!channel.Equals(UsernameResolver.GetUserID(e.Channel, PlatformsEnum.Twitch, true), StringComparison.CurrentCultureIgnoreCase))
+                    if (!channel.Equals(UsernameResolver.GetUserID(e.Channel, Models.Platform.Platform.Twitch, true), StringComparison.CurrentCultureIgnoreCase))
                     {
                         list.Add(channel);
                     }
@@ -364,7 +364,7 @@ namespace bb.Services.Platform.Twitch
                     message.Message,
                     message,
                     message.Channel,
-                    PlatformsEnum.Twitch,
+                    Models.Platform.Platform.Twitch,
                     new TelegramLib.Bot.Types.Message(),
                     message.Id);
             }

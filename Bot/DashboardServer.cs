@@ -453,7 +453,6 @@ namespace bb
                         SQLGamesOPS = bb.Program.BotInstance.DataBase.Games.GetAndResetSqlOperationCount(),
                         SQLMessagesOPS = bb.Program.BotInstance.DataBase.Messages.GetAndResetSqlOperationCount(),
                         SQLUsersOPS = bb.Program.BotInstance.DataBase.Users.GetAndResetSqlOperationCount(),
-                        SQLRolesOPS = bb.Program.BotInstance.DataBase.Roles.GetAndResetSqlOperationCount(),
                         IsTwitchConnected = bb.Program.BotInstance.Clients.Twitch.IsConnected,
                         IsDiscordConnected = bb.Program.BotInstance.Clients.Discord.ConnectionState == Discord.ConnectionState.Connected
                     };
@@ -886,7 +885,6 @@ namespace bb
                     <div class=""stat-value"">Games: ${{stats.SQLGamesOPS}} o/s</div>
                     <div class=""stat-value"">Messages: ${{stats.SQLMessagesOPS}} o/s</div>
                     <div class=""stat-value"">Users: ${{stats.SQLUsersOPS}} o/s</div>
-                    <div class=""stat-value"">Roles: ${{stats.SQLRolesOPS}} o/s</div>
                 </div>
                 <div class=""stat-card"">
                     <div class=""stat-title"">Cache</div>

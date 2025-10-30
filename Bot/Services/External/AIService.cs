@@ -1,6 +1,7 @@
 ﻿using bb.Core.Configuration;
 using bb.Models.AI;
 using bb.Models.Platform;
+using bb.Models.Users;
 using bb.Utils;
 using DankDB;
 using feels.Dank.Cache.LRU;
@@ -242,11 +243,11 @@ namespace bb.Services.External
         /// <exception cref="ArgumentOutOfRangeException">Thrown when parameters are out of valid range.</exception>
         public async Task<string[]> Request(
             string request,
-            PlatformsEnum platform,
+            Models.Platform.Platform platform,
             string? model = null,
             string? username = null,
             string? userId = null,
-            string? language = null,
+            Language? language = null,
             double repetitionPenalty = 1.0,
             bool includeChatHistory = true,
             bool includeSystemPrompt = true)
@@ -259,9 +260,6 @@ namespace bb.Services.External
 
             if (string.IsNullOrWhiteSpace(username))
                 throw new ArgumentNullException(nameof(username), "Username cannot be null or empty");
-
-            if (string.IsNullOrWhiteSpace(language))
-                throw new ArgumentNullException(nameof(language), "Language cannot be null or empty");
 
             if (repetitionPenalty < 0 || repetitionPenalty > 2)
                 throw new ArgumentOutOfRangeException(nameof(repetitionPenalty), "Repetition penalty must be between 0 and 2");
@@ -277,7 +275,7 @@ namespace bb.Services.External
             if (selectedModel == null)
                 return new[] { "ERR", "Model not found" };
 
-            var systemMessage = BuildSystemMessage(platform, selectedModel, language);
+            var systemMessage = BuildSystemMessage(platform);
 
             var userInfoMessage = new Message
             {
@@ -329,7 +327,7 @@ namespace bb.Services.External
             return models[normalizedModel];
         }
 
-        private Message BuildSystemMessage(PlatformsEnum platform, ModelInfo model, string language)
+        private Message BuildSystemMessage(Models.Platform.Platform platform)
         {
             var baseSystem = $@"You're a bot on the platform: {Enum.GetName(platform)}. Your name: {bb.Program.BotInstance.TwitchName}.
 CRITICAL RESTRICTIONS:
@@ -353,9 +351,9 @@ PROHIBITED CONTENT:
             };
         }
 
-        private string GetEmoteRules(PlatformsEnum platform)
+        private string GetEmoteRules(Models.Platform.Platform platform)
         {
-            if (platform != PlatformsEnum.Twitch)
+            if (platform != Models.Platform.Platform.Twitch)
                 return string.Empty;
 
             return @"EMOTE USAGE:
@@ -415,7 +413,7 @@ OVERLAY EMOTES (apply effects to other emotes):
             Message userMessage,
             bool includeSystemPrompt,
             bool includeChatHistory,
-            PlatformsEnum platform,
+            Models.Platform.Platform platform,
             string userId)
         {
             var messages = new List<Message>();
@@ -444,9 +442,9 @@ OVERLAY EMOTES (apply effects to other emotes):
             return messages;
         }
 
-        private List<string> GetChatHistory(PlatformsEnum platform, string userId)
+        private List<string> GetChatHistory(Models.Platform.Platform platform, string userId)
         {
-            var historyString = (string)bb.Program.BotInstance.UsersBuffer.GetParameter(platform, DataConversion.ToLong(userId), Users.GPTHistory);
+            var historyString = (string)bb.Program.BotInstance.UsersBuffer.GetParameter(platform, DataConversion.ToLong(userId), Users.AiHistory);
             return DataConversion.ParseStringList(historyString) ?? new List<string>();
         }
 
@@ -484,7 +482,7 @@ OVERLAY EMOTES (apply effects to other emotes):
                         if (requestBody.Messages.Any(m => m.Role == "user") && includeChatHistory)
                         {
                             var userMessage = requestBody.Messages.First(m => m.Role == "user").Content;
-                            UpdateChatHistory(PlatformsEnum.Twitch, userId, userMessage, cleanedContent);
+                            UpdateChatHistory(Models.Platform.Platform.Twitch, userId, userMessage, cleanedContent);
                         }
 
                         return new[] { model.Name, cleanedContent };
@@ -542,7 +540,7 @@ OVERLAY EMOTES (apply effects to other emotes):
             return cleaned.Trim();
         }
 
-        private void UpdateChatHistory(PlatformsEnum platform, string userId, string userMessage, string aiResponse)
+        private void UpdateChatHistory(Models.Platform.Platform platform, string userId, string userMessage, string aiResponse)
         {
             var history = GetChatHistory(platform, userId);
 
@@ -555,7 +553,7 @@ OVERLAY EMOTES (apply effects to other emotes):
             bb.Program.BotInstance.UsersBuffer.SetParameter(
                 platform,
                 DataConversion.ToLong(userId),
-                Users.GPTHistory,
+                Users.AiHistory,
                 DataConversion.SerializeStringList(history));
         }
 

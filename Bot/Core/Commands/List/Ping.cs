@@ -3,6 +3,7 @@ using bb.Core.Configuration;
 using System.Net.NetworkInformation;
 using bb.Models.Command;
 using bb.Models.Platform;
+using bb.Models.Users;
 
 namespace bb.Core.Commands.List
 {
@@ -13,9 +14,9 @@ namespace bb.Core.Commands.List
         public override string AuthorsGithub => "https://github.com/itzkitb";
         public override string GithubSource => $"{URLs.githubSource}blob/master/butterBror/Core/Commands/List/Pinger.cs";
         public override Version Version => new("1.0.1");
-        public override Dictionary<string, string> Description => new() {
-            { "ru-RU", "Узнать пинг бота." },
-            { "en-US", "Find out the bot's ping." }
+        public override Dictionary<Language, string> Description => new() {
+            { Language.RuRu, "Узнать пинг бота." },
+            { Language.EnUs, "Find out the bot's ping." }
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=ping";
         public override int CooldownPerUser => 10;
@@ -26,7 +27,7 @@ namespace bb.Core.Commands.List
         public override bool OnlyBotModerator => false;
         public override bool OnlyBotDeveloper => false;
         public override bool OnlyChannelModerator => false;
-        public override PlatformsEnum[] Platforms => [PlatformsEnum.Twitch, PlatformsEnum.Telegram, PlatformsEnum.Discord];
+        public override Platform[] Platforms => [Platform.Twitch, Platform.Telegram, Platform.Discord];
         public override bool IsAsync => false;
 
         public override CommandReturn Execute(CommandData data)
@@ -52,21 +53,21 @@ namespace bb.Core.Commands.List
                     var workTime = DateTime.UtcNow - bb.Program.BotInstance.StartTime;
                     string host = "";
                     long pingSpeed = 0;
-                    if (data.Platform == PlatformsEnum.Telegram)
+                    if (data.Platform == Platform.Telegram)
                     {
                         pingSpeed = bb.Services.External.TelegramPing.Ping().Result;
                     }
                     else
                     {
-                        if (data.Platform == PlatformsEnum.Discord) host = URLs.discord;
-                        else if (data.Platform == PlatformsEnum.Twitch) host = URLs.twitch;
-                        else if (data.Platform == PlatformsEnum.Telegram) host = URLs.telegram;
+                        if (data.Platform == Platform.Discord) host = URLs.discord;
+                        else if (data.Platform == Platform.Twitch) host = URLs.twitch;
+                        else if (data.Platform == Platform.Telegram) host = URLs.telegram;
 
                         PingReply reply = new Ping().Send(host, 1000);
                         pingSpeed = reply.Status == IPStatus.Success ? reply.RoundtripTime : -1;
                     }
 
-                    long joinedTabs = data.Platform == PlatformsEnum.Twitch ? bb.Program.BotInstance.Clients.Twitch.JoinedChannels.Count : (data.Platform == PlatformsEnum.Discord ? bb.Program.BotInstance.Clients.Discord.Guilds.Count : (bb.Program.BotInstance.Clients.Twitch.JoinedChannels.Count + bb.Program.BotInstance.Clients.Discord.Guilds.Count));
+                    long joinedTabs = data.Platform == Platform.Twitch ? bb.Program.BotInstance.Clients.Twitch.JoinedChannels.Count : (data.Platform == Platform.Discord ? bb.Program.BotInstance.Clients.Discord.Guilds.Count : (bb.Program.BotInstance.Clients.Twitch.JoinedChannels.Count + bb.Program.BotInstance.Clients.Discord.Guilds.Count));
 
                     commandReturn.SetMessage(LocalizationService.GetString(
                         data.User.Language,

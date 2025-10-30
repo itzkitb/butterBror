@@ -33,8 +33,8 @@ namespace bb.Data.Repositories
     /// </remarks>
     public class ChannelsRepository : SqlRepositoryBase
     {
-        private readonly Dictionary<(PlatformsEnum platform, string channelId), HashSet<string>> _banWordsCache = new();
-        private readonly Dictionary<(PlatformsEnum platform, string channelId), string> _commandPrefixCache = new();
+        private readonly Dictionary<(Platform platform, string channelId), HashSet<string>> _banWordsCache = new();
+        private readonly Dictionary<(Platform platform, string channelId), string> _commandPrefixCache = new();
         private readonly object _cacheLock = new object();
 
         /// <summary>
@@ -72,7 +72,7 @@ namespace bb.Data.Repositories
         /// <example>
         /// For PlatformsEnum.Twitch, returns "CommandCooldowns_TWITCH"
         /// </example>
-        private string GetCDDTableName(PlatformsEnum platform) => $"CommandCooldowns_{platform.ToString().ToUpper()}";
+        private string GetCDDTableName(Platform platform) => $"CommandCooldowns_{platform.ToString().ToUpper()}";
 
         /// <summary>
         /// Generates the banned words table name for the specified platform.
@@ -85,9 +85,9 @@ namespace bb.Data.Repositories
         /// <example>
         /// For PlatformsEnum.Discord, returns "BanWords_DISCORD"
         /// </example>
-        private string GetBanWordsTableName(PlatformsEnum platform) => $"BanWords_{platform.ToString().ToUpper()}";
+        private string GetBanWordsTableName(Platform platform) => $"BanWords_{platform.ToString().ToUpper()}";
 
-        private string GetCommandPrefixTableName(PlatformsEnum platform) => $"CommandPrefixes_{platform.ToString().ToUpper()}";
+        private string GetCommandPrefixTableName(Platform platform) => $"CommandPrefixes_{platform.ToString().ToUpper()}";
 
         /// <summary>
         /// Configures SQLite database performance settings for optimal operation in a chatbot environment.
@@ -141,7 +141,7 @@ namespace bb.Data.Repositories
             {
                 try
                 {
-                    foreach (PlatformsEnum platform in Enum.GetValues(typeof(PlatformsEnum)))
+                    foreach (Platform platform in Enum.GetValues(typeof(Platform)))
                     {
                         string cddTableName = GetCDDTableName(platform);
                         string createCDDTable = $@"
@@ -230,7 +230,7 @@ namespace bb.Data.Repositories
         private void MigrateOldDataIfNeeded()
         {
             bool needsMigration = false;
-            foreach (PlatformsEnum platform in Enum.GetValues(typeof(PlatformsEnum)))
+            foreach (Platform platform in Enum.GetValues(typeof(Platform)))
             {
                 string oldTable = GetChannelsTableName(platform);
                 string checkColumnSql = $@"
@@ -250,7 +250,7 @@ namespace bb.Data.Repositories
             BeginTransaction();
             try
             {
-                foreach (PlatformsEnum platform in Enum.GetValues(typeof(PlatformsEnum)))
+                foreach (Platform platform in Enum.GetValues(typeof(Platform)))
                 {
                     MigratePlatformData(platform);
                 }
@@ -287,7 +287,7 @@ namespace bb.Data.Repositories
         /// </para>
         /// After successful migration, the legacy table is dropped to clean up the database structure.
         /// </remarks>
-        private void MigratePlatformData(PlatformsEnum platform)
+        private void MigratePlatformData(Platform platform)
         {
             string oldTable = GetChannelsTableName(platform);
             string cddTable = GetCDDTableName(platform);
@@ -417,7 +417,7 @@ namespace bb.Data.Repositories
         /// </para>
         /// This method is thread-safe and handles concurrent access patterns typical in chat environments.
         /// </remarks>
-        public bool IsCommandCooldown(PlatformsEnum platform, string channelId, string commandName, int cooldown)
+        public bool IsCommandCooldown(Platform platform, string channelId, string commandName, int cooldown)
         {
             string tableName = GetCDDTableName(platform);
             DateTime now = DateTime.UtcNow;
@@ -481,7 +481,7 @@ namespace bb.Data.Repositories
         /// </para>
         /// The cache uses case-insensitive comparison to prevent duplicate entries with different casing.
         /// </remarks>
-        public List<string> GetBanWords(PlatformsEnum platform, string channelId)
+        public List<string> GetBanWords(Platform platform, string channelId)
         {
             var key = (platform, channelId);
 
@@ -536,7 +536,7 @@ namespace bb.Data.Repositories
         /// The operation is thread-safe and uses lock synchronization to prevent race conditions.
         /// Cache invalidation is immediate and affects all threads accessing the data.
         /// </remarks>
-        private void InvalidateBanWordsCache(PlatformsEnum platform, string channelId)
+        private void InvalidateBanWordsCache(Platform platform, string channelId)
         {
             var key = (platform, channelId);
             lock (_cacheLock)
@@ -571,7 +571,7 @@ namespace bb.Data.Repositories
         /// </para>
         /// The method automatically handles cache invalidation after successful update.
         /// </remarks>
-        public void SetBanWords(PlatformsEnum platform, string channelId, List<string> banWords)
+        public void SetBanWords(Platform platform, string channelId, List<string> banWords)
         {
             string tableName = GetBanWordsTableName(platform);
 
@@ -640,7 +640,7 @@ namespace bb.Data.Repositories
         /// </para>
         /// The method is designed for frequent, individual word additions with minimal overhead.
         /// </remarks>
-        public void AddBanWord(PlatformsEnum platform, string channelId, string banWord)
+        public void AddBanWord(Platform platform, string channelId, string banWord)
         {
             string tableName = GetBanWordsTableName(platform);
             string insertSql = $@"
@@ -680,7 +680,7 @@ namespace bb.Data.Repositories
         /// </para>
         /// The method safely handles concurrent access patterns common in chat environments.
         /// </remarks>
-        public void RemoveBanWord(PlatformsEnum platform, string channelId, string banWord)
+        public void RemoveBanWord(Platform platform, string channelId, string banWord)
         {
             string tableName = GetBanWordsTableName(platform);
             string deleteSql = $@"
@@ -695,7 +695,7 @@ namespace bb.Data.Repositories
             InvalidateBanWordsCache(platform, channelId);
         }
 
-        public string GetCommandPrefix(PlatformsEnum platform, string channelId)
+        public string GetCommandPrefix(Platform platform, string channelId)
         {
             var key = (platform, channelId);
             lock (_cacheLock)
@@ -730,7 +730,7 @@ namespace bb.Data.Repositories
             return prefixFromDb;
         }
 
-        public void SetCommandPrefix(PlatformsEnum platform, string channelId, string prefix)
+        public void SetCommandPrefix(Platform platform, string channelId, string prefix)
         {
             string tableName = GetCommandPrefixTableName(platform);
 
@@ -769,7 +769,7 @@ namespace bb.Data.Repositories
             }
         }
 
-        private void InvalidateCommandPrefixCache(PlatformsEnum platform, string channelId)
+        private void InvalidateCommandPrefixCache(Platform platform, string channelId)
         {
             var key = (platform, channelId);
             lock (_cacheLock)
@@ -807,7 +807,7 @@ namespace bb.Data.Repositories
         /// </para>
         /// The method performs a primary key lookup which is highly optimized through database indexing.
         /// </remarks>
-        public Message GetFirstMessage(PlatformsEnum platform, string channelId, long userId)
+        public Message GetFirstMessage(Platform platform, string channelId, long userId)
         {
             string tableName = GetFirstMessagesTableName(platform);
             string sql = $@"
@@ -846,7 +846,7 @@ namespace bb.Data.Repositories
         /// The method is designed to handle high-volume message logging with minimal performance impact.
         /// Empty collections are safely ignored with no database operations performed.
         /// </remarks>
-        public void SaveFirstMessages(List<(PlatformsEnum platform, string channelId, long userId, Message message)> messages)
+        public void SaveFirstMessages(List<(Platform platform, string channelId, long userId, Message message)> messages)
         {
             if (messages.Count == 0) return;
 
@@ -859,7 +859,7 @@ namespace bb.Data.Repositories
 
                 foreach (var platformGroup in messagesByPlatform)
                 {
-                    PlatformsEnum platform = platformGroup.Key;
+                    Platform platform = platformGroup.Key;
                     string tableName = GetFirstMessagesTableName(platform);
 
                     string upsertSql = $@"
@@ -925,7 +925,7 @@ namespace bb.Data.Repositories
         /// This method exists primarily for backward compatibility with older database structures.
         /// Used during data migration to identify legacy tables that need conversion.
         /// </remarks>
-        private string GetChannelsTableName(PlatformsEnum platform)
+        private string GetChannelsTableName(Platform platform)
         {
             return platform.ToString().ToUpper();
         }
@@ -940,7 +940,7 @@ namespace bb.Data.Repositories
         /// <example>
         /// For PlatformsEnum.Telegram, returns "FirstMessage_TELEGRAM"
         /// </example>
-        private string GetFirstMessagesTableName(PlatformsEnum platform)
+        private string GetFirstMessagesTableName(Platform platform)
         {
             return $"FirstMessage_{platform.ToString().ToUpper()}";
         }

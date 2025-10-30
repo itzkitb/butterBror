@@ -27,7 +27,7 @@ namespace bb.Core.Commands
                 IsForBotModerator = false,
                 IsForBotDeveloper = false,
                 IsForChannelModerator = false,
-                Platforms = [PlatformsEnum.Twitch, PlatformsEnum.Telegram, PlatformsEnum.Discord]
+                Platforms = [Platform.Twitch, Platform.Telegram, Platform.Discord]
             };
             public CommandReturn Index(CommandData data)
             {

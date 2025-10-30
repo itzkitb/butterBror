@@ -1,8 +1,9 @@
-﻿using bb.Utils;
-using bb.Core.Configuration;
-using TwitchLib.Client.Enums;
+﻿using bb.Core.Configuration;
 using bb.Models.Command;
 using bb.Models.Platform;
+using bb.Models.Users;
+using bb.Utils;
+using TwitchLib.Client.Enums;
 
 namespace bb.Core.Commands.List
 {
@@ -13,9 +14,9 @@ namespace bb.Core.Commands.List
         public override string AuthorsGithub => "https://github.com/itzkitb";
         public override string GithubSource => $"{URLs.githubSource}blob/master/butterBror/Core/Commands/List/FrogGame.cs";
         public override Version Version => new("1.0.3"); // oops
-        public override Dictionary<string, string> Description => new() {
-            { "ru-RU", "Мини-игра по коллекционированию лягушек." },
-            { "en-US", "Minigame about collecting frogs." }
+        public override Dictionary<Language, string> Description => new() {
+            { Language.RuRu, "Мини-игра по коллекционированию лягушек." },
+            { Language.EnUs, "Minigame about collecting frogs." }
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=frogs";
         public override int CooldownPerUser => 10;
@@ -26,7 +27,7 @@ namespace bb.Core.Commands.List
         public override bool OnlyBotModerator => false;
         public override bool OnlyBotDeveloper => false;
         public override bool OnlyChannelModerator => false;
-        public override PlatformsEnum[] Platforms => [PlatformsEnum.Twitch, PlatformsEnum.Telegram, PlatformsEnum.Discord];
+        public override Platform[] Platforms => [Platform.Twitch, Platform.Telegram, Platform.Discord];
         public override bool IsAsync => false;
 
         public override CommandReturn Execute(CommandData data)
@@ -41,10 +42,10 @@ namespace bb.Core.Commands.List
                 long gifted = Convert.ToInt64(bb.Program.BotInstance.DataBase.Games.GetData("Frogs", data.Platform, DataConversion.ToLong(data.User.Id), "Gifted"));
                 long received = Convert.ToInt64(bb.Program.BotInstance.DataBase.Games.GetData("Frogs", data.Platform, DataConversion.ToLong(data.User.Id), "Received"));
 
-                double frogPriceUSD = 0.12;
-                double BTRCurrency = (double)(bb.Program.BotInstance.Coins == 0 ? 0 : bb.Program.BotInstance.InBankDollars / bb.Program.BotInstance.Coins);
-                double frogSellPriceBTR = BTRCurrency == 0 ? 9999 : frogPriceUSD / BTRCurrency;
-                double frogBuyPriceBTR = frogSellPriceBTR * 3;
+                decimal frogPriceUSD = 0.12M;
+                decimal BTRCurrency = (decimal)(bb.Program.BotInstance.Coins == 0 ? 0 : bb.Program.BotInstance.InBankDollars / bb.Program.BotInstance.Coins);
+                decimal frogSellPriceBTR = BTRCurrency == 0 ? 9999 : frogPriceUSD / BTRCurrency;
+                decimal frogBuyPriceBTR = frogSellPriceBTR * 3;
 
                 string[] infoAliases = ["info", "i", "information", // en-US
                                         "инфо", "и", "информация"]; // ru-RU
@@ -318,7 +319,7 @@ namespace bb.Core.Commands.List
                         if (data.Arguments.Count >= 2)
                         {
                             long amount = DataConversion.ToLong(data.Arguments[1]);
-                            double price = amount * frogSellPriceBTR;
+                            decimal price = amount * frogSellPriceBTR;
 
                             if (amount < 0)
                             {
@@ -330,10 +331,7 @@ namespace bb.Core.Commands.List
                             }
                             else
                             {
-                                long plusBalance = (long)price;
-                                long plusSubbalance = (long)((price - (double)plusBalance) * 100);
-
-                                bb.Program.BotInstance.Currency.Add(data.User.Id, plusBalance, plusSubbalance, data.Platform);
+                                bb.Program.BotInstance.Currency.Add(data.User.Id, price, data.Platform);
                                 bb.Program.BotInstance.DataBase.Games.SetData("Frogs", data.Platform, DataConversion.ToLong(data.User.Id), "Frogs", balance - amount);
                                 commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:frog:sell:success", data.ChannelId, data.Platform, LocalizationService.GetPluralString(data.User.Language, "text:frog2", data.ChannelId, data.Platform, amount, amount), Math.Round(frogSellPriceBTR * amount, 2)));
                             }
@@ -349,8 +347,8 @@ namespace bb.Core.Commands.List
                         if (data.Arguments.Count >= 2)
                         {
                             long amount = DataConversion.ToLong(data.Arguments[1]);
-                            double price = amount * frogBuyPriceBTR;
-                            double userBalance = bb.Program.BotInstance.Currency.GetBalance(data.User.Id, data.Platform) + bb.Program.BotInstance.Currency.GetSubbalance(data.User.Id, data.Platform) / 100;
+                            decimal price = amount * frogBuyPriceBTR;
+                            decimal userBalance = bb.Program.BotInstance.Currency.GetBalance(data.User.Id, data.Platform);
 
                             if (amount < 0)
                             {
@@ -362,10 +360,7 @@ namespace bb.Core.Commands.List
                             }
                             else
                             {
-                                long minusBalance = (long)price;
-                                long minusSubbalance = (long)((price - (double)minusBalance) * 100);
-
-                                bb.Program.BotInstance.Currency.Add(data.User.Id, -minusBalance, -minusSubbalance, data.Platform);
+                                bb.Program.BotInstance.Currency.Add(data.User.Id, -price, data.Platform);
                                 bb.Program.BotInstance.DataBase.Games.SetData("Frogs", data.Platform, DataConversion.ToLong(data.User.Id), "Frogs", balance + amount);
                                 commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:frog:buy:success", data.ChannelId, data.Platform, LocalizationService.GetPluralString(data.User.Language, "text:frog2", data.ChannelId, data.Platform, amount, amount), Math.Round(price, 2)));
                             }

@@ -8,6 +8,5 @@ namespace bb.Core.Services
         public GamesRepository Games;
         public MessagesRepository Messages;
         public UsersRepository Users;
-        public RolesRepository Roles;
     }
 }

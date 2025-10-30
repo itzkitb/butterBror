@@ -1,4 +1,5 @@
 ﻿using bb.Models.Platform;
+using bb.Models.Users;
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -290,7 +291,7 @@ namespace bb.Utils
         /// </para>
         /// Errors are logged but don't disrupt application flow (returns null on failure).
         /// </remarks>
-        public static string TimeTo(DateTime startTime, DateTime endTime, string type, string lang, string argsText, string channelID, PlatformsEnum platform)
+        public static string TimeTo(DateTime startTime, DateTime endTime, string type, Language lang, string argsText, string channelID, Platform platform)
         {
             try
             {
@@ -404,17 +405,17 @@ namespace bb.Utils
         /// This method is designed for consistent time presentation across all platform interfaces.
         /// The output format is optimized for readability in chat message contexts.
         /// </remarks>
-        public static string FormatTimeSpan(TimeSpan timeSpan, string lang)
+        public static string FormatTimeSpan(TimeSpan timeSpan, Language lang)
         {
             int days = Math.Abs(timeSpan.Days);
             int hours = Math.Abs(timeSpan.Hours);
             int minutes = Math.Abs(timeSpan.Minutes);
             int seconds = Math.Abs(timeSpan.Seconds);
 
-            string days_str = $"{days} {LocalizationService.GetString(lang, "text:day", string.Empty, PlatformsEnum.Twitch)}.";
-            string hours_str = $"{hours} {LocalizationService.GetString(lang, "text:hour", string.Empty, PlatformsEnum.Twitch)}.";
-            string minutes_str = $"{minutes} {LocalizationService.GetString(lang, "text:minute", string.Empty, PlatformsEnum.Twitch)}.";
-            string seconds_str = $"{seconds} {LocalizationService.GetString(lang, "text:second", string.Empty, PlatformsEnum.Twitch)}.";
+            string days_str = $"{days} {LocalizationService.GetString(lang, "text:day", string.Empty, Platform.Twitch)}.";
+            string hours_str = $"{hours} {LocalizationService.GetString(lang, "text:hour", string.Empty, Platform.Twitch)}.";
+            string minutes_str = $"{minutes} {LocalizationService.GetString(lang, "text:minute", string.Empty, Platform.Twitch)}.";
+            string seconds_str = $"{seconds} {LocalizationService.GetString(lang, "text:second", string.Empty, Platform.Twitch)}.";
 
             if (timeSpan.TotalSeconds < 0)
                 timeSpan = -timeSpan;

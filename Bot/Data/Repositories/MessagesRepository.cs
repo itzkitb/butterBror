@@ -145,7 +145,7 @@ namespace bb.Data.Repositories
         /// Common use cases include implementing "!lastmessage" commands or message reference features.
         /// Returns <see langword="null"/> for invalid indexes or when user has no messages in the channel.
         /// </remarks>
-        public Message GetMessage(PlatformsEnum platform, string channelId, long userId, int indexFromLast)
+        public Message GetMessage(Platform platform, string channelId, long userId, int indexFromLast)
         {
             string tableName = GetTableName(platform, channelId);
             string sql = $@"
@@ -195,7 +195,7 @@ namespace bb.Data.Repositories
         /// Empty collections are safely ignored with no database operations performed.
         /// The method is thread-safe and handles concurrent message ingestion patterns.
         /// </remarks>
-        public void SaveMessages(List<(PlatformsEnum platform, string channelId, long userId, Message message)> messages)
+        public void SaveMessages(List<(Platform platform, string channelId, long userId, Message message)> messages)
         {
             if (messages.Count == 0) return;
 
@@ -269,7 +269,7 @@ namespace bb.Data.Repositories
         /// </para>
         /// This approach provides optimal performance for typical message volumes per channel.
         /// </remarks>
-        private void PreparedInsertMessages(string tableName, IEnumerable<(PlatformsEnum platform, string channelId, long userId, Message message)> messages)
+        private void PreparedInsertMessages(string tableName, IEnumerable<(Platform platform, string channelId, long userId, Message message)> messages)
         {
             string sql = $@"
         INSERT INTO [{tableName}] (
@@ -338,7 +338,7 @@ namespace bb.Data.Repositories
         /// The method automatically handles batch splitting and parameter management.
         /// </remarks>
         private void BatchInsertMessages(string tableName,
-    IEnumerable<(PlatformsEnum platform, string channelId, long userId, Message message)> messages)
+    IEnumerable<(Platform platform, string channelId, long userId, Message message)> messages)
         {
             const int MAX_PARAMS = 999;
             const int PARAMS_PER_MESSAGE = 10;
@@ -380,7 +380,7 @@ namespace bb.Data.Repositories
         /// This is the most efficient method for inserting multiple messages in a single operation.
         /// </remarks>
         private void InsertSingleBatch(string tableName,
-            List<(PlatformsEnum platform, string channelId, long userId, Message message)> batch)
+            List<(Platform platform, string channelId, long userId, Message message)> batch)
         {
             var sb = new StringBuilder();
             sb.AppendLine($"INSERT INTO [{tableName}] (UserID, MessageDate, MessageText, IsMe, IsModerator, IsSubscriber, IsPartner, IsStaff, IsTurbo, IsVip) VALUES ");
@@ -440,7 +440,7 @@ namespace bb.Data.Repositories
         /// Common use cases include leaderboards, activity tracking, and user engagement metrics.
         /// Returns 0 if the user has no messages in the channel.
         /// </remarks>
-        public int GetMessageCountInChat(PlatformsEnum platform, string channelId, long userId)
+        public int GetMessageCountInChat(Platform platform, string channelId, long userId)
         {
             string tableName = GetTableName(platform, channelId);
             string sql = $@"
@@ -476,7 +476,7 @@ namespace bb.Data.Repositories
         /// Used for retention management and monitoring channel message volumes.
         /// Returns 0 for channels with no messages stored.
         /// </remarks>
-        public int GetTotalMessageCount(PlatformsEnum platform, string channelId)
+        public int GetTotalMessageCount(Platform platform, string channelId)
         {
             string tableName = GetTableName(platform, channelId);
             return ExecuteScalar<int>($"SELECT COUNT(*) FROM [{tableName}]");
@@ -552,7 +552,7 @@ namespace bb.Data.Repositories
         /// This scheme allows for efficient database management and maintenance operations.
         /// The generated name is safe for direct use in SQL statements with proper quoting.
         /// </remarks>
-        private string GetTableName(PlatformsEnum platform, string channelId)
+        private string GetTableName(Platform platform, string channelId)
         {
             string platformName = platform.ToString().ToUpper();
             return $"{platformName}_{channelId}";
