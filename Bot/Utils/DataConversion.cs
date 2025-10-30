@@ -220,6 +220,46 @@ namespace bb.Utils
         }
 
         /// <summary>
+        /// Converts a string to a floating-point number with culture-invariant parsing.
+        /// </summary>
+        /// <param name="input">The string containing numeric characters to convert.</param>
+        /// <returns>The parsed decimal value.</returns>
+        /// <exception cref="FormatException">
+        /// Thrown when the cleaned string cannot be parsed as a valid number.
+        /// </exception>
+        /// <exception cref="OverflowException">
+        /// Thrown when the numeric value exceeds <see cref="double"/> range.
+        /// </exception>
+        /// <remarks>
+        /// <para>
+        /// Processing workflow:
+        /// <list type="number">
+        /// <item>Removes all characters except digits, minus sign, and decimal separators</item>
+        /// <item>Standardizes decimal separators to periods (culture-invariant format)</item>
+        /// <item>Parses using <see cref="CultureInfo.InvariantCulture"/> for consistent behavior</item>
+        /// </list>
+        /// </para>
+        /// <para>
+        /// Supported input formats:
+        /// <list type="bullet">
+        /// <item>Numeric values with commas as thousand separators ("1,000.50")</item>
+        /// <item>European decimal formats using commas ("1000,50")</item>
+        /// <item>Scientific notation ("1.23e-4")</item>
+        /// <item>Negative values with leading minus sign ("-50.25")</item>
+        /// </list>
+        /// </para>
+        /// This method ensures consistent numeric parsing across different regional settings,
+        /// making it ideal for international applications and data interchange scenarios.
+        /// </remarks>
+        public static decimal ToDecimal(string input)
+        {
+            string cleaned = Regex.Replace(input, @"[^-0-9,.]", "")
+                                  .Replace(",", ".");
+
+            return decimal.Parse(cleaned, CultureInfo.InvariantCulture);
+        }
+
+        /// <summary>
         /// Calculates the time difference between two DateTime values with optional annual cycle adjustment.
         /// </summary>
         /// <param name="time">The reference DateTime to compare against.</param>

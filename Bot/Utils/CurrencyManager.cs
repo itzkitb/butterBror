@@ -82,7 +82,7 @@ namespace bb.Utils
         {
             decimal balance = GetBalance(userID, platform) + add;
 
-            bb.Program.BotInstance.Coins += balance;
+            bb.Program.BotInstance.Coins += add;
             bb.Program.BotInstance.UsersBuffer.SetParameter(platform, DataConversion.ToLong(userID), Users.Balance, balance);
         }
 
@@ -120,7 +120,7 @@ namespace bb.Utils
         /// </example>
         public decimal GetBalance(string userID, Platform platform)
         {
-            return Convert.ToDecimal(bb.Program.BotInstance.UsersBuffer.GetParameter(platform, DataConversion.ToLong(userID), Users.Balance));
+            return DataConversion.ToDecimal(bb.Program.BotInstance.UsersBuffer.GetParameter(platform, DataConversion.ToLong(userID), Users.Balance).ToString());
         }
 
         public async Task GenerateRandomEventAsync()
