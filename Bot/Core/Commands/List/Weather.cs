@@ -12,6 +12,7 @@ using static bb.Core.Bot.Logger;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 using bb.Models.Command;
 using bb.Models.Platform;
+using bb.Models.Users;
 
 namespace bb.Core.Commands.List
 {
@@ -30,10 +31,10 @@ namespace bb.Core.Commands.List
         public override string AuthorsGithub => "https://github.com/itzkitb";
         public override string GithubSource => $"{URLs.githubSource}blob/master/butterBror/Core/Commands/List/Weather.cs";
         public override Version Version => new("2.0.1");
-        public override Dictionary<string, string> Description => new()
+        public override Dictionary<Language, string> Description => new()
         {
-            { "ru-RU", "Узнать погоду в городе с использованием современного API" },
-            { "en-US", "Find out the weather in the city using modern API" }
+            { Language.RuRu, "Узнать погоду в городе с использованием современного API" },
+            { Language.EnUs, "Find out the weather in the city using modern API" }
         };
         public override string WikiLink => "https://itzkitb.ru/bot/command?name=weather";
         public override int CooldownPerUser => 15;
@@ -44,7 +45,7 @@ namespace bb.Core.Commands.List
         public override bool OnlyBotModerator => false;
         public override bool OnlyBotDeveloper => false;
         public override bool OnlyChannelModerator => false;
-        public override PlatformsEnum[] Platforms => [PlatformsEnum.Twitch, PlatformsEnum.Telegram, PlatformsEnum.Discord];
+        public override Models.Platform.Platform[] Platforms => [Models.Platform.Platform.Twitch, Models.Platform.Platform.Telegram, Models.Platform.Platform.Discord];
         public override bool IsAsync => true;
 
 
@@ -158,7 +159,7 @@ namespace bb.Core.Commands.List
             return action;
         }
 
-        private CommandReturn HandleShowPageAction(WeatherAction action, string language, string userId, string channelId, PlatformsEnum platform)
+        private CommandReturn HandleShowPageAction(WeatherAction action, Language language, string userId, string channelId, Models.Platform.Platform platform)
         {
             var savedLocations = GetSavedLocations(platform, userId);
 
@@ -188,7 +189,7 @@ namespace bb.Core.Commands.List
             return commandReturn;
         }
 
-        private async Task<CommandReturn> HandleShowLocationActionAsync(WeatherAction action, PlatformsEnum platform, string userId, string language, string channelId)
+        private async Task<CommandReturn> HandleShowLocationActionAsync(WeatherAction action, Models.Platform.Platform platform, string userId, Language language, string channelId)
         {
             var savedLocations = GetSavedLocations(platform, userId);
 
@@ -218,7 +219,7 @@ namespace bb.Core.Commands.List
             return BuildWeatherMessage(weatherData, selectedLocation.Name, platform, language, channelId);
         }
 
-        private async Task<CommandReturn> HandleSetLocationActionAsync(WeatherAction action, PlatformsEnum platform, string userId, string language, string channelId)
+        private async Task<CommandReturn> HandleSetLocationActionAsync(WeatherAction action, Models.Platform.Platform platform, string userId, Language language, string channelId)
         {
             CommandReturn commandReturn = new CommandReturn();
             if (bb.Program.BotInstance.UsersBuffer == null)
@@ -252,7 +253,7 @@ namespace bb.Core.Commands.List
             return commandReturn;
         }
 
-        private CommandReturn HandleGetLocationAction(PlatformsEnum platform, string userId, string language, string channelId)
+        private CommandReturn HandleGetLocationAction(Models.Platform.Platform platform, string userId, Language language, string channelId)
         {
             CommandReturn commandReturn = new CommandReturn();
             if (bb.Program.BotInstance.UsersBuffer == null)
@@ -278,7 +279,7 @@ namespace bb.Core.Commands.List
             return commandReturn;
         }
 
-        private async Task<CommandReturn> HandleGetWeatherActionAsync(WeatherAction action, PlatformsEnum platform, string userId, string language, string channelId)
+        private async Task<CommandReturn> HandleGetWeatherActionAsync(WeatherAction action, Models.Platform.Platform platform, string userId, Language language, string channelId)
         {
             CommandReturn commandReturn = new CommandReturn();
             if (bb.Program.BotInstance.UsersBuffer == null)
@@ -361,7 +362,7 @@ namespace bb.Core.Commands.List
             return commandReturn;
         }
 
-        private List<LocationResult>? GetSavedLocations(PlatformsEnum platform, string userId)
+        private List<LocationResult>? GetSavedLocations(Models.Platform.Platform platform, string userId)
         {
             if (bb.Program.BotInstance.UsersBuffer == null)
             {
@@ -399,7 +400,7 @@ namespace bb.Core.Commands.List
             return locations;
         }
 
-        private void SaveSearchResults(List<LocationResult> locations, PlatformsEnum platform, string userId)
+        private void SaveSearchResults(List<LocationResult> locations, Models.Platform.Platform platform, string userId)
         {
             if (bb.Program.BotInstance.UsersBuffer == null)
             {
@@ -429,7 +430,7 @@ namespace bb.Core.Commands.List
             return pageContent.ToString().TrimEnd(',', ' ');
         }
 
-        private CommandReturn BuildWeatherMessage(WeatherData weather, string locationName, PlatformsEnum platform, string language, string channelId)
+        private CommandReturn BuildWeatherMessage(WeatherData weather, string locationName, Models.Platform.Platform platform, Language language, string channelId)
         {
             CommandReturn commandReturn = new();
             commandReturn.SetMessage(LocalizationService.GetString(
@@ -452,7 +453,7 @@ namespace bb.Core.Commands.List
             return commandReturn;
         }
 
-        private CommandReturn CreateErrorReturn(string errorKey, PlatformsEnum platform, string language, string channelId)
+        private CommandReturn CreateErrorReturn(string errorKey, Models.Platform.Platform platform, Language language, string channelId)
         {
             CommandReturn commandReturn = new CommandReturn();
             commandReturn.SetMessage(LocalizationService.GetString(language, errorKey, channelId, platform));
@@ -490,7 +491,7 @@ namespace bb.Core.Commands.List
                 _ => "🔥"
             };
 
-        private string GetWeatherSummary(string language, int weatherCode, string channelId, PlatformsEnum platform)
+        private string GetWeatherSummary(Language language, int weatherCode, string channelId, Models.Platform.Platform platform)
         {
             // https://open-meteo.com/en/docs
             var summary = weatherCode switch

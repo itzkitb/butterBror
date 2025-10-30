@@ -20,7 +20,7 @@ namespace bb.Models.Command
         public required bool IsForChannelModerator { get; set; }
         public required bool IsForBotDeveloper { get; set; }
         public double? Cost { get; set; }
-        public required PlatformsEnum[] Platforms { get; set; }
+        public required Platform.Platform[] Platforms { get; set; }
 
         public bool isOnDevelopment { get; set; }
     }

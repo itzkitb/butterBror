@@ -3,6 +3,7 @@ using bb.Core.Configuration;
 using TwitchLib.Client.Enums;
 using bb.Models.Command;
 using bb.Models.Platform;
+using bb.Models.Users;
 
 namespace bb.Core.Commands.List
 {
@@ -13,9 +14,9 @@ namespace bb.Core.Commands.List
         public override string AuthorsGithub => "https://github.com/itzkitb";
         public override string GithubSource => $"{URLs.githubSource}blob/master/butterBror/Core/Commands/List/Roulette.cs";
         public override Version Version => new("1.0.1");
-        public override Dictionary<string, string> Description => new() {
-            { "ru-RU", "Сыграйте в рулетку! Подробности: https://bit.ly/bb_roulette " },
-            { "en-US", "Play Roulette! Details: https://bit.ly/bb_roulette " }
+        public override Dictionary<Language, string> Description => new() {
+            { Language.RuRu, "Сыграйте в рулетку! Подробности: https://bit.ly/bb_roulette " },
+            { Language.EnUs, "Play Roulette! Details: https://bit.ly/bb_roulette " }
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=roulette";
         public override int CooldownPerUser => 10;
@@ -26,7 +27,7 @@ namespace bb.Core.Commands.List
         public override bool OnlyBotModerator => false;
         public override bool OnlyBotDeveloper => false;
         public override bool OnlyChannelModerator => false;
-        public override PlatformsEnum[] Platforms => [PlatformsEnum.Twitch, PlatformsEnum.Telegram, PlatformsEnum.Discord];
+        public override Platform[] Platforms => [Platform.Twitch, Platform.Telegram, Platform.Discord];
         public override bool IsAsync => false;
 
         public override CommandReturn Execute(CommandData data)
@@ -105,7 +106,7 @@ namespace bb.Core.Commands.List
                                 commandReturn.SetColor(ChatColorPresets.YellowGreen);
 
                                 int win = (int)(bid * multipliers[result_symbol]);
-                                bb.Program.BotInstance.Currency.Add(data.User.Id, win, 0, data.Platform);
+                                bb.Program.BotInstance.Currency.Add(data.User.Id, win, data.Platform);
                                 commandReturn.SetMessage(LocalizationService.GetString(
                                     data.User.Language,
                                     "command:roulette:result:win",
@@ -118,7 +119,7 @@ namespace bb.Core.Commands.List
                             }
                             else
                             {
-                                bb.Program.BotInstance.Currency.Add(data.User.Id, -bid, 0, data.Platform);
+                                bb.Program.BotInstance.Currency.Add(data.User.Id, -bid, data.Platform);
                                 commandReturn.SetMessage(LocalizationService.GetString(
                                     data.User.Language,
                                     "command:roulette:result:lose",

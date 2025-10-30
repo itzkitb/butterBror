@@ -101,7 +101,7 @@ namespace bb
         #region Buffers
         public MessagesBuffer? MessagesBuffer;
         public UsersBuffer? UsersBuffer;
-        public List<(PlatformsEnum platform, string channelId, long userId, Message message)> allFirstMessages = new();
+        public List<(Platform platform, string channelId, long userId, Message message)> allFirstMessages = new();
         #endregion
 
         #region Twitch
@@ -752,7 +752,6 @@ namespace bb
                 DataBase.Users = new(Paths.UsersDatabase);
                 DataBase.Games = new(Paths.GamesDatabase);
                 DataBase.Channels = new(Paths.ChannelsDatabase);
-                DataBase.Roles = new(Paths.RolesDatabase);
 
                 Write("Initializing buffers...");
 
@@ -808,7 +807,7 @@ namespace bb
 
             foreach (string channel in Program.BotInstance.TwitchDevAnnounce)
             {
-                bb.Program.BotInstance.MessageSender.Send(PlatformsEnum.Twitch, notify, UsernameResolver.GetUsername(channel, PlatformsEnum.Twitch, true), isSafe: true);
+                bb.Program.BotInstance.MessageSender.Send(Platform.Twitch, notify, UsernameResolver.GetUsername(channel, Platform.Twitch, true), isSafe: true);
             }
         }
 
@@ -1004,7 +1003,7 @@ namespace bb
 
             foreach (var channel in bb.Program.BotInstance.Settings.Get<string[]>("twitch_connect_channels"))
             {
-                var tempChannel = UsernameResolver.GetUsername(channel, PlatformsEnum.Twitch, true);
+                var tempChannel = UsernameResolver.GetUsername(channel, Platform.Twitch, true);
                 if (tempChannel != null) Clients.Twitch.JoinChannel(tempChannel);
                 else notFoundedChannels.Add(channel);
             }
@@ -1145,7 +1144,7 @@ namespace bb
                     Clients.Twitch.Connect();
                     JoinTwitchChannels();
                     Write("The token has been updated and the connection has been restored");
-                    bb.Program.BotInstance.MessageSender.Send(PlatformsEnum.Twitch, $"sillyCatThinks Token refreshed", TwitchName, isSafe: true);
+                    bb.Program.BotInstance.MessageSender.Send(Platform.Twitch, $"sillyCatThinks Token refreshed", TwitchName, isSafe: true);
                 }
                 catch (Exception ex)
                 {
@@ -1287,7 +1286,6 @@ namespace bb
                         DataBase.Users.Dispose();
                         DataBase.Games.Dispose();
                         DataBase.Messages.Dispose();
-                        DataBase.Roles.Dispose();
                     }
                     catch (Exception ex)
                     {

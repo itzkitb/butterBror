@@ -1,10 +1,11 @@
-﻿using bb.Services.External;
-using bb.Utils;
-using bb.Core.Configuration;
-using System.Globalization;
-using TwitchLib.Client.Enums;
+﻿using bb.Core.Configuration;
 using bb.Models.Command;
 using bb.Models.Platform;
+using bb.Models.Users;
+using bb.Services.External;
+using bb.Utils;
+using System.Globalization;
+using TwitchLib.Client.Enums;
 
 namespace bb.Core.Commands.List
 {
@@ -15,10 +16,10 @@ namespace bb.Core.Commands.List
         public override string AuthorsGithub => "https://github.com/itzkitb";
         public override string GithubSource => $"{URLs.githubSource}blob/master/butterBror/Core/Commands/List/Cookie.cs";
         public override Version Version => new("1.0.1");
-        public override Dictionary<string, string> Description => new()
+        public override Dictionary<Language, string> Description => new()
         {
-            { "ru-RU", "Получи абсурдное предсказание на день." },
-            { "en-US", "Get an absurd horoscope for the day." }
+            { Language.RuRu, "Получи абсурдное предсказание на день." },
+            { Language.EnUs, "Get an absurd horoscope for the day." }
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=cookie";
         public override int CooldownPerUser => 120;
@@ -29,7 +30,7 @@ namespace bb.Core.Commands.List
         public override bool OnlyBotModerator => false;
         public override bool OnlyBotDeveloper => false;
         public override bool OnlyChannelModerator => false;
-        public override PlatformsEnum[] Platforms => [PlatformsEnum.Twitch, PlatformsEnum.Telegram, PlatformsEnum.Discord];
+        public override Platform[] Platforms => [Platform.Twitch, Platform.Telegram, Platform.Discord];
         public override bool IsAsync => true;
 
         public override async Task<CommandReturn> ExecuteAsync(CommandData data)
@@ -214,18 +215,15 @@ namespace bb.Core.Commands.List
                         decimal currency = bb.Program.BotInstance.InBankDollars / bb.Program.BotInstance.Coins;
                         decimal cost = 0.2m / currency;
 
-                        int coins = -(int)cost;
-                        int subcoins = -(int)((cost - coins) * 100);
-
-                        if (bb.Program.BotInstance.Currency.GetBalance(data.User.Id, data.Platform) + bb.Program.BotInstance.Currency.GetSubbalance(data.User.Id, data.Platform) / 100f >= coins + subcoins / 100f)
+                        if (bb.Program.BotInstance.Currency.GetBalance(data.User.Id, data.Platform) >= cost)
                         {
-                            bb.Program.BotInstance.Currency.Add(data.User.Id, coins, subcoins, data.Platform);
+                            bb.Program.BotInstance.Currency.Add(data.User.Id, cost, data.Platform);
                             bb.Program.BotInstance.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.Id), Users.LastCookie, DateTime.UtcNow.AddDays(-1).ToString("o"));
                             commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:cookie:buyed", data.ChannelId, data.Platform));
                         }
                         else
                         {
-                            commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:not_enough_coins", data.ChannelId, data.Platform, coins + "." + subcoins));
+                            commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:not_enough_coins", data.ChannelId, data.Platform, cost));
                         }
                         return commandReturn;
                     }

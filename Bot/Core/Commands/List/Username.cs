@@ -1,8 +1,9 @@
-﻿using bb.Utils;
-using bb.Core.Configuration;
-using TwitchLib.Client.Enums;
+﻿using bb.Core.Configuration;
 using bb.Models.Command;
 using bb.Models.Platform;
+using bb.Models.Users;
+using bb.Utils;
+using TwitchLib.Client.Enums;
 
 namespace bb.Core.Commands.List
 {
@@ -13,10 +14,10 @@ namespace bb.Core.Commands.List
         public override string AuthorsGithub => "https://github.com/itzkitb";
         public override string GithubSource => $"{URLs.githubSource}blob/master/butterBror/Core/Commands/List/Name.cs";
         public override Version Version => new("1.0.1");
-        public override Dictionary<string, string> Description => new()
+        public override Dictionary<Language, string> Description => new()
         {
-            { "ru-RU", "Получить имя из ID." },
-            { "en-US", "Get name from ID." }
+            { Language.RuRu, "Получить имя из ID." },
+            { Language.EnUs, "Get name from ID." }
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=name";
         public override int CooldownPerUser => 10;
@@ -27,7 +28,7 @@ namespace bb.Core.Commands.List
         public override bool OnlyBotModerator => false;
         public override bool OnlyBotDeveloper => false;
         public override bool OnlyChannelModerator => false;
-        public override PlatformsEnum[] Platforms => [PlatformsEnum.Twitch, PlatformsEnum.Telegram, PlatformsEnum.Discord];
+        public override Platform[] Platforms => [Platform.Twitch, Platform.Telegram, Platform.Discord];
         public override bool IsAsync => false;
 
         public override CommandReturn Execute(CommandData data)
@@ -44,7 +45,7 @@ namespace bb.Core.Commands.List
 
                 if (data.Arguments != null && data.Arguments.Count > 0)
                 {
-                    string name = UsernameResolver.GetUsername(data.Arguments[0], PlatformsEnum.Twitch, true);
+                    string name = UsernameResolver.GetUsername(data.Arguments[0], Platform.Twitch, true);
                     if (name == data.User.Id)
                     {
                         commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:name", data.ChannelId, data.Platform, data.User.Id)); // Fix AB3

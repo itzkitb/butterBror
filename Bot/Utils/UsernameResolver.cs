@@ -126,7 +126,7 @@ namespace bb.Utils
         /// </para>
         /// Authentication failures or API errors are logged but return <see langword="null"/> to maintain bot stability.
         /// </remarks>
-        public static string GetUserID(string user, PlatformsEnum platform, bool requestAPI = false)
+        public static string GetUserID(string user, Platform platform, bool requestAPI = false)
         {
             string key = user.ToLowerInvariant();
 
@@ -136,7 +136,7 @@ namespace bb.Utils
                     return bb.Program.BotInstance.DataBase.Users.GetUserIdByUsername(platform, key).ToString();
 
                 // Twitch API
-                if (platform is PlatformsEnum.Twitch && requestAPI)
+                if (platform is Platform.Twitch && requestAPI)
                 {
                     if (string.IsNullOrEmpty(bb.Program.BotInstance.TwitchClientId) || string.IsNullOrEmpty(bb.Program.BotInstance.Tokens.Twitch.AccessToken))
                         return null;
@@ -215,7 +215,7 @@ namespace bb.Utils
         /// </para>
         /// The method handles API rate limits and authentication failures gracefully.
         /// </remarks>
-        public static string GetUsername(string ID, PlatformsEnum platform, bool requestAPI = false)
+        public static string GetUsername(string ID, Platform platform, bool requestAPI = false)
         {
             try
             {
@@ -223,7 +223,7 @@ namespace bb.Utils
                     return bb.Program.BotInstance.DataBase.Users.GetUsernameByUserId(platform, DataConversion.ToLong(ID));
 
                 // API
-                if (platform is PlatformsEnum.Twitch && requestAPI)
+                if (platform is Platform.Twitch && requestAPI)
                 {
                     if (string.IsNullOrEmpty(bb.Program.BotInstance.TwitchClientId) ||
                         string.IsNullOrEmpty(bb.Program.BotInstance.Tokens.Twitch.AccessToken))

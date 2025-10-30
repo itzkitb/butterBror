@@ -1,11 +1,16 @@
-﻿using bb.Core.Configuration;
+﻿using bb.Core.Bot;
+using bb.Core.Configuration;
 using bb.Models.Command;
 using bb.Models.Platform;
+using bb.Models.Users;
 using bb.Utils;
+using Discord;
+using feels.Dank.Cache.LRU;
 using Microsoft.CodeAnalysis;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Reflection;
+using Telegram.Bot;
 using TwitchLib.Client.Enums;
 using static bb.Core.Bot.Logger;
 
@@ -34,6 +39,12 @@ namespace bb.Core.Commands
 
         private bool _commandsInitialized;
         private readonly object _initLock = new object();
+        private static readonly LruCache<string, bool> _adminCache = new LruCache<string, bool>(
+            capacity: 1000,
+            defaultTtl: TimeSpan.FromMinutes(1),
+            expirationMode: ExpirationMode.Sliding,
+            cleanupInterval: TimeSpan.FromMinutes(2)
+        );
 
         /// <summary>
         /// Initializes command instances through assembly scanning.
@@ -128,17 +139,96 @@ namespace bb.Core.Commands
                 try
                 {
                     // User data initialization
-                    data.User.IsBanned = bb.Program.BotInstance.DataBase.Roles.IsBanned(data.Platform, DataConversion.ToLong(data.User.Id));
-                    data.User.Ignored = bb.Program.BotInstance.DataBase.Roles.IsIgnored(data.Platform, DataConversion.ToLong(data.User.Id));
+                    data.User.Roles = (Roles)DataConversion.ToInt(bb.Program.BotInstance.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(data.User.Id), Users.Role));
 
-                    if ((bool)data.User.IsBanned || (bool)data.User.Ignored ||
-                        (data.Platform is PlatformsEnum.Twitch && data.TwitchMessage.ChatMessage.IsMe))
+                    if (data.User.Roles == Roles.Public)
+                    {
+                        if (data.Platform == Models.Platform.Platform.Twitch)
+                        {
+                            if (data.TwitchMessage.ChatMessage.IsBroadcaster || data.TwitchMessage.ChatMessage.IsModerator)
+                            {
+                                data.User.Roles = Roles.ChatMod;
+                            }
+                        }
+                        else if (data.Platform == Models.Platform.Platform.Telegram)
+                        {
+                            if (data.TelegramMessage.Chat.Id.ToString() == data.User.Id)
+                            {
+                                data.User.Roles = Roles.ChatMod;
+                            }
+                            else if (data.TelegramMessage.Chat.Type == Telegram.Bot.Types.Enums.ChatType.Group ||
+                                    data.TelegramMessage.Chat.Type == Telegram.Bot.Types.Enums.ChatType.Supergroup)
+                            {
+                                var cacheKey = $"telegram:{data.TelegramMessage.Chat.Id}:{data.TelegramMessage.From.Id}";
+
+                                try
+                                {
+                                    bool isAdmin = await _adminCache.GetOrAddAsync(cacheKey, async (key, ct) =>
+                                    {
+                                        var chatMember = await Program.BotInstance.Clients.Telegram.GetChatMember(
+                                            data.TelegramMessage.Chat.Id, data.TelegramMessage.From.Id);
+
+                                        return chatMember.Status == Telegram.Bot.Types.Enums.ChatMemberStatus.Administrator ||
+                                               chatMember.Status == Telegram.Bot.Types.Enums.ChatMemberStatus.Creator;
+                                    }, TimeSpan.FromSeconds(5));
+
+                                    if (isAdmin)
+                                    {
+                                        data.User.Roles = Roles.ChatMod;
+                                    }
+                                }
+                                catch (TimeoutException)
+                                {
+                                    Logger.Write($"Timeout checking Telegram admin status for user {data.User.Id}");
+                                }
+                                catch (Exception ex)
+                                {
+                                    Logger.Write($"Error checking Telegram admin status: {ex.Message}");
+                                }
+                            }
+                        }
+                        else if (data.Platform == Models.Platform.Platform.Discord)
+                        {
+                            var discordUser = data.DiscordCommandBase != null ? data.DiscordCommandBase.User as IGuildUser : data.DiscordMessage.Author as IGuildUser;
+
+                            if (discordUser != null)
+                            {
+                                var cacheKey = $"discord:{discordUser.Guild.Id}:{discordUser.Id}";
+
+                                try
+                                {
+                                    bool isAdmin = _adminCache.GetOrAdd(cacheKey, key =>
+                                    {
+                                        return discordUser.RoleIds.Any(roleId =>
+                                        {
+                                            var role = discordUser.Guild.GetRole(roleId);
+                                            return role?.Name?.Equals("Bot admin", StringComparison.OrdinalIgnoreCase) == true;
+                                        });
+                                    }, TimeSpan.FromSeconds(2));
+
+                                    if (isAdmin)
+                                    {
+                                        data.User.Roles = Roles.ChatMod;
+                                    }
+                                }
+                                catch (TimeoutException)
+                                {
+                                    Logger.Write($"Timeout checking Discord admin status for user {data.User.Id}");
+                                }
+                                catch (Exception ex)
+                                {
+                                    Logger.Write($"Error checking Discord admin status: {ex.Message}");
+                                }
+                            }
+                        }
+                    }
+
+                    if (data.User.Roles <= Roles.Bot ||
+                        (data.Platform is Models.Platform.Platform.Twitch && data.TwitchMessage.ChatMessage.IsMe))
                         return;
 
-                    string language = (string)bb.Program.BotInstance.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(data.User.Id), Users.Language);
+                    Language language = (Language)DataConversion.ToInt(bb.Program.BotInstance.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(data.User.Id), Users.Language));
                     data.User.Language = language;
-                    data.User.IsBotModerator = bb.Program.BotInstance.DataBase.Roles.IsModerator(data.Platform, DataConversion.ToLong(data.User.Id));
-                    data.User.IsBotDeveloper = bb.Program.BotInstance.DataBase.Roles.IsDeveloper(data.Platform, DataConversion.ToLong(data.User.Id));
 
                     string commandName = data.Name.Replace("ё", "е");
                     bool commandFounded = false;
@@ -158,22 +248,22 @@ namespace bb.Core.Commands
                         await userLock.WaitAsync(ct);
                         try
                         {
-                            bool isOnlyBotDeveloper = cmd.OnlyBotDeveloper && !(bool)data.User.IsBotDeveloper;
-                            bool isOnlyBotModerator = cmd.OnlyBotModerator && !((bool)data.User.IsBotModerator || (bool)data.User.IsBotDeveloper);
-                            bool isOnlyChannelModerator = data.Platform == PlatformsEnum.Twitch && cmd.OnlyChannelModerator && !((bool)data.User.IsModerator || (bool)data.User.IsBotModerator || (bool)data.User.IsBotDeveloper);
-                            bool cooldown = !bb.Program.BotInstance.Cooldown.CheckCooldown(cmd.CooldownPerUser, cmd.CooldownPerChannel, cmd.Name, data.User.Id, data.ChannelId, data.Platform, true);
+                            bool isOnlyBotOwner = cmd.OnlyBotDeveloper && !(bool)(data.User.Roles == Roles.BotOwner);
+                            bool isOnlyBotMod = cmd.OnlyBotModerator && !(data.User.Roles >= Roles.BotMod);
+                            bool isOnlyChannelMod = data.Platform == Models.Platform.Platform.Twitch && cmd.OnlyChannelModerator && !(data.User.Roles >= Roles.ChatMod);
+                            bool isCooldown = !bb.Program.BotInstance.Cooldown.CheckCooldown(cmd.CooldownPerUser, cmd.CooldownPerChannel, cmd.Name, data.User.Id, data.ChannelId, data.Platform, true);
 
                             // Permission and cooldown checks
-                            if (isOnlyBotDeveloper || isOnlyBotModerator || isOnlyChannelModerator || cooldown)
+                            if (isOnlyBotOwner || isOnlyBotMod || isOnlyChannelMod || isCooldown)
                             {
-                                if (!cooldown)
+                                if (!isCooldown)
                                 {
                                     string message = LocalizationService.GetString(data.User.Language, "error:not_enough_rights", data.ChannelId, data.Platform);
                                     bb.Program.BotInstance.MessageSender.Send(data.Platform, message, data.Channel, data.ChannelId, data.User.Language, data.User.Name,
                                         data.User.Id, data.Server, data.ServerID, data.MessageID, data.TelegramMessage, true, true, false);
                                 }
 
-                                Write($"Command failed:\n - OBD check: {BoolToString(isOnlyBotDeveloper)}\n - OBM check: {BoolToString(isOnlyBotModerator)}\n - OCM check: {BoolToString(isOnlyChannelModerator)}\n - Cooldown check: {BoolToString(cooldown)}", LogLevel.Warning);
+                                Write($"Command failed:\n - OBD check: {BoolToString(isOnlyBotOwner)}\n - OBM check: {BoolToString(isOnlyBotMod)}\n - OCM check: {BoolToString(isOnlyChannelMod)}\n - Cooldown check: {BoolToString(isCooldown)}", LogLevel.Warning);
                                 return;
                             }
 
@@ -218,7 +308,7 @@ namespace bb.Core.Commands
                                     }
                                     else
                                     {
-                                        bb.Program.BotInstance.MessageSender.Send(data.Platform, LocalizationService.GetString(data.User.Language, "error:message_could_not_be_sent", data.ChatID, PlatformsEnum.Twitch), data.Channel,
+                                        bb.Program.BotInstance.MessageSender.Send(data.Platform, LocalizationService.GetString(data.User.Language, "error:message_could_not_be_sent", data.ChatID, Models.Platform.Platform.Twitch), data.Channel,
                             data.ChannelId, data.User.Language, data.User.Name, data.User.Id, data.Server, data.ServerID, data.MessageID, data.TelegramMessage, true, true, false);
                                     }
                                     
@@ -240,7 +330,7 @@ namespace bb.Core.Commands
                     Write(ex);
                     if (!test)
                     {
-                        bb.Program.BotInstance.MessageSender.Send(data.Platform, LocalizationService.GetString("en-US", "error:unknown", data.ChannelId, data.Platform), data.Channel,
+                        bb.Program.BotInstance.MessageSender.Send(data.Platform, LocalizationService.GetString(Language.EnUs, "error:unknown", data.ChannelId, data.Platform), data.Channel,
                             data.ChannelId, data.User.Language, data.User.Name, data.User.Id, data.Server, data.ServerID, data.MessageID, data.TelegramMessage, true, true, false);
                     }
                 }
@@ -251,11 +341,12 @@ namespace bb.Core.Commands
                     {
                         Write($"🚀 Executed command \"{data.Name}\":" +
 $"\n- User: {data.Platform.ToString()}/{data.User.Id}" +
+$"\n- Role: {data.User.Roles} ({(int)data.User.Roles})" +
 $"\n- Arguments: \"{data.ArgumentsString}\"" +
 $"\n- Location: \"{data.Channel}/{data.ChannelId}\" (ChatID: {data.ChatID})" +
-$"\n- Balance: {data.User.Balance}.{data.User.BalanceFloat}" +
+$"\n- Balance: {data.User.Balance}" +
 $"\n- Completed in: {start.ElapsedMilliseconds}ms" +
-$"\n- Blocked words detected: {BoolToString(blockedWordDetected)} in {blockedWordExecutionTime}ms"+
+$"\n- Blocked words detected: {BoolToString(blockedWordDetected)} in {blockedWordExecutionTime}ms" +
 $"\n- Blocked word: {blockedWordSector}/\"{blockedWordWord}\"");
                         bb.Program.BotInstance.CompletedCommands++;
                     }

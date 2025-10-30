@@ -1,4 +1,6 @@
-﻿namespace bb.Utils
+﻿using bb.Models.Users;
+
+namespace bb.Utils
 {
     /// <summary>
     /// Utility class for language detection based on Unicode character range analysis.
@@ -31,10 +33,10 @@
     /// </remarks>
     public static class LanguageDetector
     {
-        private static readonly List<(string LanguageCode, List<(char Start, char End)> Ranges)> _languageDefinitions =
-            new List<(string, List<(char, char)>)>
+        private static readonly List<(Language LanguageCode, List<(char Start, char End)> Ranges)> _languageDefinitions =
+            new List<(Language, List<(char, char)>)>
         {
-            ("ru-RU", new List<(char, char)>
+            (Language.RuRu, new List<(char, char)>
             {
                 ('\u0410', '\u044F'), // Cyrillic uppercase and lowercase letters
                 ('\u0401', '\u0401'), // Cyrillic capital letter Yo
@@ -87,10 +89,10 @@
         /// <item>Basic content filtering by language</item>
         /// </list>
         /// </remarks>
-        public static string DetectLanguage(string text)
+        public static Language DetectLanguage(string text)
         {
             if (string.IsNullOrWhiteSpace(text))
-                return "en-US";
+                return Language.EnUs;
 
             foreach (char c in text)
             {
@@ -101,7 +103,7 @@
                 }
             }
 
-            return "en-US";
+            return Language.EnUs;
         }
 
         /// <summary>
@@ -179,7 +181,7 @@
         /// This method enables customization for platform-specific language requirements
         /// without modifying the core detection algorithm.
         /// </remarks>
-        public static void AddLanguageDefinition(string languageCode, params (char Start, char End)[] ranges)
+        public static void AddLanguageDefinition(Language languageCode, params (char Start, char End)[] ranges)
         {
             _languageDefinitions.Add((languageCode, new List<(char, char)>(ranges)));
         }

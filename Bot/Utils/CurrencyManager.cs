@@ -1,9 +1,10 @@
-﻿using bb.Services.External;
+﻿using bb.Core.Configuration;
 using bb.Models.Currency;
+using bb.Models.Platform;
+using bb.Models.Users;
+using bb.Services.External;
 using Newtonsoft.Json;
 using static bb.Core.Bot.Logger;
-using bb.Core.Configuration;
-using bb.Models.Platform;
 
 namespace bb.Utils
 {
@@ -77,26 +78,12 @@ namespace bb.Utils
         /// // Results in: 0 butters, 90 crumbs (borrows 1 butter to cover crumb deficit)
         /// </code>
         /// </example>
-        public void Add(string userID, long buttersAdd, long crumbsAdd, PlatformsEnum platform)
+        public void Add(string userID, decimal add, Platform platform)
         {
-            long crumbs = GetSubbalance(userID, platform) + crumbsAdd;
-            long butters = GetBalance(userID, platform) + buttersAdd;
+            decimal balance = GetBalance(userID, platform) + add;
 
-            bb.Program.BotInstance.Coins += buttersAdd + crumbsAdd / 100m;
-            while (crumbs > 100)
-            {
-                crumbs -= 100;
-                butters += 1;
-            }
-
-            while (crumbs < 0)
-            {
-                crumbs += 100;
-                butters -= 1;
-            }
-
-            bb.Program.BotInstance.UsersBuffer.SetParameter(platform, DataConversion.ToLong(userID), Users.AfterDotBalance, crumbs);
-            bb.Program.BotInstance.UsersBuffer.SetParameter(platform, DataConversion.ToLong(userID), Users.Balance, butters);
+            bb.Program.BotInstance.Coins += balance;
+            bb.Program.BotInstance.UsersBuffer.SetParameter(platform, DataConversion.ToLong(userID), Users.Balance, balance);
         }
 
         /// <summary>
@@ -118,7 +105,7 @@ namespace bb.Utils
         /// <para>
         /// Usage considerations:
         /// <list type="bullet">
-        /// <item>For complete balance information, also call <see cref="GetSubbalance(string, PlatformsEnum)"/></item>
+        /// <item>For complete balance information, also call <see cref="GetSubbalance(string, Platform)"/></item>
         /// <item>Not suitable for precise financial calculations requiring fractional values</item>
         /// <item>Typically used for display purposes where whole numbers are preferred</item>
         /// </list>
@@ -131,53 +118,9 @@ namespace bb.Utils
         /// long butters = Balance.GetBalance("12345", PlatformsEnum.Twitch); // Returns 5
         /// </code>
         /// </example>
-        public long GetBalance(string userID, PlatformsEnum platform)
+        public decimal GetBalance(string userID, Platform platform)
         {
-            return Convert.ToInt64(bb.Program.BotInstance.UsersBuffer.GetParameter(platform, DataConversion.ToLong(userID), Users.Balance));
-        }
-
-        /// <summary>
-        /// Retrieves a user's fractional currency balance in crumbs (0-99 range).
-        /// </summary>
-        /// <param name="userID">The unique user identifier across all platforms</param>
-        /// <param name="platform">The platform context for the balance retrieval</param>
-        /// <returns>The user's current fractional balance in crumbs (always between 0 and 99)</returns>
-        /// <remarks>
-        /// <para>
-        /// Key properties:
-        /// <list type="bullet">
-        /// <item>Always returns values in the range of 0-99 (normalized fractional component)</item>
-        /// <item>Represents hundredths of a butter (1 crumb = 0.01 butter)</item>
-        /// <item>Retrieves data from in-memory buffers for performance</item>
-        /// <item>Values are eventually persisted to database storage</item>
-        /// </list>
-        /// </para>
-        /// <para>
-        /// Usage patterns:
-        /// <list type="bullet">
-        /// <item>Combine with <see cref="GetBalance(string, PlatformsEnum)"/> for complete balance</item>
-        /// <item>Essential for precise financial operations requiring fractional values</item>
-        /// <item>Used internally during balance conversion operations</item>
-        /// </list>
-        /// </para>
-        /// This method provides access to the fractional component of the user's balance,
-        /// completing the dual-unit representation when used with GetBalance().
-        /// </remarks>
-        /// <example>
-        /// For a balance of 5 butters and 75 crumbs:
-        /// <code>
-        /// long crumbs = Balance.GetSubbalance("12345", PlatformsEnum.Twitch); // Returns 75
-        /// </code>
-        /// </example>
-        /// <example>
-        /// For a balance of 3 butters and 5 crumbs:
-        /// <code>
-        /// long crumbs = Balance.GetSubbalance("67890", PlatformsEnum.Discord); // Returns 5
-        /// </code>
-        /// </example>
-        public long GetSubbalance(string userID, PlatformsEnum platform)
-        {
-            return Convert.ToInt64(bb.Program.BotInstance.UsersBuffer.GetParameter(platform, DataConversion.ToLong(userID), Users.AfterDotBalance));
+            return Convert.ToDecimal(bb.Program.BotInstance.UsersBuffer.GetParameter(platform, DataConversion.ToLong(userID), Users.Balance));
         }
 
         public async Task GenerateRandomEventAsync()
@@ -205,13 +148,13 @@ namespace bb.Utils
                 var aiResponse = await bb.Program.BotInstance.AiService.Request(
                     request: aiRequest,
                     model: "qwen",
-                    platform: PlatformsEnum.Twitch,
+                    platform: Platform.Twitch,
                     repetitionPenalty: 1.0,
                     includeChatHistory: false,
                     includeSystemPrompt: false,
                     username: "♿",
                     userId: "♿",
-                    language: "en-US"
+                    language: Language.EnUs
                 );
 
                 if (aiResponse[0] == "ERR")
@@ -259,26 +202,20 @@ namespace bb.Utils
             {
                 try
                 {
-                    string channelName = UsernameResolver.GetUsername(channelId, PlatformsEnum.Twitch, true);
-                    string? channelLang = bb.Program.BotInstance.DataBase.Users.GetParameter(PlatformsEnum.Twitch, DataConversion.ToLong(channelId), Users.Language)?.ToString();
-
-                    if (string.IsNullOrEmpty(channelLang))
-                    {
-                        Write($"Language not found for channel {channelId}", LogLevel.Warning);
-                        continue;
-                    }
+                    string channelName = UsernameResolver.GetUsername(channelId, Platform.Twitch, true);
+                    Language channelLang = (Language?)bb.Program.BotInstance.DataBase.Users.GetParameter(Platform.Twitch, DataConversion.ToLong(channelId), Users.Language) ?? Language.EnUs;
 
                     string message = LocalizationService.GetString(
                         channelLang,
                         "currency:random_event",
                         channelId,
-                        PlatformsEnum.Twitch,
+                        Platform.Twitch,
                         randomEvent.Text,
                         randomEvent.Added,
                         channelName
                     );
 
-                    bb.Program.BotInstance.MessageSender.Send(PlatformsEnum.Twitch, message, channelName, channelId, channelLang, isSafe: true, isReply: false, addUsername: false);
+                    bb.Program.BotInstance.MessageSender.Send(Platform.Twitch, message, channelName, channelId, channelLang, isSafe: true, isReply: false, addUsername: false);
                     await Task.Delay(100);
                 }
                 catch (Exception ex)
@@ -298,23 +235,21 @@ namespace bb.Utils
             {
                 try
                 {
-                    string channelName = UsernameResolver.GetUsername(channelId, PlatformsEnum.Twitch, true);
-                    string? channelLang = bb.Program.BotInstance.DataBase.Users.GetParameter(PlatformsEnum.Twitch, DataConversion.ToLong(channelId), Users.Language)?.ToString();
+                    string channelName = UsernameResolver.GetUsername(channelId, Platform.Twitch, true);
+                    Language channelLang = (Language?)bb.Program.BotInstance.DataBase.Users.GetParameter(Platform.Twitch, DataConversion.ToLong(channelId), Users.Language) ?? Language.EnUs;
 
-                    if (string.IsNullOrEmpty(channelLang))
-                        continue;
 
                     string message = LocalizationService.GetString(
                         channelLang,
                         "currency:random_event",
                         channelId,
-                        PlatformsEnum.Twitch,
+                        Platform.Twitch,
                         "Nothing happened today.",
                         0,
                         channelName
                     );
 
-                    bb.Program.BotInstance.MessageSender.Send(PlatformsEnum.Twitch, message, channelName, channelId, channelLang, isSafe: true, isReply: false, addUsername: false);
+                    bb.Program.BotInstance.MessageSender.Send(Platform.Twitch, message, channelName, channelId, channelLang, isSafe: true, isReply: false, addUsername: false);
                     await Task.Delay(100);
                 }
                 catch (Exception ex)
@@ -367,25 +302,19 @@ namespace bb.Utils
             {
                 try
                 {
-                    string channelName = UsernameResolver.GetUsername(channelId, PlatformsEnum.Twitch, true);
-                    string? channelLang = bb.Program.BotInstance.DataBase.Users.GetParameter(PlatformsEnum.Twitch, DataConversion.ToLong(channelId), Users.Language)?.ToString();
-
-                    if (string.IsNullOrEmpty(channelLang))
-                    {
-                        Write($"Language not found for channel {channelId}", LogLevel.Warning);
-                        continue;
-                    }
+                    string channelName = UsernameResolver.GetUsername(channelId, Platform.Twitch, true);
+                    Language channelLang = (Language?)bb.Program.BotInstance.DataBase.Users.GetParameter(Platform.Twitch, DataConversion.ToLong(channelId), Users.Language) ?? Language.EnUs;
 
                     string message = LocalizationService.GetString(
                         channelLang,
                         "currency:taxes",
                         channelId,
-                        PlatformsEnum.Twitch,
+                        Platform.Twitch,
                         collectedTaxes,
                         channelName
                     );
 
-                    bb.Program.BotInstance.MessageSender.Send(PlatformsEnum.Twitch, message, channelName, channelId, channelLang, isSafe: true, isReply: false, addUsername: false);
+                    bb.Program.BotInstance.MessageSender.Send(Platform.Twitch, message, channelName, channelId, channelLang, isSafe: true, isReply: false, addUsername: false);
                     await Task.Delay(100);
                 }
                 catch (Exception ex)

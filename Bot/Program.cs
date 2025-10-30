@@ -18,6 +18,7 @@ namespace bb
     {
         public static BotInstance BotInstance;
         public static string MainColor = "b3ff7d";
+        public static string WikiURL = "https://itzkitb.lol/bot/command?q=";
 
         public static void Main(string[] args)
         {

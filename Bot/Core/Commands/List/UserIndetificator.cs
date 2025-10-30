@@ -1,8 +1,9 @@
-﻿using bb.Utils;
-using bb.Core.Configuration;
-using TwitchLib.Client.Enums;
+﻿using bb.Core.Configuration;
 using bb.Models.Command;
 using bb.Models.Platform;
+using bb.Models.Users;
+using bb.Utils;
+using TwitchLib.Client.Enums;
 
 namespace bb.Core.Commands.List
 {
@@ -13,10 +14,10 @@ namespace bb.Core.Commands.List
         public override string AuthorsGithub => "https://github.com/itzkitb";
         public override string GithubSource => $"{URLs.githubSource}blob/master/butterBror/Core/Commands/List/UserIndetificator.cs";
         public override Version Version => new("1.0.0");
-        public override Dictionary<string, string> Description => new()
+        public override Dictionary<Language, string> Description => new()
         {
-            { "ru-RU", "Узнать ID пользователя." },
-            { "en-US", "Find out user ID." }
+            { Language.RuRu, "Узнать ID пользователя." },
+            { Language.EnUs, "Find out user ID." }
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=id";
         public override int CooldownPerUser => 10;
@@ -27,7 +28,7 @@ namespace bb.Core.Commands.List
         public override bool OnlyBotModerator => false;
         public override bool OnlyBotDeveloper => false;
         public override bool OnlyChannelModerator => false;
-        public override PlatformsEnum[] Platforms => [PlatformsEnum.Twitch, PlatformsEnum.Telegram, PlatformsEnum.Discord];
+        public override Platform[] Platforms => [Platform.Twitch, Platform.Telegram, Platform.Discord];
         public override bool IsAsync => false;
 
         public override CommandReturn Execute(CommandData data)

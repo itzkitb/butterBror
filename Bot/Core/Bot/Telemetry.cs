@@ -108,10 +108,10 @@ namespace bb.Core.Bot
                 UserData user = new()
                 {
                     Id = "a123456789",
-                    Language = "en",
+                    Language = Language.EnUs,
                     Name = "test",
-                    IsModerator = true,
-                    IsBroadcaster = true
+                    Balance = 0,
+                    Roles = 0
                 };
 
                 CommandData data = new()
@@ -122,7 +122,7 @@ namespace bb.Core.Bot
                     Channel = "test",
                     ChannelId = "a123456789",
                     MessageID = "a123456789",
-                    Platform = PlatformsEnum.Telegram,
+                    Platform = Platform.Telegram,
                     User = user,
                     TwitchMessage = new TwitchLib.Client.Events.OnMessageReceivedArgs(),
                     CommandInstanceID = Guid.NewGuid().ToString()
@@ -141,8 +141,8 @@ namespace bb.Core.Bot
 
                 long memory = Process.GetCurrentProcess().PrivateMemorySize64 / (1024 * 1024);
 
-                bb.Program.BotInstance.MessageSender.Send(PlatformsEnum.Twitch, $"/me glorp 📡 | " +
-                    $"🕒 {TextSanitizer.FormatTimeSpan(DateTime.UtcNow - bb.Program.BotInstance.StartTime, "en-US")} | " +
+                bb.Program.BotInstance.MessageSender.Send(Platform.Twitch, $"/me glorp 📡 | " +
+                    $"🕒 {TextSanitizer.FormatTimeSpan(DateTime.UtcNow - bb.Program.BotInstance.StartTime, Language.EnUs)} | " +
                     $"{memory}Mbyte | " +
                     $"🔋 {Battery.GetBatteryCharge()}% {(Battery.IsCharging() ? "(Charging) " : "")}| " +
                     $"CPU: {cpuPercent:0.00}% | " +

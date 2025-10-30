@@ -1,8 +1,9 @@
-﻿using bb.Utils;
-using bb.Core.Configuration;
-using TwitchLib.Client.Enums;
+﻿using bb.Core.Configuration;
 using bb.Models.Command;
 using bb.Models.Platform;
+using bb.Models.Users;
+using bb.Utils;
+using TwitchLib.Client.Enums;
 
 namespace bb.Core.Commands.List
 {
@@ -13,9 +14,9 @@ namespace bb.Core.Commands.List
         public override string AuthorsGithub => "https://github.com/itzkitb";
         public override string GithubSource => $"{URLs.githubSource}blob/master/butterBror/Core/Commands/List/Balance.cs";
         public override Version Version => new("1.0.0");
-        public override Dictionary<string, string> Description => new() {
-            { "ru-RU", "Узнать баланс в экономике бота." },
-            { "en-US", "Find out the balance in the bot's economy." }
+        public override Dictionary<Language, string> Description => new() {
+            { Language.RuRu, "Узнать баланс в экономике бота." },
+            { Language.EnUs, "Find out the balance in the bot's economy." }
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=wallet";
         public override int CooldownPerUser => 5;
@@ -26,7 +27,7 @@ namespace bb.Core.Commands.List
         public override bool OnlyBotModerator => false;
         public override bool OnlyBotDeveloper => false;
         public override bool OnlyChannelModerator => false;
-        public override PlatformsEnum[] Platforms => [PlatformsEnum.Twitch, PlatformsEnum.Telegram, PlatformsEnum.Discord];
+        public override Platform[] Platforms => [Platform.Twitch, Platform.Telegram, Platform.Discord];
         public override bool IsAsync => false;
 
         public override CommandReturn Execute(CommandData data)
@@ -48,7 +49,7 @@ namespace bb.Core.Commands.List
                         "command:balance",
                         data.ChannelId,
                         data.Platform,
-                        bb.Program.BotInstance.Currency.GetBalance(data.User.Id, data.Platform) + "." + bb.Program.BotInstance.Currency.GetSubbalance(data.User.Id, data.Platform)));
+                        bb.Program.BotInstance.Currency.GetBalance(data.User.Id, data.Platform)));
                     commandReturn.SetSafe(true);
                 }
                 else
@@ -62,7 +63,7 @@ namespace bb.Core.Commands.List
                             data.ChannelId,
                             data.Platform,
                             UsernameResolver.Unmention(TextSanitizer.UsernameFilter(data.ArgumentsString)),
-                            bb.Program.BotInstance.Currency.GetBalance(userID, data.Platform) + "." + bb.Program.BotInstance.Currency.GetSubbalance(userID, data.Platform)));
+                            bb.Program.BotInstance.Currency.GetBalance(userID, data.Platform)));
                         commandReturn.SetSafe(true);
                     }
                     else

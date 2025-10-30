@@ -2,6 +2,7 @@
 using bb.Core.Commands.List;
 using bb.Models.Platform;
 using bb.Models.SevenTVLib;
+using bb.Models.Users;
 using bb.Services.Platform.Discord;
 using bb.Services.Platform.Telegram;
 using bb.Services.Platform.Twitch;
@@ -91,8 +92,8 @@ namespace bb.Utils
         /// </para>
         /// This method serves as the primary interface for command responses and user interactions across all platforms.
         /// </remarks>
-        public void Send(PlatformsEnum platform, string message, string channel,
-            string channelId = null, string language = "en-US", string username = null,
+        public void Send(Platform platform, string message, string channel,
+            string channelId = null, Language language = Language.EnUs, string username = null,
             string userID = null, string server = null, string serverId = null,
             string messageId = null, Telegram.Bot.Types.Message messageReply = null,
             bool isSafe = false, bool isReply = false, bool addUsername = false)
@@ -101,13 +102,13 @@ namespace bb.Utils
             {
                 switch (platform)
                 {
-                    case PlatformsEnum.Twitch:
+                    case Platform.Twitch:
                         TwitchSend(message, language, channel, channelId, username, messageId, isSafe, isReply, addUsername);
                         break;
-                    case PlatformsEnum.Discord:
+                    case Platform.Discord:
                         DiscordSend(message, language, channelId, server, serverId, isSafe, userID);
                         break;
-                    case PlatformsEnum.Telegram:
+                    case Platform.Telegram:
                         TelegramSend(message, language, channel, channelId, username, messageId, isSafe, isReply, addUsername);
                         break;
                 }
@@ -118,7 +119,7 @@ namespace bb.Utils
             }
         }
 
-        private void TwitchSend(string message, string language, string channel, string channelId, string username, string messageId, bool safeExec, bool reply, bool addUsername)
+        private void TwitchSend(string message, Language language, string channel, string channelId, string username, string messageId, bool safeExec, bool reply, bool addUsername)
         {
             if (message == null || bb.Program.BotInstance.Clients.Twitch == null) return;
 
@@ -129,11 +130,11 @@ namespace bb.Utils
                     string send = message;
                     send = TextSanitizer.CleanAscii(message);
 
-                    bool check = safeExec || bb.Program.BotInstance.MessageFilter.Check(send, channelId, PlatformsEnum.Twitch).Item1;
+                    bool check = safeExec || bb.Program.BotInstance.MessageFilter.Check(send, channelId, Platform.Twitch).Item1;
 
                     if (send.Length > MaxTwitchMessageLength * 3)
                     {
-                        send = LocalizationService.GetString(language, "error:too_large_text", channelId, PlatformsEnum.Twitch);
+                        send = LocalizationService.GetString(language, "error:too_large_text", channelId, Platform.Twitch);
                     }
                     else if (send.Length > MaxTwitchMessageLength)
                     {
@@ -145,7 +146,7 @@ namespace bb.Utils
                         _ = Task.Run(async () =>
                         {
                             await Task.Delay(1000);
-                            bb.Program.BotInstance.MessageSender.Send(PlatformsEnum.Twitch, part2, channel, channelId, language, username, messageId: messageId, isSafe: safeExec);
+                            bb.Program.BotInstance.MessageSender.Send(Platform.Twitch, part2, channel, channelId, language, username, messageId: messageId, isSafe: safeExec);
                         });
                     }
 
@@ -173,7 +174,7 @@ namespace bb.Utils
                         bb.Program.BotInstance.Clients.Twitch.SendReply(
                             channel,
                             messageId,
-                            LocalizationService.GetString(language, "error:message_could_not_be_sent", channelId, PlatformsEnum.Twitch));
+                            LocalizationService.GetString(language, "error:message_could_not_be_sent", channelId, Platform.Twitch));
                     }
                 }
                 catch (Exception ex)
@@ -183,7 +184,7 @@ namespace bb.Utils
             });
         }
 
-        private void DiscordSend(string message, string language, string channelId, string server, string serverId, bool safeExec, string userId)
+        private void DiscordSend(string message, Language language, string channelId, string server, string serverId, bool safeExec, string userId)
         {
             if (message == null || bb.Program.BotInstance.Clients.Discord == null) return;
 
@@ -198,19 +199,19 @@ namespace bb.Utils
 
                     if (message.Length > MaxDiscordMessageLength)
                     {
-                        send = LocalizationService.GetString(language, "error:too_large_text", channelId, PlatformsEnum.Telegram);
+                        send = LocalizationService.GetString(language, "error:too_large_text", channelId, Platform.Telegram);
                     }
 
                     ITextChannel sender = await bb.Program.BotInstance.Clients.Discord.GetChannelAsync(ulong.Parse(channelId)) as ITextChannel;
 
-                    if (safeExec || bb.Program.BotInstance.MessageFilter.Check(send, serverId, PlatformsEnum.Discord).Item1)
+                    if (safeExec || bb.Program.BotInstance.MessageFilter.Check(send, serverId, Platform.Discord).Item1)
                     {
                         sender.SendMessageAsync($"<@{userId}> {send}");
                     }
                     else
                     {
                         var embed = new EmbedBuilder()
-                            .WithTitle(LocalizationService.GetString(language, "error:message_could_not_be_sent", "", PlatformsEnum.Discord))
+                            .WithTitle(LocalizationService.GetString(language, "error:message_could_not_be_sent", "", Platform.Discord))
                             .WithColor(global::Discord.Color.Red)
                             .Build();
                         sender.SendMessageAsync($"<@{userId}> {send}", embed: embed);
@@ -223,7 +224,7 @@ namespace bb.Utils
             });
         }
 
-        private void TelegramSend(string message, string language, string channel, string channelId, string username, string messageId, bool safeExec, bool reply, bool addUsername)
+        private void TelegramSend(string message, Language language, string channel, string channelId, string username, string messageId, bool safeExec, bool reply, bool addUsername)
         {
             if (message == null || bb.Program.BotInstance.Clients.Telegram == null) return;
 
@@ -234,11 +235,11 @@ namespace bb.Utils
                     string send = message;
                     send = TextSanitizer.CleanAscii(message);
 
-                    bool check = safeExec || bb.Program.BotInstance.MessageFilter.Check(send, channelId, PlatformsEnum.Telegram).Item1;
+                    bool check = safeExec || bb.Program.BotInstance.MessageFilter.Check(send, channelId, Platform.Telegram).Item1;
 
                     if (send.Length > MaxTelegramMessageLength * 4)
                     {
-                        send = LocalizationService.GetString(language, "error:too_large_text", channelId, PlatformsEnum.Telegram);
+                        send = LocalizationService.GetString(language, "error:too_large_text", channelId, Platform.Telegram);
                     }
                     else if (send.Length > MaxTelegramMessageLength)
                     {
@@ -250,7 +251,7 @@ namespace bb.Utils
                         _ = Task.Run(async () =>
                         {
                             await Task.Delay(1100);
-                            bb.Program.BotInstance.MessageSender.Send(PlatformsEnum.Twitch, part2, channel, channelId, language, username, messageId: messageId, isSafe: safeExec);
+                            bb.Program.BotInstance.MessageSender.Send(Platform.Twitch, part2, channel, channelId, language, username, messageId: messageId, isSafe: safeExec);
                         });
                     }
 
@@ -268,7 +269,7 @@ namespace bb.Utils
                     }
                     else
                     {
-                        await bb.Program.BotInstance.Clients.Telegram.SendMessage(long.Parse(channelId), LocalizationService.GetString(language, "error:message_could_not_be_sent", channelId, PlatformsEnum.Telegram), replyParameters: int.Parse(messageId));
+                        await bb.Program.BotInstance.Clients.Telegram.SendMessage(long.Parse(channelId), LocalizationService.GetString(language, "error:message_could_not_be_sent", channelId, Platform.Telegram), replyParameters: int.Parse(messageId));
                     }
                 }
                 catch (Exception ex)

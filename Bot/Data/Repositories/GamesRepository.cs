@@ -197,7 +197,7 @@ namespace bb.Data.Repositories
         /// This method is called automatically before any data operation to ensure data integrity.
         /// It's designed for high-frequency execution with minimal performance impact.
         /// </remarks>
-        private void EnsureUserExists(string tableName, PlatformsEnum platform, long userId)
+        private void EnsureUserExists(string tableName, Platform platform, long userId)
         {
             string sql = tableName switch
             {
@@ -247,7 +247,7 @@ namespace bb.Data.Repositories
         /// Consider using GetLeaderboard for bulk statistic retrieval operations.
         /// </remarks>
         /// <exception cref="ArgumentException">Thrown when invalid table or column names are specified</exception>
-        public object GetData(string tableName, PlatformsEnum platform, long userId, string columnName)
+        public object GetData(string tableName, Platform platform, long userId, string columnName)
         {
             ValidateTableName(tableName);
             ValidateColumnName(tableName, columnName);
@@ -309,7 +309,7 @@ namespace bb.Data.Repositories
         /// This is the primary method for modifying game statistics in the system.
         /// </remarks>
         /// <exception cref="ArgumentException">Thrown when invalid table or column names are specified</exception>
-        public void SetData(string tableName, PlatformsEnum platform, long userId, string columnName, object value)
+        public void SetData(string tableName, Platform platform, long userId, string columnName, object value)
         {
             ValidateTableName(tableName);
             ValidateColumnName(tableName, columnName);
@@ -368,7 +368,7 @@ namespace bb.Data.Repositories
         /// This method is optimized for frequent leaderboard requests in game systems.
         /// </remarks>
         /// <exception cref="ArgumentException">Thrown when invalid table or column names are specified</exception>
-        public List<LeaderboardEntry> GetLeaderboard(string tableName, PlatformsEnum platform, string columnName, int limit = 10)
+        public List<LeaderboardEntry> GetLeaderboard(string tableName, Platform platform, string columnName, int limit = 10)
         {
             ValidateTableName(tableName);
             ValidateColumnName(tableName, columnName);

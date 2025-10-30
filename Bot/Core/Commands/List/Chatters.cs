@@ -1,8 +1,9 @@
-﻿using bb.Services.External;
-using bb.Utils;
-using bb.Core.Configuration;
+﻿using bb.Core.Configuration;
 using bb.Models.Command;
 using bb.Models.Platform;
+using bb.Models.Users;
+using bb.Services.External;
+using bb.Utils;
 
 namespace bb.Core.Commands.List
 {
@@ -13,9 +14,9 @@ namespace bb.Core.Commands.List
         public override string AuthorsGithub => "https://github.com/itzkitb";
         public override string GithubSource => $"{URLs.githubSource}blob/master/butterBror/Core/Commands/List/Chatters.cs";
         public override Version Version => new Version("1.0.1");
-        public override Dictionary<string, string> Description => new() {
-            { "ru-RU", "Выводит список чатеров." },
-            { "en-US", "Displays a list of chatters." }
+        public override Dictionary<Language, string> Description => new() {
+            { Language.RuRu, "Выводит список чатеров." },
+            { Language.EnUs, "Displays a list of chatters." }
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=chatters";
         public override int CooldownPerUser => 10;
@@ -26,7 +27,7 @@ namespace bb.Core.Commands.List
         public override bool OnlyBotDeveloper => false;
         public override bool OnlyBotModerator => false;
         public override bool OnlyChannelModerator => false;
-        public override PlatformsEnum[] Platforms => [PlatformsEnum.Twitch, PlatformsEnum.Telegram];
+        public override Platform[] Platforms => [Platform.Twitch, Platform.Telegram];
         public override bool IsAsync => true;
         public override bool TechWorks => true;
 
@@ -54,8 +55,8 @@ namespace bb.Core.Commands.List
                     do
                     {
                         var response = await bb.Program.BotInstance.Clients.TwitchAPI.Helix.Chat.GetChattersAsync(
-                            broadcasterId: UsernameResolver.GetUserID(targetChannel, PlatformsEnum.Twitch, true),
-                            moderatorId: UsernameResolver.GetUserID(bb.Program.BotInstance.TwitchName, PlatformsEnum.Twitch, true),
+                            broadcasterId: UsernameResolver.GetUserID(targetChannel, Platform.Twitch, true),
+                            moderatorId: UsernameResolver.GetUserID(bb.Program.BotInstance.TwitchName, Platform.Twitch, true),
                             first: 100,
                             after: cursor
                         );

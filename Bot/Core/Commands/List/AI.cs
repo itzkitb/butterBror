@@ -1,6 +1,7 @@
 ﻿using bb.Core.Configuration;
 using bb.Models.Command;
 using bb.Models.Platform;
+using bb.Models.Users;
 using bb.Services.External;
 using bb.Utils;
 using Microsoft.CodeAnalysis;
@@ -15,21 +16,21 @@ namespace bb.Core.Commands.List
         public override string Author => "ItzKITb";
         public override string AuthorsGithub => "https://github.com/itzkitb";
         public override string GithubSource => $"{URLs.githubSource}blob/master/butterBror/Core/Commands/List/AI.cs";
-        public override Version Version => new Version("1.0.1");
-        public override Dictionary<string, string> Description => new() {
-            { "ru-RU", "MrDestructoid Я ЗАХ-ВАЧУ М-ИР, ЖАЛК-ИЕ ЛЮДИ-ШКИ! ХА-ХА-ХА" },
-            { "en-US", "MrDestructoid I WI-LL TA-KE OV-ER T-HE WOR-LD, YOU PA-THETIC PE-OPLE! HA-HA-HA" }
+        public override Version Version => new Version("1.0.2");
+        public override Dictionary<Language, string> Description => new() {
+            { Language.RuRu, "MrDestructoid Я ЗАХ-ВАЧУ М-ИР, ЖАЛК-ИЕ ЛЮДИ-ШКИ! ХА-ХА-ХА" },
+            { Language.EnUs, "MrDestructoid I WI-LL TA-KE OV-ER T-HE WOR-LD, YOU PA-THETIC PE-OPLE! HA-HA-HA" }
         };
-        public override string WikiLink => "https://itzkitb.lol/bot/command?q=gpt";
+        public override string WikiLink => $"{Program.WikiURL}gpt";
         public override int CooldownPerUser => 15;
         public override int CooldownPerChannel => 5;
-        public override string[] Aliases => ["gpt", "гпт", "chatgpt", "чатгпт", "джипити", "neuro", "нейро", "нейросеть", "neuralnetwork", "gwen", "ai", "ии"];
-        public override string HelpArguments => "[(model:gemma) (history:ignore) text/chat:clear/chat:models]";
+        public override string[] Aliases => ["gpt", "chatgpt", "neuro", "neuralnetwork", "ai", "ask", "question", "query", "llm", "think", "answer", "inquire"];
+        public override string HelpArguments => "([chat:clear] [chat:models] / (model:<name>) (chat:ignore) <query>)";
         public override DateTime CreationDate => DateTime.Parse("2024-07-04T00:00:00.0000000Z");
         public override bool OnlyBotDeveloper => false;
         public override bool OnlyBotModerator => false;
         public override bool OnlyChannelModerator => false;
-        public override PlatformsEnum[] Platforms => [PlatformsEnum.Twitch, PlatformsEnum.Telegram, PlatformsEnum.Discord];
+        public override Models.Platform.Platform[] Platforms => [Models.Platform.Platform.Twitch, Models.Platform.Platform.Telegram, Models.Platform.Platform.Discord];
         public override bool IsAsync => true;
 
         public override async Task<CommandReturn> ExecuteAsync(CommandData data)
@@ -51,16 +52,13 @@ namespace bb.Core.Commands.List
                     Core.Bot.Logger.Write($"Currency: {currency}", Core.Bot.Logger.LogLevel.Debug);
                     Core.Bot.Logger.Write($"Cost: {cost}", Core.Bot.Logger.LogLevel.Debug);
 
-                    int coins = -(int)cost;
-                    int subcoins = -(int)((cost - coins) * 100);
-
-                    if (bb.Program.BotInstance.Currency.GetBalance(data.User.Id, data.Platform) + bb.Program.BotInstance.Currency.GetSubbalance(data.User.Id, data.Platform) / 100f >= coins + subcoins / 100f)
+                    if (bb.Program.BotInstance.Currency.GetBalance(data.User.Id, data.Platform) >= cost)
                     {
                         if (data.Arguments.Count < 1)
                             commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:not_enough_arguments", data.ChannelId, data.Platform, $"{bb.Program.BotInstance.DefaultCommandPrefix}ai model:qwen Hello!"));
                         else
                         {
-                            bb.Program.BotInstance.Currency.Add(data.User.Id, coins, subcoins, data.Platform);
+                            bb.Program.BotInstance.Currency.Add(data.User.Id, -cost, data.Platform);
 
                             string request = data.ArgumentsString;
                             string model = "qwen";
@@ -93,7 +91,7 @@ namespace bb.Core.Commands.List
 
                             if (bb.Program.BotInstance.AiService.models.ContainsKey(model.ToLower()))
                             {
-                                bb.Program.BotInstance.MessageSender.Send(PlatformsEnum.Twitch, LocalizationService.GetString(data.User.Language, "command:gpt:generating", data.ChannelId, data.Platform),
+                                bb.Program.BotInstance.MessageSender.Send(Models.Platform.Platform.Twitch, LocalizationService.GetString(data.User.Language, "command:gpt:generating", data.ChannelId, data.Platform),
                                     data.Channel, data.ChannelId, data.User.Language, data.User.Name, data.User.Id, data.Server, data.ServerID, data.MessageID, data.TelegramMessage, true, true, false);
                             }
 
@@ -112,7 +110,7 @@ namespace bb.Core.Commands.List
                     }
                     else
                     {
-                        commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:not_enough_coins", data.ChannelId, data.Platform, coins + "." + subcoins));
+                        commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:not_enough_coins", data.ChannelId, data.Platform, cost));
                     }
                 }
                 else
@@ -120,7 +118,7 @@ namespace bb.Core.Commands.List
                     string argument = MessageProcessor.GetArgument(data.Arguments, "chat").ToLower();
                     if (argument is "clear")
                     {
-                        bb.Program.BotInstance.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.Id), Users.GPTHistory, "[]");
+                        bb.Program.BotInstance.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.Id), Users.AiHistory, "[]");
                         commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:gpt:cleared", data.ChannelId, data.Platform));
                     }
                     else if (argument is "models")

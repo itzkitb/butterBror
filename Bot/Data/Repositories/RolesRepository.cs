@@ -162,7 +162,7 @@ namespace bb.Data.Repositories
     /// </remarks>
     public class RolesRepository : SqlRepositoryBase
     {
-        private readonly ConcurrentDictionary<(string roleType, PlatformsEnum platform, long userId), object> _roleCache = new();
+        private readonly ConcurrentDictionary<(string roleType, Platform platform, long userId), object> _roleCache = new();
         private readonly object _cacheLock = new();
 
         /// <summary>
@@ -344,7 +344,7 @@ namespace bb.Data.Repositories
         /// </para>
         /// The operation is transactional and thread-safe for concurrent access patterns.
         /// </remarks>
-        public long AddBannedUser(PlatformsEnum platform, long userId, DateTime date, string whoBanned, string reason)
+        public long AddBannedUser(Platform platform, long userId, DateTime date, string whoBanned, string reason)
         {
             const string sql = @"
                 INSERT OR REPLACE INTO Banned (ID, Platform, UserId, Date, WhoBanned, Reason)
@@ -449,7 +449,7 @@ namespace bb.Data.Repositories
         /// </para>
         /// This method is optimized for frequent access patterns typical in message processing.
         /// </remarks>
-        public BannedUser GetBannedUser(PlatformsEnum platform, long userId)
+        public BannedUser GetBannedUser(Platform platform, long userId)
         {
             var cacheKey = ("Banned", platform, userId);
 
@@ -495,7 +495,7 @@ namespace bb.Data.Repositories
         /// </para>
         /// The platform parameter is normalized to uppercase for consistent querying.
         /// </remarks>
-        public List<BannedUser> GetBannedUsersByPlatform(PlatformsEnum platform)
+        public List<BannedUser> GetBannedUsersByPlatform(Platform platform)
         {
             const string sql = "SELECT * FROM Banned WHERE Platform = @Platform";
             return Query<BannedUser>(sql, new[] { new SQLiteParameter("@Platform", platform.ToString().ToUpper() ?? string.Empty) });
@@ -548,7 +548,7 @@ namespace bb.Data.Repositories
         /// </list>
         /// </para>
         /// <para>
-        /// Key differences from <see cref="GetBannedUser(PlatformsEnum, long)"/>:
+        /// Key differences from <see cref="GetBannedUser(Platform, long)"/>:
         /// <list type="bullet">
         /// <item>Does not retrieve full ban details</item>
         /// <item>Uses simpler, faster database query</item>
@@ -557,7 +557,7 @@ namespace bb.Data.Repositories
         /// </para>
         /// This method is optimized for high-frequency permission checks during message processing.
         /// </remarks>
-        public bool IsBanned(PlatformsEnum platform, long userId)
+        public bool IsBanned(Platform platform, long userId)
         {
             var cacheKey = ("Banned", platform, userId);
 
@@ -608,7 +608,7 @@ namespace bb.Data.Repositories
         /// </para>
         /// The operation is optimized for infrequent developer management operations.
         /// </remarks>
-        public long AddDeveloper(PlatformsEnum platform, long userId)
+        public long AddDeveloper(Platform platform, long userId)
         {
             const string sql = @"
                 INSERT OR REPLACE INTO Developers (ID, Platform, UserId)
@@ -680,7 +680,7 @@ namespace bb.Data.Repositories
         /// </para>
         /// This method is optimized for infrequent access patterns typical in feature authorization.
         /// </remarks>
-        public Developer GetDeveloper(PlatformsEnum platform, long userId)
+        public Developer GetDeveloper(Platform platform, long userId)
         {
             var cacheKey = ("Developer", platform, userId);
 
@@ -726,7 +726,7 @@ namespace bb.Data.Repositories
         /// </para>
         /// The platform parameter is normalized to uppercase for consistent querying.
         /// </remarks>
-        public List<Developer> GetDevelopersByPlatform(PlatformsEnum platform)
+        public List<Developer> GetDevelopersByPlatform(Platform platform)
         {
             const string sql = "SELECT * FROM Developers WHERE Platform = @Platform";
             return Query<Developer>(sql, new[] { new SQLiteParameter("@Platform", platform.ToString().ToUpper() ?? string.Empty) });
@@ -779,7 +779,7 @@ namespace bb.Data.Repositories
         /// </list>
         /// </para>
         /// <para>
-        /// Key differences from <see cref="GetDeveloper(PlatformsEnum, long)"/>:
+        /// Key differences from <see cref="GetDeveloper(Platform, long)"/>:
         /// <list type="bullet">
         /// <item>Does not retrieve full developer details</item>
         /// <item>Uses simpler, faster database query</item>
@@ -788,7 +788,7 @@ namespace bb.Data.Repositories
         /// </para>
         /// This method is optimized for feature authorization checks during command execution.
         /// </remarks>
-        public bool IsDeveloper(PlatformsEnum platform, long userId)
+        public bool IsDeveloper(Platform platform, long userId)
         {
             var cacheKey = ("Developer", platform, userId);
 
@@ -841,7 +841,7 @@ namespace bb.Data.Repositories
         /// </para>
         /// The operation is optimized for moderate-frequency ignore list management.
         /// </remarks>
-        public long AddIgnoredUser(PlatformsEnum platform, long userId, DateTime date)
+        public long AddIgnoredUser(Platform platform, long userId, DateTime date)
         {
             const string sql = @"
                 INSERT OR REPLACE INTO Ignored (ID, Platform, UserId, Date)
@@ -914,7 +914,7 @@ namespace bb.Data.Repositories
         /// </para>
         /// This method is optimized for frequent access patterns typical in message filtering.
         /// </remarks>
-        public IgnoredUser GetIgnoredUser(PlatformsEnum platform, long userId)
+        public IgnoredUser GetIgnoredUser(Platform platform, long userId)
         {
             var cacheKey = ("Ignored", platform, userId);
 
@@ -960,7 +960,7 @@ namespace bb.Data.Repositories
         /// </para>
         /// The platform parameter is normalized to uppercase for consistent querying.
         /// </remarks>
-        public List<IgnoredUser> GetIgnoredUsersByPlatform(PlatformsEnum platform)
+        public List<IgnoredUser> GetIgnoredUsersByPlatform(Platform platform)
         {
             const string sql = "SELECT * FROM Ignored WHERE Platform = @Platform";
             return Query<IgnoredUser>(sql, new[] { new SQLiteParameter("@Platform", platform.ToString().ToUpper() ?? string.Empty) });
@@ -1013,7 +1013,7 @@ namespace bb.Data.Repositories
         /// </list>
         /// </para>
         /// <para>
-        /// Key differences from <see cref="GetIgnoredUser(PlatformsEnum, long)"/>:
+        /// Key differences from <see cref="GetIgnoredUser(Platform, long)"/>:
         /// <list type="bullet">
         /// <item>Does not retrieve full ignore details</item>
         /// <item>Uses simpler, faster database query</item>
@@ -1022,7 +1022,7 @@ namespace bb.Data.Repositories
         /// </para>
         /// This method is optimized for high-frequency filtering during message processing.
         /// </remarks>
-        public bool IsIgnored(PlatformsEnum platform, long userId)
+        public bool IsIgnored(Platform platform, long userId)
         {
             var cacheKey = ("Ignored", platform, userId);
 
@@ -1077,7 +1077,7 @@ namespace bb.Data.Repositories
         /// </para>
         /// The operation is optimized for moderate-frequency moderator management.
         /// </remarks>
-        public long AddModerator(PlatformsEnum platform, long userId, DateTime date, string whoAdded)
+        public long AddModerator(Platform platform, long userId, DateTime date, string whoAdded)
         {
             const string sql = @"
                 INSERT OR REPLACE INTO Moderators (ID, Platform, UserId, Date, WhoAdded)
@@ -1151,7 +1151,7 @@ namespace bb.Data.Repositories
         /// </para>
         /// This method is optimized for frequent access patterns typical in permission checks.
         /// </remarks>
-        public Moderator GetModerator(PlatformsEnum platform, long userId)
+        public Moderator GetModerator(Platform platform, long userId)
         {
             var cacheKey = ("Moderator", platform, userId);
 
@@ -1197,7 +1197,7 @@ namespace bb.Data.Repositories
         /// </para>
         /// The platform parameter is normalized to uppercase for consistent querying.
         /// </remarks>
-        public List<Moderator> GetModeratorsByPlatform(PlatformsEnum platform)
+        public List<Moderator> GetModeratorsByPlatform(Platform platform)
         {
             const string sql = "SELECT * FROM Moderators WHERE Platform = @Platform";
             return Query<Moderator>(sql, new[] { new SQLiteParameter("@Platform", platform.ToString().ToUpper() ?? string.Empty) });
@@ -1250,7 +1250,7 @@ namespace bb.Data.Repositories
         /// </list>
         /// </para>
         /// <para>
-        /// Key differences from <see cref="GetModerator(PlatformsEnum, long)"/>:
+        /// Key differences from <see cref="GetModerator(Platform, long)"/>:
         /// <list type="bullet">
         /// <item>Does not retrieve full moderator details</item>
         /// <item>Uses simpler, faster database query</item>
@@ -1259,7 +1259,7 @@ namespace bb.Data.Repositories
         /// </para>
         /// This method is optimized for high-frequency permission checks during message processing.
         /// </remarks>
-        public bool IsModerator(PlatformsEnum platform, long userId)
+        public bool IsModerator(Platform platform, long userId)
         {
             var cacheKey = ("Moderator", platform, userId);
 
@@ -1308,7 +1308,7 @@ namespace bb.Data.Repositories
         /// </para>
         /// This method is automatically called by all role modification operations.
         /// </remarks>
-        private void InvalidateRoleCache(string roleType, PlatformsEnum platform, long userId)
+        private void InvalidateRoleCache(string roleType, Platform platform, long userId)
         {
             var cacheKey = (roleType, platform, userId);
             _roleCache.TryRemove(cacheKey, out _);

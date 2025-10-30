@@ -1,10 +1,11 @@
-﻿using bb.Utils;
-using bb.Core.Configuration;
+﻿using bb.Core.Configuration;
+using bb.Models.Command;
+using bb.Models.Platform;
+using bb.Models.Users;
+using bb.Utils;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using bb.Models.Command;
-using bb.Models.Platform;
 
 namespace bb.Core.Commands.List
 {
@@ -15,10 +16,10 @@ namespace bb.Core.Commands.List
         public override string AuthorsGithub => "https://github.com/itzkitb";
         public override string GithubSource => $"{URLs.githubSource}blob/master/butterBror/Core/Commands/List/Yearly.cs";
         public override Version Version => new("1.0.0");
-        public override Dictionary<string, string> Description => new()
+        public override Dictionary<Language, string> Description => new()
         {
-            { "ru-RU", "Получить ежегодную награду." },
-            { "en-US", "Get yearly reward." }
+            { Language.RuRu, "Получить ежегодную награду." },
+            { Language.EnUs, "Get yearly reward." }
         };
         public override string WikiLink => "https://itzkitb.ru/bot/command?name=yearly";
         public override int CooldownPerUser => 10;
@@ -29,7 +30,7 @@ namespace bb.Core.Commands.List
         public override bool OnlyBotModerator => false;
         public override bool OnlyBotDeveloper => false;
         public override bool OnlyChannelModerator => false;
-        public override PlatformsEnum[] Platforms => [PlatformsEnum.Twitch, PlatformsEnum.Discord];
+        public override Platform[] Platforms => [Platform.Twitch, Platform.Discord];
         public override bool IsAsync => false;
 
         public override CommandReturn Execute(CommandData data)
@@ -53,19 +54,17 @@ namespace bb.Core.Commands.List
                 }
 
                 TimeSpan timeSinceLast = currentTime - lastTime;
-                double hourPriceUSD = 0.69;
-                double BTRCurrency = bb.Program.BotInstance.Coins == 0 ? 0 : (double)(bb.Program.BotInstance.InBankDollars / bb.Program.BotInstance.Coins);
-                double hourPriceBTR = BTRCurrency == 0 ? 0 : hourPriceUSD / BTRCurrency;
-                double yearlyPriceBTR = hourPriceBTR * (365 * 24);
+                decimal hourPriceUSD = 0.69M;
+                decimal BTRCurrency = bb.Program.BotInstance.Coins == 0 ? 0 : (decimal)(bb.Program.BotInstance.InBankDollars / bb.Program.BotInstance.Coins);
+                decimal hourPriceBTR = BTRCurrency == 0 ? 0 : hourPriceUSD / BTRCurrency;
+                decimal yearlyPriceBTR = hourPriceBTR * (365 * 24);
                 double periodSeconds = 31536000;
 
                 if (timeSinceLast.TotalSeconds >= periodSeconds)
                 {
-                    long plusBalance = (long)yearlyPriceBTR;
-                    long plusSubbalance = (long)((yearlyPriceBTR - plusBalance) * 100);
-                    bb.Program.BotInstance.Currency.Add(data.User.Id, plusBalance, plusSubbalance, data.Platform);
+                    bb.Program.BotInstance.Currency.Add(data.User.Id, yearlyPriceBTR, data.Platform);
                     bb.Program.BotInstance.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.Id), "LastYearlyReward", currentTime.ToString("o"));
-                    string message = LocalizationService.GetString(data.User.Language, "command:yearly:get", data.ChannelId, data.Platform, plusBalance, plusSubbalance);
+                    string message = LocalizationService.GetString(data.User.Language, "command:yearly:get", data.ChannelId, data.Platform, yearlyPriceBTR);
                     commandReturn.SetMessage(message);
                 }
                 else

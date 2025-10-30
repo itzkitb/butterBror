@@ -1,9 +1,10 @@
-﻿using bb.Utils;
-using bb.Core.Configuration;
-using TwitchLib.Client.Enums;
-using static bb.Core.Bot.Logger;
+﻿using bb.Core.Configuration;
 using bb.Models.Command;
 using bb.Models.Platform;
+using bb.Models.Users;
+using bb.Utils;
+using TwitchLib.Client.Enums;
+using static bb.Core.Bot.Logger;
 
 namespace bb.Core.Commands.List
 {
@@ -14,10 +15,10 @@ namespace bb.Core.Commands.List
         public override string AuthorsGithub => "https://github.com/itzkitb";
         public override string GithubSource => $"{URLs.githubSource}blob/master/butterBror/Core/Commands/List/Tuck.cs";
         public override Version Version => new("1.0.1");
-        public override Dictionary<string, string> Description => new()
+        public override Dictionary<Language, string> Description => new()
         {
-            { "ru-RU", "Спокойной ночи... 👁" },
-            { "en-US", "Good night... 👁" }
+            { Language.RuRu, "Спокойной ночи... 👁" },
+            { Language.EnUs, "Good night... 👁" }
         };
         public override string WikiLink => "https://itzkitb.lol/bot/command?q=tuck";
         public override int CooldownPerUser => 10;
@@ -28,7 +29,7 @@ namespace bb.Core.Commands.List
         public override bool OnlyBotModerator => false;
         public override bool OnlyBotDeveloper => false;
         public override bool OnlyChannelModerator => false;
-        public override PlatformsEnum[] Platforms => [PlatformsEnum.Twitch, PlatformsEnum.Telegram, PlatformsEnum.Discord];
+        public override Platform[] Platforms => [Platform.Twitch, Platform.Telegram, Platform.Discord];
         public override bool IsAsync => false;
 
 
@@ -49,11 +50,11 @@ namespace bb.Core.Commands.List
                 {
                     var username = TextSanitizer.UsernameFilter(TextSanitizer.CleanAsciiWithoutSpaces(data.Arguments[0]));
                     var isSelectedUserIsNotIgnored = true;
-                    var userID = UsernameResolver.GetUserID(username.ToLower(), PlatformsEnum.Twitch);
+                    var userID = UsernameResolver.GetUserID(username.ToLower(), Platform.Twitch);
                     try
                     {
                         if (userID != null)
-                            isSelectedUserIsNotIgnored = !(bb.Program.BotInstance.DataBase.Roles.GetIgnoredUser(data.Platform, DataConversion.ToLong(data.User.Id)) is not null);
+                            isSelectedUserIsNotIgnored = (Roles)DataConversion.ToInt(bb.Program.BotInstance.UsersBuffer.GetParameter(data.Platform, DataConversion.ToLong(data.User.Id), Users.Role)) > Roles.Bot;
                     }
                     catch (Exception) { }
                     if (username.ToLower() == bb.Program.BotInstance.TwitchName.ToLower())

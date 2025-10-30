@@ -3,6 +3,7 @@
     public class Users
     {
         public const string ID = "ID";
+        public const string Platform = "Platform";
         public const string FirstMessage = "FirstMessage";
         public const string FirstSeen = "FirstSeen";
         public const string FirstChannel = "FirstChannel";
@@ -10,11 +11,11 @@
         public const string LastSeen = "LastSeen";
         public const string LastChannel = "LastChannel";
         public const string Balance = "Balance";
-        public const string AfterDotBalance = "AfterDotBalance";
-        public const string Rating = "Rating";
-        public const string IsAFK = "IsAFK";
-        public const string AFKText = "AFKText";
-        public const string AFKType = "AFKType";
+        public const string Role = "Role";
+        public const string IsAfk = "IsAfk";
+        public const string AfkMessage = "AfkMessage";
+        public const string AfkType = "AfkType";
+        public const string AfkStartTime = "AfkStartTime";
         public const string Reminders = "Reminders";
         public const string LastCookie = "LastCookie";
         public const string GiftedCookies = "GiftedCookies";
@@ -25,14 +26,18 @@
         public const string Longitude = "Longitude";
         public const string Latitude = "Latitude";
         public const string Language = "Language";
-        public const string AFKStart = "AFKStart";
-        public const string AFKResume = "AFKResume";
-        public const string AFKResumeTimes = "AFKResumeTimes";
+        public const string AfkResume = "AfkResume";
+        public const string AfkResumeCount = "AfkResumeCount";
         public const string LastUse = "LastUse";
-        public const string GPTHistory = "GPTHistory";
+        public const string AiHistory = "AiHistory";
         public const string WeatherResultLocations = "WeatherResultLocations";
         public const string TotalMessages = "TotalMessages";
         public const string TotalMessagesLength = "TotalMessagesLength";
-        public const string ChannelMessagesCount = "ChannelMessagesCount";
+        public const string LastHourlyReward = "LastHourlyReward";
+        public const string LastDailyReward = "LastDailyReward";
+        public const string LastWeeklyReward = "LastWeeklyReward";
+        public const string LastMonthlyReward = "LastMonthlyReward";
+        public const string LastYearlyReward = "LastYearlyReward";
+        public const string BanReason = "BanReason";
     }
 }

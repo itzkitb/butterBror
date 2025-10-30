@@ -71,7 +71,7 @@ namespace bb.Utils
         /// The method automatically combines global banned words with channel-specific filters for comprehensive coverage.
         /// Returns false immediately upon first detection to optimize performance.
         /// </remarks>
-        public (bool, double, string, string) Check(string message, string channelId, PlatformsEnum platform, bool log = true)
+        public (bool, double, string, string) Check(string message, string channelId, Platform platform, bool log = true)
         {
             DateTime start_time = DateTime.UtcNow;
             try

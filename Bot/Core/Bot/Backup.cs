@@ -45,7 +45,7 @@ namespace bb.Core.Bot
         {
             try
             {
-                bb.Program.BotInstance.MessageSender.Send(PlatformsEnum.Twitch, "🗃️ Backup started...", bb.Program.BotInstance.TwitchName, isSafe: true);
+                bb.Program.BotInstance.MessageSender.Send(Platform.Twitch, "🗃️ Backup started...", bb.Program.BotInstance.TwitchName, isSafe: true);
                 Write("Backup started...");
 
                 string reservePath = bb.Program.BotInstance.Paths.Reserve;
@@ -125,7 +125,7 @@ namespace bb.Core.Bot
 
                 Write($"Backup completed in {stopwatch.Elapsed.TotalSeconds:0} seconds (Archive size: {archiveSizeMB:0.00} MB)!");
 
-                bb.Program.BotInstance.MessageSender.Send(PlatformsEnum.Twitch, $"🗃️ Backup completed in {stopwatch.Elapsed.TotalSeconds:0} seconds (Archive size: {archiveSizeMB:0.00} MB)", bb.Program.BotInstance.TwitchName, isSafe: true);
+                bb.Program.BotInstance.MessageSender.Send(Platform.Twitch, $"🗃️ Backup completed in {stopwatch.Elapsed.TotalSeconds:0} seconds (Archive size: {archiveSizeMB:0.00} MB)", bb.Program.BotInstance.TwitchName, isSafe: true);
             }
             catch (Exception ex)
             {
@@ -162,7 +162,6 @@ namespace bb.Core.Bot
             yield return bb.Program.BotInstance.DataBase.Games;
             yield return bb.Program.BotInstance.DataBase.Channels;
             yield return bb.Program.BotInstance.DataBase.Messages;
-            yield return bb.Program.BotInstance.DataBase.Roles;
             yield return bb.Program.BotInstance.DataBase.Users;
         }
     }

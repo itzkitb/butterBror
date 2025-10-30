@@ -1,6 +1,7 @@
 ﻿using bb.Core.Configuration;
 using bb.Models.Command;
 using bb.Models.Platform;
+using bb.Models.Users;
 using System.Collections.Concurrent;
 using System.Globalization;
 using System.Text.RegularExpressions;
@@ -220,7 +221,7 @@ namespace bb.Utils
             string message,
             ChatMessage twitchMessageContext,
             string channel,
-            PlatformsEnum platform,
+            Platform platform,
             Message telegramMessageContext,
             string messageId,
             string server = "",
@@ -237,8 +238,7 @@ namespace bb.Utils
                 messagesSemaphores.TryUpdate(userId, (semaphore.Semaphore, now), semaphore);
 
                 // Skip banned or ignored users
-                if (bb.Program.BotInstance.DataBase.Roles.IsBanned(platform, DataConversion.ToLong(userId)) ||
-                    bb.Program.BotInstance.DataBase.Roles.IsIgnored(platform, DataConversion.ToLong(userId)))
+                if ((Roles)DataConversion.ToInt(bb.Program.BotInstance.UsersBuffer.GetParameter(platform, DataConversion.ToLong(userId), Users.Role)) <= Roles.Bot)
                     return;
 
                 DateTime now_utc = DateTime.UtcNow;
@@ -253,18 +253,18 @@ namespace bb.Utils
                 else
                 {
                     // Handle AFK return
-                    if (DataConversion.ToLong(bb.Program.BotInstance.UsersBuffer.GetParameter(platform, DataConversion.ToLong(userId), Users.IsAFK).ToString()) == 1)
+                    if (DataConversion.ToLong(bb.Program.BotInstance.UsersBuffer.GetParameter(platform, DataConversion.ToLong(userId), Users.IsAfk).ToString()) == 1)
                     {
                         ReturnFromAFK(userId, channelId, channel, username, messageId, telegramMessageContext, platform, message, server, serverId);
                     }
 
                     // Award coins
                     int addCoins = message.Length / 6 + 1;
-                    bb.Program.BotInstance.Currency.Add(userId, 0, addCoins, platform);
+                    bb.Program.BotInstance.Currency.Add(userId, addCoins / 100M, platform);
                 }
 
                 bb.Program.BotInstance.UsersBuffer.IncrementGlobalMessageCountAndLenght(platform, DataConversion.ToLong(userId), message.Length);
-                bb.Program.BotInstance.UsersBuffer.IncrementMessageCountInChannel(platform, DataConversion.ToLong(userId), platform == PlatformsEnum.Discord ? serverId : channelId);
+                bb.Program.BotInstance.UsersBuffer.IncrementMessageCountInChannel(platform, DataConversion.ToLong(userId), platform == Platform.Discord ? serverId : channelId);
 
                 // Mentions handling
                 List<string> mentionedList = new List<string>();
@@ -279,14 +279,14 @@ namespace bb.Utils
                         && mentionedId != null && !mentionedList.Contains(mentionedId))
                     {
                         mentionedList.Add(mentionedId);
-                        bb.Program.BotInstance.Currency.Add(mentionedId, 0, bb.Program.BotInstance.CurrencyMentioned, platform);
+                        bb.Program.BotInstance.Currency.Add(mentionedId, bb.Program.BotInstance.CurrencyMentioned / 100M, platform);
                         addToUser += bb.Program.BotInstance.CurrencyMentioner;
                     }
                 }
 
                 if (addToUser > 0)
                 {
-                    bb.Program.BotInstance.Currency.Add(userId, 0, addToUser, platform);
+                    bb.Program.BotInstance.Currency.Add(userId, addToUser / 100M, platform);
                 }
 
                 // Save user state
@@ -299,13 +299,13 @@ namespace bb.Utils
                 {
                     messageDate = now_utc,
                     messageText = message,
-                    isMe = platform == PlatformsEnum.Twitch && twitchMessageContext.IsMe,
-                    isVip = platform == PlatformsEnum.Twitch && twitchMessageContext.IsVip,
-                    isTurbo = platform == PlatformsEnum.Twitch && twitchMessageContext.IsTurbo,
-                    isStaff = platform == PlatformsEnum.Twitch && twitchMessageContext.IsStaff,
-                    isPartner = platform == PlatformsEnum.Twitch && twitchMessageContext.IsPartner,
-                    isModerator = platform == PlatformsEnum.Twitch && twitchMessageContext.IsModerator,
-                    isSubscriber = platform == PlatformsEnum.Twitch && twitchMessageContext.IsSubscriber,
+                    isMe = platform == Platform.Twitch && twitchMessageContext.IsMe,
+                    isVip = platform == Platform.Twitch && twitchMessageContext.IsVip,
+                    isTurbo = platform == Platform.Twitch && twitchMessageContext.IsTurbo,
+                    isStaff = platform == Platform.Twitch && twitchMessageContext.IsStaff,
+                    isPartner = platform == Platform.Twitch && twitchMessageContext.IsPartner,
+                    isModerator = platform == Platform.Twitch && twitchMessageContext.IsModerator,
+                    isSubscriber = platform == Platform.Twitch && twitchMessageContext.IsSubscriber,
                 };
 
                 if (bb.Program.BotInstance.DataBase.Channels.GetFirstMessage(platform, channelId, DataConversion.ToLong(userId)) is null && !bb.Program.BotInstance.allFirstMessages.Contains((platform, channelId, DataConversion.ToLong(userId), msg)))
@@ -360,28 +360,28 @@ namespace bb.Utils
         /// </para>
         /// This method is automatically triggered when a user sends their first message after setting AFK status.
         /// </remarks>
-        public void ReturnFromAFK(string userId, string channelId, string channel, string username, string messageId, Telegram.Bot.Types.Message messageReply, PlatformsEnum platform, string messageContent, string server, string serverId)
+        public void ReturnFromAFK(string userId, string channelId, string channel, string username, string messageId, Telegram.Bot.Types.Message messageReply, Platform platform, string messageContent, string server, string serverId)
         {
-            var language = "en-US";
-            string dbLanguage = (string)bb.Program.BotInstance.UsersBuffer.GetParameter(platform, DataConversion.ToLong(userId), Users.Language);
+            Language language = Language.EnUs;
+            object dbLanguage = bb.Program.BotInstance.UsersBuffer.GetParameter(platform, DataConversion.ToLong(userId), Users.Language);
 
-            if (dbLanguage == string.Empty)
+            if (dbLanguage == null)
             {
                 bb.Program.BotInstance.UsersBuffer.SetParameter(platform, DataConversion.ToLong(userId), Users.Language, LanguageDetector.DetectLanguage(messageContent));
             }
             else
             {
-                language = dbLanguage;
+                language = (Language)DataConversion.ToInt(dbLanguage);
             }
 
-            string? message = (string)bb.Program.BotInstance.UsersBuffer.GetParameter(platform, DataConversion.ToLong(userId), Users.AFKText);
-            if (!bb.Program.BotInstance.MessageFilter.Check(message, platform == PlatformsEnum.Discord ? serverId : channelId, platform).Item1)
+            string? message = (string)bb.Program.BotInstance.UsersBuffer.GetParameter(platform, DataConversion.ToLong(userId), Users.AfkMessage);
+            if (!bb.Program.BotInstance.MessageFilter.Check(message, platform == Platform.Discord ? serverId : channelId, platform).Item1)
                 return;
 
             string send = (TextSanitizer.CleanAsciiWithoutSpaces(message) == "" ? "" : ": " + message);
 
-            TimeSpan timeElapsed = DateTime.UtcNow - DateTime.Parse((string)bb.Program.BotInstance.UsersBuffer.GetParameter(platform, DataConversion.ToLong(userId), Users.AFKStart), null, DateTimeStyles.AdjustToUniversal);
-            var afkType = (string)bb.Program.BotInstance.UsersBuffer.GetParameter(platform, DataConversion.ToLong(userId), Users.AFKType);
+            TimeSpan timeElapsed = DateTime.UtcNow - DateTime.Parse((string)bb.Program.BotInstance.UsersBuffer.GetParameter(platform, DataConversion.ToLong(userId), Users.AfkStartTime), null, DateTimeStyles.AdjustToUniversal);
+            var afkType = (string)bb.Program.BotInstance.UsersBuffer.GetParameter(platform, DataConversion.ToLong(userId), Users.AfkType);
             string translateKey = "";
 
             if (afkType == "draw")
@@ -455,9 +455,9 @@ namespace bb.Utils
                 else if (timeElapsed.TotalHours >= 8) translateKey = "shower:8h";
                 else translateKey = "shower:default";
             }
-            string text = LocalizationService.GetString(language, "afk:" + translateKey, platform == PlatformsEnum.Discord ? serverId : channelId, platform, username); // FIX AA0
-            bb.Program.BotInstance.UsersBuffer.SetParameter(platform, DataConversion.ToLong(userId), Users.AFKResume, DateTime.UtcNow.ToString("o"));
-            bb.Program.BotInstance.UsersBuffer.SetParameter(platform, DataConversion.ToLong(userId), Users.IsAFK, 0);
+            string text = LocalizationService.GetString(language, "afk:" + translateKey, platform == Platform.Discord ? serverId : channelId, platform, username); // FIX AA0
+            bb.Program.BotInstance.UsersBuffer.SetParameter(platform, DataConversion.ToLong(userId), Users.AfkResume, DateTime.UtcNow.ToString("o"));
+            bb.Program.BotInstance.UsersBuffer.SetParameter(platform, DataConversion.ToLong(userId), Users.IsAfk, 0);
 
             string reply = text + send + " (" + TextSanitizer.FormatTimeSpan(timeElapsed, language) + ")";
             bb.Program.BotInstance.MessageSender.Send(platform, reply, channel, channelId, language, username, userId, server, serverId, messageId, messageReply, false, false, false);

@@ -61,7 +61,46 @@ namespace bb.Utils
         /// </remarks>
         public static int ToInt(string input)
         {
+            if (input == null) return 0;
+
             return Int32.Parse(Regex.Replace(input, @"[^-1234567890]", ""));
+        }
+
+        /// <summary>
+        /// Converts a object to an integer value by extracting numeric components.
+        /// </summary>
+        /// <param name="input">The object containing numeric characters to convert.</param>
+        /// <returns>The parsed integer value.</returns>
+        /// <exception cref="FormatException">
+        /// Thrown when the cleaned string contains no valid numeric characters or exceeds <see cref="int"/> range.
+        /// </exception>
+        /// <exception cref="OverflowException">
+        /// Thrown when the numeric value exceeds <see cref="int"/> range after cleaning.
+        /// </exception>
+        /// <remarks>
+        /// <para>
+        /// Processing workflow:
+        /// <list type="number">
+        /// <item>Removes all non-digit characters except the leading minus sign</item>
+        /// <item>Parses the resulting string as an integer using current culture settings</item>
+        /// </list>
+        /// </para>
+        /// <para>
+        /// Examples:
+        /// <list type="table">
+        /// <item><term>"1,234"</term><description>Returns 1234</description></item>
+        /// <item><term>"-$500"</term><description>Returns -500</description></item>
+        /// <item><term>"abc"</term><description>Throws FormatException</description></item>
+        /// </list>
+        /// </para>
+        /// Note: Null or empty inputs will result in FormatException rather than returning 0.
+        /// This method is optimized for performance in scenarios with mixed alphanumeric input.
+        /// </remarks>
+        public static int ToInt(object input)
+        {
+            if (input == null || input.ToString() == null) return 0;
+
+            return Int32.Parse(Regex.Replace(input.ToString(), @"[^-1234567890]", ""));
         }
 
         /// <summary>
