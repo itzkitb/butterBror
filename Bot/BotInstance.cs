@@ -70,7 +70,7 @@ namespace bb
         public CancellationTokenSource GithubCT;
 
         #region Core
-        public Version Version = new Version("2.18.0.9");
+        public Version Version = new Version("2.18.1.0");
         public string Branch = "master";
         public string Commit = "";
         public DateTime StartTime = new();
