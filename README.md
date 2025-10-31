@@ -1,4 +1,9 @@
-# ButterBror - Multipurpose Chat Bot for Entertainment
+[![.NET CI](https://github.com/itzkitb/butterBror/actions/workflows/ci.yml/badge.svg)](https://github.com/itzkitb/butterBror/actions/workflows/ci.yml)
+
+<img 
+    src="https://images.itzkitb.lol/butterbror/github_logo.png" 
+    alt="logo"
+/>
 
 ButterBror is a powerful multipurpose chat bot designed for entertainment and interaction in chats. It works simultaneously on Discord, Twitch, and Telegram, offering a wide range of fun and useful commands.
 
