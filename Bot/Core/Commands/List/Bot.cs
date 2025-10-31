@@ -67,6 +67,7 @@ namespace bb.Core.Commands.List
                 string[] currencyAlias = ["currency", "c", "курс"];
                 string[] inviteAlias = ["invite", "пригласить", "i", "п"];
                 string[] updateTranslationAlias = ["updatetranslation", "uptr", "ut", "обновитьперевод", "оп"];
+                string[] downloadTranslationAlias = ["downloadtranslation", "dwtr", "dt", "скачатьперевод", "сп"];
 
                 string[] banAlias = ["ban", "бан", "block", "kill", "заблокировать", "чел"];
                 string[] pardonAlias = ["pardon", "unblock", "unban", "разблокировать", "разбанить", "анбан"];
@@ -484,6 +485,16 @@ namespace bb.Core.Commands.List
                                 }
                                 
                                 commandReturn.SetMessage("MrDestructoid 👍 | DO-NE!");
+                            }
+                            else if (downloadTranslationAlias.Contains(argumentOne, StringComparer.OrdinalIgnoreCase))
+                            {
+                                foreach (Language lang in Enum.GetValues<Language>())
+                                {
+                                    string localPath = Path.Combine(bb.Program.BotInstance.Paths.TranslateDefault, $"{lang.ToStringFormat()}.json");
+                                    LocalizationService.DownloadTranslationFile(lang, localPath);
+                                }
+
+                                commandReturn.SetMessage("MrDestructoid 👍 | DOWN-LOA-DED!");
                             }
                             else
                             {

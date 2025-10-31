@@ -529,7 +529,7 @@ namespace bb.Utils
         /// <param name="lang">Language code to download</param>
         /// <param name="localPath">Local path to save the file</param>
         /// <returns>True if download and save were successful</returns>
-        private static bool DownloadTranslationFile(Language lang, string localPath)
+        public static bool DownloadTranslationFile(Language lang, string localPath)
         {
             string url = $"https://raw.githubusercontent.com/itzkitb/butterBror/refs/heads/master/DefaultTranslate/{lang.ToStringFormat()}.json";
             try

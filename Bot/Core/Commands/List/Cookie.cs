@@ -144,7 +144,7 @@ namespace bb.Core.Commands.List
                                 topType = "Recipients";
                         }
 
-                        var leaderboard = bb.Program.BotInstance.DataBase.Games.GetLeaderboard("Cookies", data.Platform, $"{topType}Count");
+                        var leaderboard = bb.Program.BotInstance.DataBase.Games.GetLeaderboard("Cookies", data.Platform, $"{topType}Count", 0);
 
                         var sortedList = leaderboard
                             .OrderByDescending(kvp => kvp.Value)

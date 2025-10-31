@@ -46,11 +46,11 @@ namespace bb.Core.Commands.List
                 int coin = new Random().Next(1, 3);
                 if (coin == 1)
                 {
-                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "symbol:coin", data.ChannelId, data.Platform) + LocalizationService.GetString(data.User.Language, "command:coinflip:heads", data.ChannelId, data.Platform));
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:coinflip:heads", data.ChannelId, data.Platform));
                 }
                 else
                 {
-                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "symbol:coin", data.ChannelId, data.Platform) + LocalizationService.GetString(data.User.Language, "command:coinflip:tails", data.ChannelId, data.Platform));
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:coinflip:tails", data.ChannelId, data.Platform));
                 }
             }
             catch (Exception e)
