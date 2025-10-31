@@ -245,7 +245,7 @@ namespace bb.Core.Commands.List
                                 topType = "Received";
                         }
 
-                        var leaderboard = bb.Program.BotInstance.DataBase.Games.GetLeaderboard("Frogs", data.Platform, topType);
+                        var leaderboard = bb.Program.BotInstance.DataBase.Games.GetLeaderboard("Frogs", data.Platform, topType, 0);
 
                         var sortedList = leaderboard
                             .OrderByDescending(kvp => kvp.Value)
@@ -257,11 +257,13 @@ namespace bb.Core.Commands.List
                             .ToList();
 
                         string userPosition = LocalizationService.GetString(data.User.Language, "text:empty", data.ChannelId, data.Platform);
-                        for (int i = 0; i < fullSortedList.Count; i++)
+                        long iu = 0;
+                        foreach (var l in fullSortedList)
                         {
-                            if (fullSortedList[i].UserId == DataConversion.ToLong(data.User.Id))
+                            iu++;
+                            if (l.UserId == DataConversion.ToLong(data.User.Id))
                             {
-                                userPosition = $"{i + 1}.";
+                                userPosition = $"{iu}";
                                 break;
                             }
                         }

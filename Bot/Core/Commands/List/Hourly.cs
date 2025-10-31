@@ -64,15 +64,16 @@ namespace bb.Core.Commands.List
                 {
                     bb.Program.BotInstance.Currency.Add(data.User.Id, hourPriceBTR, data.Platform);
                     bb.Program.BotInstance.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.Id), "LastHourlyReward", currentTime.ToString("o"));
-                    string message = LocalizationService.GetString(data.User.Language, "command:hourly:get", data.ChannelId, data.Platform, hourPriceBTR);
+                    string message = LocalizationService.GetString(data.User.Language, "command:hourly:get", data.ChannelId, data.Platform, Math.Round(hourPriceBTR, 3));
                     commandReturn.SetMessage(message);
                 }
                 else
                 {
                     double remainingSeconds = periodSeconds - timeSinceLast.TotalSeconds;
+                    decimal percent = Math.Round((1 - (decimal)timeSinceLast.TotalSeconds / (decimal)periodSeconds) * 100, 5);
                     TimeSpan remainingTime = TimeSpan.FromSeconds(remainingSeconds);
                     string remainingText = TextSanitizer.FormatTimeSpan(remainingTime, data.User.Language);
-                    string message = LocalizationService.GetString(data.User.Language, "command:hourly:cooldown", data.ChannelId, data.Platform, remainingText);
+                    string message = LocalizationService.GetString(data.User.Language, "command:hourly:cooldown", data.ChannelId, data.Platform, remainingText, percent);
                     commandReturn.SetMessage(message);
                 }
             }

@@ -378,7 +378,7 @@ namespace bb.Utils
             if (!bb.Program.BotInstance.MessageFilter.Check(message, platform == Platform.Discord ? serverId : channelId, platform).Item1)
                 return;
 
-            string send = (TextSanitizer.CleanAsciiWithoutSpaces(message) == "" ? "" : ": " + message);
+            string send = (TextSanitizer.CleanAsciiWithoutSpaces(message) == "" ? "" : ": \"" + message + "\"");
 
             TimeSpan timeElapsed = DateTime.UtcNow - DateTime.Parse((string)bb.Program.BotInstance.UsersBuffer.GetParameter(platform, DataConversion.ToLong(userId), Users.AfkStartTime), null, DateTimeStyles.AdjustToUniversal);
             var afkType = (string)bb.Program.BotInstance.UsersBuffer.GetParameter(platform, DataConversion.ToLong(userId), Users.AfkType);

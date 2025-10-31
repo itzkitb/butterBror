@@ -55,6 +55,7 @@ namespace bb.Data.Repositories
         {
             public long UserId { get; set; }
             public int Value { get; set; }
+            public int Position { get; set; }
         }
 
         /// <summary>
@@ -376,21 +377,19 @@ namespace bb.Data.Repositories
             string sql;
             if (tableName == "Frogs")
             {
-                sql = $@"
-                    SELECT UserID, {columnName} 
-                    FROM Frogs 
-                    WHERE Platform = @Platform AND {columnName} > 0
-                    ORDER BY {columnName} DESC 
-                    LIMIT @Limit";
+                sql = $"SELECT UserID, {columnName}" +
+                    "\nFROM Frogs" +
+                    $"\nWHERE Platform = @Platform AND {columnName} > 0" +
+                    $"\nORDER BY {columnName} DESC" +
+                    (limit == 0 ? "" : "\nLIMIT @Limit");
             }
             else
             {
-                sql = $@"
-                    SELECT UserID, {columnName} 
-                    FROM Cookies 
-                    WHERE Platform = @Platform AND {columnName} > 0
-                    ORDER BY {columnName} DESC 
-                    LIMIT @Limit";
+                sql = $"SELECT UserID, {columnName}" +
+                    "\nFROM Cookies" +
+                    $"\nWHERE Platform = @Platform AND {columnName} > 0" +
+                    $"\nORDER BY {columnName} DESC" +
+                    (limit == 0 ? "" : "\nLIMIT @Limit");
             }
 
             var parameters = new[]
@@ -402,7 +401,7 @@ namespace bb.Data.Repositories
             var result = new List<LeaderboardEntry>();
             using var cmd = CreateCommand(sql, parameters);
             using var reader = cmd.ExecuteReader();
-
+            
             while (reader.Read())
             {
                 result.Add(new LeaderboardEntry

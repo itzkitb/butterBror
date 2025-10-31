@@ -49,7 +49,7 @@ namespace bb.Core.Commands.List
                         "command:balance",
                         data.ChannelId,
                         data.Platform,
-                        bb.Program.BotInstance.Currency.GetBalance(data.User.Id, data.Platform)));
+                        Math.Round(bb.Program.BotInstance.Currency.GetBalance(data.User.Id, data.Platform), 3)));
                     commandReturn.SetSafe(true);
                 }
                 else
@@ -63,7 +63,7 @@ namespace bb.Core.Commands.List
                             data.ChannelId,
                             data.Platform,
                             UsernameResolver.Unmention(TextSanitizer.UsernameFilter(data.ArgumentsString)),
-                            bb.Program.BotInstance.Currency.GetBalance(userID, data.Platform)));
+                            Math.Round(bb.Program.BotInstance.Currency.GetBalance(userID, data.Platform), 3)));
                         commandReturn.SetSafe(true);
                     }
                     else
