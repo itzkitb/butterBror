@@ -69,7 +69,7 @@ The bot works simultaneously on three platforms:
 
 ### Installation Steps:
 
-1. **Download the latest release** from [releases page](https://github.com/your-username/ButterBror/releases)
+1. **Download the latest release** from [releases page](https://github.com/itzkitb/ButterBror/releases)
 
 2. **Run the application** `Host.exe`
    - On first run, it will automatically create the folder `%AppData%\SillyApps\ButterBror`
