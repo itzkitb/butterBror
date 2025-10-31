@@ -102,10 +102,7 @@ namespace bb.Core.Commands.List
                 bb.Program.BotInstance.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.Id), Users.AfkResume, DateTime.UtcNow.ToString("o"));
                 bb.Program.BotInstance.UsersBuffer.SetParameter(data.Platform, DataConversion.ToLong(data.User.Id), Users.AfkResumeCount, 0);
 
-                if (TextSanitizer.CleanAsciiWithoutSpaces(text) == "")
-                    commandReturn.SetMessage(result);
-                else
-                    commandReturn.SetMessage(result + ": " + text);
+                commandReturn.SetMessage(result);
             }
             catch (Exception e)
             {
