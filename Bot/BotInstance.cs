@@ -801,7 +801,8 @@ namespace bb
 
         private void GitHubActionsStatusChanged(object? sender, RunStatusChangedEventArgs e)
         {
-            string notify = $"forsenPls | Github: {e.Event} in {e.Repository}#{e.Branch} by {e.Actor}: { (e.Conclusion == null ? e.Status : $"{e.Status} → {e.Conclusion}") }";
+            if (e.Status == null || e.Status != "completed") return;
+            string notify = $"forsenPls | Github: {e.Event} in {e.Repository}#{e.Branch} by {e.Actor}: {e.Conclusion}";
 
             Write(notify);
 

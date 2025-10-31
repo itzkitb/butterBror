@@ -237,7 +237,7 @@ namespace bb.Core.Commands.List
                                 "command:bot:currency",
                                 channelId,
                                 data.Platform,
-                                bb.Program.BotInstance.Coins.ToString() + " " + buttersAmountProgress,
+                                bb.Program.BotInstance.Coins.ToString("0.000") + " " + buttersAmountProgress,
                                 bb.Program.BotInstance.Users.ToString(),
                                 (bb.Program.BotInstance.Coins / bb.Program.BotInstance.Users).ToString("0.00") + " " + buttersMiddle,
                                 (bb.Program.BotInstance.InBankDollars / bb.Program.BotInstance.Coins).ToString("0.00000") + " " + buttersCostProgress,

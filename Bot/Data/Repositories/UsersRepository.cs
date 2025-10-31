@@ -494,8 +494,8 @@ FROM [{oldTableName}]";
             @ID, @Platform, @FirstSeen, @FirstMessage, @FirstChannel, 
             @LastSeen, @LastMessage, @LastChannel,
             0.0, 2, 0, '', '', '',
-            '[]', '', 0, 0, 0, '',
-            '', '', 1, '', 0, '[]', 
+            '{}', '', 0, 0, 0, '',
+            '', '', 1, '', 0, '{}', 
             '[]', '[]',
             1, @TotalMessagesLength
         );";
@@ -681,6 +681,7 @@ FROM [{oldTableName}]";
         new SQLiteParameter("@Platform", (int)platform),
         new SQLiteParameter("@UserId", userId)
     });
+            
         }
 
         /// <summary>

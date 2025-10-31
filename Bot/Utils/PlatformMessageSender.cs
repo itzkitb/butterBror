@@ -7,6 +7,7 @@ using bb.Services.Platform.Discord;
 using bb.Services.Platform.Telegram;
 using bb.Services.Platform.Twitch;
 using Discord;
+using Discord.WebSocket;
 using Jint.Runtime;
 using System.Globalization;
 using Telegram.Bot;
@@ -14,6 +15,7 @@ using Telegram.Bot.Types;
 using TwitchLib.Client;
 using TwitchLib.Client.Enums;
 using TwitchLib.Client.Models;
+using TwitchLib.PubSub.Models.Responses.Messages.AutomodCaughtMessage;
 using static bb.Core.Bot.Logger;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
@@ -96,7 +98,7 @@ namespace bb.Utils
             string channelId = null, Language language = Language.EnUs, string username = null,
             string userID = null, string server = null, string serverId = null,
             string messageId = null, Telegram.Bot.Types.Message messageReply = null,
-            bool isSafe = false, bool isReply = false, bool addUsername = false)
+            bool isSafe = false, bool isReply = false, bool addUsername = false, SocketCommandBase slashCommandDiscord = null)
         {
             try
             {
@@ -106,7 +108,7 @@ namespace bb.Utils
                         TwitchSend(message, language, channel, channelId, username, messageId, isSafe, isReply, addUsername);
                         break;
                     case Platform.Discord:
-                        DiscordSend(message, language, channelId, server, serverId, isSafe, userID);
+                        DiscordSend(message, language, channelId, server, serverId, isSafe, userID, slashCommandDiscord);
                         break;
                     case Platform.Telegram:
                         TelegramSend(message, language, channel, channelId, username, messageId, isSafe, isReply, addUsername);
@@ -184,7 +186,7 @@ namespace bb.Utils
             });
         }
 
-        private void DiscordSend(string message, Language language, string channelId, string server, string serverId, bool safeExec, string userId)
+        private void DiscordSend(string message, Language language, string channelId, string server, string serverId, bool safeExec, string userId, SocketCommandBase command)
         {
             if (message == null || bb.Program.BotInstance.Clients.Discord == null) return;
 
@@ -202,19 +204,37 @@ namespace bb.Utils
                         send = LocalizationService.GetString(language, "error:too_large_text", channelId, Platform.Telegram);
                     }
 
-                    ITextChannel sender = await bb.Program.BotInstance.Clients.Discord.GetChannelAsync(ulong.Parse(channelId)) as ITextChannel;
-
-                    if (safeExec || bb.Program.BotInstance.MessageFilter.Check(send, serverId, Platform.Discord).Item1)
+                    if (command != null)
                     {
-                        sender.SendMessageAsync($"<@{userId}> {send}");
+                        if (safeExec || bb.Program.BotInstance.MessageFilter.Check(send, serverId, Platform.Discord).Item1)
+                        {
+                            await command.RespondAsync($"<@{userId}> {send}");
+                        }
+                        else
+                        {
+                            var embed = new EmbedBuilder()
+                                .WithTitle(LocalizationService.GetString(language, "error:message_could_not_be_sent", "", Platform.Discord))
+                                .WithColor(global::Discord.Color.Red)
+                                .Build();
+                            await command.RespondAsync($"<@{userId}> {send}", embed: embed);
+                        }
                     }
                     else
                     {
-                        var embed = new EmbedBuilder()
-                            .WithTitle(LocalizationService.GetString(language, "error:message_could_not_be_sent", "", Platform.Discord))
-                            .WithColor(global::Discord.Color.Red)
-                            .Build();
-                        sender.SendMessageAsync($"<@{userId}> {send}", embed: embed);
+                        ITextChannel sender = await bb.Program.BotInstance.Clients.Discord.GetChannelAsync(ulong.Parse(channelId)) as ITextChannel;
+
+                        if (safeExec || bb.Program.BotInstance.MessageFilter.Check(send, serverId, Platform.Discord).Item1)
+                        {
+                            await sender.SendMessageAsync($"<@{userId}> {send}");
+                        }
+                        else
+                        {
+                            var embed = new EmbedBuilder()
+                                .WithTitle(LocalizationService.GetString(language, "error:message_could_not_be_sent", "", Platform.Discord))
+                                .WithColor(global::Discord.Color.Red)
+                                .Build();
+                            await sender.SendMessageAsync($"<@{userId}> {send}", embed: embed);
+                        }
                     }
                 }
                 catch (Exception ex)

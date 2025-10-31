@@ -237,6 +237,13 @@ namespace bb.Utils
                 await semaphore.Semaphore.WaitAsync().ConfigureAwait(false);
                 messagesSemaphores.TryUpdate(userId, (semaphore.Semaphore, now), semaphore);
 
+                if (!bb.Program.BotInstance.DataBase.Users.CheckUserExists(platform, DataConversion.ToLong(userId)))
+                {
+                    bb.Program.BotInstance.DataBase.Users.RegisterNewUser(platform, DataConversion.ToLong(userId), LanguageDetector.DetectLanguage(message), message, channel);
+                    bb.Program.BotInstance.DataBase.Users.AddUsernameMapping(platform, DataConversion.ToLong(userId), username.ToLower());
+                    bb.Program.BotInstance.Users++;
+                }
+
                 // Skip banned or ignored users
                 if ((Roles)DataConversion.ToInt(bb.Program.BotInstance.UsersBuffer.GetParameter(platform, DataConversion.ToLong(userId), Users.Role)) <= Roles.Bot)
                     return;
@@ -244,24 +251,15 @@ namespace bb.Utils
                 DateTime now_utc = DateTime.UtcNow;
                 Proccessed++;
 
-                if (!bb.Program.BotInstance.DataBase.Users.CheckUserExists(platform, DataConversion.ToLong(userId)))
+                // Handle AFK return
+                if (DataConversion.ToLong(bb.Program.BotInstance.UsersBuffer.GetParameter(platform, DataConversion.ToLong(userId), Users.IsAfk).ToString()) == 1)
                 {
-                    bb.Program.BotInstance.DataBase.Users.RegisterNewUser(platform, DataConversion.ToLong(userId), LanguageDetector.DetectLanguage(message), message, channel);
-                    bb.Program.BotInstance.DataBase.Users.AddUsernameMapping(platform, DataConversion.ToLong(userId), username.ToLower());
-                    bb.Program.BotInstance.Users++;
+                    ReturnFromAFK(userId, channelId, channel, username, messageId, telegramMessageContext, platform, message, server, serverId);
                 }
-                else
-                {
-                    // Handle AFK return
-                    if (DataConversion.ToLong(bb.Program.BotInstance.UsersBuffer.GetParameter(platform, DataConversion.ToLong(userId), Users.IsAfk).ToString()) == 1)
-                    {
-                        ReturnFromAFK(userId, channelId, channel, username, messageId, telegramMessageContext, platform, message, server, serverId);
-                    }
 
-                    // Award coins
-                    int addCoins = message.Length / 6 + 1;
-                    bb.Program.BotInstance.Currency.Add(userId, addCoins / 100M, platform);
-                }
+                // Award coins
+                int addCoins = message.Length / 6 + 1;
+                bb.Program.BotInstance.Currency.Add(userId, addCoins / 100M, platform);
 
                 bb.Program.BotInstance.UsersBuffer.IncrementGlobalMessageCountAndLenght(platform, DataConversion.ToLong(userId), message.Length);
                 bb.Program.BotInstance.UsersBuffer.IncrementMessageCountInChannel(platform, DataConversion.ToLong(userId), platform == Platform.Discord ? serverId : channelId);

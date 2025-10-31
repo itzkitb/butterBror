@@ -254,7 +254,8 @@ namespace bb.Core.Commands
                     ArgumentsString = CommandArgumentsAsString,
                     Arguments = CommandArguments,
                     CommandInstanceID = Guid.NewGuid().ToString(),
-                    ChatID = ((SocketGuildChannel)message.Channel).Guild.Id.ToString()
+                    ChatID = ((SocketGuildChannel)message.Channel).Guild.Id.ToString(),
+                    DiscordMessage = message
                 };
                 await bb.Program.BotInstance.CommandRunner.Execute(data);
             }

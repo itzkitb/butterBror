@@ -260,7 +260,7 @@ namespace bb.Core.Commands
                                 {
                                     string message = LocalizationService.GetString(data.User.Language, "error:not_enough_rights", data.ChannelId, data.Platform);
                                     bb.Program.BotInstance.MessageSender.Send(data.Platform, message, data.Channel, data.ChannelId, data.User.Language, data.User.Name,
-                                        data.User.Id, data.Server, data.ServerID, data.MessageID, data.TelegramMessage, true, true, false);
+                                        data.User.Id, data.Server, data.ServerID, data.MessageID, data.TelegramMessage, true, true, false, data.DiscordCommandBase);
                                 }
 
                                 Write($"Command failed:\n - OBD check: {BoolToString(isOnlyBotOwner)}\n - OBM check: {BoolToString(isOnlyBotMod)}\n - OCM check: {BoolToString(isOnlyChannelMod)}\n - Cooldown check: {BoolToString(isCooldown)}", LogLevel.Warning);
@@ -304,12 +304,12 @@ namespace bb.Core.Commands
                                     if (result.IsSafe || bwddata.Item1)
                                     {
                                         bb.Program.BotInstance.MessageSender.Send(data.Platform, result.Message, data.Channel, data.ChannelId, data.User.Language, data.User.Name,
-                                        data.User.Id, data.Server, data.ServerID, data.MessageID, data.TelegramMessage, true, true, false);
+                                        data.User.Id, data.Server, data.ServerID, data.MessageID, data.TelegramMessage, true, true, false, data.DiscordCommandBase);
                                     }
                                     else
                                     {
                                         bb.Program.BotInstance.MessageSender.Send(data.Platform, LocalizationService.GetString(data.User.Language, "error:message_could_not_be_sent", data.ChatID, Models.Platform.Platform.Twitch), data.Channel,
-                            data.ChannelId, data.User.Language, data.User.Name, data.User.Id, data.Server, data.ServerID, data.MessageID, data.TelegramMessage, true, true, false);
+                            data.ChannelId, data.User.Language, data.User.Name, data.User.Id, data.Server, data.ServerID, data.MessageID, data.TelegramMessage, true, true, false, data.DiscordCommandBase);
                                     }
                                     
                                 }
@@ -331,7 +331,7 @@ namespace bb.Core.Commands
                     if (!test)
                     {
                         bb.Program.BotInstance.MessageSender.Send(data.Platform, LocalizationService.GetString(Language.EnUs, "error:unknown", data.ChannelId, data.Platform), data.Channel,
-                            data.ChannelId, data.User.Language, data.User.Name, data.User.Id, data.Server, data.ServerID, data.MessageID, data.TelegramMessage, true, true, false);
+                            data.ChannelId, data.User.Language, data.User.Name, data.User.Id, data.Server, data.ServerID, data.MessageID, data.TelegramMessage, true, true, false, data.DiscordCommandBase);
                     }
                 }
                 finally

@@ -142,24 +142,24 @@ namespace bb.Core.Bot
                 long memory = Process.GetCurrentProcess().PrivateMemorySize64 / (1024 * 1024);
 
                 bb.Program.BotInstance.MessageSender.Send(Platform.Twitch, $"/me glorp 📡 | " +
-                    $"🕒 {TextSanitizer.FormatTimeSpan(DateTime.UtcNow - bb.Program.BotInstance.StartTime, Language.EnUs)} | " +
-                    $"{memory}Mbyte | " +
-                    $"🔋 {Battery.GetBatteryCharge()}% {(Battery.IsCharging() ? "(Charging) " : "")}| " +
-                    $"CPU: {cpuPercent:0.00}% | " +
-                    $"Emotes: {bb.Program.BotInstance.EmotesCache.Count} | " +
-                    $"7tv: E:{bb.Program.BotInstance.ChannelsSevenTVEmotes.Count},USC:{bb.Program.BotInstance.UsersSearchCache.Count},ES:{bb.Program.BotInstance.EmoteSetsCache.Count} | " +
-                    $"Messages: {bb.Program.BotInstance.MessageProcessor.Proccessed} | " +
-                    $"Discord guilds: {bb.Program.BotInstance.Clients.Discord.Guilds.Count} | " +
-                    $"Twitch channels: {bb.Program.BotInstance.Clients.Twitch.JoinedChannels.Count} | " +
-                    $"Completed: {bb.Program.BotInstance.CompletedCommands} | " +
-                    $"Users: {bb.Program.BotInstance.Users} | " +
-                    $"Coins: {bb.Program.BotInstance.Coins:0.00} | " +
-                    $"Currency: ${coinCurrency:0.00000000} | " +
-                    $"Twitch: {twitch.RoundtripTime}ms | " +
-                    $"Discord: {discord.RoundtripTime}ms | " +
-                    $"Telegram: {telegram}ms | " +
-                    $"7tv: {sevenTV.RoundtripTime}ms | " +
-                    $"ISP: {ISP.RoundtripTime}ms | " +
+                    $"🕒 {TextSanitizer.FormatTimeSpan(DateTime.UtcNow - bb.Program.BotInstance.StartTime, Language.EnUs)} • " +
+                    $"{memory}Mbyte • " +
+                    $"🔋 {Battery.GetBatteryCharge()}% {(Battery.IsCharging() ? "(Charging) " : "")}• " +
+                    $"CPU: {cpuPercent:0.00}% • " +
+                    $"Emotes: {bb.Program.BotInstance.EmotesCache.Count} • " +
+                    $"7tv: E:{bb.Program.BotInstance.ChannelsSevenTVEmotes.Count},USC:{bb.Program.BotInstance.UsersSearchCache.Count},ES:{bb.Program.BotInstance.EmoteSetsCache.Count} • " +
+                    $"Messages: {bb.Program.BotInstance.MessageProcessor.Proccessed} • " +
+                    $"Discord guilds: {bb.Program.BotInstance.Clients.Discord.Guilds.Count} • " +
+                    $"Twitch channels: {bb.Program.BotInstance.Clients.Twitch.JoinedChannels.Count} • " +
+                    $"Completed: {bb.Program.BotInstance.CompletedCommands} • " +
+                    $"Users: {bb.Program.BotInstance.Users} • " +
+                    $"Coins: {bb.Program.BotInstance.Coins:0.00} • " +
+                    $"Currency: ${coinCurrency:0.00000000} • " +
+                    $"Twitch: {twitch.RoundtripTime}ms • " +
+                    $"Discord: {discord.RoundtripTime}ms • " +
+                    $"Telegram: {telegram}ms • " +
+                    $"7tv: {sevenTV.RoundtripTime}ms • " +
+                    $"ISP: {ISP.RoundtripTime}ms • " +
                     $"Command: {CommandExecute.ElapsedMilliseconds}ms", bb.Program.BotInstance.TwitchName.ToLower());
 
                 Write($"Twitch: Telemetry ended! ({Start.ElapsedMilliseconds}ms)");

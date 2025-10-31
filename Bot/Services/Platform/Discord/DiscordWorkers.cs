@@ -90,7 +90,6 @@ namespace bb.Services.Platform.Discord
             try
             {
                 bb.Program.BotInstance.Clients.Discord.Ready += RegisterSlashCommands;
-                bb.Program.BotInstance.Clients.Discord.MessageReceived += DiscordEvents.HandleCommandAsync;
                 await bb.Program.BotInstance.DiscordCommandService.AddModulesAsync(assembly: Assembly.GetEntryAssembly(), services: bb.Program.BotInstance.DiscordServiceProvider);
             }
             catch (Exception ex)

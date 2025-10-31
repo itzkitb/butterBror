@@ -56,7 +56,7 @@ namespace bb.Services.Platform.Telegram
                     null,
                     null);
 
-                Language lang = (Language?)bb.Program.BotInstance.UsersBuffer.GetParameter(Models.Platform.Platform.Telegram, user.Id, Users.Language) ?? Language.EnUs;
+                Language lang = (Language)DataConversion.ToInt(bb.Program.BotInstance.UsersBuffer.GetParameter(Models.Platform.Platform.Telegram, user.Id, Users.Language));
 
                 if (MessageProcessor.IsEqualsSlashCommand("start", text, botData.Username))
                 {

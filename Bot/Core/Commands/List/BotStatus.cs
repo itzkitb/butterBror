@@ -52,7 +52,7 @@ namespace bb.Core.Commands.List
 
                 int generalStatus = Math.Min(diskStatus, memoryStatus);
 
-                string statusName = GetStatusName(data.Platform, generalStatus);
+                string statusName = GetStatusName(generalStatus);
 
                 DirectoryInfo directoryInfo = new DirectoryInfo(bb.Program.BotInstance.Paths.General);
                 long folderSizeBytes = directoryInfo.EnumerateFiles("*.*", SearchOption.AllDirectories)
@@ -70,12 +70,12 @@ namespace bb.Core.Commands.List
                 };
 
                 string diskName = driveLetter + ":";
-                string message = $"{prefix} 📡 Pshhh... I'm ButterBror v.{bb.Program.BotInstance.Version} " +
-                                 $"💻 Status: {statusName} " +
-                                 $"💾 Free disk space ({diskName}): {FormatSize(freeDiskBytes)}/{FormatSize(totalDiskBytes)} " +
-                                 $"({Math.Round(percentFreeDisk)}% free) " +
-                                 $"🫙 Working memory: {workingSetMB} MB " +
-                                 $"⚖️ Database size: {folderSizeMB} MB ({Math.Round(diskUsagePercent)}% of disk)";
+                string message = $"{prefix} 📡 | Pshhh... I'm ButterBror v.{bb.Program.BotInstance.Version} • " +
+                                 $"Status: {statusName} • " +
+                                 $"Free disk space ({diskName}): {FormatSize(freeDiskBytes)}/{FormatSize(totalDiskBytes)} " +
+                                 $"({Math.Round(percentFreeDisk)}% free) • " +
+                                 $"Working memory: {workingSetMB} MB • " +
+                                 $"Database size: {folderSizeMB} MB ({Math.Round(diskUsagePercent)}% of disk)";
 
                 commandReturn.SetMessage(message);
             }
@@ -105,29 +105,16 @@ namespace bb.Core.Commands.List
             return 1;
         }
 
-        private string GetStatusName(Platform platform, int status)
+        private string GetStatusName(int status)
         {
-            return platform switch
+            return status switch
             {
-                Platform.Twitch => status switch
-                {
-                    5 => "catWOW Perfect",
-                    4 => "Klass Great",
-                    3 => ":/ Normal",
-                    2 => "monka Bad",
-                    1 => "forsenAgony Very bad",
-                    _ => "AINTNOWAY"
-                },
-                Platform.Discord => status switch
-                {
-                    5 => "<:peepoLove:1248250622889951346> Perfect",
-                    4 => "<:ApuScience:1248250603906535454> Great",
-                    3 => "<:Sadge:1248250606741884941> Normal",
-                    2 => "<:peepoWtf:1248250614841081907> Bad",
-                    1 => "<:PepeA:1248250633178579036> Very bad",
-                    _ => "☠"
-                },
-                _ => "Unknown Status"
+                5 => "Perfect",
+                4 => "Great",
+                3 => "Normal",
+                2 => "Bad",
+                1 => "Very bad",
+                _ => "AINTNOWAY"
             };
         }
 
