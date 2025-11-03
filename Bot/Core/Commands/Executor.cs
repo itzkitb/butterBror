@@ -73,7 +73,7 @@ namespace bb.Core.Commands
                     Id = cMessage.UserId,
                     Language = (Language)DataConversion.ToInt(bb.Program.BotInstance.UsersBuffer.GetParameter(Platform.Twitch, DataConversion.ToLong(cMessage.UserId), Configuration.Users.Language)),
                     Name = cMessage.Username,
-                    Balance = bb.Program.BotInstance.Currency.GetBalance(cMessage.UserId, Platform.Twitch),
+                    Balance = bb.Program.BotInstance.Currency.Get(cMessage.UserId, Platform.Twitch),
                     Roles = (Roles)DataConversion.ToInt(bb.Program.BotInstance.UsersBuffer.GetParameter(Platform.Twitch, DataConversion.ToLong(cMessage.UserId), Configuration.Users.Role)),
                 };
 
@@ -143,7 +143,7 @@ namespace bb.Core.Commands
                     Id = command.User.Id.ToString(),
                     Language = (Language)DataConversion.ToInt(bb.Program.BotInstance.UsersBuffer.GetParameter(Platform.Discord, Convert.ToInt64(command.User.Id), Configuration.Users.Language)),
                     Name = command.User.Username,
-                    Balance = bb.Program.BotInstance.Currency.GetBalance(command.User.Id.ToString(), Platform.Discord),
+                    Balance = bb.Program.BotInstance.Currency.Get(command.User.Id.ToString(), Platform.Discord),
                     Roles = (Roles)DataConversion.ToInt(bb.Program.BotInstance.UsersBuffer.GetParameter(Platform.Discord, Convert.ToInt64(command.User.Id), Configuration.Users.Role)),
                 };
                 
@@ -238,7 +238,7 @@ namespace bb.Core.Commands
                     Id = message.Author.Id.ToString(),
                     Language = (Language)DataConversion.ToInt(bb.Program.BotInstance.UsersBuffer.GetParameter(Platform.Discord, Convert.ToInt64(message.Author.Id.ToString()), Configuration.Users.Language)),
                     Name = message.Author.Username,
-                    Balance = bb.Program.BotInstance.Currency.GetBalance(message.Author.Id.ToString(), Platform.Discord),
+                    Balance = bb.Program.BotInstance.Currency.Get(message.Author.Id.ToString(), Platform.Discord),
                     Roles = (Roles)DataConversion.ToInt(bb.Program.BotInstance.UsersBuffer.GetParameter(Platform.Discord, Convert.ToInt64(message.Author.Id.ToString()), Configuration.Users.Role)),
                 };
 
@@ -311,7 +311,7 @@ namespace bb.Core.Commands
                     Id = message.From.Id.ToString(),
                     Language = (Language)DataConversion.ToInt(bb.Program.BotInstance.UsersBuffer.GetParameter(Platform.Telegram, Convert.ToInt64(message.From.Id.ToString()), Configuration.Users.Language)),
                     Name = message.From.Username ?? message.From.FirstName,
-                    Balance = bb.Program.BotInstance.Currency.GetBalance(message.From.Id.ToString(), Platform.Telegram),
+                    Balance = bb.Program.BotInstance.Currency.Get(message.From.Id.ToString(), Platform.Telegram),
                     Roles = (Roles)DataConversion.ToInt(bb.Program.BotInstance.UsersBuffer.GetParameter(Platform.Telegram, Convert.ToInt64(message.From.Id.ToString()), Configuration.Users.Role)),
                 };
 

@@ -25,7 +25,6 @@ using TwitchLib.Client;
 using TwitchLib.Client.Models;
 using TwitchLib.Communication.Clients;
 using TwitchLib.Communication.Models;
-using static bb.Core.Bot.Logger;
 using bb.Data.Repositories;
 using bb.Data.Entities;
 using bb.Services.Platform.Discord;
@@ -194,7 +193,7 @@ namespace bb
 
             if (SkipFetch)
             {
-                Write("Launched with --skip-fetch parameter, skipping system fetch...");
+                Logger.Write("Launched with --skip-fetch parameter, skipping system fetch...");
             }
             else
             {
@@ -211,7 +210,7 @@ namespace bb
                 }
                 catch (Exception ex)
                 {
-                    Write($"Error starting dashboard: {ex.Message}", LogLevel.Error);
+                    Logger.Write($"Error starting dashboard: {ex.Message}", Logger.LogLevel.Error);
                 }
             });
 
@@ -288,11 +287,11 @@ namespace bb
 
                                 if (this.DataBase == null)
                                 {
-                                    Write("Reinitialization of currency counters failed: Database is null", LogLevel.Error);
+                                    Logger.Write("Reinitialization of currency counters failed: Database is null", Logger.LogLevel.Error);
                                     return;
                                 }
 
-                                Write("Reinitializing currency counters...");
+                                Logger.Write("Reinitializing currency counters...");
                                 Users = this.DataBase.Users.GetTotalUsers();
                                 Coins = this.DataBase.Users.GetTotalBalance();
                             }));
@@ -303,7 +302,7 @@ namespace bb
                         {
                             if (MessagesBuffer == null || UsersBuffer == null || DataBase == null)
                             {
-                                Write("Failed to save buffers and currency: MessagesBuffer, UsersBuffer, or DataBase are null", LogLevel.Error);
+                                Logger.Write("Failed to save buffers and currency: MessagesBuffer, UsersBuffer, or DataBase are null", Logger.LogLevel.Error);
                             }
                             else
                             {
@@ -348,14 +347,14 @@ namespace bb
                                 #endregion Currency save
 
                                 stopwatch.Stop();
-                                Write($"Saved {messages} messages, {users} users and currency in {stopwatch.ElapsedMilliseconds} ms");
+                                Logger.Write($"Saved {messages} messages, {users} users and currency in {stopwatch.ElapsedMilliseconds} ms");
                             }
                         }
                     }
                 }
                 catch (Exception e)
                 {
-                    Write(e);
+                    Logger.Write(e);
                 }
                 finally
                 {
@@ -380,7 +379,7 @@ namespace bb
         /// </remarks>
         private void SystemDataFetch()
         {
-            Write("Please wait...");
+            Logger.Write("Please wait...");
             string processor = "Unnamed processor";
             string OSName = "Unknown";
             double memory = 0;
@@ -458,7 +457,7 @@ namespace bb
             }
             catch (Exception ex)
             {
-                Write($"Unable to get processor info: {ex.Message}");
+                Logger.Write($"Unable to get processor info: {ex.Message}");
             } // CPU
 
             try
@@ -505,7 +504,7 @@ namespace bb
             }
             catch (Exception ex)
             {
-                Write($"Unable to get OS name: {ex.Message}");
+                Logger.Write($"Unable to get OS name: {ex.Message}");
                 OSName = Environment.OSVersion.ToString();
             } // OS name
 
@@ -515,7 +514,7 @@ namespace bb
             }
             catch (Exception ex)
             {
-                Write($"Unable to get RAM size: {ex.Message}");
+                Logger.Write($"Unable to get RAM size: {ex.Message}");
             } // RAM
 
             try
@@ -574,10 +573,10 @@ namespace bb
             }
             catch (Exception ex)
             {
-                Write($"Unable to get disks sizes: {ex.Message}");
+                Logger.Write($"Unable to get disks sizes: {ex.Message}");
             } // Drives
 
-            Write($@"
+            Logger.Write($@"
 
             :::::::::                  
         :::::::::::::::::              
@@ -618,7 +617,7 @@ namespace bb
         private void Initialize(string[] args)
         {
             System.Console.Title = $"butterBror | v.{Version}";
-            Clear();
+            Logger.Clear();
 
             for (int i = 0; i < args.Length; i++)
             {
@@ -641,7 +640,7 @@ namespace bb
 #if RELEASE
             if (HostName is null || HostVersion is null)
             {
-                Write("The bot is running without a host! Please run it from the host, not directly.");
+                Logger.Write("The bot is running without a host! Please run it from the host, not directly.");
                 System.Console.ReadLine();
                 return;
             }
@@ -668,11 +667,11 @@ namespace bb
             _startTime = DateTime.UtcNow;
             GitHubActions.RunStatusChanged += GitHubActionsStatusChanged;
 
-            Write("Reading release data...");
+            Logger.Write("Reading release data...");
             var releaseData = ReleaseManager.GetReleaseInfo();
             if (releaseData == null)
             {
-                Write("Try deleting the release folder (Versions) and restarting the host. Press enter to exit.");
+                Logger.Write("Try deleting the release folder (Versions) and restarting the host. Press enter to exit.");
                 System.Console.ReadLine();
                 return;
             }
@@ -698,7 +697,7 @@ namespace bb
 
             try
             {
-                Write("Creating directories...");
+                Logger.Write("Creating directories...");
                 string[] directories = { Paths.Root, Paths.General, Paths.TranslateDefault, Paths.TranslateCustom };
 
                 foreach (var dir in directories)
@@ -711,7 +710,7 @@ namespace bb
                 if (!FileUtil.FileExists(Paths.Settings))
                 {
                     Settings.Initialize();
-                    Write($"The settings file has been created! ({Paths.Settings})");
+                    Logger.Write($"The settings file has been created! ({Paths.Settings})");
                     Thread.Sleep(-1);
                 }
 
@@ -723,7 +722,7 @@ namespace bb
                         Path.Combine(Paths.General, "Version")
                     };
 
-                Write("Creating files...");
+                Logger.Write("Creating files...");
                 foreach (var file in files)
                 {
                     FileUtil.CreateFile(file);
@@ -732,41 +731,41 @@ namespace bb
                 PreviousVersion = File.ReadAllText(Path.Combine(Paths.General, "Version"));
                 File.WriteAllText(Path.Combine(Paths.General, "Version"), $"{Version}");
 
-                Write("Loading settings...");
+                Logger.Write("Loading settings...");
                 LoadSettings();
 
-                Write("Initializing blocked words...");
+                Logger.Write("Initializing blocked words...");
                 if (!FileUtil.FileExists(Paths.BlacklistWords))
                 {
                     Manager.Save(Paths.BlacklistWords, "single_word", new List<string>());
                     Manager.Save(Paths.BlacklistWords, "replacement_list", new Dictionary<string, string>());
                     Manager.Save(Paths.BlacklistWords, "list", new List<string>());
 
-                    Write("The file with blocked words has been created!");
+                    Logger.Write("The file with blocked words has been created!");
                 }
 
 
-                Write("Initializing databases...");
+                Logger.Write("Initializing databases...");
 
                 DataBase.Messages = new(Paths.MessagesDatabase);
                 DataBase.Users = new(Paths.UsersDatabase);
                 DataBase.Games = new(Paths.GamesDatabase);
                 DataBase.Channels = new(Paths.ChannelsDatabase);
 
-                Write("Initializing buffers...");
+                Logger.Write("Initializing buffers...");
 
                 MessagesBuffer = new(DataBase.Messages);
                 UsersBuffer = new(DataBase.Users);
 
-                Write("Loading currency counters...");
+                Logger.Write("Loading currency counters...");
 
                 Users = DataBase.Users.GetTotalUsers();
                 Coins = DataBase.Users.GetTotalBalance();
 
                 _repeater = Task.Run(() => StartRepeater());
-                Write($"TPS counter successfully started");
+                Logger.Write($"TPS counter successfully started");
 
-                Write("Getting twitch token...");
+                Logger.Write("Getting twitch token...");
 
                 if (TwitchClientId == null)
                 {
@@ -788,13 +787,13 @@ namespace bb
                 }
                 else
                 {
-                    Write("Twitch token is null! Something went wrong...");
+                    Logger.Write("Twitch token is null! Something went wrong...");
                     await Shutdown();
                 }
             }
             catch (Exception ex)
             {
-                Write(ex);
+                Logger.Write(ex);
                 await Shutdown();
             }
         }
@@ -804,7 +803,7 @@ namespace bb
             if (e.Status == null || e.Status != "completed") return;
             string notify = $"forsenPls | Github: {e.Event} in {e.Repository}#{e.Branch} by {e.Actor}: {e.Conclusion}";
 
-            Write(notify);
+            Logger.Write(notify);
 
             foreach (string channel in Program.BotInstance.TwitchDevAnnounce)
             {
@@ -879,7 +878,7 @@ namespace bb
         {
             try
             {
-                Write("Connecting...");
+                Logger.Write("Connecting...");
 
                 var tasks = new List<Task>
                 {
@@ -894,11 +893,11 @@ namespace bb
                 ConnectedIn = DateTime.UtcNow - _startTime;
                 Initialized = true;
 
-                Write($"Well done! ({(long)(ConnectedIn).TotalMilliseconds} ms)");
+                Logger.Write($"Well done! ({(long)(ConnectedIn).TotalMilliseconds} ms)");
             }
             catch (Exception ex)
             {
-                Write(ex);
+                Logger.Write(ex);
                 await Shutdown();
             }
         }
@@ -979,7 +978,7 @@ namespace bb
 
             Clients.Twitch.SendMessage(TwitchName.ToLower(), "truckCrash Connecting to twitch...");
 
-            Write("Twitch is ready.");
+            Logger.Write("Twitch is ready.");
         }
 
         /// <summary>
@@ -1011,7 +1010,7 @@ namespace bb
 
             if (notFoundedChannels.Count > 0)
             {
-                Write("Twitch: Can't find ID for " + string.Join(',', notFoundedChannels), LogLevel.Warning);
+                Logger.Write("Twitch: Can't find ID for " + string.Join(',', notFoundedChannels), Logger.LogLevel.Warning);
             }
         }
 
@@ -1060,7 +1059,7 @@ namespace bb
             await Clients.Discord.LoginAsync(TokenType.Bot, Tokens.Discord);
             await Clients.Discord.StartAsync();
 
-            Write("Discord is ready.");
+            Logger.Write("Discord is ready.");
         }
 
         /// <summary>
@@ -1093,7 +1092,7 @@ namespace bb
             };
 
             Clients.Telegram.StartReceiving(TelegramEvents.UpdateHandler, TelegramEvents.ErrorHandler, TelegramReceiverOptions, Clients.TelegramCancellationToken.Token);
-            Write("Telegram is ready.");
+            Logger.Write("Telegram is ready.");
         }
         #endregion Connects
 
@@ -1144,18 +1143,18 @@ namespace bb
                 {
                     Clients.Twitch.Connect();
                     JoinTwitchChannels();
-                    Write("The token has been updated and the connection has been restored");
+                    Logger.Write("The token has been updated and the connection has been restored");
                     bb.Program.BotInstance.MessageSender.Send(Platform.Twitch, $"sillyCatThinks Token refreshed", TwitchName, isSafe: true);
                 }
                 catch (Exception ex)
                 {
-                    Write("Twitch connection error!");
-                    Write(ex);
+                    Logger.Write("Twitch connection error!");
+                    Logger.Write(ex);
                 }
             }
             catch (Exception ex)
             {
-                Write(ex);
+                Logger.Write(ex);
             }
         }
 
@@ -1193,11 +1192,11 @@ namespace bb
         /// <returns>Task representing the asynchronous shutdown operation</returns>
         public async Task Shutdown(bool force = false, bool update = false)
         {
-            Write("Initiating shutdown sequence...");
+            Logger.Write("Initiating shutdown sequence...");
 
             Initialized = false;
 
-            Write($"Shutdown process started (PID: {Environment.ProcessId})", LogLevel.Info);
+            Logger.Write($"Shutdown process started (PID: {Environment.ProcessId})", Logger.LogLevel.Info);
 
             try
             {
@@ -1205,13 +1204,13 @@ namespace bb
                 {
                     try
                     {
-                        Write("Flushing user data buffer...");
+                        Logger.Write("Flushing user data buffer...");
                         UsersBuffer.Flush();
-                        Write("User buffer disposed successfully", LogLevel.Info);
+                        Logger.Write("User buffer disposed successfully", Logger.LogLevel.Info);
                     }
                     catch (Exception ex)
                     {
-                        Write($"User buffer flush failed: {ex.Message}", LogLevel.Warning);
+                        Logger.Write($"User buffer flush failed: {ex.Message}", Logger.LogLevel.Warning);
                     }
                     finally
                     {
@@ -1224,13 +1223,13 @@ namespace bb
                 {
                     try
                     {
-                        Write("Flushing message data buffer...");
+                        Logger.Write("Flushing message data buffer...");
                         MessagesBuffer.Flush();
-                        Write("Message buffer disposed successfully", LogLevel.Info);
+                        Logger.Write("Message buffer disposed successfully", Logger.LogLevel.Info);
                     }
                     catch (Exception ex)
                     {
-                        Write($"Message buffer flush failed: {ex.Message}", LogLevel.Warning);
+                        Logger.Write($"Message buffer flush failed: {ex.Message}", Logger.LogLevel.Warning);
                     }
                     finally
                     {
@@ -1243,13 +1242,13 @@ namespace bb
                 {
                     try
                     {
-                        Write("Cancelling Telegram operations...");
+                        Logger.Write("Cancelling Telegram operations...");
                         Clients.TelegramCancellationToken.Cancel();
-                        Write("Telegram cancellation requested", LogLevel.Info);
+                        Logger.Write("Telegram cancellation requested", Logger.LogLevel.Info);
                     }
                     catch (Exception ex)
                     {
-                        Write($"Telegram cancellation failed: {ex.Message}", LogLevel.Warning);
+                        Logger.Write($"Telegram cancellation failed: {ex.Message}", Logger.LogLevel.Warning);
                     }
                     finally
                     {
@@ -1262,14 +1261,14 @@ namespace bb
                 {
                     try
                     {
-                        Write("Disconnecting from Discord...");
+                        Logger.Write("Disconnecting from Discord...");
                         await Clients.Discord.LogoutAsync();
                         await Clients.Discord.StopAsync();
-                        Write("Discord client disconnected", LogLevel.Info);
+                        Logger.Write("Discord client disconnected", Logger.LogLevel.Info);
                     }
                     catch (Exception ex)
                     {
-                        Write($"Discord disconnect failed: {ex.Message}", LogLevel.Warning);
+                        Logger.Write($"Discord disconnect failed: {ex.Message}", Logger.LogLevel.Warning);
                     }
                     finally
                     {
@@ -1280,7 +1279,7 @@ namespace bb
 
                 if (DataBase != null)
                 {
-                    Write("Disposing SQL...");
+                    Logger.Write("Disposing SQL...");
                     try
                     {
                         DataBase.Channels.Dispose();
@@ -1290,7 +1289,7 @@ namespace bb
                     }
                     catch (Exception ex)
                     {
-                        Write($"SQL dispose failed: {ex.Message}", LogLevel.Warning);
+                        Logger.Write($"SQL dispose failed: {ex.Message}", Logger.LogLevel.Warning);
                     }
                 }
 
@@ -1318,19 +1317,19 @@ namespace bb
                 }
                 catch (Exception ex)
                 {
-                    Write($"Currency dispose failed: {ex.Message}", LogLevel.Warning);
+                    Logger.Write($"Currency dispose failed: {ex.Message}", Logger.LogLevel.Warning);
                 }
 
-                Write("Waiting for pending operations to complete...");
+                Logger.Write("Waiting for pending operations to complete...");
                 await Task.Delay(2000);
             }
             catch (Exception ex)
             {
-                Write($"Critical error during shutdown sequence: {ex}", LogLevel.Error);
+                Logger.Write($"Critical error during shutdown sequence: {ex}", Logger.LogLevel.Error);
             }
             finally
             {
-                Write("Restart sequence completed - terminating process");
+                Logger.Write("Restart sequence completed - terminating process");
                 Environment.Exit(update ? 5051 : force ? 5001 : 0);
             }
         }
@@ -1340,8 +1339,8 @@ namespace bb
             Exception ex = (Exception)e.ExceptionObject;
             try
             {
-                Write("Critical error.", LogLevel.Error);
-                Write(ex);
+                Logger.Write("Critical error.", Logger.LogLevel.Error);
+                Logger.Write(ex);
                 Shutdown().RunSynchronously();
             }
             catch { }
