@@ -34,5 +34,15 @@
         /// The official bot github link.
         /// </summary>
         public static string githubSource = "https://github.com/itzkitb/butterBror/";
+
+        /// <summary>
+        /// The official bot's command list github link.
+        /// </summary>
+        public static string githubCommandsSource = $"{githubSource}blob/master/butterBror/Core/Commands/List/";
+
+        /// <summary>
+        /// The official bot wiki link.
+        /// </summary>
+        public static string wikiSource = "https://itzkitb.lol/bot/command?q=";
     }
 }

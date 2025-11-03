@@ -8,19 +8,14 @@ namespace bb.Core.Commands
     {
         public abstract string Name { get; }
         public abstract string Author { get; }
-        public abstract string AuthorsGithub { get; }
-        public abstract string GithubSource { get; }
-        public abstract Version Version { get; }
+        public abstract string Source { get; }
         public abstract Dictionary<Language, string> Description { get; }
-        public abstract string WikiLink { get; }
-        public abstract int CooldownPerUser { get; }
-        public abstract int CooldownPerChannel { get; }
+        public abstract int UserCooldown { get; }
+        public abstract int Cooldown { get; }
         public abstract string[] Aliases { get; }
-        public abstract string HelpArguments { get; }
+        public abstract string Help { get; }
         public abstract DateTime CreationDate { get; }
-        public abstract bool OnlyBotModerator { get; }
-        public abstract bool OnlyBotDeveloper { get; }
-        public abstract bool OnlyChannelModerator { get; }
+        public abstract Roles RoleRequired { get; }
         public abstract Platform[] Platforms { get; }
         public abstract bool IsAsync { get; }
         public virtual bool TechWorks { get; } = false;

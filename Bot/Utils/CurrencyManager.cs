@@ -80,7 +80,7 @@ namespace bb.Utils
         /// </example>
         public void Add(string userID, decimal add, Platform platform)
         {
-            decimal balance = GetBalance(userID, platform) + add;
+            decimal balance = Get(userID, platform) + add;
 
             bb.Program.BotInstance.Coins += add;
             bb.Program.BotInstance.UsersBuffer.SetParameter(platform, DataConversion.ToLong(userID), Users.Balance, balance);
@@ -118,7 +118,7 @@ namespace bb.Utils
         /// long butters = Balance.GetBalance("12345", PlatformsEnum.Twitch); // Returns 5
         /// </code>
         /// </example>
-        public decimal GetBalance(string userID, Platform platform)
+        public decimal Get(string userID, Platform platform)
         {
             return DataConversion.ToDecimal(bb.Program.BotInstance.UsersBuffer.GetParameter(platform, DataConversion.ToLong(userID), Users.Balance).ToString());
         }

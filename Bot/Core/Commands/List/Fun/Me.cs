@@ -1,0 +1,96 @@
+﻿using bb.Core.Configuration;
+using bb.Models.Command;
+using bb.Models.Platform;
+using bb.Models.Users;
+using bb.Utils;
+
+namespace bb.Core.Commands.List.Fun
+{
+    public class Me : CommandBase
+    {
+        public override string Name => "Me";
+        public override string Author => "https://github.com/itzkitb";
+        public override string Source => "Fun/Me.cs";
+        public override Dictionary<Language, string> Description => new()
+        {
+            { Language.RuRu, "Эта команда... Просто зачем-то существует" },
+            { Language.EnUs, "This command... Just exists for some reason" }
+        };
+        public override int UserCooldown => 10;
+        public override int Cooldown => 1;
+        public override string[] Aliases => ["me", "m", "я"];
+        public override string Help => "<text>";
+        public override DateTime CreationDate => DateTime.Parse("2024-07-04T00:00:00.0000000Z");
+        public override Roles RoleRequired => Roles.Public;
+        public override Platform[] Platforms => [Platform.Twitch];
+        public override bool IsAsync => false;
+
+        public override CommandReturn Execute(CommandData data)
+        {
+            CommandReturn commandReturn = new CommandReturn();
+
+            try
+            {
+                if (data.ChannelId == null)
+                {
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:unknown", string.Empty, data.Platform));
+                    return commandReturn;
+                }
+
+                if (TextSanitizer.CleanAsciiWithoutSpaces(data.ArgumentsString) != "")
+                {
+                    string[] blockedEntries = ["/", "$", "#", "+", "-", ">", "<", "*", "\\", ";"];
+                    string meMessage = TextSanitizer.CleanAscii(data.ArgumentsString);
+                    while (true)
+                    {
+                        while (meMessage.StartsWith(' '))
+                        {
+                            meMessage = string.Join("", meMessage.Skip(1)); // AB6 fix
+                        }
+
+                        if (meMessage.StartsWith('!'))
+                        {
+                            meMessage = "❗" + string.Join("", meMessage.Skip(1)); // AB6 fix
+                            break;
+                        }
+
+                        bool forbiddenSymbolFound = true;
+                        while (forbiddenSymbolFound)
+                        {
+                            forbiddenSymbolFound = false;
+                            foreach (string blockedEntry in blockedEntries)
+                            {
+                                while (meMessage.StartsWith(blockedEntry))
+                                {
+                                    forbiddenSymbolFound = true;
+                                    meMessage = string.Join("", meMessage.Substring(blockedEntry.Length)); // AB6 fix
+                                } // repeat symbol fix
+                            }
+                        } // repeat symbol fix 2
+
+                        break; // AB5 fix
+                    }
+
+                    if (string.IsNullOrEmpty(meMessage))
+                    {
+                        commandReturn.SetMessage("/me " + LocalizationService.GetString(data.User.Language, "text:ad", data.ChannelId, data.Platform));
+                    }
+                    else
+                    {
+                        commandReturn.SetMessage($"/me \u034E {meMessage}");
+                    }
+                }
+                else
+                {
+                    commandReturn.SetMessage("/me " + LocalizationService.GetString(data.User.Language, "text:ad", data.ChannelId, data.Platform));
+                }
+            }
+            catch (Exception e)
+            {
+                commandReturn.SetError(e);
+            }
+
+            return commandReturn;
+        }
+    }
+}

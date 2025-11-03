@@ -248,13 +248,10 @@ namespace bb.Core.Commands
                         await userLock.WaitAsync(ct);
                         try
                         {
-                            bool isOnlyBotOwner = cmd.OnlyBotDeveloper && !(bool)(data.User.Roles == Roles.BotOwner);
-                            bool isOnlyBotMod = cmd.OnlyBotModerator && !(data.User.Roles >= Roles.BotMod);
-                            bool isOnlyChannelMod = data.Platform == Models.Platform.Platform.Twitch && cmd.OnlyChannelModerator && !(data.User.Roles >= Roles.ChatMod);
-                            bool isCooldown = !bb.Program.BotInstance.Cooldown.CheckCooldown(cmd.CooldownPerUser, cmd.CooldownPerChannel, cmd.Name, data.User.Id, data.ChannelId, data.Platform, true);
+                            bool isCooldown = !bb.Program.BotInstance.Cooldown.CheckCooldown(cmd.UserCooldown, cmd.Cooldown, cmd.Name, data.User.Id, data.ChannelId, data.Platform, true);
 
                             // Permission and cooldown checks
-                            if (isOnlyBotOwner || isOnlyBotMod || isOnlyChannelMod || isCooldown)
+                            if (data.User.Roles < cmd.RoleRequired || isCooldown)
                             {
                                 if (!isCooldown)
                                 {
@@ -263,7 +260,7 @@ namespace bb.Core.Commands
                                         data.User.Id, data.Server, data.ServerID, data.MessageID, data.TelegramMessage, true, true, false, data.DiscordCommandBase);
                                 }
 
-                                Write($"Command failed:\n - OBD check: {BoolToString(isOnlyBotOwner)}\n - OBM check: {BoolToString(isOnlyBotMod)}\n - OCM check: {BoolToString(isOnlyChannelMod)}\n - Cooldown check: {BoolToString(isCooldown)}", LogLevel.Warning);
+                                Write($"Command failed:\n - Role check: {BoolToString(data.User.Roles < cmd.RoleRequired)}\n - User role: {data.User.Roles} ({(int)data.User.Roles})\n - Required role: {cmd.RoleRequired} ({(int)cmd.RoleRequired})\n - Cooldown check: {BoolToString(isCooldown)}", LogLevel.Warning);
                                 return;
                             }
 
