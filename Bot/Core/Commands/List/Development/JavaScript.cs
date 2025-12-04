@@ -40,36 +40,30 @@ namespace bb.Core.Commands.List.Development
                     return commandReturn;
                 }
 
-                try
+                string jsCode = data.ArgumentsString;
+        
+                var cts = new CancellationTokenSource();
+                var timeoutTask = Task.Run(() => ExecuteJsWithTimeout(jsCode, cts.Token), cts.Token);
+        
+                if (timeoutTask.Wait(TimeSpan.FromSeconds(5)))
                 {
-                    var engine = new Engine(cfg => cfg
-    .LimitRecursion(100)
-    .LimitMemory(40 * 1024 * 1024)
-    .Strict()
-    .LocalTimeZone(TimeZoneInfo.Utc));
-                    var isSafe = true;
-                    engine.SetValue("navigator", new Action(() => isSafe = false));
-                    engine.SetValue("WebSocket", new Action(() => isSafe = false));
-                    engine.SetValue("XMLHttpRequest", new Action(() => isSafe = false));
-                    engine.SetValue("fetch", new Action(() => isSafe = false));
-                    string jsCode = data.ArgumentsString;
-                    var result = engine.Evaluate(jsCode);
-
-                    if (isSafe)
+                    var result = timeoutTask.Result;
+                    if (result.Success)
                     {
-                        commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:js", data.ChannelId, data.Platform, result.ToString()));
+                        commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "command:js", 
+                            data.ChannelId, data.Platform, result.Output));
                     }
                     else
                     {
-                        commandReturn.SetColor(ChatColorPresets.OrangeRed);
-                        commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:js", data.ChannelId, data.Platform, "Not allowed"));
+                        commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:js", 
+                            data.ChannelId, data.Platform, result.Error));
                     }
                 }
-                catch (Exception ex)
+                else
                 {
-                    commandReturn.SetColor(ChatColorPresets.Firebrick);
-                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:js", data.ChannelId, data.Platform, ex.Message));
-                    Write(ex);
+                    cts.Cancel();
+                    commandReturn.SetMessage(LocalizationService.GetString(data.User.Language, "error:js", 
+                        data.ChannelId, data.Platform, "Execution timeout"));
                 }
             }
             catch (Exception e)
@@ -78,6 +72,41 @@ namespace bb.Core.Commands.List.Development
             }
 
             return commandReturn;
+        }
+
+        private (bool Success, string Output, string Error) ExecuteJsWithTimeout(string jsCode, CancellationToken cancellationToken)
+        {
+            try
+            {
+                var engine = new Engine(cfg => cfg
+                    .LimitRecursion(100)
+                    .LimitMemory(40 * 1024 * 1024)
+                    .Strict()
+                    .LocalTimeZone(TimeZoneInfo.Utc)
+                    .CancellationToken(cancellationToken));
+        
+                var isSafe = true;
+                engine.SetValue("navigator", new Action(() => isSafe = false));
+                engine.SetValue("WebSocket", new Action(() => isSafe = false));
+                engine.SetValue("XMLHttpRequest", new Action(() => isSafe = false));
+                engine.SetValue("fetch", new Action(() => isSafe = false));
+        
+                if (!isSafe)
+                {
+                    return (false, null, "Not allowed");
+                }
+        
+                var result = engine.Evaluate(jsCode);
+                return (true, result.ToString(), null);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+           catch (Exception ex)
+            {
+                return (false, null, ex.Message);
+            }
         }
     }
 }
