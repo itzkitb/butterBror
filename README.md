@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> The project is currently being rewritten. Stay tuned for updates
+
 [![.NET CI](https://github.com/itzkitb/butterBror/actions/workflows/ci.yml/badge.svg)](https://github.com/itzkitb/butterBror/actions/workflows/ci.yml)
 
 <img 
